@@ -3,6 +3,8 @@
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
 
+	export let params = {};
+
 	let pages = [];
 	let loading = true;
 	let editing = null;
@@ -26,12 +28,23 @@
 
 	function startEdit(page) {
 		editing = page
-			? { ...page, heroMessages: page.heroMessages || [] }
+			? { 
+				...page, 
+				heroMessages: page.heroMessages || [],
+				heroTitle: page.heroTitle || '',
+				heroSubtitle: page.heroSubtitle || '',
+				heroButtons: page.heroButtons || [],
+				heroOverlay: page.heroOverlay || 40
+			}
 			: {
 					id: '',
 					title: '',
 					content: '',
 					heroImage: '',
+					heroTitle: '',
+					heroSubtitle: '',
+					heroButtons: [],
+					heroOverlay: 40,
 					metaDescription: '',
 					heroMessages: []
 				};
@@ -50,6 +63,21 @@
 	function removeHeroMessage(index) {
 		if (editing && editing.heroMessages) {
 			editing.heroMessages = editing.heroMessages.filter((_, i) => i !== index);
+		}
+	}
+
+	function addHeroButton() {
+		if (editing && !editing.heroButtons) {
+			editing.heroButtons = [];
+		}
+		if (editing) {
+			editing.heroButtons = [...(editing.heroButtons || []), { text: '', link: '', style: 'primary', target: '_self' }];
+		}
+	}
+
+	function removeHeroButton(index) {
+		if (editing && editing.heroButtons) {
+			editing.heroButtons = editing.heroButtons.filter((_, i) => i !== index);
 		}
 	}
 
@@ -144,6 +172,80 @@
 					/>
 				</div>
 				<div>
+					<label class="block text-sm font-medium mb-1">Hero Title</label>
+					<p class="text-xs text-gray-500 mb-2">
+						The main title in the hero section. You can use HTML like &lt;span style="color:#4BB170;"&gt;text&lt;/span&gt; for colored text.
+					</p>
+					<input
+						type="text"
+						bind:value={editing.heroTitle}
+						class="w-full px-3 py-2 border rounded"
+						placeholder="e.g., Online"
+					/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium mb-1">Hero Subtitle</label>
+					<input
+						type="text"
+						bind:value={editing.heroSubtitle}
+						class="w-full px-3 py-2 border rounded"
+						placeholder="e.g., Watch our services online"
+					/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium mb-1">Hero Buttons</label>
+					<p class="text-xs text-gray-500 mb-2">
+						Add buttons to display in the hero section.
+					</p>
+					{#if editing.heroButtons && editing.heroButtons.length > 0}
+						<div class="space-y-3 mb-2">
+							{#each editing.heroButtons as button, index}
+								<div class="border p-3 rounded space-y-2">
+									<div class="flex gap-2">
+										<input
+											type="text"
+											bind:value={editing.heroButtons[index].text}
+											class="flex-1 px-3 py-2 border rounded"
+											placeholder="Button text"
+										/>
+										<button
+											type="button"
+											on:click={() => removeHeroButton(index)}
+											class="px-3 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+											aria-label="Remove button"
+										>
+											×
+										</button>
+									</div>
+									<input
+										type="text"
+										bind:value={editing.heroButtons[index].link}
+										class="w-full px-3 py-2 border rounded"
+										placeholder="Button link (e.g., /contact or https://example.com)"
+									/>
+									<div class="flex gap-2">
+										<select bind:value={editing.heroButtons[index].style} class="flex-1 px-3 py-2 border rounded">
+											<option value="primary">Primary (colored)</option>
+											<option value="secondary">Secondary (white)</option>
+										</select>
+										<select bind:value={editing.heroButtons[index].target} class="flex-1 px-3 py-2 border rounded">
+											<option value="_self">Same window</option>
+											<option value="_blank">New window</option>
+										</select>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					<button
+						type="button"
+						on:click={addHeroButton}
+						class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+					>
+						+ Add Button
+					</button>
+				</div>
+				<div>
 					<label class="block text-sm font-medium mb-1">Hero Messages (Rotating Subtitles)</label>
 					<p class="text-xs text-gray-500 mb-2">
 						These messages will rotate in the hero section. Leave empty if you don't want rotating messages.
@@ -212,6 +314,19 @@
 							</div>
 						{/if}
 					</div>
+				</div>
+				<div>
+					<label class="block text-sm font-medium mb-1">Hero Overlay Opacity</label>
+					<p class="text-xs text-gray-500 mb-2">
+						Dark overlay opacity over hero image (0-100). Higher = darker.
+					</p>
+					<input
+						type="number"
+						bind:value={editing.heroOverlay}
+						min="0"
+						max="100"
+						class="w-full px-3 py-2 border rounded"
+					/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium mb-1">Meta Description</label>

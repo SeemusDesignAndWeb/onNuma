@@ -4,6 +4,7 @@
 	import VideoSection from '$lib/components/VideoSection.svelte';
 
 	export let data;
+	export let params = {};
 
 	let currentPage = 1;
 	let itemsPerPage = 12;
@@ -63,16 +64,29 @@
 			class="absolute inset-0 bg-black"
 			style="opacity: {(data.page.heroOverlay || 40) / 100};"
 		></div>
-		<div class="relative h-full flex items-end pb-16">
+		<div class="relative h-full flex items-end pb-12">
 			<div class="container mx-auto px-4">
 				<div class="max-w-2xl">
 					{#if data.page.heroTitle}
-						<h1 class="text-white text-4xl md:text-5xl font-bold mb-4 animate-fade-in">
+						<h1 class="text-white text-4xl md:text-5xl font-bold mb-3 animate-fade-in">
 							{@html data.page.heroTitle}
 						</h1>
 					{/if}
 					{#if data.page.heroSubtitle}
-						<p class="text-white text-lg md:text-xl animate-fade-in">{data.page.heroSubtitle}</p>
+						<p class="text-white text-lg md:text-xl mb-4 animate-fade-in">{data.page.heroSubtitle}</p>
+					{/if}
+					{#if data.page.heroButtons && data.page.heroButtons.length > 0}
+						<div class="flex flex-wrap gap-3 mt-4">
+							{#each data.page.heroButtons as button}
+								<a
+									href={button.link}
+									target={button.target || '_self'}
+									class="px-6 py-3 {button.style === 'secondary' ? 'bg-white text-brand-blue hover:bg-gray-100' : 'bg-brand-blue text-white hover:bg-opacity-90'} rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg text-sm"
+								>
+									{button.text}
+								</a>
+							{/each}
+						</div>
 					{/if}
 				</div>
 			</div>
@@ -84,44 +98,46 @@
 	<section class="py-20 bg-white">
 		<div class="container mx-auto px-4">
 
-			<!-- Date Range Filter -->
-			<div class="mb-8 bg-gray-50 p-4 rounded-lg">
-				<div class="flex flex-wrap gap-4 items-end">
-					<div class="flex-1 min-w-[200px]">
-						<label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-						<input
-							id="start-date"
-							type="date"
-							bind:value={startDate}
-							on:change={() => currentPage = 1}
-							class="w-full px-3 py-2 border rounded"
-						/>
+			<!-- Date Range Filter - Hidden for now, but keeping code for future use -->
+			{#if false}
+				<div class="mb-8 bg-gray-50 p-4 rounded-lg">
+					<div class="flex flex-wrap gap-4 items-end">
+						<div class="flex-1 min-w-[200px]">
+							<label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+							<input
+								id="start-date"
+								type="date"
+								bind:value={startDate}
+								on:change={() => currentPage = 1}
+								class="w-full px-3 py-2 border rounded"
+							/>
+						</div>
+						<div class="flex-1 min-w-[200px]">
+							<label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+							<input
+								id="end-date"
+								type="date"
+								bind:value={endDate}
+								on:change={() => currentPage = 1}
+								class="w-full px-3 py-2 border rounded"
+							/>
+						</div>
+						<div>
+							<button
+								on:click={resetFilters}
+								class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+							>
+								Clear Filters
+							</button>
+						</div>
 					</div>
-					<div class="flex-1 min-w-[200px]">
-						<label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-						<input
-							id="end-date"
-							type="date"
-							bind:value={endDate}
-							on:change={() => currentPage = 1}
-							class="w-full px-3 py-2 border rounded"
-						/>
-					</div>
-					<div>
-						<button
-							on:click={resetFilters}
-							class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-						>
-							Clear Filters
-						</button>
-					</div>
+					{#if startDate || endDate}
+						<p class="text-sm text-gray-600 mt-2">
+							Showing {filteredVideos.length} of {data.videos.length} videos
+						</p>
+					{/if}
 				</div>
-				{#if startDate || endDate}
-					<p class="text-sm text-gray-600 mt-2">
-						Showing {filteredVideos.length} of {data.videos.length} videos
-					</p>
-				{/if}
-			</div>
+			{/if}
 
 			<VideoSection videos={videosToShow} playlistTitle={data.playlistInfo?.title || 'Videos'} mostRecentVideo={mostRecentVideo} />
 

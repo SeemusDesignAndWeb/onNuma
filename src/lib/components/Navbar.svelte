@@ -31,20 +31,16 @@
 </script>
 
 <nav
-	class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-	class:bg-black={scrolled}
-	class:bg-opacity-30={!scrolled}
-	class:bg-opacity-100={scrolled}
-	class:shadow-md={scrolled}
+	class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {scrolled ? 'bg-white shadow-md' : ''}"
 >
 	<div class="container mx-auto px-4">
 		<div class="flex items-center justify-between py-4">
 			<!-- Logo -->
 			<a href="/" class="flex items-center">
 				<img
-					src="/images/egcc-logo-text.png"
+					src="/images/egcc-color.png"
 					alt="Eltham Green Community Church"
-					class="h-12 w-auto"
+					class="h-12 w-auto transition-all duration-300 {scrolled ? '' : 'brightness-0 invert'}"
 				/>
 			</a>
 
@@ -55,16 +51,16 @@
 				aria-label="Toggle menu"
 			>
 				<span
-					class="block w-6 h-0.5 bg-white transition-all duration-300"
+					class="block w-6 h-0.5 transition-all duration-300 {scrolled ? 'bg-gray-900' : 'bg-white'}"
 					class:rotate-45={menuOpen}
 					class:translate-y-2={menuOpen}
 				></span>
 				<span
-					class="block w-6 h-0.5 bg-white transition-all duration-300"
+					class="block w-6 h-0.5 transition-all duration-300 {scrolled ? 'bg-gray-900' : 'bg-white'}"
 					class:opacity-0={menuOpen}
 				></span>
 				<span
-					class="block w-6 h-0.5 bg-white transition-all duration-300"
+					class="block w-6 h-0.5 transition-all duration-300 {scrolled ? 'bg-gray-900' : 'bg-white'}"
 					class:-rotate-45={menuOpen}
 					class:-translate-y-2={menuOpen}
 				></span>
@@ -77,7 +73,7 @@
 						<a
 							href="/im-new"
 							on:click={() => (menuOpen = false)}
-							class="text-white hover:text-primary transition-colors"
+							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							I'm New
 						</a>
@@ -86,7 +82,7 @@
 						<a
 							href="/church"
 							on:click={() => (menuOpen = false)}
-							class="text-white hover:text-primary transition-colors"
+							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Church
 						</a>
@@ -95,7 +91,7 @@
 						<a
 							href="/team"
 							on:click={() => (menuOpen = false)}
-							class="text-white hover:text-primary transition-colors"
+							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Team
 						</a>
@@ -104,7 +100,7 @@
 						<a
 							href="/community-groups"
 							on:click={() => (menuOpen = false)}
-							class="text-white hover:text-primary transition-colors"
+							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Community Groups
 						</a>
@@ -113,7 +109,7 @@
 						<a
 							href="/activities"
 							on:click={() => (menuOpen = false)}
-							class="text-white hover:text-primary transition-colors"
+							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Activities
 						</a>
@@ -122,7 +118,7 @@
 						<a
 							href="/audio"
 							on:click={() => (menuOpen = false)}
-							class="text-white hover:text-primary transition-colors"
+							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Audio
 						</a>
@@ -131,9 +127,9 @@
 						<a
 							href="/media"
 							on:click={() => (menuOpen = false)}
-							class="text-white hover:text-primary transition-colors"
+							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
-							Media
+							Online
 						</a>
 					</li>
 				</ul>
@@ -148,7 +144,7 @@
 						<a
 							href="/im-new"
 							on:click={() => (menuOpen = false)}
-							class="block text-white hover:text-primary transition-colors"
+							class="block transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							I'm New
 						</a>
@@ -157,7 +153,7 @@
 						<a
 							href="/church"
 							on:click={() => (menuOpen = false)}
-							class="block text-white hover:text-primary transition-colors"
+							class="block transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Church
 						</a>
@@ -166,7 +162,7 @@
 						<a
 							href="/team"
 							on:click={() => (menuOpen = false)}
-							class="block text-white hover:text-primary transition-colors"
+							class="block transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Team
 						</a>
@@ -175,7 +171,7 @@
 						<a
 							href="/community-groups"
 							on:click={() => (menuOpen = false)}
-							class="block text-white hover:text-primary transition-colors"
+							class="block transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Community Groups
 						</a>
@@ -184,7 +180,7 @@
 						<a
 							href="/activities"
 							on:click={() => (menuOpen = false)}
-							class="block text-white hover:text-primary transition-colors"
+							class="block transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Activities
 						</a>
@@ -193,7 +189,7 @@
 						<a
 							href="/audio"
 							on:click={() => (menuOpen = false)}
-							class="block text-white hover:text-primary transition-colors"
+							class="block transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
 							Audio
 						</a>
@@ -202,9 +198,9 @@
 						<a
 							href="/media"
 							on:click={() => (menuOpen = false)}
-							class="block text-white hover:text-primary transition-colors"
+							class="block transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
 						>
-							Media
+							Online
 						</a>
 					</li>
 				</ul>

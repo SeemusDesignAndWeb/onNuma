@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
 
+	export let params = {};
+
 	let slides = [];
 	let loading = true;
 	let editing = null;

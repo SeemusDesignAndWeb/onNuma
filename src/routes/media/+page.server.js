@@ -58,8 +58,8 @@ export const load = async () => {
 	}
 	const fallbackPage = {
 		id: 'media',
-		title: 'Media',
-		heroTitle: 'Media',
+		title: 'Online',
+		heroTitle: 'Online',
 		heroImage: '/images/media-bg.jpg',
 		content: '',
 		sections: [],

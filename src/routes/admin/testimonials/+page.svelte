@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 
+	export let params = {};
+
 	let testimonials = [];
 	let loading = true;
 	let editing = null;

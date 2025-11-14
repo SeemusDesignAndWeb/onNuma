@@ -1,6 +1,8 @@
 <script lang="js">
 	import { onMount } from 'svelte';
 
+	export let params = {};
+
 	let podcasts = [];
 	let loading = true;
 	let editing = null;

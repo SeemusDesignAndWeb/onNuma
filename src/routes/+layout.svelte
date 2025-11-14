@@ -3,6 +3,8 @@
 	import Preloader from '$lib/components/Preloader.svelte';
 	import { onMount } from 'svelte';
 
+	export let params = {};
+
 	let showPreloader = true;
 
 	onMount(() => {

@@ -1,6 +1,8 @@
 <script lang="js">
 	import { onMount } from 'svelte';
 
+	export let params = {};
+
 	let images = [];
 	let loading = true;
 	let uploading = false;

@@ -1,6 +1,8 @@
 <script lang="js">
 	import { goto } from '$app/navigation';
 
+	export let params = {};
+
 	let password = '';
 	let error = '';
 	let loading = false;

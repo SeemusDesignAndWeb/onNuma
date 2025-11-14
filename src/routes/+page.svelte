@@ -8,6 +8,7 @@
 	import Footer from '$lib/components/Footer.svelte';
 
 	export let data;
+	export let params = {};
 </script>
 
 <svelte:head>
@@ -16,7 +17,7 @@
 </svelte:head>
 
 <Navbar />
-<Hero heroSlides={data.heroSlides} />
+<Hero heroSlides={data.heroSlides} featuredEvents={data.heroEvents} />
 <About />
 <Menu />
 <Contact contactInfo={data.contactInfo} />

@@ -1,3 +1,7 @@
+<script>
+	export let params = {};
+</script>
+
 <svelte:head>
 	<title>Admin Dashboard - EGCC</title>
 </svelte:head>

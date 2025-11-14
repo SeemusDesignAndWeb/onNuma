@@ -28,7 +28,7 @@
 		{#each videos as video}
 			{@const isMostRecent = mostRecentVideo && video.id === mostRecentVideo.id}
 			<div
-				class="rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer {isMostRecent ? 'bg-blue-50' : 'bg-white'}"
+				class="rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer {isMostRecent ? 'bg-brand-blue' : 'bg-white'}"
 				on:click={() => openVideo(video)}
 				role="button"
 				tabindex="0"
@@ -56,8 +56,8 @@
 					{/if}
 				</div>
 				<div class="p-4">
-					<h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{video.title}</h3>
-					<div class="flex items-center justify-between text-sm text-gray-600">
+					<h3 class="text-lg font-bold {isMostRecent ? 'text-white' : 'text-gray-900'} mb-2 line-clamp-2">{video.title}</h3>
+					<div class="flex items-center justify-between text-sm {isMostRecent ? 'text-gray-200' : 'text-gray-600'}">
 						<span>{video.channelTitle}</span>
 						{#if video.viewCount > 0}
 							<span>{video.viewCount.toLocaleString()} views</span>
@@ -65,7 +65,7 @@
 					</div>
 					<div class="flex items-center justify-between mt-2">
 						{#if video.publishedAt}
-							<p class="text-xs text-gray-500">
+							<p class="text-xs {isMostRecent ? 'text-gray-200' : 'text-gray-500'}">
 								{new Date(video.publishedAt).toLocaleDateString('en-GB', {
 									year: 'numeric',
 									month: 'long',
@@ -76,7 +76,7 @@
 							<span></span>
 						{/if}
 					{#if isMostRecent}
-						<span class="bg-brand-blue text-white px-3 py-1 rounded-full text-xs font-bold">
+						<span class="bg-white text-brand-blue px-3 py-1 rounded-full text-xs font-bold">
 							Latest
 						</span>
 					{/if}

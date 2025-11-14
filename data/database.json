@@ -66,10 +66,18 @@
     },
     {
       "id": "church",
-      "title": "About EGCC",
-      "heroTitle": "about <span style=\"color:#4BB170;\">egcc</span>",
+      "title": "About the Church",
+      "heroTitle": "About the <span style=\"color:#4BB170;\">Church</span>",
+      "heroSubtitle": "What makes our church distinctive",
       "heroImage": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066407/egcc/egcc/page-hero-church.jpg",
       "heroOverlay": 40,
+      "heroButtons": [
+        {
+          "text": "Find out more",
+          "link": "#contact",
+          "style": "primary"
+        }
+      ],
       "metaDescription": "Learn about Eltham Green Community Church - Loving Eltham since 1979",
       "content": "<h2>Loving Eltham since 1979</h2><p>Formed in Eltham in 1975 as Eltham Green Fellowship at 4 Eltham Green, the church grew within the next 18 months to 100 people gathering in the home. God was moving in amazing ways at the time we moved three doors up to 1 Eltham Green for the main meetings while the Sunday School remained at number 4. Soon the numbers had reached 130 people. We had to soon move on as the gathering was causing problems for the neighbours.</p><p>In 1981 after some temporary homes the church purchased the Methodist Church building on the corner of Haimo Road, a short distance from Eltham Green. In 1982 the church moved in and this has been our church building since. The building has grown through development to include more rooms, a larger main hall, two residential flats and more recently a Coffee Shop.</p><p>Our heart has always been to be a centre in the community where the church and local community can connect together, with the church blessing the local community. In 2017 we started the Fresh Ground Coffee House which has seen our building opened up for many who simply want to have a drink or lunch, or to attend a wide variety of activities for the family.</p><h2>An independent, networking, church</h2><p>We are part of a network of churches called <a href=\"http://www.missionlifegrace.net\" target=\"_blank\">MissionLifeGrace (MLG)</a>. A group of churches walking together to love God, share the love of God to the world and grow disciples. We are all independent but share the same heart for God. We are evangelical, charismatic and seek to live out the life of God in holy living as we see in the scriptures.</p><h2>A church family</h2><p>Originally started as a house church we still hold those benefits of family life. We love to do things together including our children. We love to care for and support one another. We certainly are not a church that is content to 'just turn up'.</p><h2>A church of community groups</h2><p>We believe that church is more than a Sunday meeting. Community Groups (Life Groups) are at the heart of how we do church. These smaller groups meet regularly to study the Bible, pray together, support one another, and reach out to our community.</p>",
       "published": true,
@@ -121,6 +129,7 @@
       "id": "community-groups",
       "title": "Community Groups",
       "heroTitle": "Community <span style=\"color:#4BB170;\">groups</span>",
+      "heroSubtitle": "Growing in relationship with God together",
       "heroImage": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066408/egcc/egcc/page-hero-community-groups.jpg",
       "heroOverlay": 40,
       "metaDescription": "Join a Community Group at Eltham Green Community Church - Growing in relationship with God together",
@@ -157,11 +166,20 @@
     {
       "id": "activities",
       "title": "Activities",
-      "heroTitle": "Serving <span style=\"color:#4BB170;\">our community</span>",
+      "heroTitle": "Serving <span style=\"color:#4A97D2;\">our community</span>",
+      "heroSubtitle": "Part of the local community since 1975",
       "heroImage": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066409/egcc/egcc/page-hero-activities.jpg",
       "heroOverlay": 40,
+      "heroButtons": [
+        {
+          "text": "Grab a coffee...",
+          "link": "http://www.freshgroundeltham.co.uk",
+          "style": "primary",
+          "target": "_blank"
+        }
+      ],
       "metaDescription": "Serving our community - Fresh Ground Coffee House, Jumping Beans, and more activities at EGCC",
-      "content": "<h2>We <span style=\"color:#4BB170;\">love</span> our local community</h2><p>Come and enjoy a great coffee, tea or hot chocolate at <a href=\"http://www.freshgroundeltham.co.uk\" target=\"_blank\">Fresh Ground Coffee House</a>. Or bring your child to Jumping Beans. If you are older you will enjoy Songs of the Sixties. Weekly food available through the Food Club, a great way to get fresh food at a very low cost.</p><p>All our activities are designed to serve and to share with our local community.</p><p><strong>We look forward to welcoming you!</strong></p><h2>Fresh Ground Coffee House</h2><p>Fresh Ground is our coffee shop which is open every week from Wednesday to Saturday from 9:30am to 2:00pm. Serving food and drink including the best coffee in Eltham.</p><p>This is a place where all can come and meet others. A real community cafe feel and activities that run for toddlers and olders.</p><p><a href=\"http://www.freshgroundeltham.co.uk\" target=\"_blank\">View the website for more details: www.freshgroundeltham.co.uk</a></p>",
+      "content": "<h2>We <span style=\"color:#4A97D2;\">love</span> our local community</h2><p>Come and enjoy a great coffee, tea or hot chocolate at <a href=\"http://www.freshgroundeltham.co.uk\" target=\"_blank\">Fresh Ground Coffee House</a>. Or bring your child to Jumping Beans. If you are older you will enjoy Songs of the Sixties. Weekly food available through the Food Club, a great way to get fresh food at a very low cost.</p><p>All our activities are designed to serve and to share with our local community.</p><p><strong>We look forward to welcoming you!</strong></p><h2>Fresh Ground Coffee House</h2><p>Fresh Ground is our coffee shop which is open every week from Wednesday to Saturday from 9:30am to 2:00pm. Serving food and drink including the best coffee in Eltham.</p><p>This is a place where all can come and meet others. A real community cafe feel and activities that run for toddlers and olders.</p><p><a href=\"http://www.freshgroundeltham.co.uk\" target=\"_blank\">View the website for more details: www.freshgroundeltham.co.uk</a></p>",
       "published": true,
       "order": 4,
       "sections": [
@@ -172,7 +190,7 @@
           "padding": "large",
           "alignment": "center",
           "maxWidth": "4xl",
-          "title": "We <span style=\"color:#4BB170;\">love</span> our local community",
+          "title": "We <span style=\"color:#4A97D2;\">love</span> our local community",
           "content": "<p>Come and enjoy a great coffee, tea or hot chocolate at <a href=\"http://www.freshgroundeltham.co.uk\" target=\"_blank\">Fresh Ground Coffee House</a>. Or bring your child to Jumping Beans. If you are older you will enjoy Songs of the Sixties. Weekly food available through the Food Club, a great way to get fresh food at a very low cost.</p><p>All our activities are designed to serve and to share with our local community.</p><p><strong>We look forward to welcoming you!</strong></p>"
         },
         {
@@ -193,9 +211,24 @@
     {
       "id": "audio",
       "title": "Audio",
-      "heroTitle": "Audio",
+      "heroTitle": "Sermon Audio",
+      "heroSubtitle": "Keep up to date with our sermons each week",
       "heroImage": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066410/egcc/egcc/page-hero-audio.jpg",
       "heroOverlay": 40,
+      "heroButtons": [
+        {
+          "text": "Apple Podcasts",
+          "link": "/api/podcast-feed",
+          "style": "primary",
+          "target": "_blank"
+        },
+        {
+          "text": "Spotify",
+          "link": "/api/podcast-feed",
+          "style": "secondary",
+          "target": "_blank"
+        }
+      ],
       "metaDescription": "Listen to sermons and audio messages from Eltham Green Community Church",
       "content": "<h2>Listen to Our Messages</h2><p>We're working on making our sermons and messages available online. Check back soon for audio content from our Sunday services and special events.</p><p>In the meantime, join us in person on Sundays at 10:30 AM to hear God's word and be part of our worship community.</p>",
       "published": true,
@@ -216,16 +249,26 @@
             "style": "primary"
           }
         }
-      ]
+      ],
+      "heroMessages": []
     },
     {
       "id": "media",
-      "title": "Media",
-      "heroTitle": "Media",
+      "title": "Online Catch up",
+      "heroTitle": "Online Catch up",
+      "heroSubtitle": "Watch our services online",
+      "heroButtons": [
+        {
+          "text": "Subscribe online",
+          "link": "https://www.youtube.com/channel/UCqRV8s8Vzza9zScNpQz8CTw",
+          "style": "primary",
+          "target": "_blank"
+        }
+      ],
       "heroImage": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066411/egcc/egcc/page-hero-media.jpg",
       "heroOverlay": 40,
-      "metaDescription": "Photos, videos, and media from Eltham Green Community Church",
-      "content": "<h2>Church Media</h2><p>View photos and videos from our church events, services, and community activities. See the life of our church family in action.</p><p>We're currently updating our media gallery. Check back soon for photos and videos from our services, events, and community activities.</p>",
+      "metaDescription": "Watch our services online - Videos and content from Eltham Green Community Church",
+      "content": "<h2>Watch Online</h2><p>View videos from our church services and events. Watch our services online and stay connected with our church family.</p><p>Subscribe to our YouTube channel to get notified when new content is available.</p>",
       "published": true,
       "order": 6,
       "sections": [
@@ -236,14 +279,17 @@
           "padding": "large",
           "alignment": "center",
           "maxWidth": "4xl",
-          "title": "Church Media",
-          "content": "<p>View photos and videos from our church events, services, and community activities. See the life of our church family in action.</p><p>We're currently updating our media gallery. Check back soon for photos and videos from our services, events, and community activities.</p>",
+          "title": "Watch Online",
+          "content": "<p>View videos from our church services and events. Watch our services online and stay connected with our church family.</p><p>Subscribe to our YouTube channel to get notified when new content is available.</p>",
           "cta": {
             "text": "Get in Touch",
             "link": "/contact",
             "style": "primary"
           }
         }
+      ],
+      "heroMessages": [
+        "Catch up on services online"
       ]
     }
   ],
@@ -2780,6 +2826,14 @@
     "primaryColor": "#4BB170",
     "teamDescription": "EGCC is led by an Eldership Team. The team is led by our Senior Pastor John Watson who will seek God for the vision of the church.  We take responsibility together for the life and care of the church.  The Elders, with their wives, are supported by many others who take a leadership role whether that be in leading Worship, Ministry, Community Groups, Youth and Children's work and other church and community activities.",
     "teamHeroTitle": "Meet the Team",
+    "teamHeroSubtitle": "Serving the local church",
+    "teamHeroButtons": [
+      {
+        "text": "Get in touch",
+        "link": "#contact",
+        "style": "primary"
+      }
+    ],
     "youtubePlaylistId": "PLdwAHwd9IWZNBE3hCNZUecjxdYhwTpTVB",
     "youtubeChannelId": "UCqRV8s8Vzza9zScNpQz8CTw"
   },
@@ -2788,7 +2842,7 @@
       "id": "fresh-ground-coffee-house",
       "title": "Fresh Ground Coffee House",
       "description": "<p>Fresh Ground is our coffee shop which is open every week from Wednesday to Saturday from 9:30am to 2:00pm. Serving food and drink including the best coffee in Eltham.</p><p>This is a place where all can come and meet others. A real community cafe feel and activities that run for toddlers and olders.</p>",
-      "image": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066410/egcc/egcc/page-section-activities-freshground-section.png",
+      "image": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066389/egcc/egcc/img-activities-bg.jpg",
       "icon": "home",
       "timeInfo": "Wed-Sat: 9:30am - 2:00pm",
       "audience": "",
@@ -2800,7 +2854,7 @@
       "id": "jumping-beans",
       "title": "Jumping Beans",
       "description": "<p>Bring your child to Jumping Beans - a fun and safe space for children to play, learn, and make friends. A welcoming environment for families in our community.</p>",
-      "image": "",
+      "image": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066390/egcc/egcc/img-audio-bg.jpg",
       "icon": "smiley",
       "timeInfo": "",
       "audience": "For Children & Families",
@@ -2812,7 +2866,7 @@
       "id": "songs-of-the-sixties",
       "title": "Songs of the Sixties",
       "description": "<p>If you are older, you will enjoy Songs of the Sixties - a nostalgic gathering where we celebrate the music and memories of a golden era together.</p>",
-      "image": "",
+      "image": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066396/egcc/egcc/img-lightstock-60283.jpg",
       "icon": "music",
       "timeInfo": "",
       "audience": "For Older Adults",
@@ -2824,13 +2878,62 @@
       "id": "food-club",
       "title": "Food Club",
       "description": "<p>Weekly food available through the Food Club - a great way to get fresh food at a very low cost. Supporting our community with affordable, quality groceries.</p>",
-      "image": "",
+      "image": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066391/egcc/egcc/img-community-groups-bg.jpg",
       "icon": "shopping-cart",
       "timeInfo": "Weekly",
       "audience": "",
       "link": "",
       "linkText": "",
       "order": 3
+    }
+  ],
+  "communityGroups": [
+    {
+      "id": "tuesday-group",
+      "day": "Tuesday",
+      "time": "7:30 PM",
+      "description": "Join us for Bible study, prayer, and fellowship",
+      "iconColor": "primary",
+      "order": 0
+    },
+    {
+      "id": "wednesday-group",
+      "day": "Wednesday",
+      "time": "7:30 PM",
+      "description": "Connect with others and grow in faith together",
+      "iconColor": "brand-yellow",
+      "order": 1
+    },
+    {
+      "id": "friday-group-1",
+      "day": "Friday",
+      "time": "7:30 PM",
+      "description": "End your week with worship and community",
+      "iconColor": "brand-red",
+      "order": 2
+    },
+    {
+      "id": "friday-group-2",
+      "day": "Friday",
+      "time": "7:30 PM",
+      "description": "Another Friday group for your convenience",
+      "iconColor": "primary",
+      "order": 3
+    }
+  ],
+  "events": [
+    {
+      "id": "easter-service",
+      "title": "Easter Service",
+      "description": "",
+      "date": "2025-11-14",
+      "time": "12:00",
+      "location": "EGCC",
+      "image": "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066396/egcc/egcc/img-lightstock-60283.jpg",
+      "featured": true,
+      "published": true,
+      "order": 0,
+      "eventInfo": "<p>aaaaaaaa</p>"
     }
   ]
 }

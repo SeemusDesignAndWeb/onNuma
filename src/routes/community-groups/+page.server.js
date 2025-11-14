@@ -1,10 +1,11 @@
-import { getPage, getContactInfo } from '$lib/server/database';
+import { getPage, getContactInfo, getCommunityGroups } from '$lib/server/database';
 
 export const load = async () => {
 	const page = getPage('community-groups');
 	const contactInfo = getContactInfo();
+	const communityGroups = getCommunityGroups();
 	if (page) {
-		return { page, contactInfo };
+		return { page, contactInfo, communityGroups };
 	}
 	const fallbackPage = {
 		id: 'community-groups',
@@ -15,5 +16,5 @@ export const load = async () => {
 		sections: [],
 		published: true
 	};
-	return { page: fallbackPage, contactInfo };
+	return { page: fallbackPage, contactInfo, communityGroups };
 };

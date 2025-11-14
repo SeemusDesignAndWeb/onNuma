@@ -1,6 +1,8 @@
 <script lang="js">
 	import { onMount } from 'svelte';
 
+	export let params = {};
+
 	let contact = {
 		address: '',
 		phone: '',
@@ -229,7 +231,7 @@
 		<div class="bg-white p-6 rounded-lg shadow">
 			<h2 class="text-2xl font-bold mb-4">YouTube Video Settings</h2>
 			<p class="text-sm text-gray-600 mb-4">
-				Configure YouTube playlist to display videos on the media page.
+				Configure YouTube playlist to display videos on the online page.
 			</p>
 			<div class="space-y-4">
 				<div>

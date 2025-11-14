@@ -25,7 +25,15 @@ import {
 	getActivities,
 	getActivity,
 	saveActivity,
-	deleteActivity
+	deleteActivity,
+	getCommunityGroups,
+	getCommunityGroup,
+	saveCommunityGroup,
+	deleteCommunityGroup,
+	getEvents,
+	getEvent,
+	saveEvent,
+	deleteEvent
 } from '$lib/server/database';
 
 export const GET = async ({ url, cookies }) => {
@@ -52,6 +60,10 @@ export const GET = async ({ url, cookies }) => {
 				return json(getSettings());
 			case 'activities':
 				return json(id ? getActivity(id) : getActivities());
+			case 'community-groups':
+				return json(id ? getCommunityGroup(id) : getCommunityGroups());
+			case 'events':
+				return json(id ? getEvent(id) : getEvents());
 			default:
 				return json({ error: 'Invalid type' }, { status: 400 });
 		}
@@ -91,6 +103,12 @@ export const POST = async ({ request, cookies }) => {
 			case 'activity':
 				saveActivity(data);
 				return json({ success: true });
+			case 'community-group':
+				saveCommunityGroup(data);
+				return json({ success: true });
+			case 'event':
+				saveEvent(data);
+				return json({ success: true });
 			default:
 				return json({ error: 'Invalid type' }, { status: 400 });
 		}
@@ -125,6 +143,12 @@ export const DELETE = async ({ url, cookies }) => {
 				return json({ success: true });
 			case 'activity':
 				deleteActivity(id);
+				return json({ success: true });
+			case 'community-group':
+				deleteCommunityGroup(id);
+				return json({ success: true });
+			case 'event':
+				deleteEvent(id);
 				return json({ success: true });
 			default:
 				return json({ error: 'Invalid type' }, { status: 400 });

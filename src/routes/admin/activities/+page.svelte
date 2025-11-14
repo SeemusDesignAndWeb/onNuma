@@ -3,6 +3,8 @@
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
 
+	export let params = {};
+
 	let activities = [];
 	let loading = true;
 	let editing = null;

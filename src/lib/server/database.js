@@ -35,6 +35,8 @@ const defaultDatabase = {
 	heroSlides: [],
 	images: [],
 	podcasts: [],
+	communityGroups: [],
+	events: [],
 	contact: {
 		address: '542 Westhorne Avenue, Eltham, London, SE9 6RR',
 		phone: '020 8850 1331',
@@ -358,6 +360,80 @@ export function deletePodcast(id) {
 	const db = readDatabase();
 	db.podcasts = db.podcasts.filter((p) => p.id !== id);
 	writeDatabase(db);
+}
+
+// CRUD operations for Community Groups
+export function getCommunityGroups() {
+	const db = readDatabase();
+	if (!db.communityGroups) {
+		db.communityGroups = [];
+		writeDatabase(db);
+	}
+	return db.communityGroups || [];
+}
+
+export function getCommunityGroup(id) {
+	const db = readDatabase();
+	return db.communityGroups?.find((g) => g.id === id);
+}
+
+export function saveCommunityGroup(group) {
+	const db = readDatabase();
+	if (!db.communityGroups) {
+		db.communityGroups = [];
+	}
+	const index = db.communityGroups.findIndex((g) => g.id === group.id);
+	if (index >= 0) {
+		db.communityGroups[index] = group;
+	} else {
+		db.communityGroups.push(group);
+	}
+	writeDatabase(db);
+}
+
+export function deleteCommunityGroup(id) {
+	const db = readDatabase();
+	if (db.communityGroups) {
+		db.communityGroups = db.communityGroups.filter((g) => g.id !== id);
+		writeDatabase(db);
+	}
+}
+
+// CRUD operations for Events
+export function getEvents() {
+	const db = readDatabase();
+	if (!db.events) {
+		db.events = [];
+		writeDatabase(db);
+	}
+	return db.events || [];
+}
+
+export function getEvent(id) {
+	const db = readDatabase();
+	return db.events?.find((e) => e.id === id);
+}
+
+export function saveEvent(event) {
+	const db = readDatabase();
+	if (!db.events) {
+		db.events = [];
+	}
+	const index = db.events.findIndex((e) => e.id === event.id);
+	if (index >= 0) {
+		db.events[index] = event;
+	} else {
+		db.events.push(event);
+	}
+	writeDatabase(db);
+}
+
+export function deleteEvent(id) {
+	const db = readDatabase();
+	if (db.events) {
+		db.events = db.events.filter((e) => e.id !== id);
+		writeDatabase(db);
+	}
 }
 
 // Health check

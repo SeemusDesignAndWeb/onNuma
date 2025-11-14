@@ -1,5 +1,5 @@
 <script lang="js">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import ImagePicker from './ImagePicker.svelte';
 
@@ -13,6 +13,7 @@
 	let Quill = null;
 
 	let isUpdating = false;
+	let lastExternalValue = '';
 
 	onMount(async () => {
 		if (!browser) return;
@@ -21,6 +22,9 @@
 		const QuillModule = await import('quill');
 		Quill = QuillModule.default;
 		await import('quill/dist/quill.snow.css');
+
+		// Wait for DOM to be ready
+		await tick();
 
 		if (editorContainer) {
 			quill = new Quill(editorContainer, {
@@ -49,15 +53,17 @@
 			});
 
 			// Set initial content
-			if (value) {
-				quill.root.innerHTML = value;
-			}
+			const initialValue = value || '';
+			quill.root.innerHTML = initialValue;
+			lastExternalValue = initialValue;
 
 			// Update value when content changes
 			quill.on('text-change', () => {
 				if (quill && !isUpdating) {
 					isUpdating = true;
-					value = quill.root.innerHTML;
+					const newContent = quill.root.innerHTML;
+					value = newContent;
+					lastExternalValue = newContent;
 					// Use setTimeout to reset flag after Svelte processes the update
 					setTimeout(() => {
 						isUpdating = false;
@@ -73,13 +79,20 @@
 		}
 	});
 
-	// Update editor when value changes externally
-	$: if (quill && value !== quill.root.innerHTML && !isUpdating) {
-		isUpdating = true;
-		quill.root.innerHTML = value || '';
-		setTimeout(() => {
-			isUpdating = false;
-		}, 0);
+	// Update editor when value changes externally (but only if it's actually different)
+	// Only update if the value changed from outside (not from our own text-change handler)
+	$: if (quill && !isUpdating && value !== lastExternalValue) {
+		const currentContent = quill.root.innerHTML;
+		const newValue = value || '';
+		// Only update if the value is actually different from what we have
+		if (currentContent !== newValue) {
+			isUpdating = true;
+			quill.root.innerHTML = newValue;
+			lastExternalValue = newValue;
+			setTimeout(() => {
+				isUpdating = false;
+			}, 0);
+		}
 	}
 
 	function handleImageSelect(imagePath) {

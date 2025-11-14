@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 
 	export let data;
+	export let params = {};
 
 	let currentMessage = 0;
 	let autoplayInterval = null;
@@ -37,51 +38,51 @@
 {#if data.page?.heroImage}
 	<section
 		id="hero"
-		class="relative h-[60vh] min-h-[500px] overflow-hidden"
+		class="relative h-[50vh] overflow-hidden"
 		style="background-image: url('{data.page.heroImage}'); background-size: cover; background-position: center;"
 	>
 		<div
 			class="absolute inset-0 bg-black"
 			style="opacity: {(data.page.heroOverlay || 40) / 100};"
 		></div>
-		<div class="relative h-full flex items-center">
+		<div class="relative h-full flex items-end pb-12">
 			<div class="container mx-auto px-4">
-				<div class="max-w-3xl">
+				<div class="max-w-2xl">
 					{#if data.page.heroTitle}
-						<h1 class="text-white text-5xl md:text-6xl font-bold mb-6 animate-fade-in leading-tight">
+						<h1 class="text-white text-4xl md:text-5xl font-bold mb-3 animate-fade-in">
 							{@html data.page.heroTitle}
 						</h1>
 					{/if}
 					{#if data.page.heroSubtitle}
-						<p class="text-white text-xl md:text-2xl font-light mb-6 animate-fade-in">
+						<p class="text-white text-lg md:text-xl mb-3 animate-fade-in">
 							{data.page.heroSubtitle}
 						</p>
 					{/if}
 					{#if data.page.heroMessages && data.page.heroMessages.length > 0}
-						<div class="relative h-16 mb-8">
+						<div class="relative h-12 mb-4">
 							{#each data.page.heroMessages as msg, index}
 								<div
 									class="absolute inset-0 transition-opacity duration-1000"
 									class:opacity-0={currentMessage !== index}
 									class:opacity-100={currentMessage === index}
 								>
-									<p class="text-white text-xl md:text-2xl font-light animate-fade-in">
+									<p class="text-white text-lg md:text-xl font-light animate-fade-in">
 										{msg}
 									</p>
 								</div>
 							{/each}
 						</div>
 					{/if}
-					<div class="flex flex-wrap gap-4 mt-8">
+					<div class="flex flex-wrap gap-3 mt-4">
 						<a
 							href="#intro"
-							class="px-8 py-4 bg-brand-blue text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
+							class="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg text-sm"
 						>
 							Learn More
 						</a>
 						<a
 							href="#contact"
-							class="px-8 py-4 bg-white text-brand-blue rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
+							class="px-6 py-3 bg-white text-primary rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg text-sm"
 						>
 							Join a Group
 						</a>
@@ -119,7 +120,7 @@
 			<div class="max-w-6xl mx-auto">
 				<div class="grid md:grid-cols-2 gap-12 items-center">
 					<div>
-						<span class="text-brand-blue text-sm font-semibold uppercase tracking-wider mb-2 block">Our Approach</span>
+						<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">Our Approach</span>
 						{#if detailsSection.content}
 							<div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
 								{@html detailsSection.content}
@@ -129,7 +130,7 @@
 							<div class="mt-8">
 								<a
 									href={detailsSection.cta.link}
-									class="inline-block px-8 py-4 bg-brand-blue text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
+									class="inline-block px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
 								>
 									{detailsSection.cta.text}
 								</a>
@@ -138,7 +139,7 @@
 					</div>
 					<div class="flex justify-center md:justify-end">
 						<div class="relative w-full max-w-lg">
-							<div class="absolute -inset-4 bg-brand-blue/20 rounded-2xl transform rotate-3"></div>
+							<div class="absolute -inset-4 bg-primary/20 rounded-2xl transform rotate-3"></div>
 							<img
 								src="https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066391/egcc/egcc/img-community-groups-bg.jpg"
 								alt="Community Groups"
@@ -165,91 +166,37 @@
 					Find a group that fits your schedule
 				</p>
 			</div>
-			<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-				<!-- Tuesday Group -->
-				<div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-700">
-					<div class="flex items-center justify-between mb-4">
-						<div class="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center">
-							<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
+			{#if data.communityGroups && data.communityGroups.length > 0}
+				<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+					{#each data.communityGroups.sort((a, b) => (a.order || 0) - (b.order || 0)) as group}
+						{@const iconColor = group.iconColor || 'primary'}
+						{@const iconColorClass = iconColor === 'primary' ? 'primary' : iconColor === 'brand-yellow' ? 'brand-yellow' : iconColor === 'brand-red' ? 'brand-red' : iconColor === 'brand-blue' ? 'brand-blue' : 'primary'}
+						<div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-700">
+							<div class="flex items-center justify-between mb-4">
+								<div class="w-12 h-12 rounded-full flex items-center justify-center {iconColorClass === 'primary' ? 'bg-primary/10' : iconColorClass === 'brand-yellow' ? 'bg-brand-yellow/10' : iconColorClass === 'brand-red' ? 'bg-brand-red/10' : iconColorClass === 'brand-blue' ? 'bg-brand-blue/10' : 'bg-primary/10'}">
+									<svg class="w-6 h-6 {iconColorClass === 'primary' ? 'text-primary' : iconColorClass === 'brand-yellow' ? 'text-brand-yellow' : iconColorClass === 'brand-red' ? 'text-brand-red' : iconColorClass === 'brand-blue' ? 'text-brand-blue' : 'text-primary'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									</svg>
+								</div>
+							</div>
+							<h3 class="text-xl font-bold text-white mb-2">{group.day}</h3>
+							<div class="flex items-center gap-2 text-primary font-semibold mb-4">
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								<span>{group.time}</span>
+							</div>
+							{#if group.description}
+								<p class="text-gray-300 text-sm">
+									{group.description}
+								</p>
+							{/if}
 						</div>
-					</div>
-					<h3 class="text-xl font-bold text-white mb-2">Tuesday</h3>
-					<div class="flex items-center gap-2 text-primary font-semibold mb-4">
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-						<span>7:30 PM</span>
-					</div>
-					<p class="text-gray-300 text-sm">
-						Join us for Bible study, prayer, and fellowship
-					</p>
+					{/each}
 				</div>
-
-				<!-- Wednesday Group -->
-				<div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-700">
-					<div class="flex items-center justify-between mb-4">
-						<div class="w-12 h-12 bg-brand-yellow/10 rounded-full flex items-center justify-center">
-							<svg class="w-6 h-6 text-brand-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-						</div>
-					</div>
-					<h3 class="text-xl font-bold text-white mb-2">Wednesday</h3>
-					<div class="flex items-center gap-2 text-primary font-semibold mb-4">
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-						<span>7:30 PM</span>
-					</div>
-					<p class="text-gray-300 text-sm">
-						Connect with others and grow in faith together
-					</p>
-				</div>
-
-				<!-- Friday Group 1 -->
-				<div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-700">
-					<div class="flex items-center justify-between mb-4">
-						<div class="w-12 h-12 bg-brand-red/10 rounded-full flex items-center justify-center">
-							<svg class="w-6 h-6 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-						</div>
-					</div>
-					<h3 class="text-xl font-bold text-white mb-2">Friday</h3>
-					<div class="flex items-center gap-2 text-primary font-semibold mb-4">
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-						<span>7:30 PM</span>
-					</div>
-					<p class="text-gray-300 text-sm">
-						End your week with worship and community
-					</p>
-				</div>
-
-				<!-- Friday Group 2 -->
-				<div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-700">
-					<div class="flex items-center justify-between mb-4">
-						<div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-							<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-						</div>
-					</div>
-					<h3 class="text-xl font-bold text-white mb-2">Friday</h3>
-					<div class="flex items-center gap-2 text-primary font-semibold mb-4">
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-						<span>7:30 PM</span>
-					</div>
-					<p class="text-gray-300 text-sm">
-						Another Friday group for your convenience
-					</p>
-				</div>
-			</div>
+			{:else}
+				<p class="text-gray-300 text-center">No community groups scheduled at this time.</p>
+			{/if}
 		</div>
 	</div>
 </section>
@@ -312,23 +259,8 @@
 	</div>
 </section>
 
-<!-- Contact Form Section -->
-<section id="contact" class="py-20 bg-gray-50">
-	<div class="container mx-auto px-4">
-		<div class="max-w-4xl mx-auto">
-			<div class="text-center mb-12">
-				<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">Get in Touch</span>
-				<h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-					Join a Community Group
-				</h2>
-				<p class="text-xl text-gray-600">
-					Interested in joining a group? Have questions? We'd love to help you find the right fit.
-				</p>
-			</div>
-			<Contact contactInfo={data.contactInfo} />
-		</div>
-	</div>
-</section>
+<!-- Contact Section -->
+<Contact contactInfo={data.contactInfo} />
 
 <Footer />
 

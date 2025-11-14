@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 
 	export let data;
+	export let params = {};
 
 	let currentMessage = 0;
 	let autoplayInterval = null;
@@ -36,38 +37,51 @@
 {#if data.page?.heroImage}
 	<section
 		id="hero"
-		class="relative h-[60vh] min-h-[500px] overflow-hidden"
+		class="relative h-[50vh] overflow-hidden"
 		style="background-image: url('{data.page.heroImage}'); background-size: cover; background-position: center;"
 	>
 		<div
 			class="absolute inset-0 bg-black"
 			style="opacity: {(data.page.heroOverlay || 40) / 100};"
 		></div>
-		<div class="relative h-full flex items-center">
+		<div class="relative h-full flex items-end pb-12">
 			<div class="container mx-auto px-4">
-				<div class="max-w-3xl">
+				<div class="max-w-2xl">
 					{#if data.page.heroTitle}
-						<h1 class="text-white text-5xl md:text-6xl font-bold mb-6 animate-fade-in leading-tight">
+						<h1 class="text-white text-4xl md:text-5xl font-bold mb-3 animate-fade-in">
 							{@html data.page.heroTitle}
 						</h1>
 					{/if}
 					{#if data.page.heroSubtitle}
-						<p class="text-white text-xl md:text-2xl font-light mb-6 animate-fade-in">
+						<p class="text-white text-lg md:text-xl mb-4 animate-fade-in">
 							{data.page.heroSubtitle}
 						</p>
 					{/if}
 					{#if data.page.heroMessages && data.page.heroMessages.length > 0}
-						<div class="relative h-16 mb-8">
+						<div class="relative h-12 mb-4">
 							{#each data.page.heroMessages as msg, index}
 								<div
 									class="absolute inset-0 transition-opacity duration-1000"
 									class:opacity-0={currentMessage !== index}
 									class:opacity-100={currentMessage === index}
 								>
-									<p class="text-white text-xl md:text-2xl font-light animate-fade-in">
+									<p class="text-white text-lg md:text-xl font-light animate-fade-in">
 										{msg}
 									</p>
 								</div>
+							{/each}
+						</div>
+					{/if}
+					{#if data.page.heroButtons && data.page.heroButtons.length > 0}
+						<div class="flex flex-wrap gap-3 mt-4">
+							{#each data.page.heroButtons as button}
+								<a
+									href={button.link}
+									target={button.target || '_self'}
+									class="px-6 py-3 {button.style === 'secondary' ? 'bg-white text-primary hover:bg-gray-100' : 'bg-primary text-white hover:bg-opacity-90'} rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg text-sm"
+								>
+									{button.text}
+								</a>
 							{/each}
 						</div>
 					{/if}

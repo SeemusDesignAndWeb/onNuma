@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 
 	export let data;
+	export let params = {};
 
 	let currentMessage = 0;
 	let autoplayInterval = null;
@@ -46,46 +47,49 @@
 {#if data.page?.heroImage}
 	<section
 		id="hero"
-		class="relative h-[60vh] min-h-[500px] overflow-hidden"
+		class="relative h-[50vh] overflow-hidden"
 		style="background-image: url('{data.page.heroImage}'); background-size: cover; background-position: center;"
 	>
 		<div
 			class="absolute inset-0 bg-black"
 			style="opacity: {(data.page.heroOverlay || 40) / 100};"
 		></div>
-		<div class="relative h-full flex items-center">
+		<div class="relative h-full flex items-end pb-12">
 			<div class="container mx-auto px-4">
-				<div class="max-w-3xl">
+				<div class="max-w-2xl">
 					{#if data.page.heroTitle}
-						<h1 class="text-white text-5xl md:text-6xl font-bold mb-6 animate-fade-in leading-tight">
+						<h1 class="text-white text-4xl md:text-5xl font-bold mb-3 animate-fade-in">
 							{@html data.page.heroTitle}
 						</h1>
 					{/if}
+					{#if data.page.heroSubtitle}
+						<p class="text-white text-lg md:text-xl mb-3 animate-fade-in">{data.page.heroSubtitle}</p>
+					{/if}
 					{#if data.page.heroMessages && data.page.heroMessages.length > 0}
-						<div class="relative h-16 mb-8">
+						<div class="relative h-12 mb-4">
 							{#each data.page.heroMessages as msg, index}
 								<div
 									class="absolute inset-0 transition-opacity duration-1000"
 									class:opacity-0={currentMessage !== index}
 									class:opacity-100={currentMessage === index}
 								>
-									<p class="text-white text-xl md:text-2xl font-light animate-fade-in">
+									<p class="text-white text-lg md:text-xl font-light animate-fade-in">
 										{msg}
 									</p>
 								</div>
 							{/each}
 						</div>
 					{/if}
-					<div class="flex flex-wrap gap-4 mt-8">
+					<div class="flex flex-wrap gap-3 mt-4">
 						<a
 							href="#welcome"
-							class="px-8 py-4 bg-brand-blue text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
+							class="px-6 py-3 bg-brand-blue text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg text-sm"
 						>
 							Get Started
 						</a>
 						<a
 							href="#contact"
-							class="px-8 py-4 bg-white text-brand-blue rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
+							class="px-6 py-3 bg-white text-brand-blue rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg text-sm"
 						>
 							Get in Touch
 						</a>
@@ -223,59 +227,59 @@
 {/if}
 
 <!-- For All Ages Section -->
-<section class="py-20 bg-gradient-to-br from-primary/5 via-white to-gray-50">
+<section class="py-20 bg-gray-900">
 	<div class="container mx-auto px-4">
 		<div class="max-w-6xl mx-auto">
 			<div class="grid md:grid-cols-2 gap-12 items-center">
 				<div>
-					<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">For Everyone</span>
-					<h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+					<span class="text-brand-blue text-sm font-semibold uppercase tracking-wider mb-2 block">For Everyone</span>
+					<h2 class="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
 						For All Ages
 					</h2>
-					<div class="space-y-6 text-gray-700 leading-relaxed">
+					<div class="space-y-6 text-gray-300 leading-relaxed">
 						<div>
-							<h4 class="text-xl font-bold text-gray-900 mb-2">Young and old are welcome</h4>
+							<h4 class="text-xl font-bold text-white mb-2">Young and old are welcome</h4>
 							<p>
 								Youth and children go out to their own groups instead of the bible talk. We are a family church so we love the little ones and they are free to be involved in our worship together.
 							</p>
 						</div>
 						<div class="grid grid-cols-2 gap-4 pt-4">
-							<div class="bg-white rounded-lg p-4 shadow-sm">
-								<div class="text-2xl font-bold text-primary mb-1">Adventurers</div>
-								<div class="text-sm text-gray-600">Up to 7 years</div>
+							<div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+								<div class="text-2xl font-bold text-brand-blue mb-1">Adventurers</div>
+								<div class="text-sm text-gray-300">Up to 7 years</div>
 							</div>
-							<div class="bg-white rounded-lg p-4 shadow-sm">
-								<div class="text-2xl font-bold text-primary mb-1">Explorers</div>
-								<div class="text-sm text-gray-600">8-14 years</div>
+							<div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+								<div class="text-2xl font-bold text-brand-blue mb-1">Explorers</div>
+								<div class="text-sm text-gray-300">8-14 years</div>
 							</div>
 						</div>
-						<p class="text-sm text-gray-600 italic">
+						<p class="text-sm text-gray-400 italic">
 							Our older teenagers join the main church in the meeting.
 						</p>
 					</div>
 				</div>
 				<div class="relative">
-					<div class="absolute -inset-4 bg-primary/10 rounded-3xl transform -rotate-3"></div>
-					<div class="relative bg-white rounded-2xl p-8 shadow-2xl">
+					<div class="absolute -inset-4 bg-brand-blue/20 rounded-3xl transform -rotate-3"></div>
+					<div class="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 shadow-2xl border border-gray-700">
 						<div class="text-center">
-							<div class="text-6xl font-bold text-primary mb-2">11:00</div>
-							<div class="text-xl text-gray-700 mb-4">Sunday Service</div>
-							<div class="text-sm text-gray-600 mb-6">Doors open at 10:30am</div>
+							<div class="text-6xl font-bold text-brand-blue mb-2">11:00</div>
+							<div class="text-xl text-white mb-4">Sunday Service</div>
+							<div class="text-sm text-gray-300 mb-6">Doors open at 10:30am</div>
 							<div class="space-y-2 text-left">
-								<div class="flex items-center text-gray-700">
-									<svg class="w-5 h-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<div class="flex items-center text-gray-300">
+									<svg class="w-5 h-5 text-brand-blue mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 									</svg>
 									<span>Refreshments from 10:30am</span>
 								</div>
-								<div class="flex items-center text-gray-700">
-									<svg class="w-5 h-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<div class="flex items-center text-gray-300">
+									<svg class="w-5 h-5 text-brand-blue mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
 									</svg>
 									<span>Worship and message</span>
 								</div>
-								<div class="flex items-center text-gray-700">
-									<svg class="w-5 h-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<div class="flex items-center text-gray-300">
+									<svg class="w-5 h-5 text-brand-blue mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
 									</svg>
 									<span>Children's groups available</span>
@@ -310,23 +314,8 @@
 	</div>
 </section>
 
-<!-- Contact Form Section -->
-<section id="contact" class="py-20 bg-gray-50">
-	<div class="container mx-auto px-4">
-		<div class="max-w-4xl mx-auto">
-			<div class="text-center mb-12">
-				<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">Get in Touch</span>
-				<h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-					We'd Love to Hear From You
-				</h2>
-				<p class="text-xl text-gray-600">
-					Have questions? Want to know more? Drop us a message and we'll get back to you.
-				</p>
-			</div>
-			<Contact contactInfo={data.contactInfo} />
-		</div>
-	</div>
-</section>
+<!-- Contact Section -->
+<Contact contactInfo={data.contactInfo} />
 
 <Footer />
 
