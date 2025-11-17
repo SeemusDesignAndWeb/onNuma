@@ -10,7 +10,8 @@
 		"import-podcasts": "node scripts/import-podcasts.js",
 		"migrate-images": "node scripts/migrate-to-cloudinary.js",
 		"sync-cloudinary-images": "node scripts/sync-cloudinary-images.js",
-		"recover-database": "node scripts/recover-database.js"
+		"recover-database": "node scripts/recover-database.js",
+		"restore-to-railway": "node scripts/restore-to-railway.js"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",
