@@ -11,7 +11,13 @@ export const load = async () => {
 			title: page.title,
 			hasSections: !!page.sections,
 			sectionsCount: page.sections?.length || 0,
-			sectionsTypes: page.sections?.map(s => s.type) || []
+			sectionsTypes: page.sections?.map(s => s.type) || [],
+			sectionsDetails: page.sections?.map(s => ({
+				type: s.type,
+				title: s.title,
+				hasContent: !!s.content,
+				contentLength: s.content?.length || 0
+			})) || []
 		});
 		return { page, contactInfo };
 	}

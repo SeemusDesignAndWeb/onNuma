@@ -25,6 +25,18 @@
 	$: historySection = sections.find((s, i) => s.type === 'text' && i === 0);
 	$: otherSections = sections.filter((s, i) => s.type === 'text' && i > 0);
 	$: valuesSection = sections.find(s => s.type === 'values');
+	
+	// Debug logging in browser console
+	$: {
+		if (typeof window !== 'undefined') {
+			console.log('[Church Page Frontend] Sections:', {
+				total: sections.length,
+				historySection: historySection ? { type: historySection.type, title: historySection.title, hasContent: !!historySection.content } : null,
+				otherSectionsCount: otherSections.length,
+				valuesSection: valuesSection ? { type: valuesSection.type, title: valuesSection.title, valuesCount: valuesSection.values?.length || 0 } : null
+			});
+		}
+	}
 </script>
 
 <svelte:head>
