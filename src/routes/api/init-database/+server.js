@@ -28,16 +28,22 @@ export async function POST({ request }) {
 		
 		// Get database content from request body
 		const body = await request.json();
-		const dbContent = body.database || body.content;
 		
-		if (!dbContent) {
+		// Accept either a JSON object directly, or a string that needs parsing
+		let parsed;
+		if (body.database) {
+			// If it's a string, parse it; if it's already an object, use it
+			parsed = typeof body.database === 'string' ? JSON.parse(body.database) : body.database;
+		} else if (body.content) {
+			parsed = typeof body.content === 'string' ? JSON.parse(body.content) : body.content;
+		} else if (body.pages || body.images || body.events) {
+			// If the body itself is the database object
+			parsed = body;
+		} else {
 			return json({ 
-				error: 'Database content required in body.database or body.content'
+				error: 'Database content required in body.database, body.content, or as root object'
 			}, { status: 400 });
 		}
-		
-		// Validate JSON
-		const parsed = JSON.parse(dbContent);
 		
 		// Write to volume
 		writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), 'utf-8');
