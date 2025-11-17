@@ -10,10 +10,16 @@
 	let editing = null;
 	let showForm = false;
 	let showImagePicker = false;
+	let currentSectionIndex = null;
 
 	onMount(async () => {
 		await loadPages();
 	});
+
+	// Reset section index when image picker closes without selection
+	$: if (!showImagePicker && currentSectionIndex !== null) {
+		currentSectionIndex = null;
+	}
 
 	async function loadPages() {
 		try {
@@ -93,7 +99,12 @@
 	}
 
 	function handleImageSelect(imagePath) {
-		if (editing) {
+		if (currentSectionIndex !== null && editing && editing.sections) {
+			// Setting image for a section
+			editing.sections[currentSectionIndex].image = imagePath;
+			currentSectionIndex = null;
+		} else if (editing) {
+			// Setting image for hero
 			editing.heroImage = imagePath;
 		}
 		showImagePicker = false;
@@ -322,6 +333,37 @@
 											class="w-full px-3 py-2 border rounded"
 											placeholder="Section title"
 										/>
+									</div>
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Image URL</label>
+										<div class="flex gap-2">
+											<input
+												type="text"
+												bind:value={section.image}
+												class="flex-1 px-3 py-2 border rounded"
+												placeholder="Image URL (optional)"
+											/>
+											<button
+												type="button"
+												on:click={() => {
+													showImagePicker = true;
+													// Store which section we're editing
+													currentSectionIndex = sectionIndex;
+												}}
+												class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+											>
+												Select Image
+											</button>
+										</div>
+										{#if section.image}
+											<div class="mt-2">
+												<img
+													src={section.image}
+													alt="Preview"
+													class="max-w-xs h-32 object-cover rounded border"
+												/>
+											</div>
+										{/if}
 									</div>
 									<div class="relative mb-3" style="height: 300px;">
 										<label class="block text-xs font-medium mb-1 text-gray-600">Content</label>

@@ -120,7 +120,9 @@
 			<div class="max-w-6xl mx-auto">
 				<div class="grid md:grid-cols-2 gap-12 items-center">
 					<div>
-						<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">Our Approach</span>
+						<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">
+							{detailsSection.title || "Our Approach"}
+						</span>
 						{#if detailsSection.content}
 							<div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
 								{@html detailsSection.content}
@@ -141,7 +143,7 @@
 						<div class="relative w-full max-w-lg">
 							<div class="absolute -inset-4 bg-primary/20 rounded-2xl transform rotate-3"></div>
 							<img
-								src="https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066391/egcc/egcc/img-community-groups-bg.jpg"
+								src={detailsSection.image || "https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066391/egcc/egcc/img-community-groups-bg.jpg"}
 								alt="Community Groups"
 								class="relative rounded-2xl shadow-2xl w-full h-auto"
 							/>
