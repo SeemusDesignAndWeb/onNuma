@@ -282,7 +282,7 @@
 						+ Add Message
 					</button>
 				</div>
-				{#if editing.id !== 'im-new' && editing.id !== 'church'}
+				{#if !editing.sections || editing.sections.length === 0}
 					<div class="relative mb-4">
 						<label class="block text-sm font-medium mb-1">Content</label>
 						<div class="relative" style="height: 400px;">
@@ -291,45 +291,29 @@
 					</div>
 				{/if}
 				
-				{#if editing.id === 'im-new' && editing.sections}
+				{#if editing.sections && editing.sections.length > 0}
 					<div class="border-t pt-6 mt-6">
 						<h3 class="text-lg font-semibold mb-4">Page Sections</h3>
 						
 						{#each editing.sections as section, sectionIndex}
-							{#if section.type === 'welcome'}
-								<div class="mb-6 p-4 bg-gray-50 rounded">
-									<label class="block text-sm font-medium mb-2">Welcome Section Content</label>
-									<div class="relative" style="height: 300px;">
-										<RichTextEditor bind:value={section.content} height="300px" />
-									</div>
+							<div class="mb-6 p-4 bg-gray-50 rounded border">
+								<div class="flex justify-between items-center mb-3">
+									<h4 class="text-sm font-semibold text-gray-700">
+										Section {sectionIndex + 1}: {section.type || 'text'}
+									</h4>
+									<button
+										type="button"
+										on:click={() => {
+											editing.sections = editing.sections.filter((_, i) => i !== sectionIndex);
+											editing = editing;
+										}}
+										class="text-red-600 hover:text-red-800 text-xs px-2 py-1 bg-red-50 rounded"
+									>
+										Remove
+									</button>
 								</div>
-							{:else if section.type === 'columns' && section.columns}
-								<div class="mb-6 p-4 bg-gray-50 rounded">
-									<label class="block text-sm font-medium mb-4">What to Expect Columns</label>
-									{#each section.columns as column, colIndex}
-										<div class="mb-4">
-											<label class="block text-sm font-medium mb-2">{column.title || `Column ${colIndex + 1}`}</label>
-											<div class="relative" style="height: 250px;">
-												<RichTextEditor bind:value={column.content} height="250px" />
-											</div>
-										</div>
-									{/each}
-								</div>
-							{/if}
-						{/each}
-					</div>
-				{/if}
-				
-				{#if editing.id === 'community-groups' && editing.sections}
-					<div class="border-t pt-6 mt-6">
-						<h3 class="text-lg font-semibold mb-4">Page Sections</h3>
-						
-						{#each editing.sections as section, sectionIndex}
-							{#if section.type === 'text'}
-								<div class="mb-6 p-4 bg-gray-50 rounded">
-									<label class="block text-sm font-medium mb-2">
-										{sectionIndex === 0 ? 'Intro Section' : sectionIndex === 1 ? 'Details Section' : `Section ${sectionIndex + 1}`}
-									</label>
+								
+								{#if section.type === 'text'}
 									<div class="mb-3">
 										<label class="block text-xs font-medium mb-1 text-gray-600">Title</label>
 										<input
@@ -339,13 +323,27 @@
 											placeholder="Section title"
 										/>
 									</div>
-									<div class="relative" style="height: 300px;">
-										<RichTextEditor bind:value={section.content} height="300px" />
+									<div class="relative mb-3" style="height: 300px;">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Content</label>
+										<RichTextEditor bind:value={section.content} height="280px" />
 									</div>
-									{#if sectionIndex === 1}
+									{#if section.cta}
 										{@const ctaLink = section.cta?.link || ''}
 										{@const ctaText = section.cta?.text || ''}
-										<div class="mt-3">
+										<div class="mt-3 p-3 bg-white rounded border">
+											<div class="flex justify-between items-center mb-2">
+												<label class="block text-xs font-medium text-gray-600">Call to Action</label>
+												<button
+													type="button"
+													on:click={() => {
+														section.cta = undefined;
+														editing = editing;
+													}}
+													class="text-red-600 hover:text-red-800 text-xs"
+												>
+													Remove CTA
+												</button>
+											</div>
 											<label class="block text-xs font-medium mb-1 text-gray-600">CTA Link</label>
 											<input
 												type="text"
@@ -353,7 +351,7 @@
 												on:input={(e) => {
 													if (!section.cta) section.cta = { link: '', text: '' };
 													section.cta.link = e.target.value;
-													editing = editing; // Trigger reactivity
+													editing = editing;
 												}}
 												class="w-full px-3 py-2 border rounded mb-2"
 												placeholder="e.g., /contact or #contact"
@@ -365,65 +363,72 @@
 												on:input={(e) => {
 													if (!section.cta) section.cta = { link: '', text: '' };
 													section.cta.text = e.target.value;
-													editing = editing; // Trigger reactivity
+													editing = editing;
 												}}
 												class="w-full px-3 py-2 border rounded"
 												placeholder="e.g., Get Started"
 											/>
 										</div>
+									{:else}
+										<button
+											type="button"
+											on:click={() => {
+												section.cta = { link: '', text: '' };
+												editing = editing;
+											}}
+											class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
+										>
+											+ Add Call to Action
+										</button>
 									{/if}
-								</div>
-							{/if}
-						{/each}
-						
-						{#if !editing.sections || editing.sections.length < 2}
-							<button
-								type="button"
-								on:click={() => {
-									if (!editing.sections) editing.sections = [];
-									const newSections = [...editing.sections];
-									if (newSections.length === 0) {
-										newSections.push({ type: 'text', title: '', content: '' });
-									}
-									if (newSections.length === 1) {
-										newSections.push({ type: 'text', title: '', content: '', cta: { link: '', text: '' } });
-									}
-									editing = { ...editing, sections: newSections };
-								}}
-								class="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-							>
-								Add Section
-							</button>
-						{/if}
-					</div>
-				{/if}
-				
-				{#if editing.id === 'church' && editing.sections}
-					<div class="border-t pt-6 mt-6">
-						<h3 class="text-lg font-semibold mb-4">Page Sections</h3>
-						
-						{#each editing.sections as section, sectionIndex}
-							{#if section.type === 'text'}
-								<div class="mb-6 p-4 bg-gray-50 rounded">
-									<label class="block text-sm font-medium mb-2">
-										{sectionIndex === 0 ? 'History Section' : `Section ${sectionIndex + 1}`}
-									</label>
-									<div class="mb-3">
-										<label class="block text-xs font-medium mb-1 text-gray-600">Title</label>
-										<input
-											type="text"
-											bind:value={section.title}
-											class="w-full px-3 py-2 border rounded"
-											placeholder="Section title"
-										/>
-									</div>
+								{:else if section.type === 'welcome'}
 									<div class="relative" style="height: 300px;">
-										<RichTextEditor bind:value={section.content} height="300px" />
+										<label class="block text-xs font-medium mb-1 text-gray-600">Welcome Section Content</label>
+										<RichTextEditor bind:value={section.content} height="280px" />
 									</div>
-								</div>
-							{:else if section.type === 'values'}
-								<div class="mb-6 p-4 bg-gray-50 rounded">
-									<label class="block text-sm font-medium mb-4">Our Values Section</label>
+								{:else if section.type === 'columns' && section.columns}
+									<label class="block text-xs font-medium mb-2 text-gray-600">Columns</label>
+									{#each section.columns as column, colIndex}
+										<div class="mb-4 p-3 bg-white rounded border">
+											<div class="flex justify-between items-center mb-2">
+												<label class="block text-xs font-medium text-gray-600">{column.title || `Column ${colIndex + 1}`}</label>
+												<button
+													type="button"
+													on:click={() => {
+														section.columns = section.columns.filter((_, i) => i !== colIndex);
+														editing = editing;
+													}}
+													class="text-red-600 hover:text-red-800 text-xs"
+												>
+													Remove
+												</button>
+											</div>
+											<div class="mb-2">
+												<label class="block text-xs font-medium mb-1 text-gray-600">Column Title</label>
+												<input
+													type="text"
+													bind:value={column.title}
+													class="w-full px-3 py-2 border rounded text-sm"
+													placeholder="Column title"
+												/>
+											</div>
+											<div class="relative" style="height: 200px;">
+												<RichTextEditor bind:value={column.content} height="180px" />
+											</div>
+										</div>
+									{/each}
+									<button
+										type="button"
+										on:click={() => {
+											if (!section.columns) section.columns = [];
+											section.columns = [...section.columns, { title: '', content: '' }];
+											editing = editing;
+										}}
+										class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
+									>
+										+ Add Column
+									</button>
+								{:else if section.type === 'values'}
 									<div class="mb-3">
 										<label class="block text-xs font-medium mb-1 text-gray-600">Section Title</label>
 										<input
@@ -493,43 +498,76 @@
 									>
 										+ Add Value
 									</button>
-								</div>
-							{/if}
+								{/if}
+							</div>
 						{/each}
 						
-						<button
-							type="button"
-							on:click={() => {
-								if (!editing.sections) editing.sections = [];
-								const newSections = [...editing.sections];
-								if (newSections.length === 0) {
-									newSections.push({ type: 'text', title: '', content: '' });
-								} else {
-									// Check if values section exists
-									const hasValues = newSections.some(s => s.type === 'values');
-									if (!hasValues) {
-										newSections.push({ 
-											type: 'values', 
-											title: 'Our Values',
-											description: 'We believe that God creates each movement of churches distinct, destined to fulfil a divinely appointed purpose for a specific time, with different emphasis according to the will of God.',
-											values: [
-												{ title: 'ENJOYING GOD', description: 'We want to be a joyful people, who enjoy and celebrate Jesus Christ as our Lord and saviour, knowing we are loved, accepted and made righteous by Him.' },
-												{ title: 'THE LORDSHIP OF CHRIST', description: 'We recognise the foundational significance of the simple truth that it is no longer I who live but Christ who lives in me. We must die to sin and our selfish desires and live new lives unto God.' },
-												{ title: 'SPIRIT & WORD', description: 'As churches we seek to walk in and minister in the power of the Holy Spirit. The Holy Spirit brings vitality to the life of a believer and a church and guides our decision making.' },
-												{ title: 'PRAYER', description: 'We believe in the vital importance of prayer in the life of a Christian and a church, prayer is the means by which we find the joy of the Lord and the knowledge of his will.' },
-												{ title: 'ORDINARY PEOPLE', description: 'We are humbled by the fact that Christ has entrusted the Gospel to us through the power of His Spirit to see broken lives restored and the lost saved.' },
-												{ title: 'THE CHURCH', description: 'We believe the manifold wisdom of God is displayed through the church, which is expressed through local churches.' },
-												{ title: 'ELDERSHIP', description: 'Jesus Christ reigns as head over His church, and He gives to His church elders to oversee and lead local churches under His authority.' }
-											]
-										});
-									}
-								}
-								editing = { ...editing, sections: newSections };
-							}}
-							class="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-						>
-							Add Values Section
-						</button>
+						<div class="flex gap-2 mt-4">
+							<button
+								type="button"
+								on:click={() => {
+									if (!editing.sections) editing.sections = [];
+									editing.sections = [...editing.sections, { type: 'text', title: '', content: '' }];
+									editing = editing;
+								}}
+								class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+							>
+								+ Add Text Section
+							</button>
+							{#if editing.id === 'im-new'}
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { type: 'welcome', content: '' }];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add Welcome Section
+								</button>
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { type: 'columns', columns: [{ title: '', content: '' }] }];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add Columns Section
+								</button>
+							{/if}
+							{#if editing.id === 'church'}
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										const hasValues = editing.sections.some(s => s.type === 'values');
+										if (!hasValues) {
+											editing.sections = [...editing.sections, { 
+												type: 'values', 
+												title: 'Our Values',
+												description: 'We believe that God creates each movement of churches distinct, destined to fulfil a divinely appointed purpose for a specific time, with different emphasis according to the will of God.',
+												values: [
+													{ title: 'ENJOYING GOD', description: 'We want to be a joyful people, who enjoy and celebrate Jesus Christ as our Lord and saviour, knowing we are loved, accepted and made righteous by Him.' },
+													{ title: 'THE LORDSHIP OF CHRIST', description: 'We recognise the foundational significance of the simple truth that it is no longer I who live but Christ who lives in me. We must die to sin and our selfish desires and live new lives unto God.' },
+													{ title: 'SPIRIT & WORD', description: 'As churches we seek to walk in and minister in the power of the Holy Spirit. The Holy Spirit brings vitality to the life of a believer and a church and guides our decision making.' },
+													{ title: 'PRAYER', description: 'We believe in the vital importance of prayer in the life of a Christian and a church, prayer is the means by which we find the joy of the Lord and the knowledge of his will.' },
+													{ title: 'ORDINARY PEOPLE', description: 'We are humbled by the fact that Christ has entrusted the Gospel to us through the power of His Spirit to see broken lives restored and the lost saved.' },
+													{ title: 'THE CHURCH', description: 'We believe the manifold wisdom of God is displayed through the church, which is expressed through local churches.' },
+													{ title: 'ELDERSHIP', description: 'Jesus Christ reigns as head over His church, and He gives to His church elders to oversee and lead local churches under His authority.' }
+												]
+											}];
+											editing = editing;
+										}
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add Values Section
+								</button>
+							{/if}
+						</div>
 					</div>
 				{/if}
 				<div class="relative mt-4">
