@@ -129,8 +129,15 @@
 
 	function handleImageSelect(imagePath) {
 		if (currentSectionIndex !== null && editing && editing.sections) {
-			// Setting image for a section
-			editing.sections[currentSectionIndex].image = imagePath;
+			// Setting image/logo for a section
+			const section = editing.sections[currentSectionIndex];
+			if (section.type === 'mlg') {
+				// For MLG sections, set the logo
+				section.logo = imagePath;
+			} else {
+				// For other sections, set the image
+				section.image = imagePath;
+			}
 			currentSectionIndex = null;
 		} else if (editing) {
 			// Setting image for hero
@@ -715,6 +722,68 @@
 											</button>
 										</div>
 									</div>
+								{:else if section.type === 'mlg'}
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Logo</label>
+										<div class="flex gap-2">
+											<input
+												type="text"
+												bind:value={section.logo}
+												class="flex-1 px-3 py-2 border rounded"
+												placeholder="Logo URL (optional)"
+											/>
+											<button
+												type="button"
+												on:click={() => {
+													showImagePicker = true;
+													currentSectionIndex = sectionIndex;
+												}}
+												class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+											>
+												Select Logo
+											</button>
+										</div>
+										{#if section.logo}
+											<div class="mt-2">
+												<img
+													src={section.logo}
+													alt="Logo Preview"
+													class="max-w-xs h-32 object-contain rounded border"
+												/>
+											</div>
+										{/if}
+									</div>
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Label (small text above title)</label>
+										<input
+											type="text"
+											bind:value={section.label}
+											class="w-full px-3 py-2 border rounded"
+											placeholder="e.g., Partnership"
+										/>
+									</div>
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Title</label>
+										<input
+											type="text"
+											bind:value={section.title}
+											class="w-full px-3 py-2 border rounded"
+											placeholder="e.g., Part of the MissionLifeGrace Network"
+										/>
+									</div>
+									<div class="relative mb-3" style="height: 300px;">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Content</label>
+										<RichTextEditor bind:value={section.content} height="280px" />
+									</div>
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Button Text</label>
+										<input
+											type="text"
+											bind:value={section.buttonText}
+											class="w-full px-3 py-2 border rounded"
+											placeholder="e.g., Visit Mission Life Grace"
+										/>
+									</div>
 								{/if}
 							</div>
 						{/each}
@@ -785,6 +854,24 @@
 								</button>
 							{/if}
 							{#if editing.id === 'church'}
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { 
+											type: 'mlg', 
+											logo: 'https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763397479/egcc/d79861b6-c071-4bb9-9665-299a4a7d20bf.svg',
+											label: 'Partnership',
+											title: 'Part of the MissionLifeGrace Network',
+											content: '<p>Our aim is to see the Kingdom of God come, where broken lives are restored, the lost are found and communities transformed. We believe every church exists to be part of God\'s mission to show the world Christ and that we are better equipped to do this in partnership with other churches.</p><p>As a network our focus is to encourage each other through sharing our hearts, ideas and lessons learned along the way, to challenge one another to stay true to the course and to invest in helping people fulfil their God given calling. We believe that by journeying together we can see God do great things in our nation and around the world.</p>',
+											buttonText: 'Visit Mission Life Grace'
+										}];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add Mission Life Grace Section
+								</button>
 								<button
 									type="button"
 									on:click={() => {

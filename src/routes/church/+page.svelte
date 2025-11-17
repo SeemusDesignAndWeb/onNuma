@@ -25,6 +25,7 @@
 	$: historySection = sections.find((s, i) => s.type === 'text' && i === 0);
 	$: otherSections = sections.filter((s, i) => s.type === 'text' && i > 0);
 	$: valuesSection = sections.find(s => s.type === 'values');
+	$: mlgSection = sections.find(s => s.type === 'mlg');
 	
 	// Debug logging in browser console
 	$: {
@@ -305,6 +306,93 @@
 						class="inline-block px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
 					>
 						Read Statement of Faith
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+{/if}
+
+<!-- Mission Life Grace Section -->
+{#if mlgSection}
+	<section class="py-20 bg-gradient-to-br from-gray-50 to-white">
+		<div class="container mx-auto px-4">
+			<div class="max-w-4xl mx-auto">
+				<div class="text-center mb-12">
+					{#if mlgSection.logo}
+						<div class="mb-6 flex justify-center">
+							<img
+								src={mlgSection.logo}
+								alt="Mission Life Grace"
+								class="h-24 md:h-32 w-auto"
+							/>
+						</div>
+					{/if}
+					{#if mlgSection.label}
+						<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">
+							{mlgSection.label}
+						</span>
+					{/if}
+					{#if mlgSection.title}
+						<h2 class="text-2xl md:text-4xl font-bold text-gray-900 mb-6">
+							{@html mlgSection.title}
+						</h2>
+					{/if}
+				</div>
+				{#if mlgSection.content}
+					<div class="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8 text-center">
+						{@html mlgSection.content}
+					</div>
+				{/if}
+				<div class="text-center">
+					<a
+						href="https://www.missionlifegrace.net/"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-block px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
+					>
+						{mlgSection.buttonText || 'Visit Mission Life Grace'}
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+{:else}
+	<!-- Fallback MLG section if not in database -->
+	<section class="py-20 bg-gradient-to-br from-gray-50 to-white">
+		<div class="container mx-auto px-4">
+			<div class="max-w-4xl mx-auto">
+				<div class="text-center mb-12">
+					<div class="mb-6 flex justify-center">
+						<img
+							src="https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763397479/egcc/d79861b6-c071-4bb9-9665-299a4a7d20bf.svg"
+							alt="Mission Life Grace"
+							class="h-24 md:h-32 w-auto"
+						/>
+					</div>
+					<span class="text-primary text-sm font-semibold uppercase tracking-wider mb-2 block">
+						Partnership
+					</span>
+					<h2 class="text-2xl md:text-4xl font-bold text-gray-900 mb-6">
+						Part of the MissionLifeGrace Network
+					</h2>
+				</div>
+				<div class="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8 text-center">
+					<p>
+						Our aim is to see the Kingdom of God come, where broken lives are restored, the lost are found and communities transformed. We believe every church exists to be part of God's mission to show the world Christ and that we are better equipped to do this in partnership with other churches.
+					</p>
+					<p>
+						As a network our focus is to encourage each other through sharing our hearts, ideas and lessons learned along the way, to challenge one another to stay true to the course and to invest in helping people fulfil their God given calling. We believe that by journeying together we can see God do great things in our nation and around the world.
+					</p>
+				</div>
+				<div class="text-center">
+					<a
+						href="https://www.missionlifegrace.net/"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-block px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
+					>
+						Visit Mission Life Grace
 					</a>
 				</div>
 			</div>
