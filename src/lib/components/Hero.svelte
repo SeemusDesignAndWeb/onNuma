@@ -126,7 +126,7 @@
 								{#each featuredEvents as event}
 									<a
 										href="/events/{event.id}"
-										class="block rounded-lg overflow-hidden shadow-2xl transition-all transform hover:scale-105 cursor-pointer group"
+										class="block rounded-lg overflow-hidden shadow-2xl transition-all transform hover:scale-105 cursor-pointer group event-glow"
 									>
 										<div class="relative h-[180px] md:h-[280px]">
 											{#if event.image}
@@ -236,6 +236,55 @@
 
 	.animate-fade-in {
 		animation: fade-in 1s ease-out;
+	}
+
+	@keyframes glow-pulse {
+		0%, 100% {
+			box-shadow: 0 0 40px rgba(75, 177, 112, 0.5), 0 0 80px rgba(75, 177, 112, 0.3), 0 0 120px rgba(75, 177, 112, 0.2), 0 0 160px rgba(75, 177, 112, 0.1);
+		}
+		50% {
+			box-shadow: 0 0 60px rgba(75, 177, 112, 0.7), 0 0 120px rgba(75, 177, 112, 0.5), 0 0 180px rgba(75, 177, 112, 0.3), 0 0 240px rgba(75, 177, 112, 0.15);
+		}
+	}
+
+	@keyframes glow-background {
+		0%, 100% {
+			opacity: 0.5;
+			filter: blur(16px);
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.8;
+			filter: blur(24px);
+			transform: scale(1.05);
+		}
+	}
+
+	.event-glow {
+		position: relative;
+		animation: glow-pulse 3s ease-in-out infinite;
+	}
+
+	.event-glow:hover {
+		animation: none;
+		box-shadow: 0 0 70px rgba(75, 177, 112, 0.8), 0 0 140px rgba(75, 177, 112, 0.5), 0 0 200px rgba(75, 177, 112, 0.3), 0 0 280px rgba(75, 177, 112, 0.15);
+	}
+
+	.event-glow::before {
+		content: '';
+		position: absolute;
+		inset: -8px;
+		border-radius: 0.5rem;
+		background: linear-gradient(135deg, rgba(75, 177, 112, 0.4), rgba(75, 177, 112, 0.15));
+		z-index: -1;
+		animation: glow-background 3s ease-in-out infinite;
+	}
+
+	.event-glow:hover::before {
+		animation: none;
+		opacity: 0.95;
+		filter: blur(28px);
+		transform: scale(1.08);
 	}
 </style>
 
