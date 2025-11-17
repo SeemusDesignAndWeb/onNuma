@@ -139,11 +139,6 @@
 											{:else}
 												<div class="absolute inset-0 bg-primary"></div>
 											{/if}
-											{#if event.title}
-												<div class="absolute inset-0 flex items-end p-4">
-													<h3 class="text-white font-bold text-lg md:text-xl leading-tight drop-shadow-lg">{event.title}</h3>
-												</div>
-											{/if}
 										</div>
 										<div class="bg-black px-4 py-2">
 											<div class="flex items-center gap-2 text-sm text-white">
