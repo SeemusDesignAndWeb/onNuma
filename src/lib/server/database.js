@@ -59,7 +59,8 @@ const defaultDatabase = {
 		teamDescription: 'EGCC is led by an Eldership Team. The team is led by our Lead Pastor John Watson who will seek God for the vision of the church.&nbsp; We take responsibility together for the life and care of the church.&nbsp; The Elders, with their wives, are supported by many others who take a leadership role whether that be in leading Worship, Ministry, Community Groups, Youth and Children\'s work and other church and community activities.',
 		teamHeroTitle: 'Developing leaders of tomorrow',
 		youtubePlaylistId: '',
-		youtubeChannelId: ''
+		youtubeChannelId: '',
+		spotifyShowUrl: 'https://open.spotify.com/show/7aczNe2FL8GCTxpaqM9WF1?si=9bab49974d2e48bc'
 	},
 	home: {
 		aboutLabel: 'Our Story',

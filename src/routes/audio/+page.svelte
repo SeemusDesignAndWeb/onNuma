@@ -1,12 +1,10 @@
 <script>
 	import Navbar from '$lib/components/Navbar.svelte';
 	import Footer from '$lib/components/Footer.svelte';
-	import PodcastPlayer from '$lib/components/PodcastPlayer.svelte';
 
 	export let data;
 	export let params = {};
 
-	let selectedPodcast = null;
 	let currentPage = 1;
 	let itemsPerPage = 12;
 	let startDate = '';
@@ -132,25 +130,17 @@
 				</div>
 			{/if}
 
-			{#if selectedPodcast}
-				<div class="mb-8">
-					<PodcastPlayer podcast={selectedPodcast} autoplay={false} />
-				</div>
-			{/if}
+			<!-- Removed PodcastPlayer - all links now go to Spotify -->
 
 			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{#each paginatedPodcasts as podcast}
 					{@const isMostRecent = mostRecentPodcast && podcast.id === mostRecentPodcast.id}
-					<div
-						class="relative rounded-lg shadow hover:shadow-lg transition-shadow p-6 cursor-pointer {isMostRecent ? 'bg-brand-blue' : 'bg-white'}"
-						on:click={() => selectedPodcast = podcast}
-						role="button"
-						tabindex="0"
-						on:keydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								selectedPodcast = podcast;
-							}
-						}}
+					<a
+						href={data.spotifyShowUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="relative rounded-lg shadow hover:shadow-lg transition-shadow p-6 cursor-pointer block {isMostRecent ? 'bg-brand-blue' : 'bg-white'}"
+						role="link"
 					>
 						<!-- Play Icon -->
 						<div class="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center {isMostRecent ? 'bg-white/20 text-white' : 'bg-brand-blue/10 text-brand-blue'}">
@@ -184,7 +174,7 @@
 								</span>
 							{/if}
 						</div>
-					</div>
+					</a>
 				{/each}
 			</div>
 
