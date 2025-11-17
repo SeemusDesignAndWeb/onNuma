@@ -104,7 +104,7 @@
 								</p>
 							{/if}
 							{#if slide.subtitle}
-								<h1 class="text-white text-3xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-8 leading-tight animate-fade-in">
+								<h1 class="text-white text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-8 leading-tight animate-fade-in">
 									{slide.subtitle}
 								</h1>
 							{/if}

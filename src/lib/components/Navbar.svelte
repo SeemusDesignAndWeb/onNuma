@@ -31,7 +31,7 @@
 </script>
 
 <nav
-	class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {menuOpen ? 'bg-brand-blue shadow-md' : scrolled ? 'bg-white shadow-md' : 'bg-white/70 backdrop-blur-sm'}"
+	class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {menuOpen ? 'bg-brand-blue shadow-md' : scrolled ? 'bg-white/90 backdrop-blur-sm shadow-md' : 'bg-white/70 backdrop-blur-sm'}"
 >
 	<div class="container mx-auto px-4">
 		<div class="flex items-center justify-between py-4">
@@ -40,7 +40,7 @@
 				<img
 					src="/images/egcc-color.png"
 					alt="Eltham Green Community Church"
-					class="h-12 w-auto transition-all duration-300 {menuOpen ? 'brightness-0 invert' : ''} {menuOpen || scrolled ? 'md:brightness-100 md:invert-0' : 'md:brightness-0 md:invert'}"
+					class="h-12 w-auto transition-all duration-300 {menuOpen ? 'brightness-0 invert' : ''} {menuOpen ? 'md:brightness-0 md:invert' : 'md:brightness-100 md:invert-0'}"
 				/>
 			</a>
 
@@ -73,7 +73,7 @@
 						<a
 							href="/im-new"
 							on:click={() => (menuOpen = false)}
-							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
+							class="transition-colors text-gray-900 hover:text-brand-blue"
 						>
 							I'm New
 						</a>
@@ -82,7 +82,7 @@
 						<a
 							href="/church"
 							on:click={() => (menuOpen = false)}
-							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
+							class="transition-colors text-gray-900 hover:text-brand-blue"
 						>
 							Church
 						</a>
@@ -91,7 +91,7 @@
 						<a
 							href="/team"
 							on:click={() => (menuOpen = false)}
-							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
+							class="transition-colors text-gray-900 hover:text-brand-blue"
 						>
 							Team
 						</a>
@@ -100,7 +100,7 @@
 						<a
 							href="/community-groups"
 							on:click={() => (menuOpen = false)}
-							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
+							class="transition-colors text-gray-900 hover:text-brand-blue"
 						>
 							Community Groups
 						</a>
@@ -109,7 +109,7 @@
 						<a
 							href="/activities"
 							on:click={() => (menuOpen = false)}
-							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
+							class="transition-colors text-gray-900 hover:text-brand-blue"
 						>
 							Activities
 						</a>
@@ -118,7 +118,7 @@
 						<a
 							href="/audio"
 							on:click={() => (menuOpen = false)}
-							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
+							class="transition-colors text-gray-900 hover:text-brand-blue"
 						>
 							Audio
 						</a>
@@ -127,7 +127,7 @@
 						<a
 							href="/media"
 							on:click={() => (menuOpen = false)}
-							class="transition-colors {scrolled ? 'text-gray-900 hover:text-brand-blue' : 'text-white hover:text-gray-200'}"
+							class="transition-colors text-gray-900 hover:text-brand-blue"
 						>
 							Online
 						</a>
