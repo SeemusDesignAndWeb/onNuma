@@ -1,4 +1,4 @@
-import { getHeroSlides, getContactInfo, getServiceTimes, getEvents, getServices } from '$lib/server/database';
+import { getHeroSlides, getContactInfo, getServiceTimes, getEvents, getServices, getHome } from '$lib/server/database';
 
 export const load = async () => {
 	const heroSlides = getHeroSlides();
@@ -16,12 +16,14 @@ export const load = async () => {
 		});
 	// For hero sidebar, show up to 3
 	const heroEvents = featuredEvents.slice(0, 3);
+	const home = getHome();
 	return {
 		heroSlides: heroSlides.length > 0 ? heroSlides : null,
 		contactInfo,
 		serviceTimes,
 		services,
 		featuredEvents: featuredEvents.length > 0 ? featuredEvents : [],
-		heroEvents: heroEvents.length > 0 ? heroEvents : null
+		heroEvents: heroEvents.length > 0 ? heroEvents : null,
+		home
 	};
 };

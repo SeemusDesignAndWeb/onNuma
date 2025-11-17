@@ -21,6 +21,8 @@ import {
 	saveServiceTimes,
 	getSettings,
 	saveSettings,
+	getHome,
+	saveHome,
 	getPodcasts,
 	getActivities,
 	getActivity,
@@ -58,6 +60,8 @@ export const GET = async ({ url, cookies }) => {
 				return json(getServiceTimes());
 			case 'settings':
 				return json(getSettings());
+			case 'home':
+				return json(getHome());
 			case 'activities':
 				return json(id ? getActivity(id) : getActivities());
 			case 'community-groups':
@@ -108,6 +112,9 @@ export const POST = async ({ request, cookies }) => {
 				return json({ success: true });
 			case 'settings':
 				saveSettings(data);
+				return json({ success: true });
+			case 'home':
+				saveHome(data);
 				return json({ success: true });
 			case 'activity':
 				saveActivity(data);
