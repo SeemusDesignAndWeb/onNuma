@@ -27,21 +27,50 @@ export async function POST({ request }) {
 		}
 		
 		// Get database content from request body
-		const body = await request.json();
+		let body;
+		try {
+			body = await request.json();
+		} catch (parseError) {
+			console.error('Failed to parse request body:', parseError);
+			return json({ 
+				error: 'Invalid JSON in request body: ' + parseError.message
+			}, { status: 400 });
+		}
 		
 		// Accept either a JSON object directly, or a string that needs parsing
 		let parsed;
 		if (body.database) {
 			// If it's a string, parse it; if it's already an object, use it
-			parsed = typeof body.database === 'string' ? JSON.parse(body.database) : body.database;
+			if (typeof body.database === 'string') {
+				try {
+					parsed = JSON.parse(body.database);
+				} catch (e) {
+					return json({ 
+						error: 'Failed to parse body.database as JSON: ' + e.message
+					}, { status: 400 });
+				}
+			} else {
+				parsed = body.database;
+			}
 		} else if (body.content) {
-			parsed = typeof body.content === 'string' ? JSON.parse(body.content) : body.content;
+			if (typeof body.content === 'string') {
+				try {
+					parsed = JSON.parse(body.content);
+				} catch (e) {
+					return json({ 
+						error: 'Failed to parse body.content as JSON: ' + e.message
+					}, { status: 400 });
+				}
+			} else {
+				parsed = body.content;
+			}
 		} else if (body.pages || body.images || body.events) {
 			// If the body itself is the database object
 			parsed = body;
 		} else {
 			return json({ 
-				error: 'Database content required in body.database, body.content, or as root object'
+				error: 'Database content required in body.database, body.content, or as root object',
+				received: Object.keys(body).join(', ')
 			}, { status: 400 });
 		}
 		
