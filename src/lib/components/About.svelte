@@ -6,7 +6,7 @@
 	<div class="container mx-auto px-4">
 		<div class="max-w-6xl mx-auto">
 			<div class="grid md:grid-cols-2 gap-12 items-center">
-				<div>
+				<div class="order-2 md:order-1">
 					{#if home?.aboutLabel}
 						<div class="inline-block mb-4">
 							<span class="text-primary text-sm font-semibold uppercase tracking-wider">{home.aboutLabel}</span>
@@ -25,7 +25,7 @@
 					{/if}
 				</div>
 
-				<div class="flex justify-center md:justify-end">
+				<div class="order-1 md:order-2 flex justify-center md:justify-end">
 					<div class="relative w-full max-w-lg">
 						<div class="absolute -inset-4 bg-primary/20 rounded-2xl transform rotate-3"></div>
 						<img
