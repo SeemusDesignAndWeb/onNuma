@@ -571,6 +571,150 @@
 									>
 										+ Add Value
 									</button>
+								{:else if section.type === 'for-all-ages'}
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Label (small text above title)</label>
+										<input
+											type="text"
+											bind:value={section.label}
+											class="w-full px-3 py-2 border rounded"
+											placeholder="e.g., For Everyone"
+										/>
+									</div>
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Title</label>
+										<input
+											type="text"
+											bind:value={section.title}
+											class="w-full px-3 py-2 border rounded"
+											placeholder="e.g., For All Ages"
+										/>
+									</div>
+									<div class="relative mb-3" style="height: 300px;">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Content</label>
+										<RichTextEditor bind:value={section.content} height="280px" />
+									</div>
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-1 text-gray-600">Footer Text (optional)</label>
+										<input
+											type="text"
+											bind:value={section.footerText}
+											class="w-full px-3 py-2 border rounded"
+											placeholder="e.g., Our older teenagers join the main church in the meeting."
+										/>
+									</div>
+									<div class="mb-3">
+										<label class="block text-xs font-medium mb-2 text-gray-600">Children's Groups</label>
+										{#if section.childrenGroups && section.childrenGroups.length > 0}
+											<div class="space-y-2 mb-2">
+												{#each section.childrenGroups as group, groupIndex}
+													<div class="flex gap-2 items-center p-2 bg-white border rounded">
+														<input
+															type="text"
+															bind:value={group.name}
+															class="flex-1 px-2 py-1 border rounded text-sm"
+															placeholder="Group name"
+														/>
+														<input
+															type="text"
+															bind:value={group.ageRange}
+															class="flex-1 px-2 py-1 border rounded text-sm"
+															placeholder="Age range"
+														/>
+														<button
+															type="button"
+															on:click={() => {
+																section.childrenGroups = section.childrenGroups.filter((_, i) => i !== groupIndex);
+																editing = editing;
+															}}
+															class="text-red-600 hover:text-red-800 text-xs px-2"
+														>
+															Remove
+														</button>
+													</div>
+												{/each}
+											</div>
+										{/if}
+										<button
+											type="button"
+											on:click={() => {
+												if (!section.childrenGroups) section.childrenGroups = [];
+												section.childrenGroups = [...section.childrenGroups, { name: '', ageRange: '' }];
+												editing = editing;
+											}}
+											class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
+										>
+											+ Add Children's Group
+										</button>
+									</div>
+									<div class="border-t pt-3 mt-3">
+										<label class="block text-xs font-medium mb-2 text-gray-600">Service Information (Right Side Card)</label>
+										<div class="mb-2">
+											<label class="block text-xs font-medium mb-1 text-gray-600">Service Time</label>
+											<input
+												type="text"
+												bind:value={section.serviceTime}
+												class="w-full px-3 py-2 border rounded"
+												placeholder="e.g., 11:00"
+											/>
+										</div>
+										<div class="mb-2">
+											<label class="block text-xs font-medium mb-1 text-gray-600">Service Title</label>
+											<input
+												type="text"
+												bind:value={section.serviceTitle}
+												class="w-full px-3 py-2 border rounded"
+												placeholder="e.g., Sunday Service"
+											/>
+										</div>
+										<div class="mb-2">
+											<label class="block text-xs font-medium mb-1 text-gray-600">Doors Open Text</label>
+											<input
+												type="text"
+												bind:value={section.doorsOpen}
+												class="w-full px-3 py-2 border rounded"
+												placeholder="e.g., Doors open at 10:30am"
+											/>
+										</div>
+										<div class="mb-2">
+											<label class="block text-xs font-medium mb-2 text-gray-600">Service Details</label>
+											{#if section.serviceDetails && section.serviceDetails.length > 0}
+												<div class="space-y-2 mb-2">
+													{#each section.serviceDetails as detail, detailIndex}
+														<div class="flex gap-2 items-center p-2 bg-white border rounded">
+															<input
+																type="text"
+																bind:value={detail.text}
+																class="flex-1 px-2 py-1 border rounded text-sm"
+																placeholder="Detail text"
+															/>
+															<button
+																type="button"
+																on:click={() => {
+																	section.serviceDetails = section.serviceDetails.filter((_, i) => i !== detailIndex);
+																	editing = editing;
+																}}
+																class="text-red-600 hover:text-red-800 text-xs px-2"
+															>
+																Remove
+															</button>
+														</div>
+													{/each}
+												</div>
+											{/if}
+											<button
+												type="button"
+												on:click={() => {
+													if (!section.serviceDetails) section.serviceDetails = [];
+													section.serviceDetails = [...section.serviceDetails, { text: '' }];
+													editing = editing;
+												}}
+												class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs"
+											>
+												+ Add Service Detail
+											</button>
+										</div>
+									</div>
 								{/if}
 							</div>
 						{/each}
@@ -609,6 +753,35 @@
 									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
 								>
 									+ Add Columns Section
+								</button>
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { 
+											type: 'for-all-ages', 
+											label: 'For Everyone',
+											title: 'For All Ages',
+											content: '',
+											childrenGroups: [
+												{ name: 'Adventurers', ageRange: 'Up to 7 years' },
+												{ name: 'Explorers', ageRange: '8-14 years' }
+											],
+											footerText: 'Our older teenagers join the main church in the meeting.',
+											serviceTime: '11:00',
+											serviceTitle: 'Sunday Service',
+											doorsOpen: 'Doors open at 10:30am',
+											serviceDetails: [
+												{ text: 'Refreshments from 10:30am' },
+												{ text: 'Worship and message' },
+												{ text: "Children's groups available" }
+											]
+										}];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add For All Ages Section
 								</button>
 							{/if}
 							{#if editing.id === 'church'}
@@ -660,11 +833,11 @@
 					</div>
 				{/if}
 				
-				<!-- Show "Add Section" buttons even when no sections exist (especially for team page) -->
-				{#if editing.id === 'team' && (!editing.sections || editing.sections.length === 0)}
+				<!-- Show "Add Section" buttons even when no sections exist (especially for team page and im-new page) -->
+				{#if (editing.id === 'team' || editing.id === 'im-new') && (!editing.sections || editing.sections.length === 0)}
 					<div class="border-t pt-6 mt-6">
 						<h3 class="text-lg font-semibold mb-4">Page Sections</h3>
-						<div class="flex gap-2">
+						<div class="flex gap-2 flex-wrap">
 							<button
 								type="button"
 								on:click={() => {
@@ -676,17 +849,72 @@
 							>
 								+ Add Text Section
 							</button>
-							<button
-								type="button"
-								on:click={() => {
-									if (!editing.sections) editing.sections = [];
-									editing.sections = [...editing.sections, { type: 'columns', columns: [{ title: '', content: '' }] }];
-									editing = editing;
-								}}
-								class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-							>
-								+ Add Columns Section
-							</button>
+							{#if editing.id === 'im-new'}
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { type: 'welcome', content: '' }];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add Welcome Section
+								</button>
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { type: 'columns', columns: [{ title: '', content: '' }] }];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add Columns Section
+								</button>
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { 
+											type: 'for-all-ages', 
+											label: 'For Everyone',
+											title: 'For All Ages',
+											content: '',
+											childrenGroups: [
+												{ name: 'Adventurers', ageRange: 'Up to 7 years' },
+												{ name: 'Explorers', ageRange: '8-14 years' }
+											],
+											footerText: 'Our older teenagers join the main church in the meeting.',
+											serviceTime: '11:00',
+											serviceTitle: 'Sunday Service',
+											doorsOpen: 'Doors open at 10:30am',
+											serviceDetails: [
+												{ text: 'Refreshments from 10:30am' },
+												{ text: 'Worship and message' },
+												{ text: "Children's groups available" }
+											]
+										}];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add For All Ages Section
+								</button>
+							{/if}
+							{#if editing.id === 'team'}
+								<button
+									type="button"
+									on:click={() => {
+										if (!editing.sections) editing.sections = [];
+										editing.sections = [...editing.sections, { type: 'columns', columns: [{ title: '', content: '' }] }];
+										editing = editing;
+									}}
+									class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+								>
+									+ Add Columns Section
+								</button>
+							{/if}
 						</div>
 					</div>
 				{/if}
