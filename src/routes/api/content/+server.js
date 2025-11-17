@@ -80,6 +80,15 @@ export const POST = async ({ request, cookies }) => {
 	try {
 		switch (type) {
 			case 'page':
+				// Debug logging for page saves
+				console.log('[API] Saving page:', {
+					id: data.id,
+					title: data.title,
+					hasSections: !!data.sections,
+					sectionsCount: data.sections?.length || 0,
+					sectionsTypes: data.sections?.map(s => s?.type) || [],
+					sectionsPreview: data.sections?.slice(0, 2).map(s => ({ type: s.type, title: s.title })) || []
+				});
 				savePage(data);
 				return json({ success: true });
 			case 'team':
