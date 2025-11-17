@@ -130,6 +130,15 @@ export function getPage(id) {
 export function savePage(page) {
 	const db = readDatabase();
 	const index = db.pages.findIndex((p) => p.id === page.id);
+	
+	// Debug logging
+	console.log('[DB] Saving page:', {
+		id: page.id,
+		hasSections: !!page.sections,
+		sectionsCount: page.sections?.length || 0,
+		sectionsTypes: page.sections?.map(s => s.type) || []
+	});
+	
 	if (index >= 0) {
 		// CRITICAL: Preserve sections and other fields that might not be in the incoming page object
 		// Only update fields that are actually provided in the page object
@@ -147,17 +156,32 @@ export function savePage(page) {
 			heroButtons: page.heroButtons !== undefined ? page.heroButtons : (existingPage.heroButtons || []),
 		};
 		
+		console.log('[DB] Updated page sections:', {
+			before: existingPage.sections?.length || 0,
+			after: updatedPage.sections?.length || 0
+		});
+		
 		db.pages[index] = updatedPage;
 	} else {
 		// New page - ensure sections and other fields are initialized
-		db.pages.push({
+		const newPage = {
 			...page,
 			sections: page.sections || [],
 			heroMessages: page.heroMessages || [],
 			heroButtons: page.heroButtons || [],
-		});
+		};
+		console.log('[DB] Creating new page with sections:', newPage.sections?.length || 0);
+		db.pages.push(newPage);
 	}
 	writeDatabase(db);
+	
+	// Verify what was saved
+	const savedPage = db.pages.find((p) => p.id === page.id);
+	console.log('[DB] Verified saved page:', {
+		id: savedPage?.id,
+		hasSections: !!savedPage?.sections,
+		sectionsCount: savedPage?.sections?.length || 0
+	});
 }
 
 export function deletePage(id) {

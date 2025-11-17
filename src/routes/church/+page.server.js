@@ -3,9 +3,20 @@ import { getPage, getContactInfo } from '$lib/server/database';
 export const load = async () => {
 	const page = getPage('church');
 	const contactInfo = getContactInfo();
+	
+	// Debug logging
 	if (page) {
+		console.log('[Church Page] Loaded page from database:', {
+			id: page.id,
+			title: page.title,
+			hasSections: !!page.sections,
+			sectionsCount: page.sections?.length || 0,
+			sectionsTypes: page.sections?.map(s => s.type) || []
+		});
 		return { page, contactInfo };
 	}
+	
+	console.warn('[Church Page] Page not found in database, using fallback');
 	const fallbackPage = {
 		id: 'church',
 		title: 'About EGCC',
