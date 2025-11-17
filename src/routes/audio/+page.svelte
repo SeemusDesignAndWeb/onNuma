@@ -140,7 +140,6 @@
 						target="_blank"
 						rel="noopener noreferrer"
 						class="relative rounded-lg shadow hover:shadow-lg transition-shadow p-6 cursor-pointer block {isMostRecent ? 'bg-brand-blue' : 'bg-white'}"
-						role="link"
 					>
 						<!-- Play Icon -->
 						<div class="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center {isMostRecent ? 'bg-white/20 text-white' : 'bg-brand-blue/10 text-brand-blue'}">
