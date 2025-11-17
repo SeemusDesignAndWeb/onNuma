@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
+import { execSync } from 'child_process';
 
 // Environment variable configuration
 const DB_PATH = process.env.DATABASE_PATH || './data/database.json';
@@ -63,7 +64,7 @@ const defaultDatabase = {
 	}
 };
 
-// Read function - NEVER auto-initialize in production to prevent data loss
+// Read function - Safe initialization in production ONLY if file doesn't exist
 export function readDatabase() {
 	const dbPath = getDbPath();
 	try {
@@ -72,16 +73,42 @@ export function readDatabase() {
 	} catch (error) {
 		const isProduction = process.env.NODE_ENV === 'production' || dbPath.startsWith('/');
 		
-		if (isProduction) {
-			// In production, NEVER auto-initialize - this would overwrite existing data
+		// Check if file doesn't exist (ENOENT) vs other errors
+		const fileDoesNotExist = error.code === 'ENOENT';
+		
+		if (isProduction && fileDoesNotExist) {
+			// In production, if file doesn't exist, try to restore from git history ONCE
+			// This is safe because the file doesn't exist - we're not overwriting anything
+			console.warn('[DB] Database file not found in production, attempting one-time restore from git history...');
+			console.warn('[DB] Database file path:', dbPath);
+			
+			try {
+				// Try to restore from git history (commit fc4b61b has the last good version)
+				const gitDb = execSync('git show fc4b61b:data/database.json', { 
+					encoding: 'utf-8',
+					cwd: process.cwd(),
+					timeout: 10000
+				});
+				
+				// Validate JSON
+				const parsed = JSON.parse(gitDb);
+				
+				// Write to volume
+				writeDatabase(parsed);
+				console.log('[DB] ✅ Successfully restored database from git history to', dbPath);
+				
+				return parsed;
+			} catch (restoreError) {
+				console.error('[DB] ❌ Failed to restore from git history:', restoreError.message);
+				console.error('[DB] This is a production environment - cannot proceed without database');
+				throw new Error(`Database file not found at ${dbPath} and could not restore from backup. Please restore manually.`);
+			}
+		} else if (isProduction) {
+			// Other errors in production - don't auto-initialize
 			console.error('[DB] CRITICAL: Failed to read database in production:', error);
 			console.error('[DB] Database file path:', dbPath);
 			console.error('[DB] This is a production environment - NOT initializing to prevent data loss');
-			console.error('[DB] Please ensure:');
-			console.error('[DB]   1. DATABASE_PATH environment variable is set correctly');
-			console.error('[DB]   2. Railway volume is mounted at the specified path');
-			console.error('[DB]   3. Database file exists in the volume');
-			throw new Error(`Database file not found at ${dbPath}. Cannot proceed in production to prevent data loss.`);
+			throw new Error(`Database file error at ${dbPath}: ${error.message}`);
 		}
 		
 		// Only auto-initialize in development
