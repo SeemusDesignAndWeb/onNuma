@@ -1,12 +1,25 @@
 <script lang="js">
-	import Navbar from '$lib/components/Navbar.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import VideoSection from '$lib/components/VideoSection.svelte';
+	import { getContext } from 'svelte';
 
 	export let data;
 	export let params = {};
 
 	let currentPage = 1;
+	let bannerVisible = false;
+	
+	// Get banner visibility from context
+	try {
+		const bannerVisibleStore = getContext('bannerVisible');
+		if (bannerVisibleStore) {
+			bannerVisibleStore.subscribe(value => {
+				bannerVisible = value;
+			});
+		}
+	} catch (e) {
+		// Context not available
+	}
 	let itemsPerPage = 12;
 	let startDate = '';
 	let endDate = '';
@@ -51,13 +64,12 @@
 	<meta name="description" content={data.page.metaDescription || data.page.title} />
 </svelte:head>
 
-<Navbar />
-
 <!-- Hero Section -->
 {#if data.page?.heroImage}
 	<section
 		id="hero"
-		class="relative h-[50vh] overflow-hidden"
+		class="relative h-[50vh] overflow-hidden transition-all duration-300"
+		class:mt-[5px]={bannerVisible}
 		style="background-image: url('{data.page.heroImage}'); background-size: cover; background-position: center;"
 	>
 		<div

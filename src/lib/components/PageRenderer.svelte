@@ -1,5 +1,5 @@
 <script lang="js">
-	import { onMount } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import Contact from './Contact.svelte';
 
 	export let page;
@@ -11,6 +11,19 @@
 
 	let currentMessage = 0;
 	let autoplayInterval = null;
+	let bannerVisible = false;
+	
+	// Get banner visibility from context
+	try {
+		const bannerVisibleStore = getContext('bannerVisible');
+		if (bannerVisibleStore) {
+			bannerVisibleStore.subscribe(value => {
+				bannerVisible = value;
+			});
+		}
+	} catch (e) {
+		// Context not available
+	}
 
 	onMount(() => {
 		if (page.heroMessages && page.heroMessages.length > 0) {
@@ -118,7 +131,8 @@
 {#if page.heroImage}
 	<section
 		id="hero"
-		class="relative h-[50vh] overflow-hidden"
+		class="relative h-[50vh] overflow-hidden transition-all duration-300"
+		class:mt-[5px]={bannerVisible}
 		style="background-image: url('{page.heroImage}'); background-size: cover; background-position: center;"
 	>
 		<div

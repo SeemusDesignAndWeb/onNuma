@@ -1,14 +1,28 @@
 <script lang="js">
-	import Navbar from '$lib/components/Navbar.svelte';
 	import Team from '$lib/components/Team.svelte';
 	import Contact from '$lib/components/Contact.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import { getContext } from 'svelte';
 
 	export let data;
 	export let params = {};
 
 	// Extract sections from page data
 	$: sections = data.page?.sections || [];
+	
+	let bannerVisible = false;
+	
+	// Get banner visibility from context
+	try {
+		const bannerVisibleStore = getContext('bannerVisible');
+		if (bannerVisibleStore) {
+			bannerVisibleStore.subscribe(value => {
+				bannerVisible = value;
+			});
+		}
+	} catch (e) {
+		// Context not available
+	}
 </script>
 
 <svelte:head>
@@ -16,13 +30,12 @@
 	<meta name="description" content={data.page?.metaDescription || "Meet the leadership team of Eltham Green Community Church"} />
 </svelte:head>
 
-<Navbar />
-
 <!-- Hero Section -->
 {#if data.page?.heroImage}
 	<section
 		id="hero"
-		class="relative h-[50vh] overflow-hidden"
+		class="relative h-[50vh] overflow-hidden transition-all duration-300"
+		class:mt-[5px]={bannerVisible}
 		style="background-image: url('{data.page.heroImage}'); background-size: cover; background-position: center;"
 	>
 		<div

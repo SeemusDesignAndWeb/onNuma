@@ -17,6 +17,7 @@
 	let youtubePlaylistId = '';
 	let youtubeChannelId = '';
 	let spotifyShowUrl = '';
+	let showLatestMessagePopup = false;
 	let loading = true;
 	let saving = false;
 	let saved = false;
@@ -38,6 +39,7 @@
 			youtubePlaylistId = settings.youtubePlaylistId || '';
 			youtubeChannelId = settings.youtubeChannelId || '';
 			spotifyShowUrl = settings.spotifyShowUrl || '';
+			showLatestMessagePopup = settings.showLatestMessagePopup || false;
 		} catch (error) {
 			console.error('Failed to load settings:', error);
 		} finally {
@@ -97,7 +99,8 @@
 				...currentSettings,
 				youtubePlaylistId: youtubePlaylistId,
 				youtubeChannelId: youtubeChannelId,
-				spotifyShowUrl: spotifyShowUrl
+				spotifyShowUrl: spotifyShowUrl,
+				showLatestMessagePopup: showLatestMessagePopup
 			};
 			
 			const response = await fetch('/api/content', {
@@ -256,6 +259,32 @@
 					class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
 				>
 					{saving ? 'Saving...' : 'Save Spotify Settings'}
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Popup Settings -->
+	<div class="mt-8">
+		<div class="bg-white p-6 rounded-lg shadow">
+			<h2 class="text-2xl font-bold mb-4">Popup Settings</h2>
+			<p class="text-sm text-gray-600 mb-4">
+				Control which popups appear on the front page. <strong>Latest Message Popup takes priority over Event Highlight Banner.</strong>
+			</p>
+			<div class="space-y-4">
+				<label class="flex items-center gap-2">
+					<input type="checkbox" bind:checked={showLatestMessagePopup} class="rounded" />
+					<span class="text-sm font-medium">Show Latest Message Popup</span>
+				</label>
+				<p class="text-xs text-gray-500 ml-6">
+					Displays the latest YouTube video recorded in the last 5 days. <strong>When enabled, this will override the Event Highlight Banner.</strong> The Event Highlight Banner is controlled in the Events section by checking the "Highlight" checkbox on individual events.
+				</p>
+				<button
+					on:click={saveYouTubeSettings}
+					disabled={saving}
+					class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+				>
+					{saving ? 'Saving...' : 'Save Popup Settings'}
 				</button>
 			</div>
 		</div>

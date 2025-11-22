@@ -1,6 +1,8 @@
 <script lang="js">
 	import { onMount } from 'svelte';
 
+	export let bannerVisible = false;
+
 	let menuOpen = false;
 	let scrolled = false;
 	let mounted = false;
@@ -31,10 +33,10 @@
 </script>
 
 <nav
-	class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {menuOpen ? 'bg-brand-blue shadow-md' : scrolled ? 'bg-white/90 backdrop-blur-sm shadow-md' : 'bg-white/70 backdrop-blur-sm'}"
+	class="fixed left-0 right-0 z-50 transition-all duration-300 {bannerVisible ? 'top-[45px]' : 'top-0'} {menuOpen ? 'bg-brand-blue shadow-md' : scrolled ? 'bg-white/90 backdrop-blur-sm shadow-md' : 'bg-white/70 backdrop-blur-sm'}"
 >
 	<div class="container mx-auto px-4">
-		<div class="flex items-center justify-between py-4">
+		<div class="flex items-center justify-between transition-all duration-300" class:py-3={bannerVisible} class:py-4={!bannerVisible}>
 			<!-- Logo -->
 			<a href="/" class="flex items-center">
 				<img

@@ -1,11 +1,24 @@
 <script lang="js">
-	import { onMount } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 
 	export let heroSlides = null;
 	export let featuredEvents = null;
 
 	let currentSlide = 0;
 	let autoplayInterval = null;
+	let bannerVisible = false;
+	
+	// Get banner visibility from context
+	try {
+		const bannerVisibleStore = getContext('bannerVisible');
+		if (bannerVisibleStore) {
+			bannerVisibleStore.subscribe(value => {
+				bannerVisible = value;
+			});
+		}
+	} catch (e) {
+		// Context not available
+	}
 
 	function formatDate(dateString) {
 		if (!dateString) return '';
@@ -83,7 +96,7 @@
 	});
 </script>
 
-<section id="home" class="relative h-[70vh] md:h-screen overflow-hidden">
+<section id="home" class="relative h-[calc(60vh+20px)] md:h-[calc(100vh-80px+20px)] overflow-hidden transition-all duration-300" class:mt-[5px]={bannerVisible}>
 	{#each slides as slide, index}
 		<div
 			class="absolute inset-0 transition-opacity duration-1000"

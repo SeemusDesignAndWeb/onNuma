@@ -1,9 +1,23 @@
 <script lang="js">
-	import Navbar from '$lib/components/Navbar.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import { getContext } from 'svelte';
 
 	export let data;
 	export let params = {};
+
+	let bannerVisible = false;
+	
+	// Get banner visibility from context
+	try {
+		const bannerVisibleStore = getContext('bannerVisible');
+		if (bannerVisibleStore) {
+			bannerVisibleStore.subscribe(value => {
+				bannerVisible = value;
+			});
+		}
+	} catch (e) {
+		// Context not available
+	}
 
 	function formatDate(dateString) {
 		if (!dateString) return '';
@@ -31,11 +45,9 @@
 	<meta name="description" content={data.event.description ? data.event.description.replace(/<[^>]*>/g, '').substring(0, 160) : data.event.title} />
 </svelte:head>
 
-<Navbar />
-
 <!-- Hero Section -->
 {#if data.event.image}
-	<section class="relative h-[35vh] overflow-hidden">
+	<section class="relative h-[35vh] overflow-hidden transition-all duration-300" class:mt-[5px]={bannerVisible}>
 		<!-- Background Image with Blur -->
 		<div
 			class="absolute inset-0 bg-cover bg-center"

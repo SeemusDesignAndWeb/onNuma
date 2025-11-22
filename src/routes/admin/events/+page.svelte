@@ -44,6 +44,7 @@
 				location: '',
 				image: '',
 				featured: false,
+				highlighted: false,
 				published: true,
 				order: events.length
 			};
@@ -230,10 +231,14 @@
 						{/if}
 					</div>
 				</div>
-				<div class="flex gap-6">
+				<div class="flex gap-6 flex-wrap">
 					<label class="flex items-center gap-2">
 						<input type="checkbox" bind:checked={editing.featured} class="rounded" />
 						<span class="text-sm font-medium">Featured (Show on home page)</span>
+					</label>
+					<label class="flex items-center gap-2">
+						<input type="checkbox" bind:checked={editing.highlighted} class="rounded" />
+						<span class="text-sm font-medium">Highlight (Show banner at top)</span>
 					</label>
 					<label class="flex items-center gap-2">
 						<input type="checkbox" bind:checked={editing.published} class="rounded" />
@@ -314,6 +319,9 @@
 									{event.title}
 									{#if event.featured}
 										<span class="px-2 py-1 text-xs bg-primary text-white rounded">Featured</span>
+									{/if}
+									{#if event.highlighted}
+										<span class="px-2 py-1 text-xs bg-yellow-500 text-white rounded">Highlighted</span>
 									{/if}
 								</div>
 							</td>
