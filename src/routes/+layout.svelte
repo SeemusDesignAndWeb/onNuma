@@ -5,6 +5,7 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import { onMount, setContext } from 'svelte';
 	import { writable } from 'svelte/store';
+	import { page } from '$app/stores';
 
 	export let data;
 	export let params = {};
@@ -12,13 +13,26 @@
 	let showPreloader = true;
 	let showHighlightBanner = false;
 
+	// Don't show navbar, banner, or preloader in admin area
+	$: isAdminArea = $page.url.pathname.startsWith('/admin');
+	$: showWebsiteNavbar = !isAdminArea;
+	$: showWebsiteBanner = !isAdminArea && showHighlightBanner;
+
 	// Share banner visibility with child components via store
 	const bannerVisibleStore = writable(false);
 	setContext('bannerVisible', bannerVisibleStore);
 	
-	$: bannerVisibleStore.set(showHighlightBanner);
+	$: if (!isAdminArea) {
+		bannerVisibleStore.set(showHighlightBanner);
+	}
 
 	onMount(() => {
+		// Don't show preloader or banner in admin area
+		if (isAdminArea) {
+			showPreloader = false;
+			return;
+		}
+
 		setTimeout(() => {
 			showPreloader = false;
 		}, 1000);
@@ -33,21 +47,26 @@
 	});
 </script>
 
-{#if showPreloader}
+{#if showPreloader && !isAdminArea}
 	<Preloader />
 {/if}
 
-<!-- Event Highlight Banner - shows on all pages -->
-<EventHighlightBanner 
-	event={data.highlightedEvent} 
-	open={showHighlightBanner} 
-	on:close={() => showHighlightBanner = false} 
-/>
+<!-- Event Highlight Banner - shows on all pages except admin -->
+{#if showWebsiteBanner}
+	<EventHighlightBanner 
+		event={data.highlightedEvent} 
+		open={showHighlightBanner} 
+		on:close={() => showHighlightBanner = false} 
+	/>
+{/if}
 
-<Navbar bannerVisible={showHighlightBanner} />
+<!-- Website Navbar - only show outside admin area -->
+{#if showWebsiteNavbar}
+	<Navbar bannerVisible={showHighlightBanner} />
+{/if}
 
 <!-- Page Content with dynamic padding to account for fixed navbar and banner -->
-<div class="transition-all duration-300" class:pt-[110px]={showHighlightBanner} class:pt-[80px]={!showHighlightBanner}>
+<div class="transition-all duration-300" class:pt-[110px]={showHighlightBanner && !isAdminArea} class:pt-[80px]={!showHighlightBanner && !isAdminArea} class:pt-0={isAdminArea}>
 	<slot />
 </div>
 

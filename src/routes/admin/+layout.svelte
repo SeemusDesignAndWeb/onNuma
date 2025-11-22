@@ -124,26 +124,18 @@
 <div class="min-h-screen bg-gray-50">
 	<!-- Admin Navbar -->
 	{#if showNavbar}
-		<nav class="bg-white shadow-lg border-b border-gray-200">
+		<nav class="bg-blue-500 shadow-lg border-b border-blue-600">
 		<div class="container mx-auto px-4">
 			<div class="flex items-center justify-between h-16">
 				<!-- Logo/Brand -->
 				<div class="flex items-center gap-4">
 					<a href="/admin" class="flex items-center gap-2">
-						<svg
-							class="w-8 h-8 text-primary"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-							></path>
-						</svg>
-						<span class="text-xl font-bold text-gray-900">Admin</span>
+						<img
+							src="/images/egcc-logo.png"
+							alt="EGCC"
+							class="h-8 w-auto"
+						/>
+						<span class="text-xl font-bold text-white">Admin</span>
 					</a>
 				</div>
 
@@ -153,7 +145,7 @@
 					{#each navItems as item}
 						<a
 							href={item.href}
-							class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-gray-700 hover:bg-gray-100"
+							class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-white hover:bg-blue-600"
 						>
 							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -172,7 +164,7 @@
 						<div class="dropdown-container relative">
 							<button
 								on:click={() => toggleDropdown(menu.id)}
-								class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-gray-700 hover:bg-gray-100"
+								class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-white hover:bg-blue-600"
 							>
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
@@ -225,7 +217,7 @@
 					{#each standaloneItems as item}
 						<a
 							href={item.href}
-							class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-gray-700 hover:bg-gray-100"
+							class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-white hover:bg-blue-600"
 						>
 							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -243,7 +235,7 @@
 				<!-- Logout Button -->
 				<button
 					on:click={handleLogout}
-					class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium flex items-center gap-2"
+					class="px-4 py-2 bg-white text-blue-500 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium flex items-center gap-2"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -260,7 +252,7 @@
 			<!-- Mobile Menu Button -->
 			<button
 				on:click={() => mobileMenuOpen = !mobileMenuOpen}
-				class="md:hidden px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
+				class="md:hidden px-3 py-2 rounded-lg text-white hover:bg-blue-600"
 			>
 				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -274,13 +266,13 @@
 
 			<!-- Mobile Navigation -->
 			{#if mobileMenuOpen}
-				<div class="md:hidden pb-4 border-t border-gray-200 mt-4 pt-4">
+				<div class="md:hidden pb-4 border-t border-blue-600 mt-4 pt-4">
 					<!-- Dashboard -->
 					{#each navItems as item}
 						<a
 							href={item.href}
 							on:click={() => mobileMenuOpen = false}
-							class="block px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 mb-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+							class="block px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 mb-1 text-white hover:bg-blue-600"
 						>
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -299,7 +291,7 @@
 						<div class="mb-2">
 							<button
 								on:click={() => toggleDropdown(menu.id)}
-								class="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between bg-gray-100 text-gray-700 hover:bg-gray-200"
+								class="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between text-white hover:bg-blue-600"
 							>
 								<div class="flex items-center gap-2">
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -355,7 +347,7 @@
 						<a
 							href={item.href}
 							on:click={() => mobileMenuOpen = false}
-							class="block px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 mb-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+							class="block px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 mb-1 text-white hover:bg-blue-600"
 						>
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path

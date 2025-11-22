@@ -137,7 +137,7 @@
 		<h1 class="text-3xl font-bold">Manage Community Groups</h1>
 		<button
 			on:click={() => startEdit()}
-			class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90"
+			class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 		>
 			Add New Group
 		</button>
@@ -219,7 +219,7 @@
 				<div class="flex gap-2">
 					<button
 						on:click={saveGroup}
-						class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90"
+						class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 					>
 						Save
 					</button>

@@ -270,7 +270,7 @@
 					<button
 						on:click={loadCloudinaryImages}
 						disabled={loadingCloudinary}
-						class="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+						class="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{loadingCloudinary ? 'Loading...' : 'Browse Cloudinary Images'}
 					</button>
@@ -369,7 +369,7 @@
 						<button
 							on:click={importSelected}
 							disabled={syncing || selectedPublicIds.length === 0}
-							class="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+							class="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{syncing ? 'Importing...' : `Import Selected (${selectedPublicIds.length})`}
 						</button>

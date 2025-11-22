@@ -316,7 +316,7 @@
 			<button
 				on:click={savePodcastSettings}
 				disabled={savingSettings}
-				class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+				class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
 			>
 				{savingSettings ? 'Saving...' : 'Save Podcast Settings'}
 			</button>
@@ -328,7 +328,7 @@
 		<h2 class="text-2xl font-bold">Podcasts</h2>
 		<button
 			on:click={() => startEdit()}
-			class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90"
+			class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 		>
 			Add New Podcast
 		</button>
@@ -456,7 +456,7 @@
 				<div class="flex gap-2">
 					<button
 						on:click={savePodcast}
-						class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90"
+						class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 					>
 						Save
 					</button>

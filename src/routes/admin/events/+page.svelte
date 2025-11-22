@@ -131,7 +131,7 @@
 		<h1 class="text-3xl font-bold">Manage Events</h1>
 		<button
 			on:click={() => startEdit()}
-			class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90"
+			class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 		>
 			Add New Event
 		</button>
@@ -259,7 +259,7 @@
 				<div class="flex gap-2">
 					<button
 						on:click={saveEvent}
-						class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90"
+						class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 					>
 						Save
 					</button>
@@ -318,7 +318,7 @@
 								<div class="flex items-center gap-2">
 									{event.title}
 									{#if event.featured}
-										<span class="px-2 py-1 text-xs bg-primary text-white rounded">Featured</span>
+										<span class="px-2 py-1 text-xs bg-blue-500 text-white rounded">Featured</span>
 									{/if}
 									{#if event.highlighted}
 										<span class="px-2 py-1 text-xs bg-yellow-500 text-white rounded">Highlighted</span>

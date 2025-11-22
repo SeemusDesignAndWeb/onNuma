@@ -180,7 +180,7 @@
 				<button
 					on:click={saveContact}
 					disabled={saving}
-					class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
 				>
 					{saving ? 'Saving...' : 'Save Contact Info'}
 				</button>
@@ -224,7 +224,7 @@
 				<button
 					on:click={saveTimes}
 					disabled={saving}
-					class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
 				>
 					{saving ? 'Saving...' : 'Save Service Times'}
 				</button>
@@ -256,7 +256,7 @@
 				<button
 					on:click={saveYouTubeSettings}
 					disabled={saving}
-					class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
 				>
 					{saving ? 'Saving...' : 'Save Spotify Settings'}
 				</button>
@@ -282,7 +282,7 @@
 				<button
 					on:click={saveYouTubeSettings}
 					disabled={saving}
-					class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
 				>
 					{saving ? 'Saving...' : 'Save Popup Settings'}
 				</button>
@@ -330,7 +330,7 @@
 				<button
 					on:click={saveYouTubeSettings}
 					disabled={saving}
-					class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50"
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
 				>
 					{saving ? 'Saving...' : 'Save YouTube Settings'}
 				</button>
