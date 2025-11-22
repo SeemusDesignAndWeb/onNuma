@@ -4,3 +4,4 @@ export const load = async () => {
 	throw redirect(301, '/');
 };
 
+
