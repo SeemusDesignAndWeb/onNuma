@@ -72,6 +72,7 @@
 				description: '',
 				speaker: '',
 				speakerEmail: '',
+				category: '',
 				audioUrl: '',
 				filename: '',
 				originalName: '',
@@ -421,6 +422,15 @@
 							placeholder="johnawatson72@gmail.com"
 						/>
 					</div>
+				</div>
+				<div>
+					<label class="block text-sm font-medium mb-1">Category</label>
+					<input
+						type="text"
+						bind:value={editing.category}
+						class="w-full px-3 py-2 border rounded"
+						placeholder="e.g., Sermon, Teaching, Testimony"
+					/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium mb-1">Audio File *</label>
