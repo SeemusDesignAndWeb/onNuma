@@ -131,7 +131,7 @@
 {#if page.heroImage}
 	<section
 		id="hero"
-		class="relative h-[50vh] overflow-hidden transition-all duration-300"
+		class="relative h-[35vh] overflow-hidden transition-all duration-300"
 		class:mt-[5px]={bannerVisible}
 		style="background-image: url('{page.heroImage}'); background-size: cover; background-position: center;"
 	>
