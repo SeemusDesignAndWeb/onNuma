@@ -72,7 +72,7 @@
 				description: '',
 				speaker: '',
 				speakerEmail: '',
-				category: '',
+				series: '',
 				audioUrl: '',
 				filename: '',
 				originalName: '',
@@ -424,13 +424,16 @@
 					</div>
 				</div>
 				<div>
-					<label class="block text-sm font-medium mb-1">Category</label>
+					<label class="block text-sm font-medium mb-1">Series</label>
 					<input
 						type="text"
-						bind:value={editing.category}
+						bind:value={editing.series}
 						class="w-full px-3 py-2 border rounded"
-						placeholder="e.g., Sermon, Teaching, Testimony"
+						placeholder="e.g., Nehemiah, What Would Jesus Do?, Seeds of Revival"
 					/>
+					<p class="text-xs text-gray-500 mt-1">
+						Group related podcasts together (e.g., sermon series)
+					</p>
 				</div>
 				<div>
 					<label class="block text-sm font-medium mb-1">Audio File *</label>
