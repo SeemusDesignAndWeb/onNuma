@@ -71,7 +71,6 @@
 				title: '',
 				description: '',
 				speaker: '',
-				speakerEmail: '',
 				series: '',
 				audioUrl: '',
 				filename: '',
@@ -403,25 +402,14 @@
 						placeholder="By John Watson"
 					></textarea>
 				</div>
-				<div class="grid grid-cols-2 gap-4">
-					<div>
-						<label class="block text-sm font-medium mb-1">Speaker *</label>
-						<input
-							type="text"
-							bind:value={editing.speaker}
-							class="w-full px-3 py-2 border rounded"
-							placeholder="e.g., John Watson"
-						/>
-					</div>
-					<div>
-						<label class="block text-sm font-medium mb-1">Speaker Email</label>
-						<input
-							type="email"
-							bind:value={editing.speakerEmail}
-							class="w-full px-3 py-2 border rounded"
-							placeholder="johnawatson72@gmail.com"
-						/>
-					</div>
+				<div>
+					<label class="block text-sm font-medium mb-1">Speaker *</label>
+					<input
+						type="text"
+						bind:value={editing.speaker}
+						class="w-full px-3 py-2 border rounded"
+						placeholder="e.g., John Watson"
+					/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium mb-1">Series</label>
