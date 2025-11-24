@@ -6,6 +6,40 @@
 	let menuOpen = false;
 	let scrolled = false;
 	let mounted = false;
+	let navigationPages = [];
+
+	// Page ID to route mapping
+	const pageRoutes = {
+		'im-new': '/im-new',
+		'church': '/church',
+		'team': '/team',
+		'community-groups': '/community-groups',
+		'activities': '/activities',
+		'audio': '/audio',
+		'media': '/media'
+	};
+
+	// Get navigation label for a page
+	function getNavigationLabel(page) {
+		return page.navigationLabel || page.title || 'Page';
+	}
+
+	// Get route for a page
+	function getPageRoute(pageId) {
+		return pageRoutes[pageId] || `/${pageId}`;
+	}
+
+	onMount(async () => {
+		// Load pages for navigation
+		try {
+			const response = await fetch('/api/navigation-pages');
+			if (response.ok) {
+				navigationPages = await response.json();
+			}
+		} catch (error) {
+			console.error('Failed to load navigation pages:', error);
+		}
+	});
 
 	onMount(() => {
 		mounted = true;
@@ -71,69 +105,17 @@
 			<!-- Desktop menu -->
 			<div class="hidden md:flex items-center gap-8">
 				<ul class="flex items-center gap-6">
-					<li>
-						<a
-							href="/im-new"
-							on:click={() => (menuOpen = false)}
-							class="transition-colors text-gray-900 hover:text-brand-blue"
-						>
-							I'm New
-						</a>
-					</li>
-					<li>
-						<a
-							href="/church"
-							on:click={() => (menuOpen = false)}
-							class="transition-colors text-gray-900 hover:text-brand-blue"
-						>
-							Church
-						</a>
-					</li>
-					<li>
-						<a
-							href="/team"
-							on:click={() => (menuOpen = false)}
-							class="transition-colors text-gray-900 hover:text-brand-blue"
-						>
-							Team
-						</a>
-					</li>
-					<li>
-						<a
-							href="/community-groups"
-							on:click={() => (menuOpen = false)}
-							class="transition-colors text-gray-900 hover:text-brand-blue"
-						>
-							Community Groups
-						</a>
-					</li>
-					<li>
-						<a
-							href="/activities"
-							on:click={() => (menuOpen = false)}
-							class="transition-colors text-gray-900 hover:text-brand-blue"
-						>
-							Activities
-						</a>
-					</li>
-					<li>
-						<a
-							href="/audio"
-							on:click={() => (menuOpen = false)}
-							class="transition-colors text-gray-900 hover:text-brand-blue"
-						>
-							Audio
-						</a>
-					</li>
-					<li>
-						<a
-							href="/media"
-							on:click={() => (menuOpen = false)}
-							class="transition-colors text-gray-900 hover:text-brand-blue"
-						>
-							Online
-						</a>
-					</li>
+					{#each navigationPages as page}
+						<li>
+							<a
+								href={getPageRoute(page.id)}
+								on:click={() => (menuOpen = false)}
+								class="transition-colors text-gray-900 hover:text-brand-blue"
+							>
+								{getNavigationLabel(page)}
+							</a>
+						</li>
+					{/each}
 				</ul>
 			</div>
 		</div>
@@ -142,69 +124,17 @@
 		{#if menuOpen}
 			<div class="md:hidden pb-4 bg-brand-blue -mx-4 px-4 pt-4">
 				<ul class="flex flex-col gap-4">
-					<li>
-						<a
-							href="/im-new"
-							on:click={() => (menuOpen = false)}
-							class="block transition-colors text-white hover:text-gray-200"
-						>
-							I'm New
-						</a>
-					</li>
-					<li>
-						<a
-							href="/church"
-							on:click={() => (menuOpen = false)}
-							class="block transition-colors text-white hover:text-gray-200"
-						>
-							Church
-						</a>
-					</li>
-					<li>
-						<a
-							href="/team"
-							on:click={() => (menuOpen = false)}
-							class="block transition-colors text-white hover:text-gray-200"
-						>
-							Team
-						</a>
-					</li>
-					<li>
-						<a
-							href="/community-groups"
-							on:click={() => (menuOpen = false)}
-							class="block transition-colors text-white hover:text-gray-200"
-						>
-							Community Groups
-						</a>
-					</li>
-					<li>
-						<a
-							href="/activities"
-							on:click={() => (menuOpen = false)}
-							class="block transition-colors text-white hover:text-gray-200"
-						>
-							Activities
-						</a>
-					</li>
-					<li>
-						<a
-							href="/audio"
-							on:click={() => (menuOpen = false)}
-							class="block transition-colors text-white hover:text-gray-200"
-						>
-							Audio
-						</a>
-					</li>
-					<li>
-						<a
-							href="/media"
-							on:click={() => (menuOpen = false)}
-							class="block transition-colors text-white hover:text-gray-200"
-						>
-							Online
-						</a>
-					</li>
+					{#each navigationPages as page}
+						<li>
+							<a
+								href={getPageRoute(page.id)}
+								on:click={() => (menuOpen = false)}
+								class="block transition-colors text-white hover:text-gray-200"
+							>
+								{getNavigationLabel(page)}
+							</a>
+						</li>
+					{/each}
 				</ul>
 			</div>
 		{/if}

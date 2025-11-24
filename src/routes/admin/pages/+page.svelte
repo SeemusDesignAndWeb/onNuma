@@ -11,6 +11,8 @@
 	let showForm = false;
 	let showImagePicker = false;
 	let currentSectionIndex = null;
+	let draggedIndex = null;
+	let draggedOverIndex = null;
 
 	onMount(async () => {
 		await loadPages();
@@ -51,7 +53,15 @@
 				loadedPages = [...loadedPages, defaultTeamPage];
 			}
 			
-			pages = loadedPages;
+			// Sort pages by navigationOrder, then by title
+			pages = loadedPages.sort((a, b) => {
+				const orderA = a.navigationOrder !== undefined ? a.navigationOrder : 999;
+				const orderB = b.navigationOrder !== undefined ? b.navigationOrder : 999;
+				if (orderA !== orderB) {
+					return orderA - orderB;
+				}
+				return (a.title || '').localeCompare(b.title || '');
+			});
 		} catch (error) {
 			console.error('Failed to load pages:', error);
 		} finally {
@@ -69,7 +79,11 @@
 				heroButtons: page.heroButtons || [],
 				heroOverlay: page.heroOverlay || 40,
 				sections: page.sections || [],
-				teamDescription: page.teamDescription || ''
+				teamDescription: page.teamDescription || '',
+			showInNavigation: page.showInNavigation !== undefined ? page.showInNavigation : true,
+			navigationLabel: page.navigationLabel || '',
+			navigationOrder: page.navigationOrder !== undefined ? page.navigationOrder : 999,
+				navigationOrder: page.navigationOrder !== undefined ? page.navigationOrder : (existingPage.navigationOrder !== undefined ? existingPage.navigationOrder : 999)
 			}
 			: {
 					id: '',
@@ -83,7 +97,9 @@
 					metaDescription: '',
 					heroMessages: [],
 					sections: [],
-					teamDescription: ''
+					teamDescription: '',
+					showInNavigation: true,
+					navigationLabel: ''
 				};
 		showForm = true;
 	}
@@ -180,6 +196,85 @@
 			console.error('Failed to delete page:', error);
 		}
 	}
+
+	async function toggleNavigationVisibility(page) {
+		const updatedPage = {
+			...page,
+			showInNavigation: !(page.showInNavigation !== false)
+		};
+
+		try {
+			const response = await fetch('/api/content', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'page', data: updatedPage })
+			});
+
+			if (response.ok) {
+				await loadPages();
+			}
+		} catch (error) {
+			console.error('Failed to update navigation visibility:', error);
+		}
+	}
+
+	function handleDragStart(index) {
+		draggedIndex = index;
+	}
+
+	function handleDragOver(event, index) {
+		event.preventDefault();
+		draggedOverIndex = index;
+	}
+
+	function handleDragLeave() {
+		draggedOverIndex = null;
+	}
+
+	async function handleDrop(event, dropIndex) {
+		event.preventDefault();
+		
+		if (draggedIndex === null || draggedIndex === dropIndex) {
+			draggedIndex = null;
+			draggedOverIndex = null;
+			return;
+		}
+
+		// Reorder pages array
+		const reorderedPages = [...pages];
+		const [draggedPage] = reorderedPages.splice(draggedIndex, 1);
+		reorderedPages.splice(dropIndex, 0, draggedPage);
+
+		// Update navigationOrder for all affected pages
+		const updates = reorderedPages.map((page, index) => ({
+			...page,
+			navigationOrder: index
+		}));
+
+		// Save all updated pages
+		try {
+			const savePromises = updates.map(page =>
+				fetch('/api/content', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ type: 'page', data: page })
+				})
+			);
+
+			await Promise.all(savePromises);
+			await loadPages();
+		} catch (error) {
+			console.error('Failed to update page order:', error);
+		}
+
+		draggedIndex = null;
+		draggedOverIndex = null;
+	}
+
+	function handleDragEnd() {
+		draggedIndex = null;
+		draggedOverIndex = null;
+	}
 </script>
 
 <svelte:head>
@@ -199,9 +294,25 @@
 
 	{#if showForm && editing}
 		<div class="bg-white p-6 rounded-lg shadow mb-6">
-			<h2 class="text-2xl font-bold mb-4">
-				{editing.id ? 'Edit Page' : 'New Page'}
-			</h2>
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-2xl font-bold">
+					{editing.id ? 'Edit Page' : 'New Page'}
+				</h2>
+				<div class="flex gap-2">
+					<button
+						on:click={savePage}
+						class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+					>
+						Save
+					</button>
+					<button
+						on:click={cancelEdit}
+						class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
 			<div class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium mb-1">ID (URL slug)</label>
@@ -219,6 +330,38 @@
 						bind:value={editing.title}
 						class="w-full px-3 py-2 border rounded"
 					/>
+				</div>
+				<div class="border-t pt-4 mt-4">
+					<h3 class="text-lg font-semibold mb-4">Navigation Settings</h3>
+					<div class="space-y-4">
+						<div>
+							<label class="flex items-center gap-2">
+								<input
+									type="checkbox"
+									bind:checked={editing.showInNavigation}
+									class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+								/>
+								<span class="text-sm font-medium">Show in Navigation Menu</span>
+							</label>
+							<p class="text-xs text-gray-500 mt-1 ml-6">
+								When enabled, this page will appear in the main website navigation menu.
+							</p>
+						</div>
+						{#if editing.showInNavigation}
+							<div>
+								<label class="block text-sm font-medium mb-1">Navigation Label</label>
+								<p class="text-xs text-gray-500 mb-2">
+									Custom label for the navigation menu. If left empty, the page title will be used.
+								</p>
+								<input
+									type="text"
+									bind:value={editing.navigationLabel}
+									class="w-full px-3 py-2 border rounded"
+									placeholder={editing.title || 'Page title'}
+								/>
+							</div>
+						{/if}
+					</div>
 				</div>
 				<div>
 					<label class="block text-sm font-medium mb-1">Hero Title</label>
@@ -1144,10 +1287,18 @@
 	{:else if pages.length === 0}
 		<p class="text-gray-600">No pages found. Create your first page!</p>
 	{:else}
+		<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+			<p class="text-sm text-blue-800">
+				💡 <strong>Tip:</strong> Drag rows by the handle (☰) to reorder pages in the navigation menu. Use the checkbox to show/hide pages from navigation.
+			</p>
+		</div>
 		<div class="bg-white rounded-lg shadow overflow-hidden">
 			<table class="min-w-full divide-y divide-gray-200">
 				<thead class="bg-gray-50">
 					<tr>
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-8">
+							<!-- Drag handle column -->
+						</th>
 						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
 							ID
 						</th>
@@ -1155,24 +1306,58 @@
 							Title
 						</th>
 						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+							Show in Nav
+						</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
 							Actions
 						</th>
 					</tr>
 				</thead>
 				<tbody class="bg-white divide-y divide-gray-200">
-					{#each pages as page}
-						<tr>
+					{#each pages as page, index}
+						<tr
+							draggable="true"
+							on:dragstart={() => handleDragStart(index)}
+							on:dragover={(e) => handleDragOver(e, index)}
+							on:dragleave={handleDragLeave}
+							on:drop={(e) => handleDrop(e, index)}
+							on:dragend={handleDragEnd}
+							class="cursor-move transition-colors {draggedOverIndex === index ? 'bg-blue-50' : ''} {draggedIndex === index ? 'opacity-50' : ''}"
+						>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<div class="flex items-center text-gray-400 hover:text-gray-600">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+									</svg>
+								</div>
+							</td>
 							<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">{page.id}</td>
 							<td class="px-6 py-4 whitespace-nowrap text-sm">{page.title}</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm">
+								<label class="flex items-center cursor-pointer">
+									<input
+										type="checkbox"
+										checked={page.showInNavigation !== false}
+										on:change={() => toggleNavigationVisibility(page)}
+										on:click|stopPropagation
+										class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+									/>
+									<span class="ml-2 text-sm text-gray-700">
+										{page.showInNavigation !== false ? 'Visible' : 'Hidden'}
+									</span>
+								</label>
+							</td>
 							<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
 								<button
 									on:click={() => startEdit(page)}
+									on:click|stopPropagation
 									class="text-primary hover:underline mr-4"
 								>
 									Edit
 								</button>
 								<button
 									on:click={() => deletePage(page.id)}
+									on:click|stopPropagation
 									class="text-red-600 hover:underline"
 								>
 									Delete
@@ -1187,4 +1372,18 @@
 </div>
 
 <ImagePicker open={showImagePicker} onSelect={handleImageSelect} />
+
+<style>
+	tr[draggable="true"]:hover {
+		background-color: #f9fafb;
+	}
+	
+	tr[draggable="true"]:active {
+		cursor: grabbing;
+	}
+	
+	tr[draggable="true"] {
+		cursor: grab;
+	}
+</style>
 

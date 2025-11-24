@@ -39,25 +39,47 @@
 		}
 	}
 
+	// Convert ISO date to datetime-local format (YYYY-MM-DDTHH:mm)
+	function isoToDatetimeLocal(isoString) {
+		if (!isoString) return '';
+		const date = new Date(isoString);
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		const hours = String(date.getHours()).padStart(2, '0');
+		const minutes = String(date.getMinutes()).padStart(2, '0');
+		return `${year}-${month}-${day}T${hours}:${minutes}`;
+	}
+
+	// Convert datetime-local format to ISO string
+	function datetimeLocalToIso(datetimeLocal) {
+		if (!datetimeLocal) return new Date().toISOString();
+		// datetime-local format is YYYY-MM-DDTHH:mm (no timezone)
+		// We need to treat it as local time and convert to ISO
+		const date = new Date(datetimeLocal);
+		return date.toISOString();
+	}
+
 	function startEdit(podcast) {
-		editing = podcast
-			? { ...podcast }
-			: {
-					id: '',
-					title: '',
-					description: '',
-					speaker: '',
-					speakerEmail: '',
-					audioUrl: '',
-					filename: '',
-					originalName: '',
-					size: 0,
-					duration: '',
-					publishedAt: new Date().toISOString(),
-					category: 'Talk',
-					series: '',
-					guid: ''
-				};
+		if (podcast) {
+			editing = { ...podcast };
+			// Convert ISO date to datetime-local format for the input
+			editing.publishedAt = isoToDatetimeLocal(podcast.publishedAt);
+		} else {
+			editing = {
+				id: '',
+				title: '',
+				description: '',
+				speaker: '',
+				speakerEmail: '',
+				audioUrl: '',
+				filename: '',
+				originalName: '',
+				size: 0,
+				publishedAt: isoToDatetimeLocal(new Date().toISOString()),
+				guid: ''
+			};
+		}
 		audioUrl = editing.audioUrl;
 		audioFile = null;
 		showForm = true;
@@ -121,8 +143,14 @@
 		}
 
 		try {
+			// Convert datetime-local back to ISO format before saving
+			const podcastToSave = {
+				...editing,
+				publishedAt: datetimeLocalToIso(editing.publishedAt)
+			};
+
 			const formData = new FormData();
-			formData.append('podcast', JSON.stringify(editing));
+			formData.append('podcast', JSON.stringify(podcastToSave));
 
 			const response = await fetch('/api/audio', {
 				method: 'POST',
@@ -336,9 +364,25 @@
 
 	{#if showForm && editing}
 		<div class="bg-white p-6 rounded-lg shadow mb-6">
-			<h2 class="text-2xl font-bold mb-4">
-				{editing.id ? 'Edit Podcast' : 'New Podcast'}
-			</h2>
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-2xl font-bold">
+					{editing.id ? 'Edit Podcast' : 'New Podcast'}
+				</h2>
+				<div class="flex gap-2">
+					<button
+						on:click={savePodcast}
+						class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+					>
+						Save
+					</button>
+					<button
+						on:click={cancelEdit}
+						class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
 			<div class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium mb-1">Title *</label>
@@ -404,36 +448,6 @@
 								Audio uploaded: {editing.originalName || 'File'} ({formatFileSize(editing.size)})
 							</div>
 						{/if}
-					</div>
-				</div>
-				<div class="grid grid-cols-3 gap-4">
-					<div>
-						<label class="block text-sm font-medium mb-1">Duration</label>
-						<input
-							type="text"
-							bind:value={editing.duration}
-							class="w-full px-3 py-2 border rounded"
-							placeholder="33:12"
-						/>
-						<p class="text-xs text-gray-500 mt-1">Format: MM:SS or HH:MM:SS</p>
-					</div>
-					<div>
-						<label class="block text-sm font-medium mb-1">Category</label>
-						<input
-							type="text"
-							bind:value={editing.category}
-							class="w-full px-3 py-2 border rounded"
-							placeholder="Talk"
-						/>
-					</div>
-					<div>
-						<label class="block text-sm font-medium mb-1">Series</label>
-						<input
-							type="text"
-							bind:value={editing.series}
-							class="w-full px-3 py-2 border rounded"
-							placeholder="e.g., Nehemiah"
-						/>
 					</div>
 				</div>
 				<div>

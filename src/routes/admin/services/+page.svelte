@@ -164,9 +164,25 @@
 
 	{#if showForm && editing}
 		<div class="bg-white p-6 rounded-lg shadow mb-6">
-			<h2 class="text-2xl font-bold mb-4">
-				{editing.id ? 'Edit Service' : 'New Service'}
-			</h2>
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-2xl font-bold">
+					{editing.id ? 'Edit Service' : 'New Service'}
+				</h2>
+				<div class="flex gap-2">
+					<button
+						on:click={saveService}
+						class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+					>
+						Save
+					</button>
+					<button
+						on:click={cancelEdit}
+						class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
 			<div class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium mb-1">ID</label>

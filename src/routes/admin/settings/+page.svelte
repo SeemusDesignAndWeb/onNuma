@@ -139,7 +139,16 @@
 	<div class="grid md:grid-cols-2 gap-8">
 		<!-- Contact Information -->
 		<div class="bg-white p-6 rounded-lg shadow">
-			<h2 class="text-2xl font-bold mb-4">Contact Information</h2>
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-2xl font-bold">Contact Information</h2>
+				<button
+					on:click={saveContact}
+					disabled={saving}
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+				>
+					{saving ? 'Saving...' : 'Save Contact Info'}
+				</button>
+			</div>
 			<div class="space-y-4">
 				<div>
 					<label for="contact-address" class="block text-sm font-medium mb-1">Address</label>
@@ -189,7 +198,16 @@
 
 		<!-- Service Times -->
 		<div class="bg-white p-6 rounded-lg shadow">
-			<h2 class="text-2xl font-bold mb-4">Service Times</h2>
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-2xl font-bold">Service Times</h2>
+				<button
+					on:click={saveTimes}
+					disabled={saving}
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+				>
+					{saving ? 'Saving...' : 'Save Service Times'}
+				</button>
+			</div>
 			<div class="space-y-4">
 				<div>
 					<label for="service-times-sunday" class="block text-sm font-medium mb-1">Sunday Service</label>
@@ -235,10 +253,21 @@
 	<!-- Spotify Settings -->
 	<div class="mt-8">
 		<div class="bg-white p-6 rounded-lg shadow">
-			<h2 class="text-2xl font-bold mb-4">Spotify Podcast Settings</h2>
-			<p class="text-sm text-gray-600 mb-4">
-				Configure the Spotify show URL for the audio/sermons page. All podcast links will redirect to this Spotify show.
-			</p>
+			<div class="flex items-center justify-between mb-4">
+				<div>
+					<h2 class="text-2xl font-bold">Spotify Podcast Settings</h2>
+					<p class="text-sm text-gray-600 mt-1">
+						Configure the Spotify show URL for the audio/sermons page. All podcast links will redirect to this Spotify show.
+					</p>
+				</div>
+				<button
+					on:click={saveYouTubeSettings}
+					disabled={saving}
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+				>
+					{saving ? 'Saving...' : 'Save Spotify Settings'}
+				</button>
+			</div>
 			<div class="space-y-4">
 				<div>
 					<label for="spotify-show-url" class="block text-sm font-medium mb-1">Spotify Show URL</label>
@@ -267,10 +296,21 @@
 	<!-- Popup Settings -->
 	<div class="mt-8">
 		<div class="bg-white p-6 rounded-lg shadow">
-			<h2 class="text-2xl font-bold mb-4">Popup Settings</h2>
-			<p class="text-sm text-gray-600 mb-4">
-				Control which popups appear on the front page. <strong>Latest Message Popup takes priority over Event Highlight Banner.</strong>
-			</p>
+			<div class="flex items-center justify-between mb-4">
+				<div>
+					<h2 class="text-2xl font-bold">Popup Settings</h2>
+					<p class="text-sm text-gray-600 mt-1">
+						Control which popups appear on the front page. <strong>Latest Message Popup takes priority over Event Highlight Banner.</strong>
+					</p>
+				</div>
+				<button
+					on:click={saveYouTubeSettings}
+					disabled={saving}
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+				>
+					{saving ? 'Saving...' : 'Save Popup Settings'}
+				</button>
+			</div>
 			<div class="space-y-4">
 				<label class="flex items-center gap-2">
 					<input type="checkbox" bind:checked={showLatestMessagePopup} class="rounded" />
@@ -293,10 +333,21 @@
 	<!-- YouTube Settings -->
 	<div class="mt-8">
 		<div class="bg-white p-6 rounded-lg shadow">
-			<h2 class="text-2xl font-bold mb-4">YouTube Video Settings</h2>
-			<p class="text-sm text-gray-600 mb-4">
-				Configure YouTube playlist to display videos on the online page.
-			</p>
+			<div class="flex items-center justify-between mb-4">
+				<div>
+					<h2 class="text-2xl font-bold">YouTube Video Settings</h2>
+					<p class="text-sm text-gray-600 mt-1">
+						Configure YouTube playlist to display videos on the online page.
+					</p>
+				</div>
+				<button
+					on:click={saveYouTubeSettings}
+					disabled={saving}
+					class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+				>
+					{saving ? 'Saving...' : 'Save YouTube Settings'}
+				</button>
+			</div>
 			<div class="space-y-4">
 				<div>
 					<label for="youtube-channel-id" class="block text-sm font-medium mb-1">YouTube Channel ID</label>

@@ -6,7 +6,8 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 
 // Use Railway volume path if available, otherwise use static directory
-const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || 'static/audio/uploaded';
+// In production, use /data/audio/uploaded for persistence on Railway volumes
+const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/data/audio/uploaded' : 'static/audio/uploaded');
 
 // Ensure upload directory exists
 function ensureUploadDir() {
@@ -107,7 +108,12 @@ export const POST = async ({ request, cookies }) => {
 		return json({ error: 'Invalid request' }, { status: 400 });
 	} catch (error) {
 		console.error('Audio upload error:', error);
-		return json({ error: 'Failed to process request' }, { status: 500 });
+		console.error('Error stack:', error.stack);
+		return json({ 
+			error: 'Failed to process request',
+			message: error.message || 'Unknown error',
+			details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+		}, { status: 500 });
 	}
 };
 
@@ -127,7 +133,16 @@ export const DELETE = async ({ url, cookies }) => {
 		}
 
 		// Delete file from filesystem
-		const filePath = join(process.cwd(), 'static', podcast.audioUrl.replace(/^\//, ''));
+		// Handle both /audio/uploaded/ paths and old static paths
+		let filePath;
+		if (podcast.audioUrl.startsWith('/audio/uploaded/')) {
+			const filename = podcast.audioUrl.replace('/audio/uploaded/', '');
+			filePath = join(ensureUploadDir(), filename);
+		} else {
+			// Legacy path handling
+			filePath = join(process.cwd(), 'static', podcast.audioUrl.replace(/^\//, ''));
+		}
+		
 		if (existsSync(filePath)) {
 			unlinkSync(filePath);
 		}

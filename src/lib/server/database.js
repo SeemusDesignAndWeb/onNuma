@@ -162,6 +162,10 @@ export function savePage(page) {
 			// Preserve other important fields
 			heroMessages: page.heroMessages !== undefined ? page.heroMessages : (existingPage.heroMessages || []),
 			heroButtons: page.heroButtons !== undefined ? page.heroButtons : (existingPage.heroButtons || []),
+			// Preserve navigation fields
+			showInNavigation: page.showInNavigation !== undefined ? page.showInNavigation : (existingPage.showInNavigation !== undefined ? existingPage.showInNavigation : true),
+			navigationLabel: page.navigationLabel !== undefined ? page.navigationLabel : (existingPage.navigationLabel || ''),
+			navigationOrder: page.navigationOrder !== undefined ? page.navigationOrder : (existingPage.navigationOrder !== undefined ? existingPage.navigationOrder : 999),
 		};
 		
 		console.log('[DB] Updated page sections:', {
@@ -177,6 +181,9 @@ export function savePage(page) {
 			sections: page.sections || [],
 			heroMessages: page.heroMessages || [],
 			heroButtons: page.heroButtons || [],
+			showInNavigation: page.showInNavigation !== undefined ? page.showInNavigation : true,
+			navigationLabel: page.navigationLabel || '',
+			navigationOrder: page.navigationOrder !== undefined ? page.navigationOrder : 999,
 		};
 		console.log('[DB] Creating new page with sections:', newPage.sections?.length || 0);
 		db.pages.push(newPage);
