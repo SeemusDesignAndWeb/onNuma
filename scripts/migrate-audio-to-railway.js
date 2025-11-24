@@ -15,9 +15,11 @@ import https from 'https';
 import http from 'http';
 
 const DB_PATH = process.env.DATABASE_PATH || './data/database.json';
-// Default to local path unless explicitly set or in production
+// Check if running on Railway by checking if DATABASE_PATH uses /data
+// (Railway volumes are mounted at /data, and database is at /data/database.json)
+const isRailway = DB_PATH.startsWith('/data') || process.env.DATABASE_PATH?.startsWith('/data');
 const AUDIO_UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || 
-	(process.env.NODE_ENV === 'production' ? '/data/audio/uploaded' : 'static/audio/uploaded');
+	(isRailway ? '/data/audio/uploaded' : 'static/audio/uploaded');
 const OLD_HOST = 'http://www.egcc.co.uk/company/egcc/audio/';
 
 // Ensure upload directory exists

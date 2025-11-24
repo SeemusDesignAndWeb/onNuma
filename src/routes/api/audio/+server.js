@@ -6,8 +6,11 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 
 // Use Railway volume path if available, otherwise use static directory
-// In production, use /data/audio/uploaded for persistence on Railway volumes
-const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/data/audio/uploaded' : 'static/audio/uploaded');
+// Check if running on Railway by checking if DATABASE_PATH uses /data
+// (Railway volumes are mounted at /data, and database is at /data/database.json)
+const DB_PATH = process.env.DATABASE_PATH || './data/database.json';
+const isRailway = DB_PATH.startsWith('/data') || process.env.DATABASE_PATH?.startsWith('/data');
+const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || (isRailway ? '/data/audio/uploaded' : 'static/audio/uploaded');
 
 // Ensure upload directory exists
 function ensureUploadDir() {

@@ -3,7 +3,11 @@ import { join } from 'path';
 import { error } from '@sveltejs/kit';
 
 // Determine upload directory (same logic as upload endpoint)
-const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/data/audio/uploaded' : 'static/audio/uploaded');
+// Check if running on Railway by checking if DATABASE_PATH uses /data
+// (Railway volumes are mounted at /data, and database is at /data/database.json)
+const DB_PATH = process.env.DATABASE_PATH || './data/database.json';
+const isRailway = DB_PATH.startsWith('/data') || process.env.DATABASE_PATH?.startsWith('/data');
+const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || (isRailway ? '/data/audio/uploaded' : 'static/audio/uploaded');
 
 function getUploadPath() {
 	if (UPLOAD_DIR.startsWith('./') || UPLOAD_DIR.startsWith('../')) {
@@ -25,10 +29,17 @@ export async function GET({ params }) {
 	}
 	
 	const uploadPath = getUploadPath();
-	const filePath = join(uploadPath, filename);
+	let filePath = join(uploadPath, filename);
 	
+	// If file doesn't exist in primary location, check static directory as fallback
+	// (for files that were uploaded before Railway volume was configured)
 	if (!existsSync(filePath)) {
-		throw error(404, 'Audio file not found');
+		const staticPath = join(process.cwd(), 'static/audio/uploaded', filename);
+		if (existsSync(staticPath)) {
+			filePath = staticPath;
+		} else {
+			throw error(404, 'Audio file not found');
+		}
 	}
 	
 	try {
