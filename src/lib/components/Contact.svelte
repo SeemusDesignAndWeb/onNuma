@@ -9,8 +9,11 @@
 		name: '',
 		email: '',
 		phone: '',
-		message: ''
+		message: '',
+		website: '' // Honeypot field - bots will fill this, humans won't see it
 	};
+	
+	let formStartTime = Date.now();
 
 	let success = false;
 	let error = '';
@@ -38,6 +41,11 @@
 			case 'message':
 				if (!value || value.trim().length < 10) {
 					return 'Message must be at least 10 characters';
+				}
+				// Require multiple words (prevent single word spam)
+				const words = value.trim().split(/\s+/).filter(word => word.length > 0);
+				if (words.length < 2) {
+					return 'Message must contain at least 2 words';
 				}
 				return '';
 			default:
@@ -72,8 +80,24 @@
 		success = false;
 		error = '';
 
+		// Honeypot check - if this field is filled, it's a bot
+		if (formData.website && formData.website.trim() !== '') {
+			// Silently fail - don't let bots know they were caught
+			submitting = false;
+			return;
+		}
+
+		// Check minimum time - humans need at least 3 seconds to fill the form
+		const timeSpent = (Date.now() - formStartTime) / 1000;
+		if (timeSpent < 3) {
+			error = 'Please take your time filling out the form.';
+			submitting = false;
+			return;
+		}
+
 		const errors = {};
-		Object.keys(formData).forEach((field) => {
+		// Don't validate honeypot field
+		['name', 'email', 'phone', 'message'].forEach((field) => {
 			const fieldError = validateField(field, formData[field]);
 			if (fieldError) {
 				errors[field] = fieldError;
@@ -92,15 +116,22 @@
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify(formData)
+				body: JSON.stringify({
+					name: formData.name,
+					email: formData.email,
+					phone: formData.phone,
+					message: formData.message,
+					formTime: timeSpent // Send time spent for server-side validation
+				})
 			});
 
 			const result = await response.json();
 
 			if (response.ok && result.success) {
 				success = true;
-				formData = { name: '', email: '', phone: '', message: '' };
+				formData = { name: '', email: '', phone: '', message: '', website: '' };
 				fieldErrors = {};
+				formStartTime = Date.now(); // Reset timer for next submission
 				setTimeout(() => {
 					success = false;
 				}, 5000);
@@ -263,6 +294,19 @@
 						{#if fieldErrors.message}
 							<p class="mt-1 text-sm text-red-600">{fieldErrors.message}</p>
 						{/if}
+					</div>
+
+					<!-- Honeypot field - hidden from users but visible to bots -->
+					<div style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+						<label for="website">Website (leave blank)</label>
+						<input
+							type="text"
+							id="website"
+							name="website"
+							tabindex="-1"
+							autocomplete="off"
+							bind:value={formData.website}
+						/>
 					</div>
 
 					<!-- Submit Button -->

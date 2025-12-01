@@ -3,9 +3,99 @@ import { getContactInfo } from '$lib/server/database';
 import { sendContactEmail, sendConfirmationEmail } from '$lib/server/resend';
 import { env } from '$env/dynamic/private';
 
-export const POST = async ({ request }) => {
+// Simple in-memory rate limiting (in production, use Redis or similar)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 3;
+
+// Check if content looks like spam
+function isSpamContent(text) {
+	if (!text || typeof text !== 'string') return false;
+	
+	// Check for random character patterns (like "NnRFwQBRLAIBqnJM")
+	// Random strings typically have high character diversity and mixed case
+	const randomPattern = /^[A-Za-z]{10,}$/;
+	if (randomPattern.test(text.trim())) {
+		const uniqueChars = new Set(text.toLowerCase().split('')).size;
+		const totalChars = text.length;
+		// If more than 70% of characters are unique, it's likely random
+		if (uniqueChars / totalChars > 0.7) {
+			return true;
+		}
+	}
+	
+	// Check for excessive capital letters (spam often has random caps)
+	const capitalRatio = (text.match(/[A-Z]/g) || []).length / text.length;
+	if (capitalRatio > 0.5 && text.length > 10) {
+		return true;
+	}
+	
+	// Check for suspicious patterns
+	const suspiciousPatterns = [
+		/^[A-Za-z]{15,}$/, // Very long random strings
+		/[A-Z]{5,}/, // Multiple consecutive capitals
+		/[a-z]{10,}[A-Z]{5,}/, // Mixed case patterns
+	];
+	
+	return suspiciousPatterns.some(pattern => pattern.test(text));
+}
+
+// Rate limiting check
+function checkRateLimit(ip) {
+	const now = Date.now();
+	const userRequests = rateLimitMap.get(ip) || [];
+	
+	// Remove old requests outside the window
+	const recentRequests = userRequests.filter(timestamp => now - timestamp < RATE_LIMIT_WINDOW);
+	
+	if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
+		return false; // Rate limit exceeded
+	}
+	
+	// Add current request
+	recentRequests.push(now);
+	rateLimitMap.set(ip, recentRequests);
+	
+	// Clean up old entries periodically (every 100 requests)
+	if (rateLimitMap.size > 100) {
+		for (const [key, requests] of rateLimitMap.entries()) {
+			const filtered = requests.filter(timestamp => now - timestamp < RATE_LIMIT_WINDOW);
+			if (filtered.length === 0) {
+				rateLimitMap.delete(key);
+			} else {
+				rateLimitMap.set(key, filtered);
+			}
+		}
+	}
+	
+	return true; // Within rate limit
+}
+
+export const POST = async (event) => {
 	try {
-		const { name, email, phone, message } = await request.json();
+		const { name, email, phone, message, formTime } = await event.request.json();
+		
+		// Get client IP for rate limiting
+		let clientIp = 'unknown';
+		try {
+			clientIp = event.getClientAddress();
+		} catch (e) {
+			// Fallback to headers if getClientAddress not available
+			const forwarded = event.request.headers.get('x-forwarded-for');
+			clientIp = forwarded ? forwarded.split(',')[0].trim() : event.request.headers.get('x-real-ip') || 'unknown';
+		}
+		
+		// Rate limiting check
+		if (!checkRateLimit(clientIp)) {
+			console.warn('Rate limit exceeded for IP:', clientIp);
+			return json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+		}
+		
+		// Check minimum form time (should be at least 3 seconds)
+		if (formTime && formTime < 3) {
+			console.warn('Form submitted too quickly:', formTime, 'seconds');
+			return json({ error: 'Please take your time filling out the form.' }, { status: 400 });
+		}
 
 		// Validation
 		if (!name || !email || !message) {
@@ -15,6 +105,36 @@ export const POST = async ({ request }) => {
 		const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		if (!emailPattern.test(email)) {
 			return json({ error: 'Invalid email address' }, { status: 400 });
+		}
+		
+		// Spam detection - check for suspicious content
+		if (isSpamContent(name)) {
+			console.warn('Spam detected in name field:', name);
+			// Silently reject - don't let spammers know they were caught
+			return json({ success: true, message: 'Thank you for your message. We will get back to you soon!' });
+		}
+		
+		if (phone && isSpamContent(phone)) {
+			console.warn('Spam detected in phone field:', phone);
+			return json({ success: true, message: 'Thank you for your message. We will get back to you soon!' });
+		}
+		
+		if (isSpamContent(message)) {
+			console.warn('Spam detected in message field:', message);
+			return json({ success: true, message: 'Thank you for your message. We will get back to you soon!' });
+		}
+		
+		// Additional validation - check for reasonable content length
+		if (name.length > 100 || message.length > 5000) {
+			return json({ error: 'Content too long. Please keep your message concise.' }, { status: 400 });
+		}
+		
+		// Require multiple words in message (prevent single word spam)
+		const messageWords = message.trim().split(/\s+/).filter(word => word.length > 0);
+		if (messageWords.length < 2) {
+			console.warn('Spam detected: Message has less than 2 words');
+			// Silently reject - don't let spammers know they were caught
+			return json({ success: true, message: 'Thank you for your message. We will get back to you soon!' });
 		}
 
 		// Get contact email from database
