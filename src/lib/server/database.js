@@ -71,30 +71,24 @@ const defaultDatabase = {
 	}
 };
 
-// Read function - Auto-initializes in development only
+// Read function - Auto-initializes if database doesn't exist
 export function readDatabase() {
 	const dbPath = getDbPath();
 	try {
 		const data = readFileSync(dbPath, 'utf-8');
 		return JSON.parse(data);
 	} catch (error) {
-		const isProduction = process.env.NODE_ENV === 'production' || dbPath.startsWith('/');
-		
-		if (isProduction) {
-			// In production, database must exist on the volume
-			console.error('[DB] CRITICAL: Failed to read database in production:', error.message);
-			console.error('[DB] Database file path:', dbPath);
-			throw new Error(`Database file not found at ${dbPath}. Please ensure the Railway volume is mounted and the database file exists.`);
-		}
-		
-		// Only auto-initialize in development
-		console.warn('[DB] Database file does not exist (development mode), initializing with default structure...');
+		// Database file doesn't exist - try to auto-initialize
+		console.warn('[DB] Database file does not exist, initializing with default structure...');
+		console.warn('[DB] Database file path:', dbPath);
 		
 		try {
 			writeDatabase(defaultDatabase);
 			console.log('[DB] Successfully initialized database with default structure');
+			console.log('[DB] NOTE: This is a fresh database. You may want to restore from backup or use /api/init-database endpoint.');
 		} catch (writeError) {
-			console.warn('[DB] Could not write to persistent location:', writeError);
+			console.error('[DB] CRITICAL: Could not write to persistent location:', writeError.message);
+			console.error('[DB] This may indicate the volume is not mounted or there are permission issues.');
 			console.log('[DB] Returning default structure in memory (changes will not persist)');
 		}
 
