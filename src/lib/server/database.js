@@ -5,7 +5,7 @@ import { join, dirname } from 'path';
 const DB_PATH = process.env.DATABASE_PATH || './data/database.json';
 
 // Path resolution function
-function getDbPath() {
+export function getDbPath() {
 	let finalPath;
 	if (DB_PATH.startsWith('./') || DB_PATH.startsWith('../')) {
 		// Relative path - resolve from project root (local development)
