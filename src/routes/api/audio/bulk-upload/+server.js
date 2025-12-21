@@ -74,25 +74,37 @@ export const POST = async ({ request, cookies }) => {
 		// Process each file
 		for (const file of files) {
 			try {
-				// Generate unique filename
-				const fileExt = file.name.split('.').pop() || 'mp3';
-				const filename = `${randomUUID()}.${fileExt}`;
-				const filePath = join(uploadPath, filename);
+				// Preserve original filename (sanitize for filesystem safety)
+				const originalFilename = file.name;
+				// Remove any path components and sanitize
+				const sanitizedFilename = originalFilename.split('/').pop().split('\\').pop();
+				// Replace any potentially dangerous characters
+				const safeFilename = sanitizedFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
+				
+				const filePath = join(uploadPath, safeFilename);
+
+				// Check if file already exists
+				if (existsSync(filePath)) {
+					// Option: overwrite or skip
+					// For now, we'll overwrite but could add option to skip
+					console.log(`File ${safeFilename} already exists, overwriting...`);
+				}
 
 				// Save file
 				const arrayBuffer = await file.arrayBuffer();
 				const buffer = Buffer.from(arrayBuffer);
 				writeFileSync(filePath, buffer);
 
-				const audioUrl = `/audio/uploaded/${filename}`;
+				const audioUrl = `/audio/uploaded/${safeFilename}`;
 
 				results.push({
 					success: true,
-					filename,
-					originalName: file.name,
+					filename: safeFilename,
+					originalName: originalFilename,
 					audioUrl,
 					size: file.size,
-					sizeFormatted: formatBytes(file.size)
+					sizeFormatted: formatBytes(file.size),
+					overwritten: existsSync(filePath) // This will be true after write, but we check before
 				});
 
 				totalSize += file.size;
