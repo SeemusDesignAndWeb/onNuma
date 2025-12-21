@@ -5,17 +5,44 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 
 // Source directory (where files currently are)
-const SOURCE_DIR = process.env.AUDIO_SOURCE_DIR || join(process.cwd(), 'static/audio/uploaded');
+// Try multiple possible locations
+function getSourcePath() {
+	const possiblePaths = [
+		process.env.AUDIO_SOURCE_DIR,
+		join(process.cwd(), 'static/audio/uploaded'),
+		join(process.cwd(), '../static/audio/uploaded'),
+		'/app/static/audio/uploaded',
+		join(process.cwd(), 'build/client/audio/uploaded'),
+		join(process.cwd(), 'public/audio/uploaded')
+	];
+
+	for (const path of possiblePaths) {
+		if (!path) continue;
+		
+		let resolvedPath;
+		if (path.startsWith('./') || path.startsWith('../')) {
+			resolvedPath = join(process.cwd(), path);
+		} else if (path.startsWith('/')) {
+			resolvedPath = path;
+		} else {
+			resolvedPath = join(process.cwd(), path);
+		}
+
+		if (existsSync(resolvedPath)) {
+			return resolvedPath;
+		}
+	}
+
+	// If none found, return the default
+	const defaultPath = process.env.AUDIO_SOURCE_DIR || join(process.cwd(), 'static/audio/uploaded');
+	if (defaultPath.startsWith('./') || defaultPath.startsWith('../')) {
+		return join(process.cwd(), defaultPath);
+	}
+	return defaultPath;
+}
 
 // Destination directory (Railway volume or configured path)
 const DEST_DIR = process.env.AUDIO_UPLOAD_DIR || '/data/audio/uploaded';
-
-function getSourcePath() {
-	if (SOURCE_DIR.startsWith('./') || SOURCE_DIR.startsWith('../')) {
-		return join(process.cwd(), SOURCE_DIR);
-	}
-	return SOURCE_DIR;
-}
 
 function getDestPath() {
 	if (DEST_DIR.startsWith('./') || DEST_DIR.startsWith('../')) {
@@ -41,10 +68,44 @@ export const POST = async ({ cookies }) => {
 
 		// Check if source directory exists
 		if (!existsSync(sourcePath)) {
+			// Try to find any audio files in common locations
+			const searchPaths = [
+				join(process.cwd(), 'static/audio/uploaded'),
+				join(process.cwd(), '../static/audio/uploaded'),
+				'/app/static/audio/uploaded',
+				join(process.cwd(), 'build/client/audio/uploaded'),
+				join(process.cwd(), 'public/audio/uploaded')
+			];
+
+			const foundPaths = searchPaths.filter(p => {
+				try {
+					return existsSync(p);
+				} catch {
+					return false;
+				}
+			});
+			
+			// If no source directory found, return success with message (no files to migrate)
+			if (foundPaths.length === 0) {
+				return json({
+					success: true,
+					migrated: 0,
+					skipped: 0,
+					errors: 0,
+					message: 'No source directory found. This is normal if files have already been migrated or if you are uploading files directly. Use the bulk upload feature to add files.',
+					sourcePath,
+					destPath,
+					note: 'If you have files in a different location, set the AUDIO_SOURCE_DIR environment variable.'
+				});
+			}
+			
 			return json({ 
 				error: `Source directory not found: ${sourcePath}`,
 				sourcePath,
-				destPath
+				destPath,
+				searchedPaths: searchPaths,
+				foundPaths: foundPaths,
+				message: `Source directory not found. However, found potential directories at: ${foundPaths.join(', ')}. Please set AUDIO_SOURCE_DIR environment variable to one of these paths, or use the bulk upload feature to add files directly.`
 			}, { status: 404 });
 		}
 
