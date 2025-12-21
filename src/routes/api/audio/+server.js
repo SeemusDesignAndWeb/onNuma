@@ -5,21 +5,30 @@ import { writeFileSync, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
-// Use Railway volume path if available, otherwise use static directory
-// In production, use /data/audio/uploaded for persistence on Railway volumes
-const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/data/audio/uploaded' : 'static/audio/uploaded');
+// Use Railway volume path for persistence
+// Default to /data/audio/uploaded (Railway volume) or ./data/audio/uploaded (local dev)
+// Can be overridden with AUDIO_UPLOAD_DIR environment variable
+const UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || '/data/audio/uploaded';
 
 // Ensure upload directory exists
 function ensureUploadDir() {
 	let uploadPath;
 	if (UPLOAD_DIR.startsWith('./') || UPLOAD_DIR.startsWith('../')) {
+		// Relative path - resolve from project root (local development)
 		uploadPath = join(process.cwd(), UPLOAD_DIR);
 	} else {
+		// Absolute path (e.g., /data/audio/uploaded for Railway volume)
 		uploadPath = UPLOAD_DIR;
 	}
 	
+	// Create directory if it doesn't exist
 	if (!existsSync(uploadPath)) {
-		mkdirSync(uploadPath, { recursive: true });
+		try {
+			mkdirSync(uploadPath, { recursive: true });
+		} catch (error) {
+			// Directory might already exist, or volume might not be mounted yet (during build)
+			console.warn('[Audio] Could not create upload directory:', error.message);
+		}
 	}
 	return uploadPath;
 }
