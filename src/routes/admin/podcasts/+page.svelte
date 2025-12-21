@@ -28,6 +28,12 @@
 	let downloading = false;
 	let downloadResult = null;
 	let downloadError = null;
+	
+	// Bulk upload state
+	let bulkUploading = false;
+	let bulkUploadResult = null;
+	let bulkUploadError = null;
+	let selectedFiles = [];
 
 	onMount(async () => {
 		await loadPodcasts();
@@ -288,6 +294,52 @@
 			downloading = false;
 		}
 	}
+
+	function handleBulkFileSelect(event) {
+		const files = Array.from(event.target.files || []);
+		selectedFiles = files;
+	}
+
+	async function uploadBulkFiles() {
+		if (selectedFiles.length === 0) {
+			bulkUploadError = 'Please select at least one file';
+			return;
+		}
+
+		bulkUploading = true;
+		bulkUploadResult = null;
+		bulkUploadError = null;
+
+		try {
+			const formData = new FormData();
+			selectedFiles.forEach(file => {
+				formData.append('files', file);
+			});
+
+			const response = await fetch('/api/audio/bulk-upload', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+			if (response.ok) {
+				bulkUploadResult = result;
+				// Clear selected files
+				selectedFiles = [];
+				// Reset file input
+				const fileInput = document.getElementById('bulk-file-input');
+				if (fileInput) {
+					fileInput.value = '';
+				}
+			} else {
+				bulkUploadError = result.error || 'Upload failed';
+			}
+		} catch (error) {
+			bulkUploadError = error.message || 'Failed to upload files';
+		} finally {
+			bulkUploading = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -329,6 +381,82 @@
 		</p>
 		
 		<div class="space-y-4">
+			<!-- Bulk Upload Files -->
+			<div class="border rounded-lg p-4">
+				<h3 class="font-semibold mb-2">0. Upload Multiple Audio Files</h3>
+				<p class="text-sm text-gray-600 mb-3">
+					Upload multiple audio files directly to the volume storage. Files will be saved with unique names.
+				</p>
+				<div class="space-y-3">
+					<div>
+						<label for="bulk-file-input" class="block text-sm font-medium mb-2">
+							Select Audio Files (MP3, M4A, OGG, WAV - max 100MB each)
+						</label>
+						<input
+							id="bulk-file-input"
+							type="file"
+							multiple
+							accept="audio/*,.mp3,.m4a,.ogg,.wav"
+							on:change={handleBulkFileSelect}
+							class="w-full px-3 py-2 border rounded"
+							disabled={bulkUploading}
+						/>
+						{#if selectedFiles.length > 0}
+							<p class="text-sm text-gray-600 mt-2">
+								{selectedFiles.length} file(s) selected
+								({selectedFiles.reduce((sum, f) => sum + f.size, 0).toLocaleString()} bytes)
+							</p>
+						{/if}
+					</div>
+					<button
+						on:click={uploadBulkFiles}
+						disabled={bulkUploading || selectedFiles.length === 0}
+						class="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{bulkUploading ? 'Uploading...' : `Upload ${selectedFiles.length || 0} File(s)`}
+					</button>
+					
+					{#if bulkUploadResult}
+						<div class="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+							<p class="font-semibold text-green-800">Upload Complete!</p>
+							<p class="text-sm text-green-700">
+								✅ Uploaded: {bulkUploadResult.uploaded} file(s)<br>
+								❌ Failed: {bulkUploadResult.failed} file(s)<br>
+								📦 Total size: {bulkUploadResult.totalSizeFormatted || '0 Bytes'}
+							</p>
+							{#if bulkUploadResult.files && bulkUploadResult.files.length > 0}
+								<details class="mt-2">
+									<summary class="text-sm text-green-700 cursor-pointer">Uploaded Files</summary>
+									<ul class="text-xs text-green-600 mt-1 space-y-1">
+										{#each bulkUploadResult.files as file}
+											<li>
+												{file.originalName} → {file.filename} ({file.sizeFormatted})
+											</li>
+										{/each}
+									</ul>
+								</details>
+							{/if}
+							{#if bulkUploadResult.errors && bulkUploadResult.errors.length > 0}
+								<details class="mt-2">
+									<summary class="text-sm text-red-700 cursor-pointer">Errors</summary>
+									<ul class="text-xs text-red-600 mt-1 list-disc list-inside">
+										{#each bulkUploadResult.errors as error}
+											<li>{error.filename}: {error.error}</li>
+										{/each}
+									</ul>
+								</details>
+							{/if}
+						</div>
+					{/if}
+					
+					{#if bulkUploadError}
+						<div class="mt-4 p-3 bg-red-50 border border-red-200 rounded">
+							<p class="font-semibold text-red-800">Upload Failed</p>
+							<p class="text-sm text-red-700">{bulkUploadError}</p>
+						</div>
+					{/if}
+				</div>
+			</div>
 			<!-- Migrate from static directory -->
 			<div class="border rounded-lg p-4">
 				<h3 class="font-semibold mb-2">1. Migrate Files from Static Directory</h3>
