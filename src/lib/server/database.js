@@ -405,11 +405,24 @@ export function savePodcast(podcast) {
 	const db = readDatabase();
 	const index = db.podcasts.findIndex((p) => p.id === podcast.id);
 	if (index >= 0) {
-		db.podcasts[index] = podcast;
+		// Preserve existing data when updating - merge instead of replace
+		const existingPodcast = db.podcasts[index];
+		db.podcasts[index] = {
+			...existingPodcast,
+			...podcast,
+			// Preserve categories if not provided in update
+			categories: podcast.categories !== undefined ? podcast.categories : (existingPodcast.categories || []),
+			// Preserve series if not provided in update
+			series: podcast.series !== undefined ? podcast.series : (existingPodcast.series || null)
+		};
 	} else {
 		// Generate GUID if not provided
 		if (!podcast.guid) {
 			podcast.guid = podcast.id;
+		}
+		// Ensure categories array exists for new podcasts
+		if (!podcast.categories) {
+			podcast.categories = [];
 		}
 		db.podcasts.push(podcast);
 	}
