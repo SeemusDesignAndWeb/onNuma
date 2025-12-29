@@ -1,4 +1,6 @@
 <script>
+	import { onMount } from 'svelte';
+
 	export let podcast;
 	export let autoplay = false;
 
@@ -8,15 +10,49 @@
 	let duration = 0;
 	let volume = 1;
 
+	// Sync isPlaying state with actual audio element state
+	function updatePlayingState() {
+		if (audioElement) {
+			isPlaying = !audioElement.paused;
+		}
+	}
+
+	let autoplayHandled = false;
+
+	// Handle autoplay when component mounts or podcast changes
+	$: if (autoplay && audioElement && podcast?.audioUrl && !autoplayHandled) {
+		autoplayHandled = true;
+		// Use a small delay to ensure audio element is ready
+		setTimeout(() => {
+			if (audioElement) {
+				audioElement.play().then(() => {
+					updatePlayingState();
+				}).catch(error => {
+					// Autoplay was prevented by browser policy
+					console.log('Autoplay prevented:', error);
+					updatePlayingState();
+				});
+			}
+		}, 100);
+	}
+
+	// Reset autoplay flag when podcast changes
+	$: if (podcast?.audioUrl) {
+		autoplayHandled = false;
+	}
+
 	function togglePlay() {
 		if (!audioElement) return;
 
-		if (isPlaying) {
-			audioElement.pause();
+		// Use the actual audio element state, not our local state
+		if (audioElement.paused) {
+			audioElement.play().catch(error => {
+				console.error('Play error:', error);
+			});
 		} else {
-			audioElement.play();
+			audioElement.pause();
 		}
-		isPlaying = !isPlaying;
+		// State will be updated by the play/pause event handlers
 	}
 
 	function handleTimeUpdate() {
@@ -58,6 +94,34 @@
 		isPlaying = false;
 		currentTime = 0;
 	}
+
+	// Generate consistent color for each series (using primary/10 style with different colors)
+	function getSeriesColor(series) {
+		if (!series) return 'bg-gray-100 text-gray-700';
+		
+		// Color palette - different colors for different series (using /10 opacity style)
+		const colors = [
+			{ bg: 'bg-blue-100', text: 'text-blue-700' },
+			{ bg: 'bg-green-100', text: 'text-green-700' },
+			{ bg: 'bg-purple-100', text: 'text-purple-700' },
+			{ bg: 'bg-pink-100', text: 'text-pink-700' },
+			{ bg: 'bg-yellow-100', text: 'text-yellow-700' },
+			{ bg: 'bg-indigo-100', text: 'text-indigo-700' },
+			{ bg: 'bg-red-100', text: 'text-red-700' },
+			{ bg: 'bg-teal-100', text: 'text-teal-700' },
+			{ bg: 'bg-orange-100', text: 'text-orange-700' },
+			{ bg: 'bg-cyan-100', text: 'text-cyan-700' },
+			{ bg: 'bg-primary/10', text: 'text-primary' }
+		];
+		
+		// Simple hash function to get consistent color for same series name
+		let hash = 0;
+		for (let i = 0; i < series.length; i++) {
+			hash = series.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		const index = Math.abs(hash) % colors.length;
+		return `${colors[index].bg} ${colors[index].text}`;
+	}
 </script>
 
 <div class="bg-white rounded-lg shadow-lg p-6">
@@ -69,7 +133,8 @@
 			<p class="text-gray-600 text-sm mb-2">By {podcast.speaker}</p>
 		{/if}
 		{#if podcast.series}
-			<span class="inline-block mt-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded">
+			{@const seriesColor = getSeriesColor(podcast.series)}
+			<span class="inline-block mt-2 px-2 py-1 {seriesColor} text-xs rounded">
 				{podcast.series}
 			</span>
 		{/if}
@@ -81,6 +146,8 @@
 		on:timeupdate={handleTimeUpdate}
 		on:loadedmetadata={handleTimeUpdate}
 		on:ended={handleEnded}
+		on:play={updatePlayingState}
+		on:pause={updatePlayingState}
 		autoplay={autoplay}
 		preload="metadata"
 	></audio>

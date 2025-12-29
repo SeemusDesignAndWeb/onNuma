@@ -37,10 +37,20 @@
 	let selectedFiles = [];
 	let uploadProgress = [];
 	let currentUploadingFile = null;
+	
+	// Series management
+	let showSeriesModal = false;
+	let seriesEditingPodcast = null;
+	let availableSeries = [];
+	let selectedSeries = '';
+	let newSeriesName = '';
+	let loadingSeries = false;
+	let savingSeries = false;
 
 	onMount(async () => {
 		await loadPodcasts();
 		await loadPodcastSettings();
+		await loadSeries();
 	});
 
 	async function loadPodcasts() {
@@ -82,6 +92,10 @@
 			editing = { ...podcast };
 			// Convert ISO date to datetime-local format for the input
 			editing.publishedAt = isoToDatetimeLocal(podcast.publishedAt);
+			// Ensure series field exists
+			if (!editing.series) {
+				editing.series = '';
+			}
 		} else {
 			editing = {
 				id: '',
@@ -94,13 +108,16 @@
 				originalName: '',
 				size: 0,
 				publishedAt: isoToDatetimeLocal(new Date().toISOString()),
-				guid: ''
+				guid: '',
+				series: ''
 			};
 		}
 		audioUrl = editing.audioUrl;
 		audioFile = null;
 		showForm = true;
 		uploadError = '';
+		// Load series when opening edit form
+		loadSeries();
 		
 		// Scroll to edit form
 		setTimeout(() => {
@@ -173,6 +190,11 @@
 				...editing,
 				publishedAt: datetimeLocalToIso(editing.publishedAt)
 			};
+			
+			// Don't send empty GUID - let API auto-generate it
+			if (!podcastToSave.guid || podcastToSave.guid.trim() === '') {
+				delete podcastToSave.guid;
+			}
 
 			const formData = new FormData();
 			formData.append('podcast', JSON.stringify(podcastToSave));
@@ -412,6 +434,146 @@
 		const sizes = ['Bytes', 'KB', 'MB', 'GB'];
 		const i = Math.floor(Math.log(bytes) / Math.log(k));
 		return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+	}
+
+	async function loadSeries() {
+		loadingSeries = true;
+		try {
+			// Extract unique series from all podcasts
+			const seriesSet = new Set();
+			podcasts.forEach(podcast => {
+				if (podcast.series && typeof podcast.series === 'string' && podcast.series.trim()) {
+					seriesSet.add(podcast.series.trim());
+				}
+			});
+			availableSeries = Array.from(seriesSet).sort();
+		} catch (error) {
+			console.error('Failed to load series:', error);
+		} finally {
+			loadingSeries = false;
+		}
+	}
+
+	function openSeriesModal(podcast) {
+		seriesEditingPodcast = podcast;
+		selectedSeries = podcast.series || '';
+		newSeriesName = '';
+		showSeriesModal = true;
+		// Reload series list to get latest
+		loadSeries();
+	}
+
+	function closeSeriesModal() {
+		showSeriesModal = false;
+		seriesEditingPodcast = null;
+		selectedSeries = '';
+		newSeriesName = '';
+	}
+
+	function selectSeries(series) {
+		selectedSeries = series;
+		newSeriesName = '';
+	}
+
+	async function addNewSeries() {
+		if (!newSeriesName.trim()) return;
+		
+		const seriesName = newSeriesName.trim();
+		
+		// Check if series already exists
+		if (availableSeries.some(s => s.toLowerCase() === seriesName.toLowerCase())) {
+			// Just select it
+			selectedSeries = seriesName;
+			newSeriesName = '';
+			return;
+		}
+
+		// Add to available series list
+		availableSeries = [...availableSeries, seriesName].sort();
+		selectedSeries = seriesName;
+		newSeriesName = '';
+	}
+
+	function addNewSeriesToEdit() {
+		if (!newSeriesName.trim()) return;
+		
+		const seriesName = newSeriesName.trim();
+		
+		// Check if series already exists
+		if (availableSeries.some(s => s.toLowerCase() === seriesName.toLowerCase())) {
+			// Just select it
+			editing.series = seriesName;
+			newSeriesName = '';
+			return;
+		}
+
+		// Add to available series list and select it
+		availableSeries = [...availableSeries, seriesName].sort();
+		editing.series = seriesName;
+		newSeriesName = '';
+	}
+
+	// Generate consistent color for each series (using primary/10 style with different colors)
+	function getSeriesColor(series) {
+		if (!series) return 'bg-gray-100 text-gray-700';
+		
+		// Color palette - different colors for different series (using /10 opacity style)
+		const colors = [
+			{ bg: 'bg-blue-100', text: 'text-blue-700' },
+			{ bg: 'bg-green-100', text: 'text-green-700' },
+			{ bg: 'bg-purple-100', text: 'text-purple-700' },
+			{ bg: 'bg-pink-100', text: 'text-pink-700' },
+			{ bg: 'bg-yellow-100', text: 'text-yellow-700' },
+			{ bg: 'bg-indigo-100', text: 'text-indigo-700' },
+			{ bg: 'bg-red-100', text: 'text-red-700' },
+			{ bg: 'bg-teal-100', text: 'text-teal-700' },
+			{ bg: 'bg-orange-100', text: 'text-orange-700' },
+			{ bg: 'bg-cyan-100', text: 'text-cyan-700' },
+			{ bg: 'bg-primary/10', text: 'text-primary' }
+		];
+		
+		// Simple hash function to get consistent color for same series name
+		let hash = 0;
+		for (let i = 0; i < series.length; i++) {
+			hash = series.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		const index = Math.abs(hash) % colors.length;
+		return `${colors[index].bg} ${colors[index].text}`;
+	}
+
+	async function savePodcastSeries() {
+		if (!seriesEditingPodcast) return;
+
+		savingSeries = true;
+		try {
+			// Update the podcast with new series (can be empty string to clear)
+			const updatedPodcast = {
+				...seriesEditingPodcast,
+				series: selectedSeries || null
+			};
+
+			const formData = new FormData();
+			formData.append('podcast', JSON.stringify(updatedPodcast));
+
+			const response = await fetch('/api/audio', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (response.ok) {
+				await loadPodcasts();
+				await loadSeries();
+				closeSeriesModal();
+			} else {
+				const error = await response.json();
+				alert(error.error || 'Failed to save series');
+			}
+		} catch (error) {
+			console.error('Failed to save series:', error);
+			alert('Failed to save series');
+		} finally {
+			savingSeries = false;
+		}
 	}
 </script>
 
@@ -833,22 +995,64 @@
 						{/if}
 					</div>
 				</div>
-				<div>
-					<label class="block text-sm font-medium mb-1">Published Date *</label>
-					<input
-						type="datetime-local"
-						bind:value={editing.publishedAt}
-						class="w-full px-3 py-2 border rounded"
-					/>
-				</div>
-				<div>
-					<label class="block text-sm font-medium mb-1">GUID (for RSS feed)</label>
-					<input
-						type="text"
-						bind:value={editing.guid}
-						class="w-full px-3 py-2 border rounded"
-						placeholder="Auto-generated if left empty"
-					/>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div>
+						<label class="block text-sm font-medium mb-1">Published Date *</label>
+						<input
+							type="datetime-local"
+							bind:value={editing.publishedAt}
+							class="w-full px-3 py-2 border rounded"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium mb-1">Series</label>
+						<div class="space-y-2">
+							{#if loadingSeries}
+								<p class="text-sm text-gray-500">Loading series...</p>
+							{:else}
+								<div class="flex flex-wrap gap-2 mb-2">
+									<button
+										type="button"
+										on:click={() => editing.series = ''}
+										class="inline-block px-2 py-1 text-xs rounded {editing.series === '' ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+									>
+										None
+									</button>
+									{#each availableSeries as series}
+										{@const isSelected = editing.series === series}
+										{@const colorClasses = getSeriesColor(series)}
+										<button
+											type="button"
+											on:click={() => editing.series = series}
+											class="inline-block px-2 py-1 text-xs rounded transition-all {isSelected ? 'ring-2 ring-brand-blue ring-offset-1' : ''} {isSelected ? 'bg-brand-blue text-white' : colorClasses}"
+										>
+											{series}
+										</button>
+									{/each}
+								</div>
+								<div class="flex gap-2">
+									<input
+										type="text"
+										bind:value={newSeriesName}
+										placeholder="Add new series"
+										class="flex-1 px-3 py-2 border rounded text-sm"
+										on:keydown={(e) => {
+											if (e.key === 'Enter') {
+												addNewSeriesToEdit();
+											}
+										}}
+									/>
+									<button
+										type="button"
+										on:click={addNewSeriesToEdit}
+										class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+									>
+										Add
+									</button>
+								</div>
+							{/if}
+						</div>
+					</div>
 				</div>
 				<div class="flex gap-2">
 					<button
@@ -907,6 +1111,12 @@
 									Edit
 								</button>
 								<button
+									on:click={() => openSeriesModal(podcast)}
+									class="text-blue-600 hover:underline mr-4"
+								>
+									Select Series
+								</button>
+								<button
 									on:click={() => deletePodcast(podcast.id)}
 									class="text-red-600 hover:underline"
 								>
@@ -917,6 +1127,103 @@
 					{/each}
 				</tbody>
 			</table>
+		</div>
+	{/if}
+
+	<!-- Series Selection Modal -->
+	{#if showSeriesModal && seriesEditingPodcast}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" on:click={closeSeriesModal}>
+			<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" on:click|stopPropagation>
+				<div class="p-6">
+					<div class="flex items-center justify-between mb-4">
+						<h2 class="text-2xl font-bold">Select Series for: {seriesEditingPodcast.title}</h2>
+						<button
+							on:click={closeSeriesModal}
+							class="text-gray-500 hover:text-gray-700 text-2xl"
+						>
+							×
+						</button>
+					</div>
+
+					<!-- Add New Series -->
+					<div class="mb-6 p-4 bg-gray-50 rounded-lg">
+						<h3 class="font-semibold mb-2">Add New Series</h3>
+						<div class="flex gap-2">
+							<input
+								type="text"
+								bind:value={newSeriesName}
+								placeholder="Enter series name (e.g., Nehemiah)"
+								class="flex-1 px-3 py-2 border rounded"
+								on:keydown={(e) => {
+									if (e.key === 'Enter') {
+										addNewSeries();
+									}
+								}}
+							/>
+							<button
+								on:click={addNewSeries}
+								class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+							>
+								Add
+							</button>
+						</div>
+					</div>
+
+					<!-- Available Series -->
+					<div class="mb-6">
+						<h3 class="font-semibold mb-3">Available Series</h3>
+						{#if loadingSeries}
+							<p class="text-gray-500">Loading series...</p>
+						{:else if availableSeries.length === 0}
+							<p class="text-gray-500">No series available. Add one above.</p>
+						{:else}
+							<div class="flex flex-wrap gap-2">
+								<button
+									on:click={() => { selectedSeries = ''; }}
+									class="inline-block px-2 py-1 text-xs rounded transition-all {selectedSeries === '' ? 'bg-brand-blue text-white ring-2 ring-brand-blue ring-offset-1' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+								>
+									None
+								</button>
+								{#each availableSeries as series}
+									{@const isSelected = selectedSeries === series}
+									{@const colorClasses = getSeriesColor(series)}
+									<button
+										on:click={() => selectSeries(series)}
+										class="inline-block px-2 py-1 text-xs rounded transition-all {isSelected ? 'ring-2 ring-brand-blue ring-offset-1' : ''} {isSelected ? 'bg-brand-blue text-white' : colorClasses}"
+									>
+										{series}
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+
+					<!-- Selected Series Summary -->
+					{#if selectedSeries}
+						<div class="mb-6 p-4 bg-blue-50 rounded-lg">
+							<h3 class="font-semibold mb-2">Selected Series</h3>
+							<p class="text-brand-blue font-medium">{selectedSeries}</p>
+						</div>
+					{/if}
+
+					<!-- Action Buttons -->
+					<div class="flex gap-3 justify-end">
+						<button
+							on:click={closeSeriesModal}
+							class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+						>
+							Cancel
+						</button>
+						<button
+							on:click={savePodcastSeries}
+							disabled={savingSeries}
+							class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+						>
+							{savingSeries ? 'Saving...' : 'Save Series'}
+						</button>
+					</div>
+				</div>
+			</div>
 		</div>
 	{/if}
 </div>
