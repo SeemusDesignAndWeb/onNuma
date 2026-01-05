@@ -18,7 +18,7 @@ export async function crmHandle({ event, resolve }) {
 		'X-Frame-Options': 'DENY',
 		'X-XSS-Protection': '1; mode=block',
 		'Referrer-Policy': 'strict-origin-when-cross-origin',
-		'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;"
+		'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src 'self' https://www.google.com https://maps.google.com;"
 	});
 
 	// Only handle /hub and /signup/rota routes
