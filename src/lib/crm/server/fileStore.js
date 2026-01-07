@@ -8,15 +8,30 @@ import { env } from '$env/dynamic/private';
 // In production (Railway), set CRM_DATA_DIR=/data to use the persistent volume
 function getDataDir() {
 	const envDataDir = env.CRM_DATA_DIR;
-	if (envDataDir) {
-		// Use environment variable if set (absolute path for production)
-		return envDataDir;
+	if (envDataDir && envDataDir.trim()) {
+		let finalPath;
+		const trimmed = envDataDir.trim();
+		// If it's an absolute path (starts with /), use it directly
+		if (trimmed.startsWith('/')) {
+			finalPath = trimmed;
+		} else if (trimmed.startsWith('./') || trimmed.startsWith('../')) {
+			// If it's a relative path (starts with ./ or ../), resolve it relative to process.cwd()
+			finalPath = join(process.cwd(), trimmed);
+		} else {
+			// Otherwise, treat it as a relative path (no leading slash or ./)
+			finalPath = join(process.cwd(), trimmed);
+		}
+		console.log('[fileStore] Using CRM_DATA_DIR:', trimmed, '-> resolved to:', finalPath);
+		return finalPath;
 	}
 	// Default to ./data for local development
-	return join(process.cwd(), 'data');
+	const defaultPath = join(process.cwd(), 'data');
+	console.log('[fileStore] CRM_DATA_DIR not set, using default data directory:', defaultPath);
+	return defaultPath;
 }
 
 const DATA_DIR = getDataDir();
+console.log('[fileStore] DATA_DIR initialized to:', DATA_DIR);
 const UPLOADS_DIR = join(DATA_DIR, 'uploads');
 
 // Ensure data directory exists (lazy initialization)
@@ -95,6 +110,8 @@ export async function readCollection(collection) {
 	const filePath = getCollectionPath(collection);
 	
 	if (!existsSync(filePath)) {
+		console.warn(`[fileStore] Collection file not found: ${filePath}`);
+		console.warn(`[fileStore] DATA_DIR is: ${DATA_DIR}`);
 		return [];
 	}
 
@@ -111,8 +128,10 @@ export async function readCollection(collection) {
 			.map(line => JSON.parse(line));
 	} catch (error) {
 		if (error.code === 'ENOENT') {
+			console.warn(`[fileStore] Collection file not found (ENOENT): ${filePath}`);
 			return [];
 		}
+		console.error(`[fileStore] Error reading collection ${collection} from ${filePath}:`, error);
 		throw error;
 	}
 }
