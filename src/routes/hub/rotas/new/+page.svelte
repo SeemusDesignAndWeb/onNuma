@@ -10,13 +10,31 @@
 	$: events = data.events || [];
 	$: occurrences = data.occurrences || [];
 	$: formResult = $page.form;
+	$: csrfToken = data.csrfToken || '';
 	
 	// Show notifications from form results
 	$: if (formResult?.error) {
 		notifications.error(formResult.error);
 	}
-	$: eventId = data.eventId || '';
-	$: csrfToken = data.csrfToken || '';
+
+	let notes = '';
+	let formData = {
+		eventId: '',
+		occurrenceId: '',
+		role: '',
+		capacity: 1
+	};
+	
+	// Initialize formData.eventId from URL parameter only once, not reactively
+	let initialized = false;
+	$: if (data.eventId && !initialized) {
+		formData.eventId = data.eventId;
+		initialized = true;
+	}
+
+	$: filteredOccurrences = formData.eventId
+		? occurrences.filter(o => o.eventId === formData.eventId)
+		: [];
 
 	function handleEnhance() {
 		return async ({ update, result }) => {
@@ -28,18 +46,6 @@
 			await update();
 		};
 	}
-
-	let notes = '';
-	let formData = {
-		eventId: eventId,
-		occurrenceId: '',
-		role: '',
-		capacity: 1
-	};
-
-	$: filteredOccurrences = formData.eventId
-		? occurrences.filter(o => o.eventId === formData.eventId)
-		: [];
 </script>
 
 <div class="bg-white shadow rounded-lg p-6">
@@ -47,7 +53,7 @@
 
 	<form method="POST" action="?/create" use:enhance={handleEnhance}>
 		<input type="hidden" name="_csrf" value={csrfToken} />
-		<input type="hidden" name="notes" value={notes} />
+		<input type="hidden" name="notes" bind:value={notes} />
 		<div class="mb-4">
 			<label class="block text-sm font-medium text-gray-700 mb-1">Event</label>
 			<select name="eventId" bind:value={formData.eventId} required class="w-full rounded-md border border-gray-500 shadow-sm focus:border-green-500 focus:ring-green-500 py-3 px-4">
