@@ -80,7 +80,7 @@
 								}
 							}
 						}
-					},
+					}
 				}
 			});
 			
@@ -89,37 +89,13 @@
 				quill.root.setAttribute('dir', 'ltr');
 			}
 
-			// Handle paste events to ensure LTR direction
-			// Override clipboard matcher to strip RTL direction from pasted content
-			quill.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
-				// Remove RTL direction attributes from pasted elements
-				if (node.hasAttribute && node.hasAttribute('dir')) {
-					const dir = node.getAttribute('dir');
-					if (dir === 'rtl') {
-						node.removeAttribute('dir');
-						node.setAttribute('dir', 'ltr');
-					}
-				}
-				// Also check style attribute for direction
-				if (node.style && node.style.direction === 'rtl') {
-					node.style.direction = 'ltr';
-				}
-				return delta;
-			});
-
-			// Handle paste event to fix direction after paste
+			// Handle paste events to ensure LTR direction (simplified, non-blocking)
 			quill.root.addEventListener('paste', (e) => {
-				// Get current selection before paste
-				const selection = quill.getSelection();
-				const cursorIndex = selection ? selection.index : 0;
-				
-				// Let Quill handle the paste first, then fix direction
+				// Let Quill handle paste normally, then fix direction asynchronously
 				setTimeout(() => {
 					if (quill && quill.root) {
-						// Ensure root has LTR
 						quill.root.setAttribute('dir', 'ltr');
-						
-						// Find and fix all elements with RTL direction
+						// Fix RTL elements after paste
 						const allElements = quill.root.querySelectorAll('*');
 						allElements.forEach(el => {
 							if (el.hasAttribute('dir') && el.getAttribute('dir') === 'rtl') {
@@ -129,15 +105,8 @@
 								el.style.direction = 'ltr';
 							}
 						});
-						
-						// Restore cursor position after paste (at end of pasted content)
-						if (selection) {
-							const newLength = quill.getLength();
-							const pastedLength = newLength - (quill.getText(0, cursorIndex).length);
-							quill.setSelection(cursorIndex + pastedLength, 'api');
-						}
 					}
-				}, 10);
+				}, 0);
 			});
 
 			if (initialValue) {
@@ -146,76 +115,39 @@
 				quill.setContents(delta);
 			}
 
-			// Track if we're handling a paste operation
-			let isPasting = false;
-			
-			quill.on('text-change', (delta, oldDelta, source) => {
-				// Only update if change came from user input, not programmatic changes
-				if (source === 'user' && !isUpdatingFromExternal) {
-					// Check if this is a paste operation (large delta change)
-					const isLargeChange = delta.ops && delta.ops.some(op => 
-						op.insert && typeof op.insert === 'string' && op.insert.length > 10
-					);
-					
-					if (isLargeChange) {
-						isPasting = true;
-						// Fix direction after paste
-						setTimeout(() => {
-							if (quill && quill.root) {
-								quill.root.setAttribute('dir', 'ltr');
-								const allElements = quill.root.querySelectorAll('*');
-								allElements.forEach(el => {
-									if (el.hasAttribute('dir') && el.getAttribute('dir') === 'rtl') {
-										el.setAttribute('dir', 'ltr');
-									}
-									if (el.style && el.style.direction === 'rtl') {
-										el.style.direction = 'ltr';
-									}
-								});
+			// Simplified text-change handler - don't sanitize on every keystroke (causes delays)
+			// Only update the value, sanitize on form submit
+			quill.on('text-change', () => {
+				if (quill && !isUpdatingFromExternal) {
+					// Use setTimeout to avoid blocking the UI thread
+					setTimeout(() => {
+						if (quill && !isUpdatingFromExternal) {
+							const html = quill.root.innerHTML;
+							// Only update if content actually changed
+							if (html !== value) {
+								value = html;
+								
+								// Update hidden input directly to ensure form submission works
+								const hiddenInput = quillContainer.parentElement?.querySelector(`input[name="${name}"]`);
+								if (hiddenInput) {
+									hiddenInput.value = html;
+								}
+								
+								// Dispatch custom event
+								const event = new CustomEvent('change', { detail: { value: html } });
+								quillContainer.dispatchEvent(event);
 							}
-							isPasting = false;
-						}, 0);
-					}
-					
-					// Don't get selection here - Quill automatically maintains cursor position during typing
-					// Manually restoring it causes the cursor to jump
-					
-					const html = quill.root.innerHTML;
-					// Sanitize on input (DOMPurify works in browser)
-					// Allow Quill alignment classes and style attributes
-					const sanitized = DOMPurify.default.sanitize(html, {
-						ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style'],
-						ALLOWED_CLASSES: {
-							'*': ['ql-align-center', 'ql-align-right', 'ql-align-justify', 'ql-align-left']
 						}
-					});
-					
-					// Only update if content actually changed (avoid unnecessary updates)
-					if (sanitized !== value) {
-						value = sanitized;
-						
-						// Update hidden input directly to ensure form submission works
-						const hiddenInput = quillContainer.parentElement?.querySelector(`input[name="${name}"]`);
-						if (hiddenInput) {
-							hiddenInput.value = sanitized;
-						}
-						
-						// DO NOT manually restore cursor position - Quill handles it automatically
-						// Manually restoring causes the cursor to jump to the top
-						
-						// Dispatch custom event
-						const event = new CustomEvent('change', { detail: { value: sanitized } });
-						quillContainer.dispatchEvent(event);
-					}
+					}, 0);
 				}
 			});
 			
-			// Also update on form submit to ensure latest value is captured
+			// Sanitize on form submit to ensure clean HTML is saved
 			const form = quillContainer.closest('form');
 			if (form) {
 				form.addEventListener('submit', () => {
 					const html = quill.root.innerHTML;
-					// Allow Quill alignment classes and style attributes
+					// Sanitize on submit (not on every keystroke to avoid delays)
 					const sanitized = DOMPurify.default.sanitize(html, {
 						ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style'],
 						ALLOWED_CLASSES: {
@@ -245,42 +177,22 @@
 		}
 	});
 
-	$: if (value !== initialValue && quill && loaded && !isUpdatingFromExternal) {
+	// Update editor when value changes externally (simplified like RichTextEditor)
+	$: if (quill && loaded && !isUpdatingFromExternal && value !== initialValue) {
 		const current = quill.root.innerHTML;
-		if (current !== value && value) {
-			// Mark that we're updating from external source to prevent text-change handler from interfering
+		const newValue = value || '';
+		// Only update if the value is actually different
+		if (current !== newValue) {
 			isUpdatingFromExternal = true;
-			
-			// Preserve cursor position when updating content
-			const selection = quill.getSelection();
-			const cursorIndex = selection ? selection.index : 0;
-			
-			// Use Quill's clipboard to properly parse HTML
-			try {
-				const delta = quill.clipboard.convert({ html: value });
-				quill.setContents(delta, 'silent'); // Use 'silent' to avoid triggering text-change
-			} catch (error) {
-				// Fallback to direct innerHTML if clipboard conversion fails
-				console.warn('Failed to convert HTML via clipboard, using innerHTML:', error);
-				quill.root.innerHTML = value;
-			}
-			
-			// Restore cursor position if it was set, but only if it's still valid
-			if (selection) {
-				requestAnimationFrame(() => {
-					if (quill) {
-						const length = quill.getLength();
-						// Only restore if cursor position is still within bounds
-						const newIndex = Math.min(cursorIndex, length - 1);
-						quill.setSelection(newIndex, 'api');
-					}
-					isUpdatingFromExternal = false;
-				});
-			} else {
+			quill.root.innerHTML = newValue;
+			initialValue = newValue;
+			// Reset flag after a brief delay
+			setTimeout(() => {
 				isUpdatingFromExternal = false;
-			}
+			}, 0);
+		} else {
+			initialValue = value;
 		}
-		initialValue = value;
 	}
 
 	async function loadImages() {
