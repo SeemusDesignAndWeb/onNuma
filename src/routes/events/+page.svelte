@@ -118,8 +118,17 @@
 					{data.page?.heroTitle || 'Upcoming Events'}
 				</h1>
 				{#if data.page?.heroSubtitle}
-					<p class="text-white text-lg md:text-xl">{data.page.heroSubtitle}</p>
+					<p class="text-white text-lg md:text-xl mb-6">{data.page.heroSubtitle}</p>
 				{/if}
+				<a
+					href="/events/calendar"
+					class="inline-flex items-center gap-2 px-6 py-3 bg-white text-brand-blue rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+					</svg>
+					View Calendar
+				</a>
 			</div>
 		</div>
 	</section>
@@ -175,8 +184,20 @@
 				<h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
 					Upcoming Events
 				</h2>
-				<p class="text-xl text-gray-600 max-w-2xl mx-auto">
+				<p class="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
 					Join us for these upcoming events and activities
+				</p>
+				<a
+					href="/events/calendar"
+					class="inline-flex items-center gap-2 px-6 py-3 bg-brand-blue text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+					</svg>
+					View Calendar
+				</a>
+				<p class="text-sm text-gray-500 mt-3">
+					<a href="/events/calendar" class="text-brand-blue hover:underline">/events/calendar</a>
 				</p>
 			</div>
 
