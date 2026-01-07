@@ -27,7 +27,11 @@ export async function POST({ request, cookies, params, url }) {
 	}
 
 	const contacts = await readCollection('contacts');
-	const listContacts = contacts.filter(c => list.contactIds?.includes(c.id));
+	// Filter to only subscribed contacts (subscribed !== false)
+	const listContacts = contacts.filter(c => 
+		list.contactIds?.includes(c.id) && 
+		c.subscribed !== false
+	);
 
 	const results = [];
 	for (const contact of listContacts) {

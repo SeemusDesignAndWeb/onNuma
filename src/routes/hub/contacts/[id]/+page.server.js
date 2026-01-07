@@ -42,7 +42,8 @@ export const actions = {
 				baptismDate: data.get('baptismDate') || null,
 				servingAreas: servingAreas ? JSON.parse(servingAreas) : [],
 				giftings: giftings ? JSON.parse(giftings) : [],
-				notes: data.get('notes')
+				notes: data.get('notes'),
+				subscribed: data.get('subscribed') === 'on' || data.get('subscribed') === 'true'
 			};
 
 			const validated = validateContact(contactData);

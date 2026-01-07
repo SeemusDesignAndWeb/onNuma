@@ -36,7 +36,8 @@
 		baptismDate: contact?.baptismDate || '',
 		servingAreas: contact?.servingAreas || [],
 		giftings: contact?.giftings || [],
-		notes: contact?.notes || ''
+		notes: contact?.notes || '',
+		subscribed: contact?.subscribed !== false // Default to true if not set
 	};
 
 	$: if (contact) {
@@ -56,7 +57,8 @@
 			baptismDate: contact.baptismDate || '',
 			servingAreas: Array.isArray(contact.servingAreas) ? contact.servingAreas : [],
 			giftings: Array.isArray(contact.giftings) ? contact.giftings : [],
-			notes: contact.notes || ''
+			notes: contact.notes || '',
+			subscribed: contact.subscribed !== false // Default to true if not set
 		};
 	}
 
@@ -144,6 +146,18 @@
 				<FormField label="First Name" name="firstName" bind:value={formData.firstName} />
 				<FormField label="Last Name" name="lastName" bind:value={formData.lastName} />
 				<FormField label="Phone" name="phone" bind:value={formData.phone} />
+				
+				<div class="mb-4">
+					<label class="flex items-center">
+						<input
+							type="checkbox"
+							name="subscribed"
+							bind:checked={formData.subscribed}
+							class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-500 focus:ring-green-500"
+						/>
+						<span class="ml-2 text-sm text-gray-700">Subscribed to newsletters</span>
+					</label>
+				</div>
 				
 				<h3 class="text-lg font-semibold text-gray-900 mb-4 mt-6">Address</h3>
 				<FormField label="Address Line 1" name="addressLine1" bind:value={formData.addressLine1} />
@@ -332,6 +346,16 @@
 								</dd>
 							</div>
 						{/if}
+						<div>
+							<dt class="text-sm font-medium text-gray-500">Newsletter Subscription</dt>
+							<dd class="mt-1 text-sm text-gray-900">
+								{#if contact.subscribed !== false}
+									<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">Subscribed</span>
+								{:else}
+									<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">Unsubscribed</span>
+								{/if}
+							</dd>
+						</div>
 					</dl>
 				</div>
 				

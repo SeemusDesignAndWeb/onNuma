@@ -163,3 +163,52 @@ export async function getOccurrenceTokenByToken(tokenStr) {
 	return tokens.length > 0 ? tokens[0] : null;
 }
 
+/**
+ * Generate a contact unsubscribe token
+ * @returns {string} Token string (UNS_ prefix)
+ */
+export function generateUnsubscribeToken() {
+	return `UNS_${generateId()}`;
+}
+
+/**
+ * Ensure an unsubscribe token exists for a contact
+ * @param {string} contactId - Contact ID
+ * @param {string} email - Contact email (fallback if no ID)
+ * @returns {Promise<object>} Unsubscribe token
+ */
+export async function ensureUnsubscribeToken(contactId, email) {
+	// Use contactId if available, otherwise use email as identifier
+	const identifier = contactId || email;
+	
+	// Check if token already exists
+	const existing = await findMany('contact_tokens', token => 
+		(contactId && token.contactId === contactId) || 
+		(!contactId && token.email === email)
+	);
+
+	if (existing.length > 0) {
+		return existing[0];
+	}
+
+	// Create new token
+	const token = await create('contact_tokens', {
+		contactId: contactId || null,
+		email: email || null,
+		token: generateUnsubscribeToken(),
+		createdAt: new Date().toISOString()
+	});
+
+	return token;
+}
+
+/**
+ * Get unsubscribe token by token string
+ * @param {string} tokenStr - Token string
+ * @returns {Promise<object|null>} Token or null
+ */
+export async function getUnsubscribeTokenByToken(tokenStr) {
+	const tokens = await findMany('contact_tokens', t => t.token === tokenStr);
+	return tokens.length > 0 ? tokens[0] : null;
+}
+

@@ -80,6 +80,8 @@ export function validateContact(data) {
 		country: validateString(data.country || '', 'Country', 100),
 		// Church membership fields
 		membershipStatus: validateString(data.membershipStatus || '', 'Membership Status', 50),
+		// Newsletter subscription (default to true if not explicitly set to false)
+		subscribed: data.subscribed !== false && data.subscribed !== 'false',
 		dateJoined: data.dateJoined || null,
 		baptismDate: data.baptismDate || null,
 		servingAreas: Array.isArray(data.servingAreas) ? data.servingAreas : [],

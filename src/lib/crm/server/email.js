@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 import { readCollection, findById, update, findMany } from './fileStore.js';
+import { ensureUnsubscribeToken } from './tokens.js';
 
 const resend = new Resend(env.RESEND_API_KEY);
 
@@ -11,6 +12,32 @@ const resend = new Resend(env.RESEND_API_KEY);
  */
 function getBaseUrl(event) {
 	return env.APP_BASE_URL || event?.url?.origin || 'http://localhost:5173';
+}
+
+/**
+ * Get unsubscribe link for a contact
+ * @param {string} contactIdOrEmail - Contact ID or email
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<string>} Unsubscribe URL
+ */
+async function getUnsubscribeLink(contactIdOrEmail, event) {
+	if (!contactIdOrEmail) {
+		return '';
+	}
+	
+	const baseUrl = getBaseUrl(event);
+	
+	// Try to find contact by ID or email
+	const contacts = await readCollection('contacts');
+	const contact = contacts.find(c => c.id === contactIdOrEmail || c.email === contactIdOrEmail);
+	
+	if (!contact) {
+		return '';
+	}
+	
+	// Ensure unsubscribe token exists
+	const token = await ensureUnsubscribeToken(contact.id, contact.email);
+	return `${baseUrl}/unsubscribe/${token.token}`;
 }
 
 /**
@@ -331,8 +358,8 @@ export async function sendNewsletterEmail({ newsletterId, to, name, contact }, e
 	// Personalize content
 	const contactData = contact || { email: to, firstName: name, lastName: '', phone: '' };
 	const personalizedSubject = personalizeContent(newsletter.subject, contactData, upcomingRotas, upcomingEvents, event, false);
-	const personalizedHtml = personalizeContent(newsletter.htmlContent, contactData, upcomingRotas, upcomingEvents, event, false);
-	const personalizedText = personalizeContent(
+	let personalizedHtml = personalizeContent(newsletter.htmlContent, contactData, upcomingRotas, upcomingEvents, event, false);
+	let personalizedText = personalizeContent(
 		newsletter.textContent || newsletter.htmlContent.replace(/<[^>]*>/g, ''), 
 		contactData, 
 		upcomingRotas,
@@ -340,6 +367,21 @@ export async function sendNewsletterEmail({ newsletterId, to, name, contact }, e
 		event,
 		true
 	);
+
+	// Add unsubscribe link to HTML and text versions
+	const unsubscribeLink = await getUnsubscribeLink(contact?.id || contact?.email, event);
+	const unsubscribeHtml = `
+		<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #666;">
+			<p style="margin: 0 0 10px 0;">You are receiving this email because you are subscribed to our newsletter.</p>
+			<p style="margin: 0;">
+				<a href="${unsubscribeLink}" style="color: #4A97D2; text-decoration: underline;">Unsubscribe from this list</a>
+			</p>
+		</div>
+	`;
+	const unsubscribeText = `\n\n---\nYou are receiving this email because you are subscribed to our newsletter.\nUnsubscribe: ${unsubscribeLink}`;
+
+	personalizedHtml += unsubscribeHtml;
+	personalizedText += unsubscribeText;
 
 	try {
 		const result = await resend.emails.send({

@@ -28,7 +28,8 @@
 		baptismDate: '',
 		servingAreas: [],
 		giftings: [],
-		notes: ''
+		notes: '',
+		subscribed: true // Default to subscribed for new contacts
 	};
 
 	let servingAreaInput = '';
@@ -91,6 +92,17 @@
 						<FormField label="Last Name" name="lastName" bind:value={formData.lastName} />
 					</div>
 					<FormField label="Phone" name="phone" bind:value={formData.phone} />
+					<div class="mb-4">
+						<label class="flex items-center">
+							<input
+								type="checkbox"
+								name="subscribed"
+								bind:checked={formData.subscribed}
+								class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-500 focus:ring-green-500"
+							/>
+							<span class="ml-2 text-sm text-gray-700">Subscribed to newsletters</span>
+						</label>
+					</div>
 				</div>
 			</div>
 
