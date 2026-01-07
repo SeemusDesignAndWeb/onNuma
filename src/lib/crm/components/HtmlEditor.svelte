@@ -47,9 +47,13 @@
 			const Image = Quill.import('formats/image');
 			Image.sanitize = (url) => url; // Allow any URL
 
+			// Ensure LTR direction
+			quillContainer.setAttribute('dir', 'ltr');
+			
 			quill = new Quill(quillContainer, {
 				theme: 'snow',
 				placeholder,
+				direction: 'ltr', // Explicitly set left-to-right
 				modules: {
 					toolbar: {
 						container: [
@@ -77,6 +81,11 @@
 					}
 				}
 			});
+			
+			// Ensure the editor root also has LTR direction
+			if (quill.root) {
+				quill.root.setAttribute('dir', 'ltr');
+			}
 
 			if (initialValue) {
 				// Use Quill's clipboard to properly parse HTML
@@ -84,27 +93,41 @@
 				quill.setContents(delta);
 			}
 
-			quill.on('text-change', () => {
-				const html = quill.root.innerHTML;
-				// Sanitize on input (DOMPurify works in browser)
-				// Allow Quill alignment classes and style attributes
-				const sanitized = DOMPurify.default.sanitize(html, {
-					ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style'],
-					ALLOWED_CLASSES: {
-						'*': ['ql-align-center', 'ql-align-right', 'ql-align-justify', 'ql-align-left']
+			quill.on('text-change', (delta, oldDelta, source) => {
+				// Only update if change came from user input, not programmatic changes
+				if (source === 'user') {
+					// Preserve cursor position
+					const selection = quill.getSelection();
+					
+					const html = quill.root.innerHTML;
+					// Sanitize on input (DOMPurify works in browser)
+					// Allow Quill alignment classes and style attributes
+					const sanitized = DOMPurify.default.sanitize(html, {
+						ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style'],
+						ALLOWED_CLASSES: {
+							'*': ['ql-align-center', 'ql-align-right', 'ql-align-justify', 'ql-align-left']
+						}
+					});
+					value = sanitized;
+					
+					// Update hidden input directly to ensure form submission works
+					const hiddenInput = quillContainer.parentElement?.querySelector(`input[name="${name}"]`);
+					if (hiddenInput) {
+						hiddenInput.value = sanitized;
 					}
-				});
-				value = sanitized;
-				
-				// Update hidden input directly to ensure form submission works
-				const hiddenInput = quillContainer.parentElement?.querySelector(`input[name="${name}"]`);
-				if (hiddenInput) {
-					hiddenInput.value = sanitized;
+					
+					// Restore cursor position if it was set
+					if (selection) {
+						// Use setTimeout to ensure DOM is updated
+						setTimeout(() => {
+							quill.setSelection(selection);
+						}, 0);
+					}
+					
+					// Dispatch custom event
+					const event = new CustomEvent('change', { detail: { value: sanitized } });
+					quillContainer.dispatchEvent(event);
 				}
-				
-				// Dispatch custom event
-				const event = new CustomEvent('change', { detail: { value: sanitized } });
-				quillContainer.dispatchEvent(event);
 			});
 			
 			// Also update on form submit to ensure latest value is captured
@@ -145,14 +168,24 @@
 	$: if (value !== initialValue && quill && loaded) {
 		const current = quill.root.innerHTML;
 		if (current !== value && value) {
+			// Preserve cursor position when updating content
+			const selection = quill.getSelection();
+			
 			// Use Quill's clipboard to properly parse HTML
 			try {
 				const delta = quill.clipboard.convert({ html: value });
-				quill.setContents(delta);
+				quill.setContents(delta, 'silent'); // Use 'silent' to avoid triggering text-change
 			} catch (error) {
 				// Fallback to direct innerHTML if clipboard conversion fails
 				console.warn('Failed to convert HTML via clipboard, using innerHTML:', error);
 				quill.root.innerHTML = value;
+			}
+			
+			// Restore cursor position if it was set
+			if (selection) {
+				setTimeout(() => {
+					quill.setSelection(selection);
+				}, 0);
 			}
 		}
 		initialValue = value;
@@ -246,7 +279,7 @@
 			{/if}
 		</div>
 	{/if}
-	<div bind:this={quillContainer} class="bg-white"></div>
+	<div bind:this={quillContainer} class="bg-white" dir="ltr"></div>
 	<input type="hidden" name={name} value={value} />
 </div>
 
@@ -325,6 +358,12 @@
 	}
 	:global(.html-editor .ql-editor) {
 		min-height: 200px;
+		direction: ltr;
+		text-align: left;
+	}
+	
+	:global(.html-editor .ql-container) {
+		direction: ltr;
 	}
 	
 	/* Ensure consistent heading sizes matching preview and PDF */
