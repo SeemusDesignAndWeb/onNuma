@@ -85,8 +85,23 @@ export async function load({ params, cookies }) {
 		};
 	});
 
+	// Get event signups for this occurrence
+	const signups = await findMany('event_signups', s => 
+		s.eventId === params.id && s.occurrenceId === params.occurrenceId
+	);
+
+	// Enrich signups with contact information if available
+	const signupsWithDetails = signups.map(signup => {
+		const contact = contacts.find(c => c.email === signup.email);
+		return {
+			...signup,
+			contactId: contact?.id || null,
+			contactName: contact ? `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email : null
+		};
+	});
+
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { event, occurrence, rotas: rotasWithAssignees, csrfToken };
+	return { event, occurrence, rotas: rotasWithAssignees, signups: signupsWithDetails, csrfToken };
 }
 
 export const actions = {

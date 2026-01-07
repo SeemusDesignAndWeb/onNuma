@@ -151,6 +151,26 @@
 						</div>
 					</div>
 
+					<!-- Selected Date Display -->
+					{#if selectedOccurrence}
+						<div class="bg-white shadow rounded-lg p-6">
+							<h3 class="text-lg font-semibold text-gray-900 mb-3">Selected Date</h3>
+							<div class="space-y-2">
+								<p class="text-base font-medium text-gray-900">
+									{formatDate(selectedOccurrence.startsAt)}
+								</p>
+								<p class="text-sm text-gray-600">
+									{formatTime(selectedOccurrence.startsAt)} - {formatTime(selectedOccurrence.endsAt)}
+								</p>
+								{#if selectedOccurrence.location}
+									<p class="text-sm text-gray-600">
+										📍 {selectedOccurrence.location}
+									</p>
+								{/if}
+							</div>
+						</div>
+					{/if}
+
 					{#if event.enableSignup}
 						<div class="bg-white shadow rounded-lg p-6">
 							<h2 class="text-2xl font-bold text-gray-900 mb-4">Sign Up for This Event</h2>

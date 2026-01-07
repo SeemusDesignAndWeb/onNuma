@@ -11,6 +11,7 @@
 	$: event = $page.data?.event;
 	$: occurrence = $page.data?.occurrence;
 	$: rotas = $page.data?.rotas || [];
+	$: signups = $page.data?.signups || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	
@@ -233,6 +234,69 @@
 		{/if}
 
 	</div>
+
+	<!-- Event Signups Section -->
+	{#if event?.enableSignup}
+		<div class="bg-white shadow rounded-lg p-6 mt-6">
+			<h3 class="text-xl font-bold text-gray-900 mb-4">Event Signups</h3>
+			
+			{#if signups.length === 0}
+				<p class="text-gray-500">No signups for this occurrence yet.</p>
+			{:else}
+				<div class="overflow-x-auto">
+					<table class="min-w-full divide-y divide-gray-200">
+						<thead class="bg-gray-50">
+							<tr>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Attendees</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signed Up</th>
+							</tr>
+						</thead>
+						<tbody class="bg-white divide-y divide-gray-200">
+							{#each signups as signup}
+								<tr>
+									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+										{signup.contactName || signup.name || 'Unknown'}
+										{#if signup.contactId}
+											<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+												Contact
+											</span>
+										{/if}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+										{signup.email}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+										{signup.guestCount || 0}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+										{(signup.guestCount || 0) + 1}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+										{signup.createdAt ? formatDateTimeUK(signup.createdAt) : '-'}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+						<tfoot class="bg-gray-50">
+							<tr>
+								<td colspan="2" class="px-6 py-3 text-sm font-medium text-gray-900">Total</td>
+								<td class="px-6 py-3 text-sm font-medium text-gray-900">
+									{signups.reduce((sum, s) => sum + (s.guestCount || 0), 0)}
+								</td>
+								<td class="px-6 py-3 text-sm font-bold text-gray-900">
+									{signups.reduce((sum, s) => sum + (s.guestCount || 0) + 1, 0)}
+								</td>
+								<td class="px-6 py-3"></td>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			{/if}
+		</div>
+	{/if}
 
 	<!-- Rotas Section -->
 	<div class="bg-white shadow rounded-lg p-6 mt-6">
