@@ -41,12 +41,20 @@ export async function load({ url, cookies }) {
 	const admin = await verifyPasswordResetToken(email, token);
 	if (!admin) {
 		console.log('[Reset Password Load] Token verification failed for email:', email);
-		throw redirect(302, '/hub/auth/login?error=invalid_token');
+		// Return error state instead of redirecting immediately
+		// This allows the page to show a more helpful error message
+		const csrfToken = getCsrfToken(cookies) || '';
+		return { 
+			token: null, 
+			email: null, 
+			csrfToken,
+			error: 'invalid_token'
+		};
 	}
 
 	console.log('[Reset Password Load] Token verified successfully for admin:', admin.id);
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { token, email, csrfToken };
+	return { token, email, csrfToken, error: null };
 }
 
 export const actions = {

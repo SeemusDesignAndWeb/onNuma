@@ -150,14 +150,17 @@
 			</form>
 		{:else}
 			<div class="bg-red-50 border border-red-200 rounded-md p-4">
-				<p class="text-sm text-red-800">
-					Invalid or expired reset link. Please request a new password reset.
+				<p class="text-sm text-red-800 font-medium mb-2">
+					Invalid or expired reset link
 				</p>
-			</div>
-			<div class="text-center">
-				<a href="/hub/auth/forgot-password" class="text-sm text-brand-blue hover:text-brand-blue/80">
-					Request New Reset Link
-				</a>
+				<p class="text-sm text-red-700 mb-3">
+					This password reset link may have expired (links are valid for 24 hours) or has already been used. Please request a new password reset link.
+				</p>
+				<div class="text-center">
+					<a href="/hub/auth/forgot-password" class="inline-block text-sm text-brand-blue hover:text-brand-blue/80 font-medium">
+						Request New Reset Link →
+					</a>
+				</div>
 			</div>
 		{/if}
 
