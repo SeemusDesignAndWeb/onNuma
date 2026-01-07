@@ -116,6 +116,7 @@ export function validateEvent(data) {
 		description: validateString(data.description || '', 'Description', 10000),
 		location: validateString(data.location || '', 'Location', 500),
 		visibility: data.visibility === 'public' ? 'public' : 'private',
+		maxSpaces: typeof data.maxSpaces === 'number' && data.maxSpaces > 0 ? data.maxSpaces : (data.maxSpaces ? parseInt(data.maxSpaces) || null : null),
 		// Recurrence fields
 		repeatType: ['none', 'daily', 'weekly', 'monthly', 'yearly'].includes(data.repeatType) ? data.repeatType : 'none',
 		repeatInterval: typeof data.repeatInterval === 'number' && data.repeatInterval > 0 ? data.repeatInterval : (data.repeatInterval ? parseInt(data.repeatInterval) || 1 : 1),
@@ -158,7 +159,9 @@ export function validateOccurrence(data) {
 		eventId: validateString(data.eventId, 'Event ID', 50),
 		startsAt: data.startsAt,
 		endsAt: data.endsAt,
-		location: validateString(data.location || '', 'Location', 500)
+		location: validateString(data.location || '', 'Location', 500),
+		maxSpaces: typeof data.maxSpaces === 'number' && data.maxSpaces > 0 ? data.maxSpaces : (data.maxSpaces ? parseInt(data.maxSpaces) || null : null),
+		information: validateString(data.information || '', 'Information', 5000)
 	};
 }
 

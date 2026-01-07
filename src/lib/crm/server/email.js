@@ -823,3 +823,131 @@ Visit our website: ${baseUrl}
 	}
 }
 
+/**
+ * Send event signup confirmation email
+ * @param {object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.name - Recipient name
+ * @param {object} options.event - Event object
+ * @param {object} options.occurrence - Occurrence object
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<object>} Resend response
+ */
+export async function sendEventSignupConfirmation({ to, name, event, occurrence }, svelteEvent) {
+	const baseUrl = getBaseUrl(svelteEvent);
+	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
+	// Format date and time
+	const formatDate = (dateString) => {
+		if (!dateString) return '';
+		const date = new Date(dateString);
+		return date.toLocaleDateString('en-GB', { 
+			weekday: 'long',
+			day: 'numeric', 
+			month: 'long', 
+			year: 'numeric' 
+		});
+	};
+
+	const formatTime = (dateString) => {
+		if (!dateString) return '';
+		const date = new Date(dateString);
+		return date.toLocaleTimeString('en-GB', { 
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	};
+
+	const eventDate = formatDate(occurrence.startsAt);
+	const eventTime = `${formatTime(occurrence.startsAt)} - ${formatTime(occurrence.endsAt)}`;
+
+	const html = `
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Event Signup Confirmation</title>
+		</head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+			<div style="background: linear-gradient(135deg, #2d7a32 0%, #1e5a22 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+				<h1 style="color: white; margin: 0; font-size: 24px;">Event Signup Confirmed!</h1>
+			</div>
+			
+			<div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
+				<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+					<p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">
+						Hi ${name},
+					</p>
+					<p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">
+						Thank you for signing up for <strong>${event.title}</strong>!
+					</p>
+					
+					<div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+						<h2 style="color: #2d7a32; margin-top: 0; font-size: 18px; border-bottom: 2px solid #2d7a32; padding-bottom: 10px;">Event Details</h2>
+						<table style="width: 100%; border-collapse: collapse;">
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666; width: 120px;">Date:</td>
+								<td style="padding: 8px 0; color: #333;">${eventDate}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666;">Time:</td>
+								<td style="padding: 8px 0; color: #333;">${eventTime}</td>
+							</tr>
+							${occurrence.location ? `
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666;">Location:</td>
+								<td style="padding: 8px 0; color: #333;">${occurrence.location}</td>
+							</tr>
+							` : ''}
+						</table>
+					</div>
+					
+					<p style="color: #666; font-size: 14px; margin: 20px 0 0 0;">
+						We look forward to seeing you there!
+					</p>
+				</div>
+				
+				<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
+					<p style="margin: 0;">Eltham Green Community Church</p>
+					<p style="margin: 5px 0 0 0;">542 Westhorne Avenue, Eltham, London, SE9 6RR</p>
+				</div>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Event Signup Confirmed!
+
+Hi ${name},
+
+Thank you for signing up for ${event.title}!
+
+Event Details:
+Date: ${eventDate}
+Time: ${eventTime}
+${occurrence.location ? `Location: ${occurrence.location}` : ''}
+
+We look forward to seeing you there!
+
+Eltham Green Community Church
+542 Westhorne Avenue, Eltham, London, SE9 6RR
+	`.trim();
+
+	try {
+		const result = await resend.emails.send({
+			from: fromEmail,
+			to: [to],
+			subject: `Event Signup Confirmed: ${event.title}`,
+			html: html,
+			text: text
+		});
+
+		return result;
+	} catch (error) {
+		console.error('Failed to send event signup confirmation email:', error);
+		throw error;
+	}
+}
+

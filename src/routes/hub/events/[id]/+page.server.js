@@ -3,7 +3,7 @@ import { findById, update, remove, readCollection, findMany } from '$lib/crm/ser
 import { validateEvent } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
-import { ensureEventToken } from '$lib/crm/server/tokens.js';
+import { ensureEventToken, ensureOccurrenceToken } from '$lib/crm/server/tokens.js';
 import { env } from '$env/dynamic/private';
 
 export async function load({ params, cookies, url }) {
@@ -14,8 +14,9 @@ export async function load({ params, cookies, url }) {
 
 	const occurrences = await findMany('occurrences', o => o.eventId === params.id);
 	const rotas = await findMany('rotas', r => r.eventId === params.id);
+	const eventSignups = await findMany('event_signups', s => s.eventId === params.id);
 
-	// Calculate rota statistics for each occurrence
+	// Calculate rota statistics and signup statistics for each occurrence
 	const occurrencesWithStats = occurrences.map(occ => {
 		// Find rotas that apply to this occurrence
 		// A rota applies if:
@@ -52,6 +53,14 @@ export async function load({ params, cookies, url }) {
 
 		const spotsRemaining = totalCapacity - totalAssigned;
 
+		// Calculate event signup statistics for this occurrence
+		const occSignups = eventSignups.filter(s => s.occurrenceId === occ.id);
+		const totalAttendees = occSignups.reduce((sum, s) => sum + (s.guestCount || 0) + 1, 0); // +1 for the signup person
+		// Use occurrence maxSpaces if set, otherwise use event maxSpaces
+		const effectiveMaxSpaces = occ.maxSpaces !== null && occ.maxSpaces !== undefined ? occ.maxSpaces : event.maxSpaces;
+		const availableSpots = effectiveMaxSpaces ? effectiveMaxSpaces - totalAttendees : null;
+		const isFull = effectiveMaxSpaces ? totalAttendees >= effectiveMaxSpaces : false;
+
 		return {
 			...occ,
 			rotaStats: {
@@ -59,23 +68,47 @@ export async function load({ params, cookies, url }) {
 				totalCapacity,
 				totalAssigned,
 				spotsRemaining
+			},
+			signupStats: {
+				signupCount: occSignups.length,
+				totalAttendees,
+				availableSpots,
+				isFull,
+				signups: occSignups
 			}
 		};
 	});
 
-	// Ensure an event token exists and generate signup link
-	let signupLink = '';
+	// Ensure an event token exists and generate links
+	let rotaSignupLink = '';
+	let publicEventLink = '';
+	const occurrenceLinks = [];
+	
 	try {
 		const token = await ensureEventToken(params.id);
 		const baseUrl = env.APP_BASE_URL || url.origin || 'http://localhost:5173';
-		signupLink = `${baseUrl}/signup/event/${token.token}`;
+		rotaSignupLink = `${baseUrl}/signup/event/${token.token}`;
+		publicEventLink = `${baseUrl}/event/${token.token}`;
+		
+		// Generate occurrence-specific links
+		for (const occ of occurrences) {
+			try {
+				const occToken = await ensureOccurrenceToken(params.id, occ.id);
+				occurrenceLinks.push({
+					occurrenceId: occ.id,
+					link: `${baseUrl}/event/${occToken.token}`
+				});
+			} catch (error) {
+				console.error(`Error generating token for occurrence ${occ.id}:`, error);
+			}
+		}
 	} catch (error) {
 		console.error('Error generating event token:', error);
-		// Continue without signup link if token generation fails
+		// Continue without links if token generation fails
 	}
 
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { event, occurrences: occurrencesWithStats, rotas, signupLink, csrfToken };
+	return { event, occurrences: occurrencesWithStats, rotas, rotaSignupLink, publicEventLink, occurrenceLinks, csrfToken };
 }
 
 export const actions = {
@@ -95,7 +128,8 @@ export const actions = {
 				title: data.get('title'),
 				description: sanitized,
 				location: data.get('location'),
-				visibility: data.get('visibility') === 'public' ? 'public' : 'private'
+				visibility: data.get('visibility') === 'public' ? 'public' : 'private',
+				maxSpaces: data.get('maxSpaces') ? parseInt(data.get('maxSpaces')) : null
 			};
 
 			const validated = validateEvent(eventData);

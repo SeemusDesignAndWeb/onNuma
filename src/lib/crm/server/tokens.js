@@ -118,3 +118,48 @@ export async function getEventTokenByToken(tokenStr) {
 	return tokens.length > 0 ? tokens[0] : null;
 }
 
+/**
+ * Generate an occurrence token
+ * @returns {string} Token string (OCC_ prefix)
+ */
+export function generateOccurrenceToken() {
+	return `OCC_${generateId()}`;
+}
+
+/**
+ * Ensure an occurrence token exists for an occurrence
+ * @param {string} eventId - Event ID
+ * @param {string} occurrenceId - Occurrence ID
+ * @returns {Promise<object>} Occurrence token
+ */
+export async function ensureOccurrenceToken(eventId, occurrenceId) {
+	// Check if token already exists
+	const existing = await findMany('occurrence_tokens', token => 
+		token.eventId === eventId && token.occurrenceId === occurrenceId
+	);
+
+	if (existing.length > 0) {
+		return existing[0];
+	}
+
+	// Create new token
+	const token = await create('occurrence_tokens', {
+		eventId,
+		occurrenceId,
+		token: generateOccurrenceToken(),
+		createdAt: new Date().toISOString()
+	});
+
+	return token;
+}
+
+/**
+ * Get occurrence token by token string
+ * @param {string} tokenStr - Token string
+ * @returns {Promise<object|null>} Token or null
+ */
+export async function getOccurrenceTokenByToken(tokenStr) {
+	const tokens = await findMany('occurrence_tokens', t => t.token === tokenStr);
+	return tokens.length > 0 ? tokens[0] : null;
+}
+

@@ -28,10 +28,16 @@ export const actions = {
 			const startsAt = data.get('startsAt');
 			const endsAt = data.get('endsAt');
 			const location = data.get('location') || '';
+			const maxSpaces = data.get('maxSpaces') ? parseInt(data.get('maxSpaces')) : null;
+			const information = data.get('information') || '';
 
 			if (!startsAt || !endsAt) {
 				return fail(400, { error: 'Start and end dates are required' });
 			}
+
+			// Convert datetime-local to ISO format
+			const startISO = new Date(startsAt).toISOString();
+			const endISO = new Date(endsAt).toISOString();
 
 			// If recurrence is enabled, generate multiple occurrences
 			if (repeatType !== 'none') {
@@ -55,7 +61,9 @@ export const actions = {
 						eventId: params.id,
 						startsAt: occ.startsAt,
 						endsAt: occ.endsAt,
-						location: occ.location
+						location: occ.location,
+						maxSpaces: maxSpaces,
+						information: information
 					};
 					const validated = validateOccurrence(occurrenceData);
 					await create('occurrences', validated);
@@ -64,9 +72,11 @@ export const actions = {
 				// Single occurrence
 				const occurrenceData = {
 					eventId: params.id,
-					startsAt: startsAt,
-					endsAt: endsAt,
-					location: location
+					startsAt: startISO,
+					endsAt: endISO,
+					location: location,
+					maxSpaces: maxSpaces,
+					information: information
 				};
 
 				const validated = validateOccurrence(occurrenceData);

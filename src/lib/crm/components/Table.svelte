@@ -9,7 +9,7 @@
 		<thead class="bg-gray-50">
 			<tr>
 				{#each columns as col}
-					<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+					<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider {col.label === '' ? 'w-20' : ''}">
 						{col.label}
 					</th>
 				{/each}
@@ -20,14 +20,18 @@
 				<tr 
 					class="hover:bg-gray-50 {onRowClick ? 'cursor-pointer' : ''}"
 					on:click={(e) => {
-						// Don't trigger row click if clicking on a link
-						if (e.target.tagName !== 'A' && onRowClick) {
+						// Don't trigger row click if clicking on a link or button
+						if (e.target.tagName !== 'A' && 
+						    e.target.tagName !== 'BUTTON' && 
+						    !e.target.closest('button') && 
+						    !e.target.closest('a') &&
+						    onRowClick) {
 							onRowClick(row);
 						}
 					}}
 				>
 					{#each columns as col}
-						<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+						<td class="px-4 py-3 text-sm text-gray-900 {col.label === '' ? 'w-20' : ''}">
 							{@html col.render ? col.render(row[col.key], row) : (row[col.key] || '')}
 						</td>
 					{/each}

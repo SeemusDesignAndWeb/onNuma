@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import FormField from '$lib/crm/components/FormField.svelte';
+	import HtmlEditor from '$lib/crm/components/HtmlEditor.svelte';
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import { dialog } from '$lib/crm/stores/notifications.js';
@@ -24,19 +25,24 @@
 	let formData = {
 		startsAt: '',
 		endsAt: '',
-		location: ''
+		location: '',
+		maxSpaces: ''
 	};
+	let information = '';
 
 	$: if (occurrence) {
 		// Convert ISO dates to datetime-local format
 		const startDate = occurrence.startsAt ? new Date(occurrence.startsAt).toISOString().slice(0, 16) : '';
 		const endDate = occurrence.endsAt ? new Date(occurrence.endsAt).toISOString().slice(0, 16) : '';
 		
+		// Use occurrence maxSpaces if set, otherwise leave empty to show it's using event default
 		formData = {
 			startsAt: startDate,
 			endsAt: endDate,
-			location: occurrence.location || ''
+			location: occurrence.location || '',
+			maxSpaces: occurrence.maxSpaces !== null && occurrence.maxSpaces !== undefined ? occurrence.maxSpaces.toString() : ''
 		};
+		information = occurrence.information || '';
 	}
 
 	async function handleDelete() {
@@ -68,12 +74,26 @@
 			<div class="flex gap-2">
 				{#if editing}
 					<button
+						type="submit"
+						form="occurrence-edit-form"
+						class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+					>
+						Save Changes
+					</button>
+					<button
+						type="button"
 						on:click={() => editing = false}
 						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
 					>
-						Cancel
+						Back
 					</button>
 				{:else}
+					<a
+						href="/hub/events/{event.id}"
+						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+					>
+						Back
+					</a>
 					<button
 						on:click={() => editing = true}
 						class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
@@ -91,54 +111,117 @@
 		</div>
 
 		{#if editing}
-			<form method="POST" action="?/update" use:enhance>
+			<form id="occurrence-edit-form" method="POST" action="?/update" use:enhance>
 				<input type="hidden" name="_csrf" value={csrfToken} />
+				<input type="hidden" name="information" value={information} />
 				
-				<FormField 
-					label="Start Date & Time" 
-					name="startsAt" 
-					type="datetime-local" 
-					bind:value={formData.startsAt} 
-					required 
-				/>
-				<FormField 
-					label="End Date & Time" 
-					name="endsAt" 
-					type="datetime-local" 
-					bind:value={formData.endsAt} 
-					required 
-				/>
-				<FormField 
-					label="Location" 
-					name="location" 
-					bind:value={formData.location} 
-				/>
-
-				<button type="submit" class="mt-6 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-					Save Changes
-				</button>
+				<!-- Date & Time Panel -->
+				<div class="bg-gray-50 rounded-lg p-4 mb-6">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Date & Time</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<FormField 
+							label="Start Date & Time" 
+							name="startsAt" 
+							type="datetime-local" 
+							bind:value={formData.startsAt} 
+							required 
+						/>
+						<FormField 
+							label="End Date & Time" 
+							name="endsAt" 
+							type="datetime-local" 
+							bind:value={formData.endsAt} 
+							required 
+						/>
+					</div>
+				</div>
+				
+				<!-- Location & Capacity Panel -->
+				<div class="bg-gray-50 rounded-lg p-4 mb-6">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Location & Capacity</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<FormField 
+							label="Location" 
+							name="location" 
+							bind:value={formData.location} 
+						/>
+						<FormField 
+							label="Number of Spaces (Override)" 
+							name="maxSpaces" 
+							type="number" 
+							bind:value={formData.maxSpaces}
+							help={event?.maxSpaces 
+								? `Override the event default (${event.maxSpaces}). Leave empty to use event default (${event.maxSpaces}) or set a specific value for this occurrence.`
+								: 'Override the event default (Unlimited). Leave empty to use event default (Unlimited) or set a specific value for this occurrence.'}
+						/>
+					</div>
+				</div>
+				
+				<!-- Additional Information Panel -->
+				<div class="bg-gray-50 rounded-lg p-4">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+					<div class="mb-4">
+						<HtmlEditor bind:value={information} name="information" />
+						<p class="mt-1 text-sm text-gray-500">Additional information about this occurrence</p>
+					</div>
+				</div>
 			</form>
 		{:else}
-			<dl class="grid grid-cols-1 gap-4">
-				<div>
-					<dt class="text-sm font-medium text-gray-500">Start</dt>
-					<dd class="mt-1 text-sm text-gray-900">
-						{occurrence.startsAt ? formatDateTimeUK(occurrence.startsAt) : '-'}
-					</dd>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<!-- Date & Time Panel -->
+				<div class="bg-gray-50 rounded-lg p-4">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Date & Time</h3>
+					<dl class="space-y-3">
+						<div>
+							<dt class="text-sm font-medium text-gray-500">Start</dt>
+							<dd class="mt-1 text-sm text-gray-900">
+								{occurrence.startsAt ? formatDateTimeUK(occurrence.startsAt) : '-'}
+							</dd>
+						</div>
+						<div>
+							<dt class="text-sm font-medium text-gray-500">End</dt>
+							<dd class="mt-1 text-sm text-gray-900">
+								{occurrence.endsAt ? formatDateTimeUK(occurrence.endsAt) : '-'}
+							</dd>
+						</div>
+					</dl>
 				</div>
-				<div>
-					<dt class="text-sm font-medium text-gray-500">End</dt>
-					<dd class="mt-1 text-sm text-gray-900">
-						{occurrence.endsAt ? formatDateTimeUK(occurrence.endsAt) : '-'}
-					</dd>
+				
+				<!-- Location & Capacity Panel -->
+				<div class="bg-gray-50 rounded-lg p-4">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Location & Capacity</h3>
+					<dl class="space-y-3">
+						{#if occurrence.location}
+							<div>
+								<dt class="text-sm font-medium text-gray-500">Location</dt>
+								<dd class="mt-1 text-sm text-gray-900">{occurrence.location}</dd>
+							</div>
+						{/if}
+						<div>
+							<dt class="text-sm font-medium text-gray-500">Maximum Spaces</dt>
+							<dd class="mt-1 text-sm text-gray-900">
+								{#if occurrence.maxSpaces !== null && occurrence.maxSpaces !== undefined}
+									{occurrence.maxSpaces} (override)
+								{:else if event.maxSpaces}
+									{event.maxSpaces} (from event default)
+								{:else}
+									Unlimited
+								{/if}
+							</dd>
+						</div>
+					</dl>
 				</div>
-				{#if occurrence.location}
-					<div>
-						<dt class="text-sm font-medium text-gray-500">Location</dt>
-						<dd class="mt-1 text-sm text-gray-900">{occurrence.location}</dd>
+			</div>
+			
+			<!-- Additional Information Panel -->
+			{#if occurrence.information}
+				<div class="bg-gray-50 rounded-lg p-4 mt-6">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+					<div class="text-sm text-gray-900 prose prose-sm max-w-none">
+						{@html occurrence.information}
 					</div>
-				{/if}
-			</dl>
+				</div>
+			{/if}
 		{/if}
 
 	</div>

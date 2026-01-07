@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import FormField from '$lib/crm/components/FormField.svelte';
+	import HtmlEditor from '$lib/crm/components/HtmlEditor.svelte';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 
 	$: event = $page.data?.event;
@@ -17,6 +18,7 @@
 		startsAt: '',
 		endsAt: '',
 		location: event?.location || '',
+		maxSpaces: '',
 		repeatType: 'none',
 		repeatInterval: 1,
 		repeatEndType: 'never',
@@ -26,6 +28,7 @@
 		repeatDayOfWeek: '',
 		repeatWeekOfMonth: ''
 	};
+	let information = '';
 
 	$: showRecurrenceOptions = formData.repeatType !== 'none';
 	$: showWeeklyOptions = formData.repeatType === 'weekly';
@@ -42,6 +45,7 @@
 
 	<form method="POST" action="?/create" use:enhance>
 		<input type="hidden" name="_csrf" value={csrfToken} />
+		<input type="hidden" name="information" value={information} />
 		
 		<!-- Occurrence Details Panel -->
 		<div class="border border-gray-200 rounded-lg p-6 mb-6">
@@ -68,6 +72,18 @@
 					name="location" 
 					bind:value={formData.location} 
 				/>
+				<FormField 
+					label="Number of Spaces" 
+					name="maxSpaces" 
+					type="number" 
+					bind:value={formData.maxSpaces}
+					help="Maximum number of people who can sign up for this occurrence (leave empty for unlimited)"
+				/>
+				<div class="mb-4">
+					<label class="block text-sm font-medium text-gray-700 mb-1">Information</label>
+					<HtmlEditor bind:value={information} name="information" />
+					<p class="mt-1 text-sm text-gray-500">Additional information about this occurrence</p>
+				</div>
 			</div>
 		</div>
 

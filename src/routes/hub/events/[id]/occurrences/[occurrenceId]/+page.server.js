@@ -99,11 +99,27 @@ export const actions = {
 		}
 
 		try {
+			const startsAt = data.get('startsAt');
+			const endsAt = data.get('endsAt');
+			
+			// Convert datetime-local to ISO format
+			const startISO = startsAt ? new Date(startsAt).toISOString() : null;
+			const endISO = endsAt ? new Date(endsAt).toISOString() : null;
+			
+			// Handle maxSpaces: if empty string, set to null to use event default
+			// If provided, parse as integer
+			const maxSpacesValue = data.get('maxSpaces');
+			const maxSpaces = maxSpacesValue && maxSpacesValue.trim() !== '' 
+				? parseInt(maxSpacesValue) 
+				: null;
+			
 			const occurrenceData = {
 				eventId: params.id,
-				startsAt: data.get('startsAt'),
-				endsAt: data.get('endsAt'),
-				location: data.get('location')
+				startsAt: startISO,
+				endsAt: endISO,
+				location: data.get('location') || '',
+				maxSpaces: maxSpaces,
+				information: data.get('information') || ''
 			};
 
 			const validated = validateOccurrence(occurrenceData);
