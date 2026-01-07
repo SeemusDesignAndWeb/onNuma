@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import HtmlEditor from '$lib/crm/components/HtmlEditor.svelte';
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
@@ -16,6 +17,12 @@
 	// Show notifications from form results
 	$: if (formResult?.success) {
 		notifications.success('Occurrence updated successfully');
+		// Reset editing mode after successful save
+		setTimeout(() => {
+			editing = false;
+			// Reload page data to get updated occurrence
+			goto($page.url, { invalidateAll: true });
+		}, 100);
 	}
 	$: if (formResult?.error) {
 		notifications.error(formResult.error);
@@ -30,7 +37,8 @@
 	};
 	let information = '';
 
-	$: if (occurrence) {
+	// Initialize form data when occurrence is loaded (avoid hydration issues)
+	$: if (occurrence && !editing) {
 		// Convert ISO dates to datetime-local format
 		const startDate = occurrence.startsAt ? new Date(occurrence.startsAt).toISOString().slice(0, 16) : '';
 		const endDate = occurrence.endsAt ? new Date(occurrence.endsAt).toISOString().slice(0, 16) : '';
