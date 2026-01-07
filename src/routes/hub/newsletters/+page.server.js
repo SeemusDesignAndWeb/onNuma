@@ -8,10 +8,17 @@ export async function load({ url }) {
 
 	const newsletters = await readCollection('newsletters');
 	
-	let filtered = newsletters;
+	// Sort by latest first (updatedAt or createdAt, most recent first)
+	const sorted = [...newsletters].sort((a, b) => {
+		const dateA = new Date(a.updatedAt || a.createdAt || 0);
+		const dateB = new Date(b.updatedAt || b.createdAt || 0);
+		return dateB - dateA; // Descending order (newest first)
+	});
+	
+	let filtered = sorted;
 	if (search) {
 		const searchLower = search.toLowerCase();
-		filtered = newsletters.filter(n => 
+		filtered = sorted.filter(n => 
 			n.subject?.toLowerCase().includes(searchLower)
 		);
 	}

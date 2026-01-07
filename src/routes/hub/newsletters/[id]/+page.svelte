@@ -58,13 +58,8 @@
 		// 1. This is a new newsletter (initial load), OR
 		// 2. We're not currently editing AND not submitting (so we can refresh after save, but not during)
 		if (isNewNewsletter || (!editing && !isSubmitting)) {
-			// Auto-open in edit mode if newsletter is a draft (only on initial load)
-			if (isNewNewsletter) {
-				const isDraft = newsletter.status === 'draft' || !newsletter.status;
-				if (isDraft) {
-					editing = true;
-				}
-			}
+			// Don't auto-open in edit mode - always show detail view first
+			// User can click "Edit" button to edit
 			
 			// Populate form data from newsletter
 			formData = {
