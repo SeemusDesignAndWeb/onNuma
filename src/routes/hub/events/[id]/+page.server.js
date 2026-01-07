@@ -121,6 +121,12 @@ export const actions = {
 		}
 
 		try {
+			// Get existing event to preserve fields not in the form
+			const existingEvent = await findById('events', params.id);
+			if (!existingEvent) {
+				return { error: 'Event not found' };
+			}
+
 			const description = data.get('description') || '';
 			const sanitized = await sanitizeHtml(description);
 
@@ -130,7 +136,17 @@ export const actions = {
 				location: data.get('location'),
 				visibility: data.get('visibility') === 'public' ? 'public' : 'private',
 				enableSignup: data.get('enableSignup') === 'on' || data.get('enableSignup') === 'true',
-				maxSpaces: data.get('maxSpaces') ? parseInt(data.get('maxSpaces')) : null
+				maxSpaces: data.get('maxSpaces') ? parseInt(data.get('maxSpaces')) : null,
+				// Preserve recurrence fields if they exist
+				repeatType: existingEvent.repeatType || 'none',
+				repeatInterval: existingEvent.repeatInterval || 1,
+				repeatEndType: existingEvent.repeatEndType || 'never',
+				repeatEndDate: existingEvent.repeatEndDate || null,
+				repeatCount: existingEvent.repeatCount || null,
+				repeatDayOfMonth: existingEvent.repeatDayOfMonth || null,
+				repeatDayOfWeek: existingEvent.repeatDayOfWeek || null,
+				repeatWeekOfMonth: existingEvent.repeatWeekOfMonth || null,
+				meta: existingEvent.meta || {}
 			};
 
 			const validated = validateEvent(eventData);
@@ -138,7 +154,8 @@ export const actions = {
 
 			return { success: true };
 		} catch (error) {
-			return { error: error.message };
+			console.error('[Update Event] Error:', error);
+			return { error: error.message || 'Failed to update event' };
 		}
 	},
 

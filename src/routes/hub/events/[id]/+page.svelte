@@ -54,22 +54,29 @@
 	// Show notifications from form results
 	$: if (formResult?.success) {
 		notifications.success('Event updated successfully');
+		// Reset editing mode after successful save
+		setTimeout(() => {
+			editing = false;
+			// Reload page data to get updated event
+			goto($page.url, { invalidateAll: true });
+		}, 100);
 	}
 	$: if (formResult?.error) {
 		notifications.error(formResult.error);
 	}
 
 	let editing = false;
-	let description = event?.description || '';
+	let description = '';
 	let formData = {
-		title: event?.title || '',
-		location: event?.location || '',
-		visibility: event?.visibility || 'private',
-		enableSignup: event?.enableSignup || false,
+		title: '',
+		location: '',
+		visibility: 'private',
+		enableSignup: false,
 		maxSpaces: ''
 	};
 
-	$: if (event) {
+	// Initialize form data when event is loaded (avoid hydration issues)
+	$: if (event && !editing) {
 		formData = {
 			title: event.title || '',
 			location: event.location || '',
@@ -289,7 +296,7 @@
 		{#if editing}
 			<form id="event-edit-form" method="POST" action="?/update" use:enhance>
 				<input type="hidden" name="_csrf" value={csrfToken} />
-				<input type="hidden" name="description" value={description} />
+				<input type="hidden" name="description" value={description || ''} />
 				
 				<!-- Basic Information Panel -->
 				<div class="bg-gray-50 rounded-lg p-4 mb-6">
