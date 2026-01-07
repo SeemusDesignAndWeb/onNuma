@@ -11,10 +11,10 @@
 	let mobileMenuOpen = false;
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 flex flex-col">
 	<!-- Header -->
 	{#if !isAuthPage}
-		<header class="bg-blue-500 shadow-lg border-b border-blue-600">
+		<header class="bg-blue-500 shadow-lg border-b border-blue-600 flex-shrink-0">
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div class="flex items-center justify-between h-16">
 					<!-- Logo/Brand -->
@@ -91,13 +91,13 @@
 	{/if}
 
 	<!-- Main Content -->
-	<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full box-border">
+	<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full box-border flex-grow">
 		<slot />
 	</main>
 
 	<!-- Footer -->
 	{#if !isAuthPage}
-		<footer class="bg-white border-t border-gray-200 mt-12">
+		<footer class="bg-white border-t border-gray-200 mt-12 flex-shrink-0">
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 				<div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
 					<div class="flex items-center space-x-3">
