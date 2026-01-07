@@ -5,6 +5,8 @@
  * 
  * This runs automatically during Railway deployment
  * Or can be run manually: railway run node scripts/init-crm-data-on-build.js
+ * 
+ * TEST: This deployment will verify that existing admins.ndjson is NOT overwritten
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
