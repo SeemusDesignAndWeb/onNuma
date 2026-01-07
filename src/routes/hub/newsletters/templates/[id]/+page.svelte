@@ -81,11 +81,18 @@
 			<div class="flex gap-2">
 				{#if editing}
 					<button
+						type="submit"
+						form="template-edit-form"
+						class="bg-brand-green text-white px-4 py-2 rounded-md hover:bg-primary-dark"
+					>
+						Save Changes
+					</button>
+					<button
 						type="button"
 						on:click={() => editing = false}
 						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
 					>
-						Cancel
+						Back
 					</button>
 				{:else}
 					<button
@@ -107,7 +114,7 @@
 		</div>
 
 		{#if editing}
-			<form method="POST" action="?/update" use:enhance>
+			<form id="template-edit-form" method="POST" action="?/update" use:enhance>
 				<input type="hidden" name="_csrf" value={csrfToken} />
 				<FormField label="Template Name" name="name" bind:value={formData.name} required />
 				<FormField label="Description" name="description" bind:value={formData.description} />
@@ -118,9 +125,6 @@
 						<HtmlEditor bind:value={htmlContent} name="htmlContent" showPlaceholders={true} showImagePicker={true} />
 					{/key}
 				</div>
-				<button type="submit" class="bg-brand-green text-white px-4 py-2 rounded-md hover:bg-primary-dark">
-					Save Changes
-				</button>
 			</form>
 		{:else}
 			<dl class="grid grid-cols-1 gap-4">
