@@ -833,7 +833,7 @@ Visit our website: ${baseUrl}
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<object>} Resend response
  */
-export async function sendEventSignupConfirmation({ to, name, event, occurrence }, svelteEvent) {
+export async function sendEventSignupConfirmation({ to, name, event, occurrence, guestCount = 0 }, svelteEvent) {
 	const baseUrl = getBaseUrl(svelteEvent);
 	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
@@ -860,6 +860,7 @@ export async function sendEventSignupConfirmation({ to, name, event, occurrence 
 
 	const eventDate = formatDate(occurrence.startsAt);
 	const eventTime = `${formatTime(occurrence.startsAt)} - ${formatTime(occurrence.endsAt)}`;
+	const totalAttendees = guestCount + 1; // +1 for the signer-upper
 
 	const html = `
 		<!DOCTYPE html>
@@ -900,6 +901,14 @@ export async function sendEventSignupConfirmation({ to, name, event, occurrence 
 								<td style="padding: 8px 0; color: #333;">${occurrence.location}</td>
 							</tr>
 							` : ''}
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666;">Attendees:</td>
+								<td style="padding: 8px 0; color: #333;">
+									${totalAttendees === 1 
+										? 'Just you' 
+										: `You + ${guestCount} ${guestCount === 1 ? 'guest' : 'guests'} (${totalAttendees} total)`}
+								</td>
+							</tr>
 						</table>
 					</div>
 					
@@ -928,6 +937,9 @@ Event Details:
 Date: ${eventDate}
 Time: ${eventTime}
 ${occurrence.location ? `Location: ${occurrence.location}` : ''}
+Attendees: ${totalAttendees === 1 
+		? 'Just you' 
+		: `You + ${guestCount} ${guestCount === 1 ? 'guest' : 'guests'} (${totalAttendees} total)`}
 
 We look forward to seeing you there!
 

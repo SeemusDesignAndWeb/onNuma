@@ -152,7 +152,8 @@ export const actions = {
 					to: email,
 					name: name,
 					event: event,
-					occurrence: occurrence
+					occurrence: occurrence,
+					guestCount: guestCount || 0
 				}, { url: url });
 			} catch (emailError) {
 				console.error('Failed to send confirmation email:', emailError);
