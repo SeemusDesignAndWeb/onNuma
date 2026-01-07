@@ -63,9 +63,14 @@ export async function verifyPassword(password, hash) {
  */
 export async function getAdminByEmail(email) {
 	const admins = await readCollection('admins');
+	console.log('[getAdminByEmail] Looking for email:', email);
+	console.log('[getAdminByEmail] Found', admins.length, 'admins');
+	console.log('[getAdminByEmail] Admin emails:', admins.map(a => a.email));
 	// Normalize email to lowercase for comparison
 	const normalizedEmail = email.toLowerCase().trim();
-	return admins.find(a => a.email?.toLowerCase().trim() === normalizedEmail) || null;
+	const found = admins.find(a => a.email?.toLowerCase().trim() === normalizedEmail) || null;
+	console.log('[getAdminByEmail] Result:', found ? 'Found' : 'Not found');
+	return found;
 }
 
 /**

@@ -9,24 +9,24 @@ import { env } from '$env/dynamic/private';
 function getDataDir() {
 	const envDataDir = env.CRM_DATA_DIR;
 	if (envDataDir && envDataDir.trim()) {
-		let finalPath;
 		const trimmed = envDataDir.trim();
+		let finalPath;
 		// If it's an absolute path (starts with /), use it directly
 		if (trimmed.startsWith('/')) {
 			finalPath = trimmed;
-		} else if (trimmed.startsWith('./') || trimmed.startsWith('../')) {
-			// If it's a relative path (starts with ./ or ../), resolve it relative to process.cwd()
-			finalPath = join(process.cwd(), trimmed);
 		} else {
-			// Otherwise, treat it as a relative path (no leading slash or ./)
+			// For relative paths, resolve relative to process.cwd()
+			// join() will handle ./ and ../ correctly
 			finalPath = join(process.cwd(), trimmed);
 		}
 		console.log('[fileStore] Using CRM_DATA_DIR:', trimmed, '-> resolved to:', finalPath);
+		console.log('[fileStore] process.cwd():', process.cwd());
 		return finalPath;
 	}
 	// Default to ./data for local development
 	const defaultPath = join(process.cwd(), 'data');
 	console.log('[fileStore] CRM_DATA_DIR not set, using default data directory:', defaultPath);
+	console.log('[fileStore] process.cwd():', process.cwd());
 	return defaultPath;
 }
 
