@@ -1046,23 +1046,161 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 	const eventTitle = eventData?.title || 'Event';
 	const role = rota?.role || 'Volunteer';
 
-	// Count assignees by occurrence
-	const assigneesByOcc = {};
+	// Load contacts to enrich assignees
+	const contacts = await readCollection('contacts');
 	const allOccurrences = await readCollection('occurrences');
 	const eventOccurrences = allOccurrences.filter(o => o.eventId === rota.eventId);
 	
+	// Format occurrence date if available
+	let occurrenceDateDisplay = '';
+	if (occurrence) {
+		occurrenceDateDisplay = new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
+			weekday: 'long',
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	} else if (rota.occurrenceId) {
+		const rotaOccurrence = eventOccurrences.find(o => o.id === rota.occurrenceId);
+		if (rotaOccurrence) {
+			occurrenceDateDisplay = new Date(rotaOccurrence.startsAt).toLocaleDateString('en-GB', {
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		}
+	}
+
+	// Process assignees and get their contact information
+	const assigneesByOcc = {};
+	const allAssigneesList = [];
+	
 	(rota.assignees || []).forEach(assignee => {
-		let occId = null;
+		let contactId, occId;
+		
+		// Extract contact ID and occurrence ID
 		if (typeof assignee === 'string') {
+			contactId = assignee;
 			occId = rota.occurrenceId;
 		} else if (assignee && typeof assignee === 'object') {
+			contactId = assignee.contactId || assignee.id;
 			occId = assignee.occurrenceId || rota.occurrenceId;
 		}
-		if (!assigneesByOcc[occId || 'all']) {
-			assigneesByOcc[occId || 'all'] = [];
+		
+		// Get contact details
+		let assigneeName = 'Unknown';
+		let assigneeEmail = '';
+		
+		if (typeof contactId === 'string') {
+			const contact = contacts.find(c => c.id === contactId);
+			if (contact) {
+				assigneeName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email;
+				assigneeEmail = contact.email || '';
+			}
+		} else if (contactId && typeof contactId === 'object' && contactId.name) {
+			// Public signup format
+			assigneeName = contactId.name || 'Unknown';
+			assigneeEmail = contactId.email || '';
+		} else if (assignee && typeof assignee === 'object' && assignee.name) {
+			// Direct name/email in assignee
+			assigneeName = assignee.name || 'Unknown';
+			assigneeEmail = assignee.email || '';
 		}
-		assigneesByOcc[occId || 'all'].push(assignee);
+		
+		const assigneeInfo = {
+			name: assigneeName,
+			email: assigneeEmail
+		};
+		
+		// Group by occurrence
+		const occKey = occId || 'all';
+		if (!assigneesByOcc[occKey]) {
+			assigneesByOcc[occKey] = [];
+		}
+		assigneesByOcc[occKey].push(assigneeInfo);
+		allAssigneesList.push(assigneeInfo);
 	});
+
+	// Build assignees HTML section
+	let assigneesHtml = '';
+	if (allAssigneesList.length > 0) {
+		// If rota is for all occurrences, show all assignees together
+		if (!rota.occurrenceId && Object.keys(assigneesByOcc).length > 0) {
+			assigneesHtml = '<div style="margin-top: 15px;"><h3 style="color: #2d7a32; margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">Assignees:</h3><ul style="margin: 0; padding-left: 20px; color: #333; font-size: 14px;">';
+			allAssigneesList.forEach(assignee => {
+				const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
+				assigneesHtml += `<li style="margin: 5px 0;">${displayName}</li>`;
+			});
+			assigneesHtml += '</ul></div>';
+		} else {
+			// Group by occurrence
+			assigneesHtml = '<div style="margin-top: 15px;"><h3 style="color: #2d7a32; margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">Assignees by Occurrence:</h3>';
+			for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
+				if (occKey === 'all' || !occKey) {
+					assigneesHtml += '<div style="margin-bottom: 15px;"><strong style="color: #333; font-size: 14px;">All Occurrences:</strong><ul style="margin: 5px 0; padding-left: 20px; color: #333; font-size: 14px;">';
+				} else {
+					const occ = eventOccurrences.find(o => o.id === occKey);
+					const occDate = occ ? new Date(occ.startsAt).toLocaleDateString('en-GB', {
+						weekday: 'short',
+						year: 'numeric',
+						month: 'short',
+						day: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
+					}) : 'Unknown Date';
+					assigneesHtml += `<div style="margin-bottom: 15px;"><strong style="color: #333; font-size: 14px;">${occDate}:</strong><ul style="margin: 5px 0; padding-left: 20px; color: #333; font-size: 14px;">`;
+				}
+				assignees.forEach(assignee => {
+					const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
+					assigneesHtml += `<li style="margin: 5px 0;">${displayName}</li>`;
+				});
+				assigneesHtml += '</ul></div>';
+			}
+			assigneesHtml += '</div>';
+		}
+	} else {
+		assigneesHtml = '<div style="margin-top: 15px;"><p style="color: #666; font-size: 14px; font-style: italic;">No assignees yet.</p></div>';
+	}
+
+	// Build assignees text section
+	let assigneesText = '';
+	if (allAssigneesList.length > 0) {
+		assigneesText = '\n\nAssignees:\n';
+		if (!rota.occurrenceId && Object.keys(assigneesByOcc).length > 0) {
+			allAssigneesList.forEach(assignee => {
+				const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
+				assigneesText += `- ${displayName}\n`;
+			});
+		} else {
+			for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
+				if (occKey === 'all' || !occKey) {
+					assigneesText += '\nAll Occurrences:\n';
+				} else {
+					const occ = eventOccurrences.find(o => o.id === occKey);
+					const occDate = occ ? new Date(occ.startsAt).toLocaleDateString('en-GB', {
+						weekday: 'short',
+						year: 'numeric',
+						month: 'short',
+						day: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
+					}) : 'Unknown Date';
+					assigneesText += `\n${occDate}:\n`;
+				}
+				assignees.forEach(assignee => {
+					const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
+					assigneesText += `- ${displayName}\n`;
+				});
+			}
+		}
+	} else {
+		assigneesText = '\n\nNo assignees yet.';
+	}
 
 	const html = `
 		<!DOCTYPE html>
@@ -1087,9 +1225,10 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 				<div style="background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 15px 0;">
 					<h2 style="color: #2d7a32; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">Rota Details</h2>
 					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Role:</strong> ${role}</p>
-					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Event:</strong> ${eventTitle}</p>
+					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Event:</strong> ${eventTitle}${occurrenceDateDisplay ? ` - ${occurrenceDateDisplay}` : ''}</p>
 					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Capacity:</strong> ${rota.capacity} per occurrence</p>
 					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Total Assignees:</strong> ${(rota.assignees || []).length}</p>
+					${assigneesHtml}
 				</div>
 
 				<div style="text-align: center; margin: 20px 0;">
@@ -1105,13 +1244,13 @@ Rota Updated
 
 Hello ${name},
 
-The rota ${role} for ${eventTitle} has been updated.
+The rota ${role} for ${eventTitle}${occurrenceDateDisplay ? ` - ${occurrenceDateDisplay}` : ''} has been updated.
 
 Rota Details:
 Role: ${role}
-Event: ${eventTitle}
+Event: ${eventTitle}${occurrenceDateDisplay ? ` - ${occurrenceDateDisplay}` : ''}
 Capacity: ${rota.capacity} per occurrence
-Total Assignees: ${(rota.assignees || []).length}
+Total Assignees: ${(rota.assignees || []).length}${assigneesText}
 
 View the rota: ${hubUrl}
 	`.trim();
