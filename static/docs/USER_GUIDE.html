@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The HUB User Guide</title>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+body {
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+line-height: 1.6;
+color: #333;
+background-color: #f9fafb;
+}
+.container {
+max-width: 100%;
+margin: 0;
+padding: 0;
+}
+.content {
+background: white;
+border-radius: 8px;
+padding: 20px;
+overflow-y: auto;
+}
+h1 {
+font-size: 36px;
+color: #2d7a32;
+margin-bottom: 20px;
+padding-bottom: 15px;
+border-bottom: 3px solid #2d7a32;
+}
+h2 {
+font-size: 28px;
+color: #2d7a32;
+margin-top: 30px;
+margin-bottom: 15px;
+padding-top: 15px;
+border-top: 2px solid #e5e7eb;
+}
+h2:first-of-type {
+border-top: none;
+padding-top: 0;
+}
+h3 {
+font-size: 22px;
+color: #1e5a22;
+margin-top: 25px;
+margin-bottom: 15px;
+}
+h4 {
+font-size: 18px;
+color: #333;
+margin-top: 20px;
+margin-bottom: 15px;
+}
+p {
+margin-bottom: 15px;
+line-height: 1.8;
+}
+ul, ol {
+margin-left: 30px;
+margin-bottom: 15px;
+list-style-position: outside;
+}
+ul {
+list-style-type: disc;
+}
+ol {
+list-style-type: decimal;
+}
+li {
+margin-bottom: 8px;
+line-height: 1.6;
+display: list-item;
+}
+strong {
+color: #1e5a22;
+font-weight: 600;
+}
+code {
+background-color: #f3f4f6;
+padding: 2px 6px;
+border-radius: 3px;
+font-family: 'Courier New', monospace;
+font-size: 14px;
+color: #d97706;
+}
+hr {
+border: none;
+border-top: 2px solid #e5e7eb;
+margin: 30px 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<main class="content"><h1>The HUB User Guide</h1>
+
+<h2 id="getting-started">Getting Started</h2>
+
+<h3 id="login">Login</h3>
+
+<ol>
+<li>Navigate to <code>/hub/auth/login</code></li>
+<li>Enter your email and password</li>
+<li>You'll be redirected to the dashboard upon successful login</li>
+</ol>
+
+<p><strong>Note:</strong> If you've forgotten your password, use the "Forgot password?" link on the login page.</p>
+
+<h3 id="forgot-password">Forgot Password</h3>
+
+<p>If you've forgotten your password, you can reset it using the forgot password feature:</p>
+
+<ol>
+<li>On the login page (<code>/hub/auth/login</code>), click the "Forgot password?" link</li>
+<li>Enter your email address</li>
+<li>Click "Send Reset Link"</li>
+<li>Check your email for a password reset link</li>
+<li>Click the link in the email (or copy and paste it into your browser)</li>
+<li>Enter your new password (must meet complexity requirements)</li>
+<li>Confirm your new password</li>
+<li>Click "Reset Password"</li>
+<li>You'll be redirected to the login page with a success message</li>
+</ol>
+
+<p><strong>Password Requirements:</strong></p>
+<ul>
+<li>At least 12 characters long</li>
+<li>Must contain at least one uppercase letter</li>
+<li>Must contain at least one lowercase letter</li>
+<li>Must contain at least one number</li>
+<li>Must contain at least one special character</li>
+</ul>
+
+<p><strong>Security Features:</strong></p>
+<ul>
+<li>Reset links expire after 24 hours</li>
+<li>All active sessions are logged out after password reset</li>
+<li>The system protects against email enumeration (always shows success message)</li>
+</ul>
+
+<p><strong>Note:</strong> If you don't receive an email, check your spam folder. The email will come from your configured Resend sender address.</p>
+
+<h3 id="dashboard">Dashboard</h3>
+
+<p>The dashboard (<code>/hub</code>) provides a comprehensive overview of your CRM system:</p>
+
+<p><strong>Statistics Overview:</strong></p>
+<ul>
+<li>Total number of contacts</li>
+<li>Total number of lists</li>
+<li>Total number of newsletters</li>
+<li>Total number of events</li>
+<li>Total number of rotas</li>
+<li>Total number of forms</li>
+</ul>
+
+<p><strong>Quick Actions:</strong></p>
+<p>Use the coloured quick action buttons at the top to quickly create:</p>
+<ul>
+<li><strong>+ Contact</strong> (Blue) - Create a new contact</li>
+<li><strong>+ Newsletter</strong> (Green) - Create a new newsletter</li>
+<li><strong>+ Event</strong> (Purple) - Create a new event</li>
+<li><strong>+ Rota</strong> (Orange) - Create a new rota</li>
+<li><strong>+ List</strong> (Teal) - Create a new list</li>
+<li><strong>+ Form</strong> (Pink) - Create a new form</li>
+</ul>
+
+<p><strong>Recent Activity:</strong></p>
+<ul>
+<li><strong>Latest Newsletters</strong>: Displays the 3 most recently created or edited newsletters</li>
+<li><strong>Recently Edited Rotas</strong>: Shows the 5 most recently edited rotas</li>
+</ul>
+
+<p>Click on any item in the recent activity sections to view its details.</p>
+
+<hr>
+
+<h2 id="admin-users">Admin Users</h2>
+
+<p>The Hub includes comprehensive admin user management for controlling access to the system.</p>
+
+<h3 id="managing-admin-users">Managing Admin Users</h3>
+
+<p><strong>Viewing Admin Users:</strong></p>
+<ol>
+<li>Go to <code>/hub/users</code> (accessible from the main navigation)</li>
+<li>View all admin users in a table format</li>
+<li>See user status (Active, Locked, Unverified)</li>
+<li>Search for users by name or email</li>
+<li>Use pagination to navigate through large lists</li>
+</ol>
+
+<p><strong>Admin User Status:</strong></p>
+<ul>
+<li><strong>Active</strong>: User can log in and use the system</li>
+<li><strong>Locked</strong>: Account is temporarily locked due to too many failed login attempts</li>
+<li><strong>Unverified</strong>: Email address has not been verified yet</li>
+</ul>
+
+<p><strong>Search and Filter:</strong></p>
+<ul>
+<li>Use the search box to find users by name or email</li>
+<li>Search is case-insensitive and updates as you type</li>
+<li>Results are paginated for easy navigation</li>
+</ul>
+
+<h3 id="creating-admin-users">Creating Admin Users</h3>
+
+<p>Only existing admins can create new admin users:</p>
+
+<ol>
+<li>Go to <code>/hub/users</code></li>
+<li>Click "New Admin User" button</li>
+<li>Fill in the form:</li>
+</ol>
+<p>   - <strong>Name</strong> (required) - The admin's full name</p>
+<p>   - <strong>Email</strong> (required) - Must be a valid, unique email address</p>
+<p>   - <strong>Password</strong> (required) - Must meet complexity requirements</p>
+<ol>
+<li>Click "Create Admin User"</li>
+</ol>
+
+<p><strong>Password Requirements:</strong></p>
+<ul>
+<li>At least 12 characters long</li>
+<li>Must contain at least one uppercase letter</li>
+<li>Must contain at least one lowercase letter</li>
+<li>Must contain at least one number</li>
+<li>Must contain at least one special character</li>
+</ul>
+
+<p><strong>What Happens After Creation:</strong></p>
+<ul>
+<li>A welcome email is sent to the new admin user</li>
+<li>The email includes:</li>
+</ul>
+<p>  - Login credentials (email and password)</p>
+<p>  - Email verification link</p>
+<p>  - Link to TheHUB login page</p>
+<ul>
+<li>The new admin must verify their email before full access is granted</li>
+<li>The admin can log in immediately, but should verify their email</li>
+</ul>
+
+<h3 id="editing-admin-users">Editing Admin Users</h3>
+
+<p>You can edit admin user details:</p>
+
+<ol>
+<li>Go to <code>/hub/users</code></li>
+<li>Click on the admin user you want to edit</li>
+<li>Click "Edit" button</li>
+<li>Modify:</li>
+</ol>
+<p>   - <strong>Name</strong> - Update the admin's name</p>
+<p>   - <strong>Email</strong> - Change email address (requires re-verification)</p>
+<ol>
+<li>Click "Save Changes"</li>
+</ol>
+
+<p><strong>Email Changes:</strong></p>
+<ul>
+<li>When an admin's email is changed, their email verification status is reset</li>
+<li>They will need to verify their new email address</li>
+<li>A verification email is sent automatically</li>
+</ul>
+
+<p><strong>Password Reset:</strong></p>
+<ul>
+<li>Admins can reset their own password from their profile page</li>
+<li>Other admins can reset a user's password from the user management page</li>
+<li>Password reset requires entering a new password (must meet complexity requirements)</li>
+</ul>
+
+<p><strong>Account Status Management:</strong></p>
+<ul>
+<li><strong>Unlock Account</strong>: If an account is locked, you can unlock it from the user detail page</li>
+<li><strong>Verify Email</strong>: You can manually verify an admin's email if needed</li>
+<li><strong>Delete User</strong>: Permanently remove an admin user (use with caution)</li>
+</ul>
+
+<h3 id="admin-profile">Admin Profile</h3>
+
+<p>Each admin can manage their own profile:</p>
+
+<p><strong>Accessing Your Profile:</strong></p>
+<ol>
+<li>Click on your name/email in the top-right corner of the Hub</li>
+<li>Or navigate to <code>/hub/profile</code></li>
+</ol>
+
+<p><strong>Profile Features:</strong></p>
+<ul>
+<li><strong>View Account Information</strong>: See your name, email, role, and account status</li>
+<li><strong>Edit Name and Email</strong>: Update your personal information</li>
+<li><strong>Change Password</strong>: Update your password (requires current password)</li>
+<li><strong>View Account Status</strong>: See if your email is verified</li>
+</ul>
+
+<p><strong>Changing Your Password:</strong></p>
+<ol>
+<li>Go to your profile page (<code>/hub/profile</code>)</li>
+<li>Scroll to "Change Password" section</li>
+<li>Enter:</li>
+</ol>
+<p>   - <strong>Current Password</strong> - Your current password</p>
+<p>   - <strong>New Password</strong> - Must meet complexity requirements</p>
+<p>   - <strong>Confirm New Password</strong> - Re-enter the new password</p>
+<ol>
+<li>Click "Change Password"</li>
+</ol>
+
+<p><strong>Security Notes:</strong></p>
+<ul>
+<li>When you change your password, all active sessions are logged out</li>
+<li>You'll need to log in again with your new password</li>
+<li>Password changes are logged for security auditing</li>
+</ul>
+
+<p><strong>Email Verification:</strong></p>
+<ul>
+<li>If your email is not verified, you'll see a "Verify Email" button</li>
+<li>Click it to receive a verification email</li>
+<li>Or use the link from your welcome email</li>
+<li>Email verification ensures you can receive important system notifications</li>
+</ul>
+
+<hr>
+
+<h2 id="contacts">Contacts</h2>
+
+<h3 id="creating-a-contact">Creating a Contact</h3>
+
+<ol>
+<li>Go to <code>/hub/contacts</code> or click the "+ Contact" quick action button on the dashboard</li>
+<li>Click "Add Contact" button</li>
+<li>Fill in the contact details:</li>
+</ol>
+
+<p><strong>Required Fields:</strong></p>
+<ul>
+<li><strong>Email</strong> (required) - Must be a valid email address</li>
+</ul>
+
+<p><strong>Personal Information:</strong></p>
+<ul>
+<li>First Name</li>
+<li>Last Name</li>
+<li>Phone</li>
+</ul>
+
+<p><strong>Address Details:</strong></p>
+<ul>
+<li>Address Line 1</li>
+<li>Address Line 2</li>
+<li>City</li>
+<li>County</li>
+<li>Postcode</li>
+<li>Country</li>
+</ul>
+
+<p><strong>Church Membership:</strong></p>
+<ul>
+<li>Membership Status (dropdown)</li>
+<li>Date Joined (date picker)</li>
+<li>Baptism Date (date picker)</li>
+</ul>
+
+<p><strong>Additional Information:</strong></p>
+<ul>
+<li>Serving Areas (comma-separated list)</li>
+<li>Giftings (comma-separated list)</li>
+<li>Notes (textarea for additional information)</li>
+</ul>
+
+<ol>
+<li>Click "Create Contact"</li>
+</ol>
+
+<h3 id="editing-a-contact">Editing a Contact</h3>
+
+<ol>
+<li>Go to <code>/hub/contacts</code></li>
+<li>Click on the contact you want to edit</li>
+<li>Click the "Edit" button</li>
+<li>Modify any fields as needed</li>
+<li>Click "Save Changes"</li>
+</ol>
+
+<p>You can also delete a contact from the detail page using the "Delete" button (this action cannot be undone).</p>
+
+<h3 id="importing-contacts">Importing Contacts</h3>
+
+<p>You can bulk import contacts from CSV or Excel files:</p>
+
+<ol>
+<li>Go to <code>/hub/contacts/import</code></li>
+<li>Click "Choose File" and select a CSV or Excel (.xlsx, .xls) file</li>
+<li>The system will automatically detect and map common column names</li>
+<li>Review and adjust the field mapping if needed</li>
+<li>Preview the mapped data to ensure accuracy</li>
+<li>Click "Complete Import" to finish</li>
+</ol>
+
+<p><strong>Supported File Formats:</strong></p>
+<ul>
+<li>CSV files (.csv)</li>
+<li>Excel files (.xlsx, .xls)</li>
+<li>Maximum file size: 10MB</li>
+</ul>
+
+<p><strong>Field Mapping:</strong></p>
+<p>The system automatically detects common column names (e.g., "Email", "First Name", "Last Name", "Phone") and maps them to contact fields. You can manually adjust the mapping before importing.</p>
+
+<p><strong>Import Process:</strong></p>
+<ul>
+<li>Duplicate emails are automatically skipped (contacts with the same email already in the system)</li>
+<li>Validation errors are reported with row numbers for easy identification</li>
+<li>Import results show:</li>
+</ul>
+<p>  - Number of contacts successfully imported</p>
+<p>  - Number of contacts skipped (duplicates)</p>
+<p>  - Number of errors encountered</p>
+
+<p><strong>Important:</strong> Ensure your file has a header row with column names for best results.</p>
+
+<h3 id="managing-contacts">Managing Contacts</h3>
+
+<p><strong>Viewing Contacts:</strong></p>
+<ul>
+<li>View all contacts in the list view at <code>/hub/contacts</code></li>
+<li>Use the search box to search contacts by name or email</li>
+<li>Click on any contact row to view/edit details</li>
+<li>Contact names in lists are clickable and will navigate to the contact detail page</li>
+</ul>
+
+<p><strong>Search Functionality:</strong></p>
+<ul>
+<li>Search by first name, last name, or email address</li>
+<li>Search is case-insensitive</li>
+<li>Results update as you type</li>
+</ul>
+
+<p><strong>Deleting Contacts:</strong></p>
+<ul>
+<li>Open a contact's detail page</li>
+<li>Click the "Delete" button</li>
+<li>Confirm the deletion (this action cannot be undone)</li>
+</ul>
+
+<hr>
+
+<h2 id="lists">Lists</h2>
+
+<h3 id="creating-a-list">Creating a List</h3>
+
+<ol>
+<li>Go to <code>/hub/lists</code> or click the "+ List" quick action button on the dashboard</li>
+<li>Click "Add List" button</li>
+<li>Enter:</li>
+</ol>
+<p>   - <strong>Name</strong> (required) - The name of the list</p>
+<p>   - <strong>Description</strong> (optional) - A description of what the list is for</p>
+<ol>
+<li>Click "Create List"</li>
+</ol>
+
+<p><strong>Note:</strong> A success notification will appear when the list is created. Lists are initially created empty. You can add contacts to them after creation.</p>
+
+<h3 id="adding-contacts-to-lists">Adding Contacts to Lists</h3>
+
+<ol>
+<li>Go to <code>/hub/lists</code> and click on the list you want to edit</li>
+<li>Scroll to the "Contacts in List" section</li>
+<li>Click the "+ Add Contacts" button</li>
+<li>Use the search box to find contacts by name or email</li>
+<li>Check the boxes next to the contacts you want to add</li>
+<li>Click "Add Selected Contacts"</li>
+<li>The contacts will be added to the list</li>
+</ol>
+
+<p><strong>Tips:</strong></p>
+<ul>
+<li>You can search for contacts while the add contacts section is open</li>
+<li>Click on a contact's name to view their contact details page</li>
+<li>Contacts already in the list won't appear in the available contacts list</li>
+</ul>
+
+<h3 id="removing-contacts-from-lists">Removing Contacts from Lists</h3>
+
+<ol>
+<li>Go to <code>/hub/lists</code> and click on the list</li>
+<li>In the "Contacts in List" section, find the contact you want to remove</li>
+<li>Click the "Remove" button next to the contact's name</li>
+<li>Confirm the removal</li>
+</ol>
+
+<p><strong>Note:</strong> Removing a contact from a list does not delete the contact itself, only removes them from this specific list.</p>
+
+<h3 id="managing-lists">Managing Lists</h3>
+
+<p><strong>Viewing Lists:</strong></p>
+<ul>
+<li>View all lists at <code>/hub/lists</code></li>
+<li>Use the search box to search lists by name or description</li>
+<li>Click on any list to view/edit details</li>
+</ul>
+
+<p><strong>Editing Lists:</strong></p>
+<ul>
+<li>Open a list's detail page</li>
+<li>Click "Edit" to modify the name or description</li>
+<li>Click "Save Changes" when done</li>
+</ul>
+
+<p><strong>Deleting Lists:</strong></p>
+<ul>
+<li>Open a list's detail page</li>
+<li>Click "Delete" button</li>
+<li>Confirm the deletion (this action cannot be undone)</li>
+</ul>
+
+<p><strong>Note:</strong> Deleting a list does not delete the contacts in it, only removes the list grouping.</p>
+
+<hr>
+
+<h2 id="newsletters">Newsletters</h2>
+
+<h3 id="creating-a-newsletter">Creating a Newsletter</h3>
+
+<ol>
+<li>Go to <code>/hub/newsletters</code> or click the "+ Newsletter" quick action button on the dashboard</li>
+<li>Click "New Newsletter" button</li>
+<li>Enter a <strong>Subject</strong> line (required)</li>
+<li>Use the HTML editor to create your newsletter content</li>
+<li>Optionally load a template from the "Load Template" dropdown (this will replace your current content)</li>
+<li>Click "Create Newsletter"</li>
+</ol>
+
+<p><strong>Note:</strong> A success notification will appear when the newsletter is created. The newsletter will be created as a draft and can be edited or sent later.</p>
+
+<h3 id="editing-a-newsletter">Editing a Newsletter</h3>
+
+<ol>
+<li>Go to <code>/hub/newsletters</code></li>
+<li>Click on the newsletter you want to edit</li>
+<li>If the newsletter is a draft, it will automatically open in edit mode</li>
+<li>For sent newsletters, click the "Edit" button</li>
+<li>Modify the subject or content as needed</li>
+<li>Use the buttons in the top banner:</li>
+</ol>
+<p>   - <strong>Save Changes</strong> (Green) - Saves your changes</p>
+<p>   - <strong>Save as Template</strong> (Purple) - Saves the newsletter as a reusable template</p>
+<p>   - <strong>Back</strong> (White) - Cancel editing and return to view mode</p>
+<p>   - <strong>Delete</strong> (Red) - Delete the newsletter</p>
+
+<p><strong>Note:</strong> Draft newsletters automatically open in edit mode when you click on them.</p>
+
+<h3 id="previewing-a-newsletter">Previewing a Newsletter</h3>
+
+<ol>
+<li>Open a newsletter</li>
+<li>Click the "Preview" button (indigo button)</li>
+<li>View how the newsletter will appear to recipients</li>
+<li>The preview shows the subject, status, and full HTML content</li>
+<li>Use the "Back to Newsletter" link to return</li>
+</ol>
+
+<p><strong>Preview Features:</strong></p>
+<ul>
+<li>See exactly how the newsletter will look when sent</li>
+<li>Check formatting and layout</li>
+<li>Verify personalisation placeholders are correctly placed</li>
+</ul>
+
+<h3 id="exporting-a-newsletter-to-pdf">Exporting a Newsletter to PDF</h3>
+
+<p>You can export any newsletter as a PDF document for archiving or sharing:</p>
+
+<ol>
+<li>Open a newsletter</li>
+<li>Click the "Preview" button to view the newsletter</li>
+<li>On the preview page, click the "Export PDF" button (red button with download icon)</li>
+<li>The PDF will download automatically</li>
+</ol>
+
+<p><strong>PDF Features:</strong></p>
+<ul>
+<li>Professional formatting with branded header</li>
+<li>Includes newsletter subject and creation date</li>
+<li>Full HTML content preserved (images, formatting, etc.)</li>
+<li>Footer with generation timestamp</li>
+<li>A4 format with proper margins</li>
+<li>Print-ready layout</li>
+</ul>
+
+<p><strong>PDF Contents:</strong></p>
+<ul>
+<li>Header with newsletter subject and creation date</li>
+<li>Complete newsletter HTML content</li>
+<li>Footer with "Eltham Green Community Church - TheHUB Newsletter" and generation date</li>
+</ul>
+
+<p><strong>Note:</strong> PDF export requires Puppeteer to be installed on the server. If you see an error, contact your system administrator.</p>
+
+<h3 id="sending-a-newsletter">Sending a Newsletter</h3>
+
+<ol>
+<li>Open a newsletter (the Send button is available for all newsletters, not just drafts)</li>
+<li>Click the "Send" button (white button with envelope icon)</li>
+<li>On the send page, select a contact list from the dropdown menu</li>
+</ol>
+<p>   - The dropdown shows all available lists with the number of contacts in each list</p>
+<p>   - If no lists exist, you'll see a message with a link to create one first</p>
+<ol>
+<li>Review the newsletter details shown on the send page</li>
+<li>Click "Send Newsletter" and confirm the action when prompted</li>
+</ol>
+
+<p><strong>Sending Process:</strong></p>
+<ul>
+<li>The newsletter will be sent to all contacts in the selected list</li>
+<li>Each email is personalised with the contact's information</li>
+<li>Upcoming rotas (within 7 days) are automatically included for contacts who are assigned to rotas</li>
+<li>Upcoming events (within 7 days) are automatically included</li>
+<li>Sending status and counts are tracked</li>
+<li>The newsletter status changes from "draft" to "sent" after sending</li>
+<li>You'll see a success notification showing how many emails were sent</li>
+<li>Any errors during sending will be displayed</li>
+</ul>
+
+<p><strong>Personalisation:</strong></p>
+<p>Newsletters automatically include:</p>
+<ul>
+<li>Contact's name in the greeting (using placeholders like <code>{{firstName}}</code>, <code>{{name}}</code>, etc.)</li>
+<li>Upcoming rotas section (if the contact has rotas in the next 7 days) - shows event title, role, date/time, and a link to view details</li>
+<li>Upcoming events section (public events within the next 7 days) - shows event title, date/time, location, and description</li>
+<li>Links to rota signup pages for assigned rotas</li>
+</ul>
+
+<h3 id="deleting-a-newsletter">Deleting a Newsletter</h3>
+
+<ol>
+<li>Open a newsletter</li>
+<li>Click the "Delete" button (red button in the top banner)</li>
+<li>Confirm the deletion</li>
+<li>The newsletter will be permanently deleted (this action cannot be undone)</li>
+</ol>
+
+<p><strong>Note:</strong> You can delete newsletters regardless of their status (draft, sent, scheduled).</p>
+
+<h3 id="newsletter-templates">Newsletter Templates</h3>
+
+<p>Templates allow you to save newsletter designs for reuse.</p>
+
+<p><strong>Creating a Template from a Newsletter:</strong></p>
+<ol>
+<li>Open a newsletter</li>
+<li>Click "Save as Template" (purple button)</li>
+<li>Enter a template name (required)</li>
+<li>Optionally enter a description</li>
+<li>Click "Save Template"</li>
+</ol>
+
+<p><strong>Creating a New Template:</strong></p>
+<ol>
+<li>Go to <code>/hub/newsletters/templates</code></li>
+<li>Click "New Template"</li>
+<li>Enter template name, description, and subject</li>
+<li>Create the HTML content</li>
+<li>Click "Create Template"</li>
+</ol>
+
+<p><strong>Using Templates:</strong></p>
+<ol>
+<li>When creating or editing a newsletter, use the "Load Template" dropdown</li>
+<li>Select a template from the list</li>
+<li>Confirm that you want to load the template (this will replace your current content)</li>
+<li>The template's subject and content will be loaded into the form</li>
+</ol>
+
+<p><strong>Managing Templates:</strong></p>
+<ul>
+<li>View all templates at <code>/hub/newsletters/templates</code></li>
+<li>Click on a template to view/edit it</li>
+<li>Edit templates to update their content</li>
+<li>Delete templates you no longer need</li>
+</ul>
+
+<h3 id="html-editor-features">HTML Editor Features</h3>
+
+<p>The HTML editor provides a rich text editing experience:</p>
+
+<p><strong>Text Formatting:</strong></p>
+<ul>
+<li><strong>Headers</strong>: H1, H2, H3</li>
+<li><strong>Bold</strong>, <em>Italic</em>, <u>Underline</u>, ~~Strikethrough~~</li>
+<li><strong>Lists</strong>: Ordered and bulleted lists</li>
+</ul>
+
+<p><strong>Paragraph Alignment:</strong></p>
+<ul>
+<li>Left align</li>
+<li>Centre align</li>
+<li>Right align</li>
+<li>Justify</li>
+</ul>
+
+<p><strong>Content:</strong></p>
+<ul>
+<li><strong>Links</strong>: Add hyperlinks to text</li>
+<li><strong>Images</strong>: Insert images using the image picker</li>
+<li><strong>Clean</strong>: Remove formatting from selected text</li>
+</ul>
+
+<p><strong>Image Picker:</strong></p>
+<ul>
+<li>Click the image icon in the toolbar</li>
+<li>Browse available images from your image library</li>
+<li>Search for images by filename</li>
+<li>Click an image to insert it into your newsletter</li>
+</ul>
+
+<p><strong>Placeholders:</strong></p>
+<p>When creating newsletters, you can use the "Insert Placeholder" button to add personalisation tokens:</p>
+<ul>
+<li><code>{{firstName}}</code> - Contact's first name</li>
+<li><code>{{lastName}}</code> - Contact's last name</li>
+<li><code>{{name}}</code> - Full name (or email if name not available)</li>
+<li><code>{{email}}</code> - Contact's email address</li>
+<li><code>{{phone}}</code> - Contact's phone number</li>
+<li><code>{{rotaLinks}}</code> - Upcoming rotas section (next 7 days) with clickable links</li>
+<li><code>{{upcomingEvents}}</code> - Upcoming events section</li>
+</ul>
+
+<p><strong>Special Placeholders:</strong></p>
+<ul>
+<li><code>{{rotaLinks}}</code> automatically generates a formatted section showing all rotas the contact is assigned to in the next 7 days, with clickable links to view rota details. Each rota shows the event title, role, date/time, and a "View Rota Details" button. <strong>Note:</strong> No title is included - add your own heading in the newsletter content.</li>
+<li><code>{{upcomingEvents}}</code> shows upcoming public and internal events within the next 7 days. Each event shows the title, date/time, location (if available), and description. <strong>Note:</strong> No title is included - add your own heading in the newsletter content. Internal events are included so members can see member-only events in newsletters.</li>
+</ul>
+
+<p><strong>Placeholder Formatting:</strong></p>
+<ul>
+<li>Both <code>{{rotaLinks}}</code> and <code>{{upcomingEvents}}</code> are inserted without extra padding or container styling, allowing them to integrate seamlessly with your newsletter content</li>
+<li>If a contact has no upcoming rotas, a message will be displayed instead</li>
+<li>If there are no upcoming events, a message will be displayed instead</li>
+</ul>
+
+<hr>
+
+<h2 id="events">Events</h2>
+
+<h3 id="creating-an-event">Creating an Event</h3>
+
+<ol>
+<li>Go to <code>/hub/events</code> (defaults to calendar view) or click the "+ Event" quick action button on the dashboard</li>
+<li>Click "New Event" button</li>
+<li>Enter event details:</li>
+</ol>
+<p>   - <strong>Title</strong> (required) - The event name</p>
+<p>   - <strong>Description</strong> (HTML) - Detailed event information</p>
+<p>   - <strong>Location</strong> - Where the event takes place</p>
+<p>   - <strong>Visibility</strong> - Choose from:</p>
+<p>     - <strong>Public</strong> - Visible to everyone on the public website calendar</p>
+<p>     - <strong>Internal</strong> - Visible in the hub and in newsletters (for members/contacts only), but NOT on public calendar</p>
+<p>     - <strong>Private</strong> - Visible only in the hub (admin only)</p>
+<ol>
+<li>Set the first occurrence:</li>
+</ol>
+<p>   - <strong>Start Date & Time</strong> (required)</p>
+<p>   - <strong>End Date & Time</strong> (optional)</p>
+<ol>
+<li>Configure recurrence (optional):</li>
+</ol>
+<p>   - <strong>Repeat Type</strong>: None, Daily, Weekly, Monthly, or Yearly</p>
+<p>   - <strong>Repeat Interval</strong>: How often (e.g., every 2 weeks)</p>
+<p>   - <strong>End Condition</strong>: </p>
+<p>     - Never (repeats indefinitely)</p>
+<p>     - On date (specify end date)</p>
+<p>     - After number of occurrences (specify count)</p>
+<p>   - <strong>For Weekly</strong>: Select day(s) of the week</p>
+<p>   - <strong>For Monthly</strong>: Specify day of month or week of month</p>
+<ol>
+<li>Click "Create Event"</li>
+</ol>
+
+<p><strong>Recurrence Examples:</strong></p>
+<ul>
+<li><strong>Weekly Service</strong>: Repeat weekly on Sunday, never ends</li>
+<li><strong>Monthly Meeting</strong>: Repeat monthly on the first Monday, ends after 12 occurrences</li>
+<li><strong>Daily Devotion</strong>: Repeat daily, ends on a specific date</li>
+</ul>
+
+<h3 id="event-calendar-views">Event Calendar Views</h3>
+
+<p>The events section defaults to a calendar view with multiple viewing options:</p>
+
+<p><strong>Month View:</strong></p>
+<ul>
+<li>See all events in a monthly calendar grid</li>
+<li>Navigate between months using arrow buttons</li>
+<li>Click on a date to see events for that day</li>
+<li>Click on an event to view/edit it</li>
+</ul>
+
+<p><strong>Week View:</strong></p>
+<ul>
+<li>See events in a weekly calendar</li>
+<li>Navigate between weeks</li>
+<li>View events by day of the week</li>
+</ul>
+
+<p><strong>Agenda View:</strong></p>
+<ul>
+<li>List view of upcoming events</li>
+<li>Shows events in chronological order</li>
+<li>Displays event details at a glance</li>
+</ul>
+
+<p><strong>Year View:</strong></p>
+<ul>
+<li>Overview of events by year</li>
+<li>Navigate between years</li>
+<li>See events across the entire year</li>
+</ul>
+
+<p><strong>Switching Views:</strong></p>
+<ul>
+<li>Use the view selector dropdown to switch between Month, Week, Agenda, and Year views</li>
+<li>Use the date picker to jump to a specific month/year</li>
+<li>Use arrow buttons to navigate forward/backward</li>
+</ul>
+
+<p><strong>List View:</strong></p>
+<ul>
+<li>Click "List View" button to see all events in a table format</li>
+<li>Search and filter events</li>
+<li>Click on events to view/edit</li>
+</ul>
+
+<h3 id="adding-occurrences">Adding Occurrences</h3>
+
+<p>You can add additional occurrences to an event:</p>
+
+<ol>
+<li>Open an event</li>
+<li>Click "Add Occurrence"</li>
+<li>Enter occurrence details:</li>
+</ol>
+<p>   - <strong>Start Date & Time</strong> (required)</p>
+<p>   - <strong>End Date & Time</strong> (optional)</p>
+<p>   - <strong>Location Override</strong> (optional) - Different location for this occurrence</p>
+<ol>
+<li>Configure recurrence to create multiple occurrences at once:</li>
+</ol>
+<p>   - Same recurrence options as when creating an event</p>
+<p>   - Useful for adding a series of occurrences</p>
+<ol>
+<li>Click "Save"</li>
+</ol>
+
+<p><strong>Recurring Occurrences:</strong></p>
+<p>When adding occurrences, you can use recurrence to create multiple occurrences in one go. For example, add occurrences for "Every Tuesday for the next 4 weeks".</p>
+
+<h3 id="editing-occurrences">Editing Occurrences</h3>
+
+<ol>
+<li>Open an event</li>
+<li>Scroll to the "Occurrences" section</li>
+<li>Click on an occurrence</li>
+<li>Modify the date, time, or location</li>
+<li>Click "Save Changes"</li>
+</ol>
+
+<p>You can also delete individual occurrences without affecting the event or other occurrences.</p>
+
+<h3 id="downloading-events">Downloading Events</h3>
+
+<p>You can download events as ICS (iCalendar) files for import into calendar applications:</p>
+
+<ol>
+<li>Open an event</li>
+<li>Click "Download ICS" button</li>
+<li>The file will download with all occurrences included</li>
+<li>Import the file into Google Calendar, Outlook, Apple Calendar, or other calendar applications</li>
+</ol>
+
+<p><strong>ICS Files Include:</strong></p>
+<ul>
+<li>Event title and description</li>
+<li>All occurrences with dates and times</li>
+<li>Location information</li>
+<li>Event visibility settings</li>
+</ul>
+
+<hr>
+
+<h2 id="rotas">Rotas</h2>
+
+<h3 id="creating-a-rota">Creating a Rota</h3>
+
+<ol>
+<li>Go to <code>/hub/rotas</code> or click the "+ Rota" quick action button on the dashboard</li>
+<li>Click "New Rota" button</li>
+<li>Select an <strong>Event</strong> from the dropdown (required)</li>
+<li>Enter:</li>
+</ol>
+<p>   - <strong>Role</strong> (required) - The role or position (e.g., "Worship Leader", "Sound Technician")</p>
+<p>   - <strong>Capacity</strong> (required) - How many people are needed</p>
+<p>   - <strong>Owner</strong> (optional) - The contact who will be notified when this rota is updated. Use the search bar to quickly find contacts by name or email.</p>
+<p>   - <strong>Notes</strong> (optional) - Additional information about the rota</p>
+<ol>
+<li>Click "Create Rota"</li>
+</ol>
+
+<p><strong>Note:</strong> Rotas are linked to events. You can create multiple rotas for the same event (e.g., different roles).</p>
+
+<h3 id="managing-rotas">Managing Rotas</h3>
+
+<p><strong>Viewing Rotas:</strong></p>
+<ul>
+<li>View all rotas at <code>/hub/rotas</code></li>
+<li>See which event each rota is for</li>
+<li>View role, capacity, and current assignments</li>
+</ul>
+
+<p><strong>Editing Rotas:</strong></p>
+<ul>
+<li>Open a rota's detail page</li>
+<li>Click "Edit" to modify role, capacity, owner, or notes</li>
+<li>Use the search bar in the Owner field to quickly find contacts</li>
+<li>Click "Save Changes" (button is located at the top of the page)</li>
+</ul>
+
+<p><strong>Assigning Volunteers:</strong></p>
+<ul>
+<li>Open a rota</li>
+<li>View the list of assigned volunteers</li>
+<li>Assignees are clickable links that take you to their contact details page</li>
+<li>Use bulk invitations to send signup links to multiple contacts</li>
+</ul>
+
+<p><strong>Deleting Rotas:</strong></p>
+<ul>
+<li>Open a rota's detail page</li>
+<li>Click "Delete" button</li>
+<li>Confirm the deletion</li>
+</ul>
+
+<h3 id="bulk-invitations">Bulk Invitations</h3>
+
+<p>Send rota signup invitations to multiple contacts at once:</p>
+
+<ol>
+<li>Go to <code>/hub/rotas/invite</code></li>
+<li>Select an <strong>Event</strong> from the dropdown</li>
+<li>Select one or more <strong>Rotas</strong> for that event</li>
+<li>Optionally select specific <strong>Occurrences</strong> (if you only want to invite for certain dates)</li>
+<li>Select a <strong>Contact List</strong> to send invitations to</li>
+<li>Click "Send Invitations"</li>
+</ol>
+
+<p><strong>Invitation Process:</strong></p>
+<ul>
+<li>Each contact receives a personalised email invitation</li>
+<li>Emails include:</li>
+</ul>
+<p>  - Greeting with contact's name</p>
+<p>  - Details about the assigned rota(s)</p>
+<p>  - Links to other upcoming rotas (within 7 days)</p>
+<p>  - Unique signup link for each rota</p>
+<ul>
+<li>Contacts can click the link to sign up without needing to log in</li>
+</ul>
+
+<p><strong>Public Signup:</strong></p>
+<ul>
+<li>Volunteers receive unique token-based signup links</li>
+<li>They can sign up at <code>/signup/rota/[token]</code> without logging in</li>
+<li>The signup page shows rota details and allows them to confirm their participation</li>
+</ul>
+
+<p><strong>Rota Owner Notifications:</strong></p>
+<ul>
+<li>When a rota has an owner assigned, they receive email notifications when:</li>
+</ul>
+<p>  - The rota is updated (role, capacity, notes changed)</p>
+<p>  - New volunteers sign up for the rota</p>
+<p>  - Volunteers are removed from the rota</p>
+<ul>
+<li>Email notifications include:</li>
+</ul>
+<p>  - Event name and occurrence date/time</p>
+<p>  - Rota details (role, capacity)</p>
+<p>  - Complete list of all assignees with their names and emails</p>
+<p>  - Assignees grouped by occurrence (if applicable)</p>
+<p>  - Link to view the rota in the hub</p>
+
+<hr>
+
+<h2 id="forms">Forms</h2>
+
+<h3 id="creating-a-form">Creating a Form</h3>
+
+<ol>
+<li>Go to <code>/hub/forms</code> or click the "+ Form" quick action button on the dashboard</li>
+<li>Click "New Form" button</li>
+<li>Enter:</li>
+</ol>
+<p>   - <strong>Form Name</strong> (required)</p>
+<p>   - <strong>Description</strong> (optional) - Explain what the form is for</p>
+<ol>
+<li>Add form fields:</li>
+</ol>
+<p>   - Click "Add Field" to add a new field</p>
+<p>   - Configure each field:</p>
+<p>     - <strong>Field Type</strong>: text, email, phone, date, number, textarea, select, checkbox, radio</p>
+<p>     - <strong>Label</strong> - What users will see</p>
+<p>     - <strong>Name</strong> - Internal field name (auto-generated from label)</p>
+<p>     - <strong>Required</strong> - Whether the field must be filled</p>
+<p>     - <strong>Placeholder</strong> - Hint text for the field</p>
+<p>     - <strong>Options</strong> - For select, checkbox, and radio fields</p>
+<p>   - Reorder fields using up/down arrows</p>
+<p>   - Edit or remove fields as needed</p>
+<ol>
+<li>Optionally enable <strong>"Requires Safeguarding Encryption"</strong> for sensitive data (e.g., children's work forms)</li>
+<li>Click "Create Form"</li>
+</ol>
+
+<p><strong>Field Types:</strong></p>
+<ul>
+<li><strong>Text</strong>: Single-line text input</li>
+<li><strong>Email</strong>: Email address input with validation</li>
+<li><strong>Phone</strong>: Phone number input</li>
+<li><strong>Date</strong>: Date picker</li>
+<li><strong>Number</strong>: Numeric input</li>
+<li><strong>Textarea</strong>: Multi-line text input</li>
+<li><strong>Select</strong>: Dropdown menu</li>
+<li><strong>Checkbox</strong>: Multiple selection checkboxes</li>
+<li><strong>Radio</strong>: Single selection radio buttons</li>
+</ul>
+
+<p><strong>Safeguarding Forms:</strong></p>
+<p>Forms marked as "Requires Safeguarding Encryption" will have all submission data encrypted using AES-256-GCM encryption. This is essential for forms collecting sensitive information about children or vulnerable adults.</p>
+
+<h3 id="viewing-form-submissions">Viewing Form Submissions</h3>
+
+<ol>
+<li>Go to <code>/hub/forms</code></li>
+<li>View the "Latest Form Submissions" section on the main forms page</li>
+<li>Click on a submission to view full details</li>
+<li>For safeguarding forms, data is automatically decrypted for viewing (encryption is transparent to admins)</li>
+</ol>
+
+<p><strong>Submission Details:</strong></p>
+<ul>
+<li>View all submitted field values</li>
+<li>See submission timestamp</li>
+<li>View which form was submitted</li>
+<li>For safeguarding forms, see decrypted data securely</li>
+</ul>
+
+<p><strong>Managing Submissions:</strong></p>
+<ul>
+<li>View individual submissions at <code>/hub/forms/[formId]/submissions/[submissionId]</code></li>
+<li>All submissions are stored and can be reviewed later</li>
+<li>Safeguarding form data remains encrypted in storage</li>
+</ul>
+
+<h3 id="public-form-submission">Public Form Submission</h3>
+
+<p>Forms can be accessed publicly for submission without requiring login:</p>
+
+<ol>
+<li>Forms are available at <code>/forms/[formId]</code></li>
+<li>Anyone with the link can submit the form</li>
+<li>No login required for form submission</li>
+<li>Submitted data is stored in the system</li>
+<li>Admins can view all submissions in the Hub</li>
+</ol>
+
+<p><strong>Public Access:</strong></p>
+<ul>
+<li>Forms are designed to be shared via links</li>
+<li>Perfect for collecting information from church members, visitors, or event attendees</li>
+<li>All submissions are tracked and can be reviewed by admins</li>
+</ul>
+
+<hr>
+
+<h2 id="public-signup">Public Signup</h2>
+
+<p>Volunteers receive email invitations with unique tokens for rota signup.</p>
+
+<p><strong>Signup Process:</strong></p>
+<ol>
+<li>Volunteer receives an email invitation</li>
+<li>Email includes personalised greeting and rota details</li>
+<li>Email shows links to other upcoming rotas (within 7 days)</li>
+<li>Volunteer clicks the unique signup link</li>
+<li>They are taken to <code>/signup/rota/[token]</code></li>
+<li>They can view rota details and confirm participation</li>
+<li>No login required - the token provides secure access</li>
+</ol>
+
+<p><strong>Email Features:</strong></p>
+<ul>
+<li>Personalised with volunteer's name</li>
+<li>Shows rota role and event details</li>
+<li>Includes links to other upcoming rotas</li>
+<li>Direct signup link for easy access</li>
+<li>Professional formatting</li>
+</ul>
+
+<p><strong>Security:</strong></p>
+<ul>
+<li>Each signup link contains a unique, secure token</li>
+<li>Tokens are single-use or time-limited</li>
+<li>No need for volunteers to create accounts or remember passwords</li>
+</ul>
+
+<hr>
+
+<h2 id="help-and-documentation">Help and Documentation</h2>
+
+<p>The Hub includes comprehensive built-in documentation:</p>
+
+<p><strong>Accessing Help:</strong></p>
+<ol>
+<li>Click "Help" in the main navigation</li>
+<li>Browse available documentation:</li>
+</ol>
+<p>   - <strong>User Guide</strong> (this document) - How to use The Hub</p>
+<p>   - <strong>Admin Guide</strong> - Administrative tasks and setup</p>
+<p>   - <strong>Technical Documentation</strong> - Technical details for developers</p>
+<p>   - <strong>Security Guide</strong> - Security best practices</p>
+<p>   - <strong>Security Audit</strong> - Security audit report and recommendations</p>
+
+<p><strong>Documentation Features:</strong></p>
+<ul>
+<li>Scrollable document viewer</li>
+<li>Easy navigation between documents</li>
+<li>Search functionality (browser search)</li>
+<li>Always up-to-date with latest features</li>
+</ul>
+
+<p><strong>Getting Support:</strong></p>
+<ul>
+<li>Review the documentation for answers to common questions</li>
+<li>Check the Admin Guide for setup and configuration help</li>
+<li>Refer to the Security Guide for security-related questions</li>
+</ul>
+
+<hr>
+
+<h2 id="tips-and-best-practices">Tips and Best Practices</h2>
+
+<p><strong>Contacts:</strong></p>
+<ul>
+<li>Use consistent naming conventions for easier searching</li>
+<li>Import contacts in bulk when setting up the system</li>
+<li>Keep contact information up to date</li>
+<li>Use notes to track important information about contacts</li>
+</ul>
+
+<p><strong>Lists:</strong></p>
+<ul>
+<li>Create lists for different groups (e.g., "Youth Group", "Worship Team", "Small Group Leaders")</li>
+<li>Use descriptive list names</li>
+<li>Regularly update lists as membership changes</li>
+</ul>
+
+<p><strong>Newsletters:</strong></p>
+<ul>
+<li>Create templates for commonly used newsletter formats</li>
+<li>Use personalisation placeholders to make emails more engaging</li>
+<li>Preview newsletters before sending</li>
+<li>Export newsletters to PDF for archiving or sharing</li>
+<li>Test with a small list first before sending to everyone</li>
+</ul>
+
+<p><strong>Events:</strong></p>
+<ul>
+<li>Use recurrence for regularly scheduled events</li>
+<li>Set appropriate visibility:</li>
+</ul>
+<p>  - <strong>Public</strong> - For events open to the general public</p>
+<p>  - <strong>Internal</strong> - For member-only events (appears in newsletters but not public calendar)</p>
+<p>  - <strong>Private</strong> - For admin-only planning events</p>
+<ul>
+<li>Add detailed descriptions to help people understand the event</li>
+<li>Download ICS files to share events externally</li>
+</ul>
+
+<p><strong>Rotas:</strong></p>
+<ul>
+<li>Create rotas well in advance</li>
+<li>Send invitations early to give volunteers time to respond</li>
+<li>Use bulk invitations to efficiently manage multiple rotas</li>
+<li>Link rotas to events for better organisation</li>
+</ul>
+
+<p><strong>Forms:</strong></p>
+<ul>
+<li>Use safeguarding encryption for any forms collecting information about children or vulnerable adults</li>
+<li>Test forms before making them public</li>
+<li>Use clear field labels and helpful placeholders</li>
+<li>Keep forms simple and focused</li>
+</ul>
+
+<hr>
+
+<h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+
+<p>While The Hub doesn't have specific keyboard shortcuts, you can use standard browser shortcuts:</p>
+<ul>
+<li><strong>Ctrl/Cmd + F</strong>: Search on the current page</li>
+<li><strong>Ctrl/Cmd + Click</strong>: Open links in new tabs</li>
+<li><strong>Backspace</strong>: Go back (in some browsers)</li>
+<li><strong>Esc</strong>: Close modals or dialogs</li>
+</ul>
+
+<hr>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<p><strong>Can't log in:</strong></p>
+<ul>
+<li>Check that you're using the correct email and password</li>
+<li>Use the "Forgot password?" link on the login page to reset your password</li>
+<li>Ensure your account hasn't been locked (too many failed attempts)</li>
+<li>If locked, contact an administrator to unlock your account</li>
+<li>Verify that your email address has been verified (check for verification email)</li>
+</ul>
+
+<p><strong>Form not submitting:</strong></p>
+<ul>
+<li>Check that all required fields are filled</li>
+<li>Ensure you have a stable internet connection</li>
+<li>Try refreshing the page and submitting again</li>
+</ul>
+
+<p><strong>Newsletter not sending:</strong></p>
+<ul>
+<li>Verify that Resend API key is configured</li>
+<li>Check that the contact list has contacts</li>
+<li>Ensure newsletter is in draft status</li>
+<li>Check email service status</li>
+</ul>
+
+<p><strong>Import not working:</strong></p>
+<ul>
+<li>Verify file format (CSV or Excel)</li>
+<li>Check file size (must be under 10MB)</li>
+<li>Ensure file has a header row</li>
+<li>Review error messages for specific issues</li>
+</ul>
+
+<p><strong>Data not saving:</strong></p>
+<ul>
+<li>Check your internet connection</li>
+<li>Ensure you're still logged in (session may have expired)</li>
+<li>Try refreshing the page</li>
+<li>Contact support if the issue persists</li>
+</ul>
+
+<hr>
+
+<h2 id="additional-resources">Additional Resources</h2>
+
+<ul>
+<li><strong>Admin Guide</strong>: For system setup and configuration</li>
+<li><strong>Technical Documentation</strong>: For developers and technical details</li>
+<li><strong>Security Guide</strong>: For security best practices</li>
+<li><strong>Security Audit</strong>: For security recommendations and status</li>
+</ul>
+
+<hr>
+
+<p><em>Last Updated: January 2025</em></p>
+
+<hr>
+
+<h2 id="recent-updates">Recent Updates</h2>
+
+<p><strong>January 2025:</strong></p>
+<ul>
+<li>Added PDF export functionality for newsletters</li>
+<li>Implemented forgot password feature with email reset links</li>
+<li>Added comprehensive admin user management system</li>
+<li>Enhanced security with email verification for admin users</li>
+<li>Added admin profile page for self-service account management</li>
+</ul>
+</main>
+</div>
+</body>
+</html>
