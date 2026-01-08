@@ -551,7 +551,7 @@ When creating newsletters, you can use the "Insert Placeholder" button to add pe
 
 **Special Placeholders:**
 - `{{rotaLinks}}` automatically generates a formatted section showing all rotas the contact is assigned to in the next 7 days, with clickable links to view rota details. Each rota shows the event title, role, date/time, and a "View Rota Details" button. **Note:** No title is included - add your own heading in the newsletter content.
-- `{{upcomingEvents}}` shows upcoming public events within the next 7 days. Each event shows the title, date/time, location (if available), and description. **Note:** No title is included - add your own heading in the newsletter content.
+- `{{upcomingEvents}}` shows upcoming public and internal events within the next 7 days. Each event shows the title, date/time, location (if available), and description. **Note:** No title is included - add your own heading in the newsletter content. Internal events are included so members can see member-only events in newsletters.
 
 **Placeholder Formatting:**
 - Both `{{rotaLinks}}` and `{{upcomingEvents}}` are inserted without extra padding or container styling, allowing them to integrate seamlessly with your newsletter content
@@ -570,7 +570,10 @@ When creating newsletters, you can use the "Insert Placeholder" button to add pe
    - **Title** (required) - The event name
    - **Description** (HTML) - Detailed event information
    - **Location** - Where the event takes place
-   - **Visibility** - Choose "Public" (visible to everyone) or "Private" (admin only)
+   - **Visibility** - Choose from:
+     - **Public** - Visible to everyone on the public website calendar
+     - **Internal** - Visible in the hub and in newsletters (for members/contacts only), but NOT on public calendar
+     - **Private** - Visible only in the hub (admin only)
 4. Set the first occurrence:
    - **Start Date & Time** (required)
    - **End Date & Time** (optional)
@@ -680,6 +683,7 @@ You can download events as ICS (iCalendar) files for import into calendar applic
 4. Enter:
    - **Role** (required) - The role or position (e.g., "Worship Leader", "Sound Technician")
    - **Capacity** (required) - How many people are needed
+   - **Owner** (optional) - The contact who will be notified when this rota is updated. Use the search bar to quickly find contacts by name or email.
    - **Notes** (optional) - Additional information about the rota
 5. Click "Create Rota"
 
@@ -694,8 +698,9 @@ You can download events as ICS (iCalendar) files for import into calendar applic
 
 **Editing Rotas:**
 - Open a rota's detail page
-- Click "Edit" to modify role, capacity, or notes
-- Click "Save Changes"
+- Click "Edit" to modify role, capacity, owner, or notes
+- Use the search bar in the Owner field to quickly find contacts
+- Click "Save Changes" (button is located at the top of the page)
 
 **Assigning Volunteers:**
 - Open a rota
@@ -732,6 +737,18 @@ Send rota signup invitations to multiple contacts at once:
 - Volunteers receive unique token-based signup links
 - They can sign up at `/signup/rota/[token]` without logging in
 - The signup page shows rota details and allows them to confirm their participation
+
+**Rota Owner Notifications:**
+- When a rota has an owner assigned, they receive email notifications when:
+  - The rota is updated (role, capacity, notes changed)
+  - New volunteers sign up for the rota
+  - Volunteers are removed from the rota
+- Email notifications include:
+  - Event name and occurrence date/time
+  - Rota details (role, capacity)
+  - Complete list of all assignees with their names and emails
+  - Assignees grouped by occurrence (if applicable)
+  - Link to view the rota in the hub
 
 ---
 
@@ -882,7 +899,10 @@ The Hub includes comprehensive built-in documentation:
 
 **Events:**
 - Use recurrence for regularly scheduled events
-- Set appropriate visibility (public events appear in public calendars)
+- Set appropriate visibility:
+  - **Public** - For events open to the general public
+  - **Internal** - For member-only events (appears in newsletters but not public calendar)
+  - **Private** - For admin-only planning events
 - Add detailed descriptions to help people understand the event
 - Download ICS files to share events externally
 
