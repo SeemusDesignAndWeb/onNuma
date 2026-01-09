@@ -35,12 +35,14 @@
 
 	function toggleRotaSelection(rotaId, occurrenceId) {
 		const key = occurrenceId ? `${rotaId}:${occurrenceId}` : rotaId;
-		if (selectedRotas.has(key)) {
-			selectedRotas.delete(key);
+		// Create a new Set with updated contents to ensure Svelte detects the change
+		const newSet = new Set(selectedRotas);
+		if (newSet.has(key)) {
+			newSet.delete(key);
 		} else {
-			selectedRotas.add(key);
+			newSet.add(key);
 		}
-		selectedRotas = selectedRotas; // Trigger reactivity
+		selectedRotas = newSet; // Assign new Set to trigger reactivity
 	}
 
 	function isRotaSelected(rotaId, occurrenceId) {
@@ -75,31 +77,19 @@
 		return assignees.some(a => a.email && a.email.toLowerCase() === email.toLowerCase());
 	}
 
-	// Action to keep hidden input in sync with selectedRotas
+	// Action to ensure hidden input is updated on form submit
 	function syncHiddenInput(node) {
 		function update() {
-			const selectedArray = getSelectedRotasArray();
-			const jsonStr = JSON.stringify(selectedArray);
-			node.value = jsonStr;
+			// Always get the latest value from the reactive statement
+			node.value = selectedRotasJson;
 		}
 		
-		// Update immediately
-		update();
-		
 		// Update on form submit with capture:true to run BEFORE enhance processes the form
+		// This ensures we have the latest value even if there's a timing issue
 		const form = node.closest('form');
 		if (form) {
 			form.addEventListener('submit', update, { capture: true, once: false });
 		}
-		
-		// Also update reactively when selectedRotas changes
-		let lastSelectedRotasSize = selectedRotas.size;
-		const checkInterval = setInterval(() => {
-			if (selectedRotas.size !== lastSelectedRotasSize) {
-				lastSelectedRotasSize = selectedRotas.size;
-				update();
-			}
-		}, 50);
 		
 		return {
 			update,
@@ -107,7 +97,6 @@
 				if (form) {
 					form.removeEventListener('submit', update, { capture: true });
 				}
-				clearInterval(checkInterval);
 			}
 		};
 	}
