@@ -24,9 +24,19 @@
 </script>
 
 <div class="bg-white shadow rounded-lg p-6">
-	<h2 class="text-2xl font-bold text-gray-900 mb-6">New Admin User</h2>
+	<div class="flex justify-between items-center mb-6">
+		<h2 class="text-2xl font-bold text-gray-900">New Admin User</h2>
+		<div class="flex gap-2">
+			<a href="/hub/users" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+				Cancel
+			</a>
+			<button type="submit" form="user-create-form" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+				Create Admin User
+			</button>
+		</div>
+	</div>
 
-	<form method="POST" action="?/create" use:enhance>
+	<form id="user-create-form" method="POST" action="?/create" use:enhance>
 		<input type="hidden" name="_csrf" value={csrfToken} />
 		
 		<div class="space-y-4">
@@ -124,15 +134,6 @@
 					Must be at least 12 characters with uppercase, lowercase, number, and special character
 				</p>
 			</div>
-		</div>
-
-		<div class="flex gap-2 mt-6">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
-				Create Admin User
-			</button>
-			<a href="/hub/users" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
-				Cancel
-			</a>
 		</div>
 	</form>
 </div>

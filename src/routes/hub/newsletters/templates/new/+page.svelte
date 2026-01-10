@@ -29,9 +29,19 @@
 </script>
 
 <div class="bg-white shadow rounded-lg p-6">
-	<h2 class="text-2xl font-bold text-gray-900 mb-6">New Newsletter Template</h2>
+	<div class="flex justify-between items-center mb-6">
+		<h2 class="text-2xl font-bold text-gray-900">New Newsletter Template</h2>
+		<div class="flex gap-2">
+			<a href="/hub/newsletters/templates" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+				Cancel
+			</a>
+			<button type="submit" form="template-create-form" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+				Create Template
+			</button>
+		</div>
+	</div>
 
-	<form method="POST" action="?/create" use:enhance>
+	<form id="template-create-form" method="POST" action="?/create" use:enhance>
 		<input type="hidden" name="_csrf" value={csrfToken} />
 		<FormField label="Template Name" name="name" bind:value={formData.name} required />
 		<FormField label="Description" name="description" bind:value={formData.description} />
@@ -51,14 +61,6 @@
 				</ul>
 			</div>
 			<HtmlEditor bind:value={htmlContent} name="htmlContent" showPlaceholders={true} showImagePicker={true} />
-		</div>
-		<div class="flex gap-2">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
-				Create Template
-			</button>
-			<a href="/hub/newsletters/templates" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
-				Cancel
-			</a>
 		</div>
 	</form>
 

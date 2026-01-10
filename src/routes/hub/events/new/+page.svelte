@@ -52,9 +52,19 @@
 </script>
 
 <div class="bg-white shadow rounded-lg p-6">
-	<h2 class="text-2xl font-bold text-gray-900 mb-6">New Event</h2>
+	<div class="flex justify-between items-center mb-6">
+		<h2 class="text-2xl font-bold text-gray-900">New Event</h2>
+		<div class="flex gap-2">
+			<a href="/hub/events" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+				Cancel
+			</a>
+			<button type="submit" form="event-create-form" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+				Create Event
+			</button>
+		</div>
+	</div>
 
-	<form method="POST" action="?/create" use:enhance={handleEnhance}>
+	<form id="event-create-form" method="POST" action="?/create" use:enhance={handleEnhance}>
 		<input type="hidden" name="_csrf" value={csrfToken} />
 		<input type="hidden" name="description" value={description} />
 		<input type="hidden" name="firstStart" value={formData.firstStart} />
@@ -203,15 +213,6 @@
 					</div>
 				{/if}
 			</div>
-		</div>
-
-		<div class="flex gap-2">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
-				Create Event
-			</button>
-			<a href="/hub/events" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
-				Cancel
-			</a>
 		</div>
 	</form>
 

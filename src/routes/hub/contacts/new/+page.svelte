@@ -60,16 +60,34 @@
 
 <div class="space-y-6">
 	<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 shadow-lg rounded-lg p-6 text-white">
-		<div class="flex items-center gap-3">
-			<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-			</svg>
-			<h2 class="text-3xl font-bold text-white">New Contact</h2>
+		<div class="flex justify-between items-center">
+			<div>
+				<div class="flex items-center gap-3">
+					<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+					</svg>
+					<h2 class="text-3xl font-bold text-white">New Contact</h2>
+				</div>
+				<p class="mt-2 text-hub-blue-100">Add a new contact to your database</p>
+			</div>
+			<div class="flex gap-3">
+				<a href="/hub/contacts" class="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-md font-medium inline-flex items-center gap-2 border border-white/30">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+					Cancel
+				</a>
+				<button type="submit" form="contact-create-form" class="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-md font-medium inline-flex items-center gap-2 border border-white/30">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
+					Create Contact
+				</button>
+			</div>
 		</div>
-		<p class="mt-2 text-hub-blue-100">Add a new contact to your database</p>
 	</div>
 
-	<form method="POST" action="?/create" use:enhance>
+	<form id="contact-create-form" method="POST" action="?/create" use:enhance>
 		<input type="hidden" name="_csrf" value={csrfToken} />
 		<input type="hidden" name="servingAreas" value={JSON.stringify(formData.servingAreas)} />
 		<input type="hidden" name="giftings" value={JSON.stringify(formData.giftings)} />
@@ -220,24 +238,6 @@
 					
 					<FormField label="Notes" name="notes" type="textarea" rows="4" bind:value={formData.notes} />
 				</div>
-			</div>
-		</div>
-
-		<!-- Action Buttons -->
-		<div class="bg-white border-2 border-gray-200 rounded-lg shadow-md p-6">
-			<div class="flex gap-3 justify-end">
-				<a href="/hub/contacts" class="bg-gray-600 text-white px-6 py-3 rounded-md hover:bg-gray-700 font-medium inline-flex items-center gap-2">
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-					Cancel
-				</a>
-				<button type="submit" class="bg-hub-green-600 text-white px-6 py-3 rounded-md hover:bg-hub-green-700 font-medium inline-flex items-center gap-2">
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					Create Contact
-				</button>
 			</div>
 		</div>
 	</form>
