@@ -2,11 +2,46 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { formatDateUK } from '$lib/crm/utils/dateFormat.js';
+	import { onMount } from 'svelte';
 	
 	$: stats = $page.data?.stats || {};
 	$: latestNewsletters = $page.data?.latestNewsletters || [];
 	$: latestRotas = $page.data?.latestRotas || [];
+	$: latestEvents = $page.data?.latestEvents || [];
+	
+	// Check for access denied error in URL
+	$: urlParams = new URLSearchParams($page.url.search);
+	$: accessDenied = urlParams.get('error') === 'access_denied';
+	
+	onMount(() => {
+		// Clear error from URL after showing message
+		if (accessDenied) {
+			setTimeout(() => {
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete('error');
+				window.history.replaceState({}, '', newUrl);
+			}, 5000);
+		}
+	});
 </script>
+
+<!-- Access Denied Message -->
+{#if accessDenied}
+	<div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+		<div class="flex">
+			<div class="flex-shrink-0">
+				<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+				</svg>
+			</div>
+			<div class="ml-3">
+				<p class="text-sm text-red-700">
+					<strong>Access Denied:</strong> You do not have permission to access that page. Please contact a super admin if you need access.
+				</p>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Overview Cards with Quick Actions -->
 <h2 class="text-xl font-bold text-gray-900 mb-4">Overview</h2>
@@ -193,7 +228,7 @@
 </div>
 
 <!-- Recent Items -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 	<!-- Latest Newsletters -->
 	<div class="bg-white shadow rounded-lg p-6 border-t-4 border-hub-green-500">
 		<div class="flex justify-between items-center mb-4">
@@ -252,6 +287,42 @@
 									</div>
 									<div class="text-xs text-gray-400 mt-1">
 										{formatDateUK(rota.updatedAt || rota.createdAt || Date.now())}
+									</div>
+								</div>
+							</div>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</div>
+
+	<!-- Latest Events -->
+	<div class="bg-white shadow rounded-lg p-6 border-t-4 border-hub-blue-500">
+		<div class="flex justify-between items-center mb-4">
+			<h3 class="text-lg font-semibold text-gray-900">Recently Edited Events</h3>
+			<a href="/hub/events" class="text-sm text-hub-blue-600 hover:text-hub-blue-800 font-medium">View all</a>
+		</div>
+		{#if latestEvents.length === 0}
+			<p class="text-sm text-gray-500">No events yet</p>
+		{:else}
+			<ul class="space-y-3">
+				{#each latestEvents as event}
+					<li class="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
+						<a 
+							href="/hub/events/{event.id}" 
+							class="block hover:text-hub-blue-600 transition-colors"
+						>
+							<div class="flex justify-between items-start">
+								<div class="flex-1">
+									<div class="font-medium text-gray-900">{event.title || 'Untitled'}</div>
+									{#if event.location}
+										<div class="text-xs text-gray-500 mt-1">
+											{event.location}
+										</div>
+									{/if}
+									<div class="text-xs text-gray-400 mt-1">
+										{formatDateUK(event.updatedAt || event.createdAt || Date.now())}
 									</div>
 								</div>
 							</div>

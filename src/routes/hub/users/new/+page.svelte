@@ -6,6 +6,7 @@
 
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+	$: availableLevels = $page.data?.availableLevels || [];
 	
 	// Show notifications from form results
 	$: if (formResult?.error) {
@@ -15,7 +16,8 @@
 	let formData = {
 		email: '',
 		password: '',
-		name: ''
+		name: '',
+		adminLevel: 'level_2'
 	};
 
 	let showPassword = false;
@@ -45,6 +47,35 @@
 				required 
 				placeholder="admin@example.com"
 			/>
+			
+			<div>
+				<label for="adminLevel" class="block text-sm font-medium text-gray-700 mb-1">
+					Admin Level
+				</label>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div>
+						<select
+							id="adminLevel"
+							name="adminLevel"
+							bind:value={formData.adminLevel}
+							required
+							class="w-full rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-4"
+						>
+							{#each availableLevels as level}
+								<option value={level.value}>{level.label}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="space-y-3">
+						{#each availableLevels as level}
+							<div class="bg-blue-50 border border-blue-200 rounded-lg p-3 {level.value === formData.adminLevel ? 'ring-2 ring-blue-500' : ''}">
+								<h4 class="text-sm font-semibold text-blue-900 mb-1">{level.label}</h4>
+								<p class="text-xs text-blue-800">{level.description}</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
 			
 			<div>
 				<label for="password" class="block text-sm font-medium text-gray-700 mb-1">

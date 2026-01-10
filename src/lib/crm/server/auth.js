@@ -92,10 +92,10 @@ export function generateVerificationToken() {
 
 /**
  * Create a new admin user
- * @param {object} data - Admin data (email, password, name)
+ * @param {object} data - Admin data (email, password, name, adminLevel)
  * @returns {Promise<object>} Created admin or existing admin (to prevent email enumeration)
  */
-export async function createAdmin({ email, password, name }) {
+export async function createAdmin({ email, password, name, adminLevel = 'level_2' }) {
 	// Validate password complexity
 	validatePassword(password);
 	
@@ -110,11 +110,16 @@ export async function createAdmin({ email, password, name }) {
 	const verificationToken = generateVerificationToken();
 	const now = new Date();
 	
+	// Check if email is john.watson@egcc.co.uk - automatically set as super admin
+	const normalizedEmail = email.toLowerCase().trim();
+	const finalAdminLevel = normalizedEmail === 'john.watson@egcc.co.uk' ? 'super_admin' : adminLevel;
+	
 	return create('admins', {
 		email,
 		passwordHash: hashedPassword,
 		name,
 		role: 'admin',
+		adminLevel: finalAdminLevel,
 		emailVerified: false,
 		emailVerificationToken: verificationToken,
 		emailVerificationTokenExpires: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days

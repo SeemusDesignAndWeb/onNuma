@@ -10,6 +10,7 @@
 	$: admin = $page.data?.admin;
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+	$: availableLevels = $page.data?.availableLevels || [];
 	
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
@@ -29,7 +30,8 @@
 	let resettingPassword = false;
 	let formData = {
 		email: '',
-		name: ''
+		name: '',
+		adminLevel: 'level_2'
 	};
 
 	let passwordData = {
@@ -46,7 +48,8 @@
 	$: if (admin && !editing && !isSubmitting) {
 		formData = {
 			email: admin.email || '',
-			name: admin.name || ''
+			name: admin.name || '',
+			adminLevel: admin.adminLevel || 'level_2'
 		};
 	}
 
@@ -117,10 +120,17 @@
 			<div class="flex gap-2">
 				{#if editing}
 					<button
+						type="submit"
+						form="admin-edit-form"
+						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+					>
+						Save Changes
+					</button>
+					<button
 						on:click={() => editing = false}
 						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
 					>
-						Cancel
+						Back
 					</button>
 				{:else}
 					<button
@@ -156,7 +166,7 @@
 		</div>
 
 		{#if editing}
-			<form method="POST" action="?/update" use:enhance={(e) => {
+			<form id="admin-edit-form" method="POST" action="?/update" use:enhance={(e) => {
 				return async ({ update, result }) => {
 					isSubmitting = true;
 					try {
@@ -191,28 +201,33 @@
 						bind:value={formData.email} 
 						required 
 					/>
-				</div>
-
-				<div class="flex gap-2 mt-6">
-					<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
-						Save Changes
-					</button>
-					<button
-						type="button"
-						on:click={() => {
-							editing = false;
-							// Reset formData when canceling
-							if (admin) {
-								formData = {
-									email: admin.email || '',
-									name: admin.name || ''
-								};
-							}
-						}}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-					>
-						Cancel
-					</button>
+					
+					<div>
+						<label for="adminLevel" class="block text-sm font-medium text-gray-700 mb-1">
+							Admin Level
+						</label>
+						<div class="mb-4">
+							<select
+								id="adminLevel"
+								name="adminLevel"
+								bind:value={formData.adminLevel}
+								required
+								class="w-full rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-4"
+							>
+								{#each availableLevels as level}
+									<option value={level.value}>{level.label}</option>
+								{/each}
+							</select>
+						</div>
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+							{#each availableLevels as level}
+								<div class="bg-blue-50 border border-blue-200 rounded-lg p-3 {level.value === formData.adminLevel ? 'ring-2 ring-blue-500' : ''}">
+									<h4 class="text-sm font-semibold text-blue-900 mb-1">{level.label}</h4>
+									<p class="text-xs text-blue-800">{level.description}</p>
+								</div>
+							{/each}
+						</div>
+					</div>
 				</div>
 			</form>
 		{:else}
@@ -231,6 +246,41 @@
 						<div>
 							<dt class="text-sm font-medium text-gray-500">Role</dt>
 							<dd class="mt-1 text-sm text-gray-900 capitalize">{admin.role || 'admin'}</dd>
+						</div>
+						<div>
+							<dt class="text-sm font-medium text-gray-500">Admin Level</dt>
+							<dd class="mt-1">
+								<div class="text-sm font-medium text-gray-900">
+									{#if admin.adminLevel === 'super_admin'}
+										Super Admin
+									{:else if admin.adminLevel === 'level_2'}
+										Events
+									{:else if admin.adminLevel === 'level_2b'}
+										Communications
+									{:else if admin.adminLevel === 'level_3'}
+										Safeguarding
+									{:else if admin.adminLevel === 'level_4'}
+										Forms
+									{:else}
+										Events
+									{/if}
+								</div>
+								<div class="text-xs text-gray-500 mt-1">
+									{#if admin.adminLevel === 'super_admin'}
+										Full access to all areas, can create other admins
+									{:else if admin.adminLevel === 'level_2'}
+										Contacts, Lists, Rotas, Events, Meeting Planner
+									{:else if admin.adminLevel === 'level_2b'}
+										Contacts, Lists, Rotas, Events, Meeting Planner, Newsletters
+									{:else if admin.adminLevel === 'level_3'}
+										Contacts, Lists, Rotas, Events, Meeting Planner, Newsletters, Safeguarding Forms
+									{:else if admin.adminLevel === 'level_4'}
+										Contacts, Lists, Rotas, Events, Meeting Planner, Newsletters, Forms (non-safeguarding)
+									{:else}
+										Contacts, Lists, Rotas, Events, Meeting Planner
+									{/if}
+								</div>
+							</dd>
 						</div>
 						<div>
 							<dt class="text-sm font-medium text-gray-500">Status</dt>

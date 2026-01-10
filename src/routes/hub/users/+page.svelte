@@ -41,9 +41,23 @@
 		return { text: 'Active', class: 'bg-hub-green-100 text-hub-green-800' };
 	}
 
+	function getAdminLevelLabel(level) {
+		if (level === 'super_admin') return 'Super Admin';
+		if (level === 'level_2') return 'Events';
+		if (level === 'level_2b') return 'Communications';
+		if (level === 'level_3') return 'Safeguarding';
+		if (level === 'level_4') return 'Forms';
+		return 'Events';
+	}
+
 	const columns = [
 		{ key: 'email', label: 'Email' },
 		{ key: 'name', label: 'Name', render: (val) => val || '-' },
+		{ 
+			key: 'adminLevel', 
+			label: 'Admin Level',
+			render: (val) => getAdminLevelLabel(val)
+		},
 		{ 
 			key: 'status', 
 			label: 'Status',

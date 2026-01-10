@@ -1,11 +1,23 @@
 import { redirect } from '@sveltejs/kit';
-import { createAdmin } from '$lib/crm/server/auth.js';
+import { createAdmin, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
+import { isSuperAdmin, canCreateAdminWithLevel, getAvailableAdminLevels } from '$lib/crm/server/permissions.js';
 
 export async function load({ cookies }) {
+	const admin = await getAdminFromCookies(cookies);
+	if (!admin) {
+		throw redirect(302, '/hub/auth/login');
+	}
+	
+	// Only super admins can create admins
+	if (!isSuperAdmin(admin)) {
+		throw redirect(302, '/hub/users');
+	}
+	
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { csrfToken };
+	const availableLevels = getAvailableAdminLevels(admin);
+	return { csrfToken, availableLevels };
 }
 
 export const actions = {
@@ -20,16 +32,30 @@ export const actions = {
 		const email = data.get('email');
 		const password = data.get('password');
 		const name = data.get('name');
+		const adminLevel = data.get('adminLevel');
 
 		if (!email || !password || !name) {
 			return { error: 'Email, password, and name are required' };
+		}
+
+		// Get current admin to check permissions
+		const currentAdmin = await getAdminFromCookies(cookies);
+		if (!currentAdmin) {
+			return { error: 'Not authenticated' };
+		}
+
+		// Validate admin level
+		const targetLevel = adminLevel?.toString() || 'level_2';
+		if (!canCreateAdminWithLevel(currentAdmin, targetLevel)) {
+			return { error: 'You do not have permission to create an admin with this level' };
 		}
 
 		try {
 			const admin = await createAdmin({
 				email: email.toString(),
 				password: password.toString(),
-				name: name.toString()
+				name: name.toString(),
+				adminLevel: targetLevel
 			});
 
 			// Check if admin already exists (createAdmin returns existing admin without error to prevent enumeration)

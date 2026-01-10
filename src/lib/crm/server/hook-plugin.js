@@ -1,5 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { getAdminFromCookies, generateCsrfToken, setCsrfToken, getCsrfToken } from './auth.js';
+import { hasRouteAccess } from './permissions.js';
 
 /**
  * CRM hook plugin - handles authentication and CSRF for /hub routes
@@ -55,6 +56,12 @@ export async function crmHandle({ event, resolve }) {
 	
 	if (!admin) {
 		throw redirect(302, '/hub/auth/login');
+	}
+
+	// Check if admin has permission to access this route
+	if (!hasRouteAccess(admin, pathname)) {
+		// Redirect to hub home with error message
+		throw redirect(302, '/hub?error=access_denied');
 	}
 
 	// Attach admin to locals

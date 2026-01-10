@@ -1,13 +1,30 @@
 import { redirect } from '@sveltejs/kit';
 import { findById, update, remove, readCollection, findMany } from '$lib/crm/server/fileStore.js';
 import { validateForm } from '$lib/crm/server/validators.js';
-import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { decrypt } from '$lib/crm/server/crypto.js';
+import { canAccessSafeguarding, canAccessForms } from '$lib/crm/server/permissions.js';
 
 export async function load({ params, cookies }) {
+	const admin = await getAdminFromCookies(cookies);
+	if (!admin) {
+		throw redirect(302, '/hub/auth/login');
+	}
+	
 	const form = await findById('forms', params.id);
 	if (!form) {
 		throw redirect(302, '/hub/forms');
+	}
+	
+	// Check permissions based on form type
+	if (form.isSafeguarding || form.requiresEncryption) {
+		if (!canAccessSafeguarding(admin)) {
+			throw redirect(302, '/hub/forms?error=access_denied');
+		}
+	} else {
+		if (!canAccessForms(admin)) {
+			throw redirect(302, '/hub/forms?error=access_denied');
+		}
 	}
 
 	// Get form submissions (registers)

@@ -1,9 +1,20 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { create } from '$lib/crm/server/fileStore.js';
 import { validateForm } from '$lib/crm/server/validators.js';
-import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
+import { canAccessForms, canAccessSafeguarding } from '$lib/crm/server/permissions.js';
 
 export async function load({ cookies }) {
+	const admin = await getAdminFromCookies(cookies);
+	if (!admin) {
+		throw redirect(302, '/hub/auth/login');
+	}
+	
+	// Check if admin can access forms (either safeguarding or non-safeguarding)
+	if (!canAccessForms(admin) && !canAccessSafeguarding(admin)) {
+		throw redirect(302, '/hub/forms?error=access_denied');
+	}
+	
 	const csrfToken = getCsrfToken(cookies) || '';
 	return { csrfToken };
 }

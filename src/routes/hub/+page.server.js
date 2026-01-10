@@ -28,6 +28,15 @@ export async function load() {
 		})
 		.slice(0, 5);
 
+	// Get latest 5 events (sorted by updatedAt or createdAt, most recent first)
+	const latestEvents = [...events]
+		.sort((a, b) => {
+			const dateA = new Date(a.updatedAt || a.createdAt || 0);
+			const dateB = new Date(b.updatedAt || b.createdAt || 0);
+			return dateB - dateA;
+		})
+		.slice(0, 5);
+
 	// Enrich rotas with event titles
 	const eventsMap = new Map(events.map(e => [e.id, e]));
 	const enrichedRotas = latestRotas.map(rota => ({
@@ -45,7 +54,8 @@ export async function load() {
 			forms: forms.length
 		},
 		latestNewsletters,
-		latestRotas: enrichedRotas
+		latestRotas: enrichedRotas,
+		latestEvents
 	};
 }
 

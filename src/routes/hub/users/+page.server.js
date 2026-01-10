@@ -24,17 +24,24 @@ export async function load({ url, cookies }) {
 	const paginated = filtered.slice(start, end);
 
 	// Remove sensitive data before sending to client
-	const sanitized = paginated.map(admin => ({
-		id: admin.id,
-		email: admin.email,
-		name: admin.name,
-		role: admin.role,
-		emailVerified: admin.emailVerified || false,
-		createdAt: admin.createdAt,
-		passwordChangedAt: admin.passwordChangedAt,
-		failedLoginAttempts: admin.failedLoginAttempts || 0,
-		accountLockedUntil: admin.accountLockedUntil
-	}));
+	const sanitized = paginated.map(admin => {
+		// Check if email is john.watson@egcc.co.uk for super admin
+		const normalizedEmail = admin.email?.toLowerCase().trim();
+		const adminLevel = normalizedEmail === 'john.watson@egcc.co.uk' ? 'super_admin' : (admin.adminLevel || 'level_2');
+		
+		return {
+			id: admin.id,
+			email: admin.email,
+			name: admin.name,
+			role: admin.role,
+			adminLevel: adminLevel,
+			emailVerified: admin.emailVerified || false,
+			createdAt: admin.createdAt,
+			passwordChangedAt: admin.passwordChangedAt,
+			failedLoginAttempts: admin.failedLoginAttempts || 0,
+			accountLockedUntil: admin.accountLockedUntil
+		};
+	});
 
 	const csrfToken = getCsrfToken(cookies) || '';
 	return {
