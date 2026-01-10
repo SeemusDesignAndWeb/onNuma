@@ -11,13 +11,13 @@
 	$: message = $page.data?.message;
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+<div class="h-screen flex items-center justify-center bg-gray-50 py-4 px-4 sm:py-12 sm:px-6 lg:px-8">
 	<div class="max-w-md w-full space-y-8">
 		<div class="text-center">
 			<img
 				src="/images/egcc-color.png"
 				alt="Eltham Green Community Church"
-				class="h-16 w-auto mx-auto mb-4"
+				class="h-16 w-auto max-w-full object-contain mx-auto mb-4"
 			/>
 			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
 				Sign in to The HUB
