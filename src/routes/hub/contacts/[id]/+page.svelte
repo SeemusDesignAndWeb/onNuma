@@ -384,7 +384,9 @@
 						{#if contact.membershipStatus}
 							<div>
 								<dt class="text-sm font-medium text-gray-500">Membership Status</dt>
-								<dd class="mt-1 text-sm text-gray-900 capitalize">{contact.membershipStatus.replace('-', ' ')}</dd>
+								<dd class="mt-1 text-sm text-gray-900">
+									<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-hub-green-100 text-hub-green-800 capitalize">{contact.membershipStatus.replace('-', ' ')}</span>
+								</dd>
 							</div>
 						{/if}
 						{#if contact.dateJoined}
