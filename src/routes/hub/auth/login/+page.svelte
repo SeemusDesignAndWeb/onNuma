@@ -11,9 +11,9 @@
 	$: message = $page.data?.message;
 </script>
 
-<div class="h-screen flex items-center justify-center bg-gray-50 py-4 px-4 sm:py-12 sm:px-6 lg:px-8">
-	<div class="max-w-md w-full space-y-8">
-		<div class="text-center -mt-8">
+<div class="h-screen flex items-center justify-center bg-gray-50 px-4 sm:py-12 sm:px-6 lg:px-8">
+	<div class="max-w-md w-full space-y-8 -mt-16 sm:mt-0">
+		<div class="text-center">
 			<img
 				src="/images/egcc-color.png"
 				alt="Eltham Green Community Church"
