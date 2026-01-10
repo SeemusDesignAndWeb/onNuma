@@ -13,11 +13,11 @@
 	let showHighlightBanner = false;
 
 	// Don't show navbar, banner, or preloader in admin or HUB areas
-	// But DO show navbar for public signup pages (rota and event signups)
+	// But DO show navbar for public signup pages (rota, event, and member signups)
 	// Don't show banner on signup pages
 	$: isAdminArea = $page.url.pathname.startsWith('/admin');
 	$: isHubArea = $page.url.pathname.startsWith('/hub');
-	$: isSignupPage = $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event');
+	$: isSignupPage = $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
 	$: hideWebsiteElements = isAdminArea || isHubArea;
 	$: showWebsiteNavbar = !hideWebsiteElements || isSignupPage;
 	$: showWebsiteBanner = !hideWebsiteElements && !isSignupPage && showHighlightBanner;

@@ -1701,3 +1701,208 @@ Note: If you are unable to fulfill this assignment, please contact the rota coor
 	}
 }
 
+/**
+ * Send member signup confirmation email to the new member
+ * @param {object} options - Email options
+ * @param {string} options.to - Recipient email address
+ * @param {string} options.name - Member's name
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<object>} Resend API response
+ */
+export async function sendMemberSignupConfirmationEmail({ to, name }, event) {
+	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+	const baseUrl = getBaseUrl(event);
+	const branding = getEmailBranding();
+	const contactName = name || to;
+
+	const html = `
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Welcome to Eltham Green Community Church</title>
+		</head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+			<div style="background: #ffffff; padding: 30px; border-radius: 10px; border: 1px solid #e5e7eb;">
+				${branding}
+				<div style="background: linear-gradient(135deg, #2d7a32 0%, #1e5a22 100%); padding: 30px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
+					<h1 style="color: white; margin: 0; font-size: 24px;">Welcome, ${contactName}!</h1>
+				</div>
+				
+				<div style="background: #f9fafb; padding: 30px; border-radius: 6px; border: 1px solid #e5e7eb;">
+					<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+						<p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">
+							Thank you for signing up to become a member of Eltham Green Community Church!
+						</p>
+						<p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">
+							We've received your information and are excited to have you join our community. Our team will be in touch with you soon.
+						</p>
+						<p style="color: #666; font-size: 14px; margin: 0;">
+							If you have any questions, please feel free to contact us at <a href="mailto:info@egcc.co.uk" style="color: #2d7a32; text-decoration: none;">info@egcc.co.uk</a> or call us at <a href="tel:02088501331" style="color: #2d7a32; text-decoration: none;">020 8850 1331</a>.
+						</p>
+					</div>
+					
+					<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
+						<p style="margin: 0;">Eltham Green Community Church</p>
+						<p style="margin: 5px 0 0 0;">542 Westhorne Avenue, Eltham, London, SE9 6RR</p>
+					</div>
+				</div>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Welcome, ${contactName}!
+
+Thank you for signing up to become a member of Eltham Green Community Church!
+
+We've received your information and are excited to have you join our community. Our team will be in touch with you soon.
+
+If you have any questions, please feel free to contact us at info@egcc.co.uk or call us at 020 8850 1331.
+
+Eltham Green Community Church
+542 Westhorne Avenue, Eltham, London, SE9 6RR
+	`.trim();
+
+	try {
+		const result = await resend.emails.send({
+			from: fromEmail,
+			to: [to],
+			subject: 'Welcome to Eltham Green Community Church',
+			html,
+			text
+		});
+
+		return result;
+	} catch (error) {
+		console.error('Failed to send member signup confirmation email:', error);
+		throw error;
+	}
+}
+
+/**
+ * Send member signup notification email to administrators
+ * @param {object} options - Email options
+ * @param {Array<string>} options.to - Admin email addresses
+ * @param {object} options.contact - Contact data
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<object>} Resend API response
+ */
+export async function sendMemberSignupAdminNotification({ to, contact }, event) {
+	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+	const baseUrl = getBaseUrl(event);
+	const branding = getEmailBranding();
+	const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email;
+	const isUpdate = contact.updatedAt && contact.createdAt !== contact.updatedAt;
+
+	const html = `
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>New Member Signup - ${contactName}</title>
+		</head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+			<div style="background: #ffffff; padding: 30px; border-radius: 10px; border: 1px solid #e5e7eb;">
+				${branding}
+				<div style="background: linear-gradient(135deg, #2d7a32 0%, #1e5a22 100%); padding: 30px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
+					<h1 style="color: white; margin: 0; font-size: 24px;">${isUpdate ? 'Member Information Updated' : 'New Member Signup'}</h1>
+				</div>
+				
+				<div style="background: #f9fafb; padding: 30px; border-radius: 6px; border: 1px solid #e5e7eb;">
+					<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+						<h2 style="color: #2d7a32; margin-top: 0; font-size: 18px; border-bottom: 2px solid #2d7a32; padding-bottom: 10px;">Contact Information</h2>
+						<table style="width: 100%; border-collapse: collapse;">
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666; width: 140px;">Name:</td>
+								<td style="padding: 8px 0; color: #333;">${contactName}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666;">Email:</td>
+								<td style="padding: 8px 0; color: #333;">
+									<a href="mailto:${contact.email}" style="color: #2d7a32; text-decoration: none;">${contact.email}</a>
+								</td>
+							</tr>
+							${contact.phone ? `
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666;">Phone:</td>
+								<td style="padding: 8px 0; color: #333;">
+									<a href="tel:${contact.phone}" style="color: #2d7a32; text-decoration: none;">${contact.phone}</a>
+								</td>
+							</tr>
+							` : ''}
+							${contact.addressLine1 || contact.city || contact.postcode ? `
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666; vertical-align: top;">Address:</td>
+								<td style="padding: 8px 0; color: #333;">
+									${contact.addressLine1 || ''}<br>
+									${contact.addressLine2 || ''}${contact.addressLine2 ? '<br>' : ''}
+									${contact.city || ''}${contact.city && contact.county ? ', ' : ''}${contact.county || ''}<br>
+									${contact.postcode || ''}<br>
+									${contact.country || ''}
+								</td>
+							</tr>
+							` : ''}
+							<tr>
+								<td style="padding: 8px 0; font-weight: 600; color: #666;">Newsletter:</td>
+								<td style="padding: 8px 0; color: #333;">${contact.subscribed !== false ? 'Subscribed' : 'Not subscribed'}</td>
+							</tr>
+						</table>
+					</div>
+					
+					<div style="margin-top: 20px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+						<p style="margin: 0; color: #92400e; font-size: 14px;">
+							<strong>Action Required:</strong> ${isUpdate ? 'Review the updated information' : 'Review this new member signup'} in the Hub at <a href="${baseUrl}/hub/contacts/${contact.id}" style="color: #2d7a32; text-decoration: none; font-weight: 600;">${baseUrl}/hub/contacts/${contact.id}</a>
+						</p>
+					</div>
+					
+					<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
+						<p style="margin: 0;">This email was sent from the member signup form on Eltham Green Community Church website.</p>
+					</div>
+				</div>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+${isUpdate ? 'Member Information Updated' : 'New Member Signup'}
+
+Contact Information:
+Name: ${contactName}
+Email: ${contact.email}
+${contact.phone ? `Phone: ${contact.phone}` : ''}
+${contact.addressLine1 || contact.city || contact.postcode ? `
+Address:
+${contact.addressLine1 || ''}
+${contact.addressLine2 || ''}
+${contact.city || ''}${contact.city && contact.county ? ', ' : ''}${contact.county || ''}
+${contact.postcode || ''}
+${contact.country || ''}
+` : ''}
+Newsletter: ${contact.subscribed !== false ? 'Subscribed' : 'Not subscribed'}
+
+Action Required: ${isUpdate ? 'Review the updated information' : 'Review this new member signup'} in the Hub at ${baseUrl}/hub/contacts/${contact.id}
+
+This email was sent from the member signup form on Eltham Green Community Church website.
+	`.trim();
+
+	try {
+		const result = await resend.emails.send({
+			from: fromEmail,
+			to: to,
+			subject: `${isUpdate ? 'Member Information Updated' : 'New Member Signup'}: ${contactName}`,
+			html,
+			text
+		});
+
+		return result;
+	} catch (error) {
+		console.error('Failed to send member signup admin notification:', error);
+		throw error;
+	}
+}
+
