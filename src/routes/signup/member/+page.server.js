@@ -1,11 +1,18 @@
 import { fail } from '@sveltejs/kit';
-import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { getCsrfToken, verifyCsrfToken, generateCsrfToken, setCsrfToken } from '$lib/crm/server/auth.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { create, findMany, readCollection } from '$lib/crm/server/fileStore.js';
 import { sendMemberSignupConfirmationEmail, sendMemberSignupAdminNotification } from '$lib/crm/server/email.js';
+import { env } from '$env/dynamic/private';
 
 export async function load({ cookies }) {
-	const csrfToken = getCsrfToken(cookies) || '';
+	// Ensure CSRF token exists (hook plugin should set it, but this is a backup)
+	let csrfToken = getCsrfToken(cookies);
+	if (!csrfToken) {
+		csrfToken = generateCsrfToken();
+		const isProduction = env.NODE_ENV === 'production';
+		setCsrfToken(cookies, csrfToken, isProduction);
+	}
 	return { csrfToken };
 }
 

@@ -22,13 +22,13 @@ export async function crmHandle({ event, resolve }) {
 		'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src 'self' https://www.google.com https://maps.google.com;"
 	});
 
-	// Only handle /hub and /signup/rota routes
-	if (!pathname.startsWith('/hub') && !pathname.startsWith('/signup/rota')) {
+	// Only handle /hub and public signup routes
+	if (!pathname.startsWith('/hub') && !pathname.startsWith('/signup/')) {
 		return resolve(event);
 	}
 
-	// Public rota signup routes - no auth required
-	if (pathname.startsWith('/signup/rota/')) {
+	// Public signup routes - no auth required (rota, event, member)
+	if (pathname.startsWith('/signup/rota/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member')) {
 		// Set CSRF token on GET requests (only if not already set)
 		if (request.method === 'GET') {
 			if (!getCsrfToken(cookies)) {
