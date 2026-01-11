@@ -38,14 +38,11 @@ export const actions = {
 				county: data.get('county') || '',
 				postcode: data.get('postcode') || '',
 				country: data.get('country') || '',
-				// Exclude church membership fields: membershipStatus, dateJoined, baptismDate
-				// Exclude additional information: servingAreas, giftings, notes
+				// Exclude church membership fields: membershipStatus, dateJoined
+				// Exclude additional information: notes
 				// Set default values for excluded fields
 				membershipStatus: '',
 				dateJoined: null,
-				baptismDate: null,
-				servingAreas: [],
-				giftings: [],
 				notes: '',
 				subscribed: data.get('subscribed') === 'on' || data.get('subscribed') === 'true'
 			};

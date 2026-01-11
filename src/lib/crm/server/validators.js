@@ -83,9 +83,6 @@ export function validateContact(data) {
 		// Newsletter subscription (default to true if not explicitly set to false)
 		subscribed: data.subscribed !== false && data.subscribed !== 'false',
 		dateJoined: data.dateJoined || null,
-		baptismDate: data.baptismDate || null,
-		servingAreas: Array.isArray(data.servingAreas) ? data.servingAreas : [],
-		giftings: Array.isArray(data.giftings) ? data.giftings : [],
 		notes: validateString(data.notes || '', 'Notes', 5000)
 	};
 }
@@ -299,6 +296,62 @@ export function validateNewsletterTemplate(data) {
 		htmlContent: validateString(data.htmlContent || '', 'HTML Content', 50000),
 		textContent: validateString(data.textContent || '', 'Text Content', 50000),
 		description: validateString(data.description || '', 'Description', 1000)
+	};
+}
+
+/**
+ * Validate member data (member-specific fields not in contacts)
+ * @param {object} data - Member data
+ * @returns {object} Validated member data
+ * @throws {Error} If validation fails
+ */
+export function validateMember(data) {
+	// Member data is linked to a contact, so we need contactId
+	if (!data.contactId) {
+		throw new Error('Contact ID is required for member data');
+	}
+
+	return {
+		contactId: validateString(data.contactId, 'Contact ID', 50),
+		// Personal information
+		title: validateString(data.title || '', 'Title', 20),
+		dateOfBirth: data.dateOfBirth || null,
+		placeOfBirth: validateString(data.placeOfBirth || '', 'Place of Birth', 200),
+		maritalStatus: ['single', 'married', 'divorced', 'widowed', ''].includes(data.maritalStatus?.toLowerCase()) 
+			? data.maritalStatus.toLowerCase() 
+			: '',
+		spouseName: validateString(data.spouseName || '', 'Spouse Name', 200),
+		childrenNamesAndAges: validateString(data.childrenNamesAndAges || '', 'Children Names and Ages', 1000),
+		// Previous church
+		previousChurch: validateString(data.previousChurch || '', 'Previous Church', 200),
+		previousChurchFeelings: validateString(data.previousChurchFeelings || '', 'Previous Church Feelings', 1000),
+		// Faith journey
+		isChristFollower: data.isChristFollower === true || data.isChristFollower === 'true' || data.isChristFollower === 'yes',
+		becameChristFollowerDate: data.becameChristFollowerDate || null,
+		wantsHelpBecomingChristFollower: data.wantsHelpBecomingChristFollower === true || data.wantsHelpBecomingChristFollower === 'true' || data.wantsHelpBecomingChristFollower === 'yes',
+		hasBeenWaterBaptised: data.hasBeenWaterBaptised === true || data.hasBeenWaterBaptised === 'true' || data.hasBeenWaterBaptised === 'yes',
+		wantsToTalkAboutBaptism: data.wantsToTalkAboutBaptism === true || data.wantsToTalkAboutBaptism === 'true' || data.wantsToTalkAboutBaptism === 'yes',
+		hasBeenFilledWithHolySpirit: data.hasBeenFilledWithHolySpirit === true || data.hasBeenFilledWithHolySpirit === 'true' || data.hasBeenFilledWithHolySpirit === 'yes',
+		wantsToKnowMoreAboutHolySpirit: data.wantsToKnowMoreAboutHolySpirit === true || data.wantsToKnowMoreAboutHolySpirit === 'true' || data.wantsToKnowMoreAboutHolySpirit === 'yes',
+		// Membership reflections
+		membershipReflections: validateString(data.membershipReflections || '', 'Membership Reflections', 5000),
+		// Community involvement
+		attendingCommunityGroup: data.attendingCommunityGroup === true || data.attendingCommunityGroup === 'true' || data.attendingCommunityGroup === 'yes',
+		wantsCommunityGroupInfo: data.wantsCommunityGroupInfo === true || data.wantsCommunityGroupInfo === 'true' || data.wantsCommunityGroupInfo === 'yes',
+		// Serving
+		currentlyServing: data.currentlyServing === true || data.currentlyServing === 'true' || data.currentlyServing === 'yes',
+		servingArea: validateString(data.servingArea || '', 'Serving Area', 200),
+		desiredServingArea: validateString(data.desiredServingArea || '', 'Desired Serving Area', 200),
+		// Additional information
+		additionalInfo: validateString(data.additionalInfo || '', 'Additional Info', 5000),
+		prayerSupportNeeds: validateString(data.prayerSupportNeeds || '', 'Prayer Support Needs', 5000),
+		// Meeting availability
+		elderMeetingAvailability: ['anytime', 'morning', 'afternoon', 'evening', ''].includes(data.elderMeetingAvailability?.toLowerCase())
+			? data.elderMeetingAvailability.toLowerCase()
+			: '',
+		// Metadata
+		createdAt: data.createdAt || new Date().toISOString(),
+		updatedAt: new Date().toISOString()
 	};
 }
 

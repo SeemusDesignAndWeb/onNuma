@@ -23,9 +23,6 @@ export const actions = {
 		}
 
 		try {
-			const servingAreas = data.get('servingAreas');
-			const giftings = data.get('giftings');
-			
 			const contactData = {
 				email: data.get('email'),
 				firstName: data.get('firstName'),
@@ -39,9 +36,6 @@ export const actions = {
 				country: data.get('country'),
 				membershipStatus: data.get('membershipStatus'),
 				dateJoined: data.get('dateJoined') || null,
-				baptismDate: data.get('baptismDate') || null,
-				servingAreas: servingAreas ? JSON.parse(servingAreas) : [],
-				giftings: giftings ? JSON.parse(giftings) : [],
 				notes: data.get('notes'),
 				subscribed: data.get('subscribed') === 'on' || data.get('subscribed') === 'true'
 			};

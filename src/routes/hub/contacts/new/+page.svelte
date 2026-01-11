@@ -25,37 +25,9 @@
 		country: 'United Kingdom',
 		membershipStatus: '',
 		dateJoined: '',
-		baptismDate: '',
-		servingAreas: [],
-		giftings: [],
 		notes: '',
 		subscribed: true // Default to subscribed for new contacts
 	};
-
-	let servingAreaInput = '';
-	let giftingInput = '';
-
-	function addServingArea() {
-		if (servingAreaInput.trim()) {
-			formData.servingAreas = [...formData.servingAreas, servingAreaInput.trim()];
-			servingAreaInput = '';
-		}
-	}
-
-	function removeServingArea(index) {
-		formData.servingAreas = formData.servingAreas.filter((_, i) => i !== index);
-	}
-
-	function addGifting() {
-		if (giftingInput.trim()) {
-			formData.giftings = [...formData.giftings, giftingInput.trim()];
-			giftingInput = '';
-		}
-	}
-
-	function removeGifting(index) {
-		formData.giftings = formData.giftings.filter((_, i) => i !== index);
-	}
 </script>
 
 <div class="space-y-6">
@@ -89,8 +61,6 @@
 
 	<form id="contact-create-form" method="POST" action="?/create" use:enhance>
 		<input type="hidden" name="_csrf" value={csrfToken} />
-		<input type="hidden" name="servingAreas" value={JSON.stringify(formData.servingAreas)} />
-		<input type="hidden" name="giftings" value={JSON.stringify(formData.giftings)} />
 		
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 			<!-- Personal Information Panel -->
@@ -170,10 +140,7 @@
 							<option value="former-member">Former Member</option>
 						</select>
 					</div>
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						<FormField label="Date Joined" name="dateJoined" type="date" bind:value={formData.dateJoined} />
-						<FormField label="Baptism Date" name="baptismDate" type="date" bind:value={formData.baptismDate} />
-					</div>
+					<FormField label="Date Joined" name="dateJoined" type="date" bind:value={formData.dateJoined} />
 				</div>
 			</div>
 
@@ -188,54 +155,6 @@
 					</div>
 				</div>
 				<div class="p-6 space-y-4">
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">Serving Areas</label>
-						<div class="flex gap-2 mb-2">
-							<input
-								type="text"
-								bind:value={servingAreaInput}
-								placeholder="Add serving area"
-								class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-4 py-2"
-								on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addServingArea())}
-							/>
-							<button type="button" on:click={addServingArea} class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base">
-								Add
-							</button>
-						</div>
-						<div class="flex flex-wrap gap-2">
-							{#each formData.servingAreas as area, i}
-								<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-hub-green-100 text-hub-green-800 border border-hub-green-300">
-									{area}
-									<button type="button" on:click={() => removeServingArea(i)} class="ml-2 text-hub-green-600 hover:text-hub-green-800 font-bold">×</button>
-								</span>
-							{/each}
-						</div>
-					</div>
-					
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">Giftings</label>
-						<div class="flex gap-2 mb-2">
-							<input
-								type="text"
-								bind:value={giftingInput}
-								placeholder="Add gifting"
-								class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-blue-500 focus:ring-hub-blue-500 px-4 py-2"
-								on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addGifting())}
-							/>
-							<button type="button" on:click={addGifting} class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base">
-								Add
-							</button>
-						</div>
-						<div class="flex flex-wrap gap-2">
-							{#each formData.giftings as gifting, i}
-								<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-hub-blue-100 text-hub-blue-800 border border-hub-blue-300">
-									{gifting}
-									<button type="button" on:click={() => removeGifting(i)} class="ml-2 text-hub-blue-600 hover:text-hub-blue-800 font-bold">×</button>
-								</span>
-							{/each}
-						</div>
-					</div>
-					
 					<FormField label="Notes" name="notes" type="textarea" rows="4" bind:value={formData.notes} />
 				</div>
 			</div>

@@ -94,6 +94,13 @@
 				Bulk Update
 			</button>
 		{/if}
+		<a href="/signup/membership-form" target="_blank" rel="noopener noreferrer" class="bg-hub-yellow-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-yellow-700 inline-flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+			<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+			</svg>
+			<span class="hidden sm:inline">Membership Form</span>
+			<span class="sm:hidden">Membership</span>
+		</a>
 		<a href="/signup/member" target="_blank" rel="noopener noreferrer" class="bg-hub-yellow-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-yellow-700 inline-flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
 			<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

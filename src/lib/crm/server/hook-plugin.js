@@ -27,8 +27,8 @@ export async function crmHandle({ event, resolve }) {
 		return resolve(event);
 	}
 
-	// Public signup routes - no auth required (rota, event, member)
-	if (pathname.startsWith('/signup/rota/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member')) {
+	// Public signup routes - no auth required (rota, event, member, membership-form)
+	if (pathname.startsWith('/signup/rota/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member') || pathname.startsWith('/signup/membership-form')) {
 		// Set CSRF token on GET requests (only if not already set)
 		if (request.method === 'GET') {
 			if (!getCsrfToken(cookies)) {
