@@ -34,7 +34,7 @@
 				<p class="text-gray-600">Your form has been submitted successfully.</p>
 			</div>
 		{:else if form}
-			<div class="bg-white shadow rounded-lg p-6">
+			<div class="bg-white shadow rounded-lg p-6 sm:p-8">
 				<h1 class="text-2xl font-bold text-gray-900 mb-2">{form.name}</h1>
 				{#if form.description}
 					<p class="text-gray-600 mb-6">{form.description}</p>
@@ -51,10 +51,10 @@
 				<form method="POST" action="?/submit" use:enhance>
 					<input type="hidden" name="_csrf" value={csrfToken} />
 					
-					<div class="space-y-6">
+					<div class="space-y-6 py-2">
 						{#each form.fields as field}
-							<div>
-								<label for={field.name} class="block text-sm font-medium text-gray-700 mb-1">
+							<div class="py-2">
+								<label for={field.name} class="block text-sm font-medium text-gray-700 mb-2">
 									{field.label}
 									{#if field.required}
 										<span class="text-red-500">*</span>
@@ -70,7 +70,7 @@
 										required={field.required}
 										placeholder={field.placeholder || ''}
 										rows="4"
-										class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+										class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
 									></textarea>
 								{:else if field.type === 'select'}
 									<select
@@ -79,7 +79,7 @@
 										value={formData[field.name] || ''}
 										on:change={(e) => formData[field.name] = e.target.value}
 										required={field.required}
-										class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+										class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
 									>
 										<option value="">Select...</option>
 										{#each field.options as option}
@@ -134,7 +134,7 @@
 										on:input={(e) => formData[field.name] = e.target.value}
 										required={field.required}
 										placeholder={field.placeholder || ''}
-										class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+										class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
 									/>
 								{/if}
 							</div>
