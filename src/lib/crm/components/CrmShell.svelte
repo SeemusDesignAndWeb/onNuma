@@ -5,7 +5,6 @@
 	import ConfirmDialog from '$lib/crm/components/ConfirmDialog.svelte';
 	import { hasRouteAccess, isSuperAdmin } from '$lib/crm/server/permissions.js';
 	
-	export let title = 'TheHUB';
 	export let admin = null;
 	
 	$: isAuthPage = $page.url.pathname.startsWith('/hub/auth/');
@@ -21,6 +20,7 @@
 	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/rotas');
 	$: canAccessForms = admin && hasRouteAccess(admin, '/hub/forms');
 	$: canAccessUsers = admin && isSuperAdmin(admin);
+	$: canAccessVideos = admin && isSuperAdmin(admin);
 	
 	// Show contacts dropdown if any contacts-related permission exists
 	$: showContactsDropdown = canAccessContacts || canAccessLists || canAccessMembers;
@@ -35,7 +35,8 @@
 	let eventsDropdownOpen = false;
 	let eventsDropdownElement;
 	
-	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/help') || $page.url.pathname.startsWith('/hub/profile');
+	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/videos');
+	$: isHelpActive = $page.url.pathname.startsWith('/hub/help');
 	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/lists') || $page.url.pathname.startsWith('/hub/members');
 	$: isEventsActive = $page.url.pathname.startsWith('/hub/events') || $page.url.pathname.startsWith('/hub/meeting-planners');
 	
@@ -149,6 +150,12 @@
 								{#if canAccessForms}
 									<a href="/hub/forms" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Forms</a>
 								{/if}
+								<!-- Help -->
+								<a href="/hub/help" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isHelpActive ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'} flex items-center" aria-label="Help">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+								</a>
 							</nav>
 						{/if}
 					</div>
@@ -178,7 +185,9 @@
 									{#if canAccessUsers}
 										<a href="/hub/users" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/users') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Admins</a>
 									{/if}
-									<a href="/hub/help" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/help') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Help</a>
+									{#if canAccessVideos}
+										<a href="/hub/videos" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/videos') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Video Tutorials</a>
+									{/if}
 								</div>
 							{/if}
 						</div>
@@ -234,13 +243,21 @@
 							{#if canAccessForms}
 								<a href="/hub/forms" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Forms</a>
 							{/if}
+							<a href="/hub/help" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/help') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'} flex items-center gap-2">
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								Help
+							</a>
 							{#if admin}
 								<a href="/hub/profile" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/profile') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Profile</a>
 							{/if}
 							{#if canAccessUsers}
 								<a href="/hub/users" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/users') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Admins</a>
 							{/if}
-							<a href="/hub/help" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/help') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Help</a>
+							{#if canAccessVideos}
+								<a href="/hub/videos" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/videos') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Video Tutorials</a>
+							{/if}
 							<a href="/hub/auth/logout" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:bg-white hover:text-hub-blue-600 border-t border-hub-blue-300 pt-2 mt-2">
 								Logout
 							</a>
