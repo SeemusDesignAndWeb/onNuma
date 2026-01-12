@@ -65,7 +65,8 @@
 									<textarea
 										id={field.name}
 										name={field.name}
-										bind:value={formData[field.name]}
+										value={formData[field.name] || ''}
+										on:input={(e) => formData[field.name] = e.target.value}
 										required={field.required}
 										placeholder={field.placeholder || ''}
 										rows="4"
@@ -75,7 +76,8 @@
 									<select
 										id={field.name}
 										name={field.name}
-										bind:value={formData[field.name]}
+										value={formData[field.name] || ''}
+										on:change={(e) => formData[field.name] = e.target.value}
 										required={field.required}
 										class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
 									>
