@@ -2,8 +2,9 @@ import { redirect } from '@sveltejs/kit';
 import { findById, update, remove } from '$lib/crm/server/fileStore.js';
 import { getAdminById, getAdminByEmail, updateAdminPassword, verifyAdminEmail, getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { isSuperAdmin, getAdminPermissions, getAvailableHubAreas } from '$lib/crm/server/permissions.js';
+import { logDataChange, logSensitiveOperation } from '$lib/crm/server/audit.js';
 
-export async function load({ params, cookies }) {
+export async function load({ params, cookies, request }) {
 	const admin = await getAdminById(params.id);
 	if (!admin) {
 		throw redirect(302, '/hub/users');
@@ -18,6 +19,13 @@ export async function load({ params, cookies }) {
 	if (!isSuperAdmin(currentAdmin)) {
 		throw redirect(302, '/hub/users');
 	}
+
+	// Log sensitive operation - viewing admin user
+	const event = { getClientAddress: () => 'unknown', request };
+	await logSensitiveOperation(currentAdmin.id, 'admin_user_view', {
+		viewedAdminId: params.id,
+		viewedAdminEmail: admin.email
+	}, event);
 
 	// Get permissions (handles both new permissions array and legacy adminLevel)
 	const permissions = admin.permissions || getAdminPermissions(admin) || [];
@@ -42,7 +50,7 @@ export async function load({ params, cookies }) {
 }
 
 export const actions = {
-	update: async ({ request, params, cookies }) => {
+	update: async ({ request, params, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -93,6 +101,14 @@ export const actions = {
 			}
 
 			await update('admins', params.id, updateData);
+
+			// Log audit event
+			const adminId = currentAdmin.id;
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'update', 'admin', params.id, {
+				email: email.toString(),
+				name: name.toString()
+			}, event);
 
 			return { success: true };
 		} catch (error) {
@@ -169,7 +185,7 @@ export const actions = {
 		}
 	},
 
-	delete: async ({ params, cookies, request }) => {
+	delete: async ({ params, cookies, request, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -177,7 +193,19 @@ export const actions = {
 			return { error: 'CSRF token validation failed' };
 		}
 
+		// Get admin data before deletion for audit log
+		const admin = await getAdminById(params.id);
+		
 		await remove('admins', params.id);
+
+		// Log audit event
+		const adminId = locals?.admin?.id || null;
+		const event = { getClientAddress: () => 'unknown', request };
+		await logDataChange(adminId, 'delete', 'admin', params.id, {
+			email: admin?.email || 'unknown',
+			name: admin?.name || 'unknown'
+		}, event);
+
 		throw redirect(302, '/hub/users');
 	}
 };

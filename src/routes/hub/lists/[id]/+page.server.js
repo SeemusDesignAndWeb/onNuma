@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { findById, update, remove, readCollection } from '$lib/crm/server/fileStore.js';
 import { validateList } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ params, cookies, url }) {
 	const list = await findById('lists', params.id);
@@ -47,7 +48,7 @@ export async function load({ params, cookies, url }) {
 }
 
 export const actions = {
-	update: async ({ request, params, cookies }) => {
+	update: async ({ request, params, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -66,13 +67,20 @@ export const actions = {
 			const validated = validateList(listData);
 			await update('lists', params.id, validated);
 
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'update', 'list', params.id, {
+				name: validated.name
+			}, event);
+
 			return { success: true };
 		} catch (error) {
 			return { error: error.message };
 		}
 	},
 
-	delete: async ({ params, cookies, request }) => {
+	delete: async ({ params, cookies, request, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -80,7 +88,18 @@ export const actions = {
 			return { error: 'CSRF token validation failed' };
 		}
 
+		// Get list data before deletion for audit log
+		const list = await findById('lists', params.id);
+		
 		await remove('lists', params.id);
+
+		// Log audit event
+		const adminId = locals?.admin?.id || null;
+		const event = { getClientAddress: () => 'unknown', request };
+		await logDataChange(adminId, 'delete', 'list', params.id, {
+			name: list?.name || 'unknown'
+		}, event);
+
 		throw redirect(302, '/hub/lists');
 	},
 

@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { findById, readCollection, findMany, create, update } from '$lib/crm/server/fileStore.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { validateMember } from '$lib/crm/server/validators.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ params, cookies }) {
 	// Get the contact (member)
@@ -29,7 +30,7 @@ export async function load({ params, cookies }) {
 }
 
 export const actions = {
-	update: async ({ request, params, cookies }) => {
+	update: async ({ request, params, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -89,11 +90,22 @@ export const actions = {
 
 			const validated = validateMember(memberData);
 			
+			let memberRecord;
 			if (existingMember) {
-				await update('members', existingMember.id, validated);
+				memberRecord = await update('members', existingMember.id, validated);
 			} else {
-				await create('members', validated);
+				memberRecord = await create('members', validated);
 			}
+
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			const contact = await findById('contacts', params.id);
+			await logDataChange(adminId, existingMember ? 'update' : 'create', 'member', memberRecord.id, {
+				contactId: params.id,
+				email: contact?.email,
+				name: contact ? `${contact.firstName || ''} ${contact.lastName || ''}`.trim() : 'unknown'
+			}, event);
 
 			return { success: true };
 		} catch (error) {

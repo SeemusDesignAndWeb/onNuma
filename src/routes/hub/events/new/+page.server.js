@@ -5,6 +5,7 @@ import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
 import { generateOccurrences } from '$lib/crm/server/recurrence.js';
 import { generateId } from '$lib/crm/server/ids.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ cookies }) {
 	const csrfToken = getCsrfToken(cookies) || '';
@@ -12,7 +13,7 @@ export async function load({ cookies }) {
 }
 
 export const actions = {
-	create: async ({ request, cookies }) => {
+	create: async ({ request, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -78,6 +79,13 @@ export const actions = {
 					}
 				}
 			}
+
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const eventObj = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'create', 'event', event.id, {
+				title: event.title
+			}, eventObj);
 
 			throw redirect(302, `/hub/events/${event.id}`);
 		} catch (error) {

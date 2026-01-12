@@ -88,8 +88,13 @@
 		</div>
 
 		<!-- Copyright -->
-		<div class="border-t border-gray-800 pt-8 text-center text-sm text-white">
-			<p>&copy; {new Date().getFullYear()} Eltham Green Community Church. All rights reserved.</p>
+		<div class="border-t border-gray-800 pt-8 text-sm text-white">
+			<div class="flex flex-col md:flex-row justify-between items-center gap-4">
+				<p>&copy; {new Date().getFullYear()} Eltham Green Community Church. All rights reserved.</p>
+				<div class="flex gap-4">
+					<a href="/hub/privacy" class="text-white hover:text-gray-300">Hub Privacy Policy</a>
+				</div>
+			</div>
 		</div>
 	</div>
 </footer>

@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { readCollection, create } from '$lib/crm/server/fileStore.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -351,7 +352,7 @@ export const actions = {
 		}
 	},
 	
-	import: async ({ request, cookies }) => {
+	import: async ({ request, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -447,6 +448,17 @@ export const actions = {
 					});
 				}
 			}
+
+			// Log audit event for bulk import
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'bulk_import', 'contact', 'multiple', {
+				fileType,
+				totalRows: rows.length,
+				successCount: results.success.length,
+				errorCount: results.errors.length,
+				importedContacts: results.success.map(s => ({ email: s.email, name: s.name }))
+			}, event);
 
 			return {
 				success: true,

@@ -287,6 +287,7 @@ ${scriptContent}
 					{/if}
 				</div>
 				
+				<a href="/docs/HUB_PRIVACY_POLICY.md" on:click|preventDefault={() => { showDocs(); loadDoc('HUB_PRIVACY_POLICY.md'); }} class="px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors font-semibold">Privacy Policy</a>
 				{#if isSuperAdminUser}
 					<a href="/docs/ADMIN_GUIDE.md" on:click|preventDefault={() => { showDocs(); loadDoc('ADMIN_GUIDE.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Admin Guide</a>
 					<a href="/docs/TECHNICAL.md" on:click|preventDefault={() => { showDocs(); loadDoc('TECHNICAL.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Technical</a>

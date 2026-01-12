@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { create } from '$lib/crm/server/fileStore.js';
 import { validateList } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ cookies }) {
 	const csrfToken = getCsrfToken(cookies) || '';
@@ -9,7 +10,7 @@ export async function load({ cookies }) {
 }
 
 export const actions = {
-	create: async ({ request, cookies }) => {
+	create: async ({ request, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -26,6 +27,13 @@ export const actions = {
 		try {
 			const validated = validateList(listData);
 			const list = await create('lists', validated);
+
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'create', 'list', list.id, {
+				name: list.name
+			}, event);
 
 			// Redirect after successful creation - don't wrap in try-catch
 			throw redirect(302, `/hub/lists/${list.id}?created=true`);

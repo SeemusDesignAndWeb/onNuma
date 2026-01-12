@@ -5,6 +5,7 @@ import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
 import { ensureRotaToken } from '$lib/crm/server/tokens.js';
 import { env } from '$env/dynamic/private';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ params, cookies, url }) {
 	const rota = await findById('rotas', params.id);
@@ -181,7 +182,7 @@ export async function load({ params, cookies, url }) {
 }
 
 export const actions = {
-	update: async ({ request, params, cookies, url }) => {
+	update: async ({ request, params, cookies, url, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -210,6 +211,16 @@ export const actions = {
 			const validated = validateRota({ ...rotaData, eventId: rota.eventId });
 			const oldOwnerId = rota.ownerId;
 			await update('rotas', params.id, validated);
+
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			const eventRecord = await findById('events', rota.eventId);
+			await logDataChange(adminId, 'update', 'rota', params.id, {
+				role: validated.role,
+				eventId: rota.eventId,
+				eventName: eventRecord?.title || 'unknown'
+			}, event);
 
 			// Send notification to owner if rota was updated
 			if (validated.ownerId) {
@@ -240,7 +251,7 @@ export const actions = {
 		}
 	},
 
-		delete: async ({ params, cookies, request }) => {
+		delete: async ({ params, cookies, request, locals }) => {
 			const data = await request.formData();
 			const csrfToken = data.get('_csrf');
 
@@ -249,7 +260,21 @@ export const actions = {
 			}
 
 			try {
+				// Get rota data before deletion for audit log
+				const rota = await findById('rotas', params.id);
+				const eventRecord = rota ? await findById('events', rota.eventId) : null;
+				
 				await remove('rotas', params.id);
+
+				// Log audit event
+				const adminId = locals?.admin?.id || null;
+				const event = { getClientAddress: () => 'unknown', request };
+				await logDataChange(adminId, 'delete', 'rota', params.id, {
+					role: rota?.role || 'unknown',
+					eventId: rota?.eventId,
+					eventName: eventRecord?.title || 'unknown'
+				}, event);
+
 				throw redirect(302, '/hub/rotas');
 			} catch (error) {
 				if (error.status === 302) throw error; // Re-throw redirects

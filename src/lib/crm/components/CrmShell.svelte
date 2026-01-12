@@ -35,7 +35,7 @@
 	let eventsDropdownOpen = false;
 	let eventsDropdownElement;
 	
-	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/videos');
+	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/videos') || $page.url.pathname.startsWith('/hub/audit-logs');
 	$: isHelpActive = $page.url.pathname.startsWith('/hub/help');
 	$: isVideoTutorialsActive = $page.url.pathname.startsWith('/hub/video-tutorials');
 	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/lists') || $page.url.pathname.startsWith('/hub/members');
@@ -192,6 +192,9 @@
 									{#if canAccessUsers}
 										<a href="/hub/users" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/users') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Admins</a>
 									{/if}
+									{#if canAccessUsers}
+										<a href="/hub/audit-logs" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/audit-logs') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Audit Logs</a>
+									{/if}
 									{#if canAccessVideos}
 										<a href="/hub/videos" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/videos') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Manage Videos</a>
 									{/if}
@@ -268,6 +271,9 @@
 							{#if canAccessUsers}
 								<a href="/hub/users" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/users') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Admins</a>
 							{/if}
+							{#if canAccessUsers}
+								<a href="/hub/audit-logs" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/audit-logs') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Audit Logs</a>
+							{/if}
 							{#if canAccessVideos}
 								<a href="/hub/videos" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/videos') ? 'bg-hub-blue-700 text-white' : 'text-white hover:bg-white hover:text-hub-blue-600'}">Video Tutorials</a>
 							{/if}
@@ -302,7 +308,8 @@
 							<div class="text-xs">542 Westhorne Avenue, Eltham, London, SE9 6DH</div>
 						</div>
 					</div>
-					<div class="text-sm text-gray-500 text-center md:text-right">
+					<div class="text-sm text-gray-500 text-center md:text-right flex flex-col md:flex-row gap-2 md:gap-4">
+						<a href="/hub/privacy" class="text-gray-600 hover:text-hub-blue-600 transition-colors">Privacy Policy</a>
 						<a href="/" class="text-brand-blue hover:text-brand-blue/80 transition-colors">Visit Website</a>
 					</div>
 				</div>

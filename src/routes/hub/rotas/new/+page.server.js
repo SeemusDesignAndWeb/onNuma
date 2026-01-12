@@ -1,8 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { create, readCollection } from '$lib/crm/server/fileStore.js';
+import { create, readCollection, findById } from '$lib/crm/server/fileStore.js';
 import { validateRota } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ url, cookies }) {
 	const eventId = url.searchParams.get('eventId') || '';
@@ -15,7 +16,7 @@ export async function load({ url, cookies }) {
 }
 
 export const actions = {
-	create: async ({ request, cookies }) => {
+	create: async ({ request, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -40,6 +41,16 @@ export const actions = {
 
 			const validated = validateRota(rotaData);
 			const rota = await create('rotas', validated);
+
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			const eventRecord = await findById('events', rota.eventId);
+			await logDataChange(adminId, 'create', 'rota', rota.id, {
+				role: rota.role,
+				eventId: rota.eventId,
+				eventName: eventRecord?.title || 'unknown'
+			}, event);
 
 			throw redirect(302, `/hub/rotas/${rota.id}`);
 		} catch (error) {

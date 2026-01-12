@@ -3,6 +3,7 @@ import { createAdmin, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
 import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas } from '$lib/crm/server/permissions.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ cookies }) {
 	const admin = await getAdminFromCookies(cookies);
@@ -79,6 +80,13 @@ export const actions = {
 
 			// Get the full admin record to access verification token
 			const fullAdmin = await import('$lib/crm/server/auth.js').then(m => m.getAdminById(admin.id));
+
+			// Log audit event
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(currentAdmin.id, 'create', 'admin', admin.id, {
+				email: email.toString(),
+				name: name.toString()
+			}, event);
 
 			// Send welcome email with verification link
 			if (fullAdmin && fullAdmin.emailVerificationToken) {

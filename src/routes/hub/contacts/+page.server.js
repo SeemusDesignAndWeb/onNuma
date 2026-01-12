@@ -2,6 +2,7 @@ import { readCollection, writeCollection } from '$lib/crm/server/fileStore.js';
 import { verifyCsrfToken, getCsrfToken } from '$lib/crm/server/auth.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
 import { fail } from '@sveltejs/kit';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -151,6 +152,16 @@ export const actions = {
 
 			// Write all contacts back
 			await writeCollection('contacts', updatedContacts);
+
+			// Log audit event for bulk update
+			const adminId = admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'bulk_update', 'contact', 'multiple', {
+				field: updateField,
+				value: validatedValue,
+				count: contactsToUpdate.length,
+				filterCondition
+			}, event);
 
 			const fieldName = updateField === 'membershipStatus' ? 'membership status' : 'date joined';
 			const valueDisplay = updateField === 'dateJoined' && validatedValue 

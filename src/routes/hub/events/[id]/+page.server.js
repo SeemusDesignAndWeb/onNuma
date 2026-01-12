@@ -5,6 +5,7 @@ import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
 import { ensureEventToken, ensureOccurrenceToken } from '$lib/crm/server/tokens.js';
 import { env } from '$env/dynamic/private';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ params, cookies, url }) {
 	const event = await findById('events', params.id);
@@ -113,7 +114,7 @@ export async function load({ params, cookies, url }) {
 }
 
 export const actions = {
-	update: async ({ request, params, cookies }) => {
+	update: async ({ request, params, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -154,6 +155,13 @@ export const actions = {
 			const validated = validateEvent(eventData);
 			await update('events', params.id, validated);
 
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'update', 'event', params.id, {
+				title: validated.title
+			}, event);
+
 			return { success: true };
 		} catch (error) {
 			console.error('[Update Event] Error:', error);
@@ -161,7 +169,7 @@ export const actions = {
 		}
 	},
 
-	delete: async ({ params, cookies, request }) => {
+	delete: async ({ params, cookies, request, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -169,7 +177,18 @@ export const actions = {
 			return { error: 'CSRF token validation failed' };
 		}
 
+		// Get event data before deletion for audit log
+		const event = await findById('events', params.id);
+		
 		await remove('events', params.id);
+
+		// Log audit event
+		const adminId = locals?.admin?.id || null;
+		const eventObj = { getClientAddress: () => 'unknown', request };
+		await logDataChange(adminId, 'delete', 'event', params.id, {
+			title: event?.title || 'unknown'
+		}, eventObj);
+
 		throw redirect(302, '/hub/events');
 	},
 

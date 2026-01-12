@@ -4,8 +4,9 @@ import { validateForm } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { decrypt } from '$lib/crm/server/crypto.js';
 import { canAccessSafeguarding, canAccessForms } from '$lib/crm/server/permissions.js';
+import { logSensitiveOperation } from '$lib/crm/server/audit.js';
 
-export async function load({ params, cookies }) {
+export async function load({ params, cookies, url, request }) {
 	const admin = await getAdminFromCookies(cookies);
 	if (!admin) {
 		throw redirect(302, '/hub/auth/login');
@@ -21,6 +22,13 @@ export async function load({ params, cookies }) {
 		if (!canAccessSafeguarding(admin)) {
 			throw redirect(302, '/hub/forms?error=access_denied');
 		}
+		// Log sensitive operation - accessing safeguarding form
+		const event = { getClientAddress: () => 'unknown', request };
+		await logSensitiveOperation(admin.id, 'safeguarding_form_access', {
+			formId: params.id,
+			formName: form.name,
+			action: 'view'
+		}, event);
 	} else {
 		if (!canAccessForms(admin)) {
 			throw redirect(302, '/hub/forms?error=access_denied');

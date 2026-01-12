@@ -67,20 +67,29 @@
 				'useQuery',
 				'onCompleted',
 				'No storage available for session',
+				'Player w/ mediaElement',
 				'Player w/ mediaElement has been deprecated',
-				'streaming.useNativeHlsOnSafari'
+				'mediaElement has been deprecated',
+				'use the attach method instead',
+				'streaming.useNativeHlsOnSafari',
+				'useNativeHlsOnSafari',
+				'preferNativeHls'
 			];
+			
+			const shouldSuppress = function(message) {
+				return loomErrorPatterns.some(pattern => message.includes(pattern));
+			};
 			
 			console.error = function(...args) {
 				const message = args.join(' ');
-				if (!loomErrorPatterns.some(pattern => message.includes(pattern))) {
+				if (!shouldSuppress(message)) {
 					originalError.apply(console, args);
 				}
 			};
 			
 			console.warn = function(...args) {
 				const message = args.join(' ');
-				if (!loomErrorPatterns.some(pattern => message.includes(pattern))) {
+				if (!shouldSuppress(message)) {
 					originalWarn.apply(console, args);
 				}
 			};

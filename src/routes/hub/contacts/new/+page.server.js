@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { create } from '$lib/crm/server/fileStore.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ cookies }) {
 	const csrfToken = getCsrfToken(cookies) || '';
@@ -9,7 +10,7 @@ export async function load({ cookies }) {
 }
 
 export const actions = {
-	create: async ({ request, cookies }) => {
+	create: async ({ request, cookies, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -37,6 +38,14 @@ export const actions = {
 
 			const validated = validateContact(contactData);
 			const contact = await create('contacts', validated);
+
+			// Log audit event
+			const adminId = locals?.admin?.id || null;
+			const event = { getClientAddress: () => 'unknown', request };
+			await logDataChange(adminId, 'create', 'contact', contact.id, {
+				email: contact.email,
+				name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim()
+			}, event);
 
 			throw redirect(302, `/hub/contacts/${contact.id}`);
 		} catch (error) {
