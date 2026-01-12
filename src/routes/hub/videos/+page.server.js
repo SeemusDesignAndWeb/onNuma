@@ -21,10 +21,17 @@ export async function load({ url, cookies }) {
 
 	const videos = await readCollection('loom_videos');
 	
-	let filtered = videos;
+	// Sort videos alphabetically by title
+	const sortedVideos = videos.sort((a, b) => {
+		const titleA = (a.title || '').toLowerCase();
+		const titleB = (b.title || '').toLowerCase();
+		return titleA.localeCompare(titleB);
+	});
+	
+	let filtered = sortedVideos;
 	if (search) {
 		const searchLower = search.toLowerCase();
-		filtered = videos.filter(v => 
+		filtered = sortedVideos.filter(v => 
 			v.title?.toLowerCase().includes(searchLower) ||
 			v.description?.toLowerCase().includes(searchLower)
 		);

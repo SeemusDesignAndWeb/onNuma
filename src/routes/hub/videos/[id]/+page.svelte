@@ -70,7 +70,7 @@
 		<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Edit Video</h2>
 		<div class="flex flex-wrap gap-2">
 			<a href="/hub/videos" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base">
-				Cancel
+				Back
 			</a>
 			<button 
 				type="button"

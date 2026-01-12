@@ -229,77 +229,73 @@ ${scriptContent}
 </script>
 
 <div class="flex flex-col h-full" on:click={handleClickOutside} on:keydown={handleKeyDown} role="presentation" tabindex="-1">
-	<nav class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 mb-6">
-		<div class="flex flex-wrap items-center gap-4">
-			<span class="text-sm font-semibold text-gray-700 mr-2">Documentation:</span>
-			
-			<!-- User Guide Dropdown -->
-			<div class="relative user-guide-dropdown">
-				<button
-					on:click={toggleUserGuideDropdown}
-					class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors flex items-center gap-1"
-				>
-					User Guide
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-					</svg>
-				</button>
+	{#if viewMode !== 'videos'}
+		<nav class="bg-white shadow-sm border-b border-gray-200 px-6 py-4 mb-6">
+			<div class="flex flex-wrap items-center gap-4">
+				<span class="text-sm font-semibold text-gray-700 mr-2">Documentation:</span>
 				
-				{#if userGuideDropdownOpen}
-					<div class="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
-						<div class="py-1">
-							<button
-								on:click={() => { userGuideDropdownOpen = false; showDocs(); loadDoc('USER_GUIDE.html'); }}
-								class="w-full text-left px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 border-b border-gray-200"
-							>
-								User Guide (Full)
-							</button>
-							{#each userGuideSections as section}
-								<div>
-									<button
-										on:click={() => { showDocs(); scrollToSection(section.id); }}
-										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
-									>
-										<span class="font-medium">{section.title}</span>
+				<!-- User Guide Dropdown -->
+				<div class="relative user-guide-dropdown">
+					<button
+						on:click={toggleUserGuideDropdown}
+						class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors flex items-center gap-1"
+					>
+						User Guide
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+						</svg>
+					</button>
+					
+					{#if userGuideDropdownOpen}
+						<div class="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+							<div class="py-1">
+								<button
+									on:click={() => { userGuideDropdownOpen = false; showDocs(); loadDoc('USER_GUIDE.html'); }}
+									class="w-full text-left px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 border-b border-gray-200"
+								>
+									User Guide (Full)
+								</button>
+								{#each userGuideSections as section}
+									<div>
+										<button
+											on:click={() => { showDocs(); scrollToSection(section.id); }}
+											class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+										>
+											<span class="font-medium">{section.title}</span>
+											{#if section.subsections}
+												<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+												</svg>
+											{/if}
+										</button>
 										{#if section.subsections}
-											<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-											</svg>
+											<div class="pl-4 bg-gray-50">
+												{#each section.subsections as subsection}
+													<button
+														on:click={() => { showDocs(); scrollToSection(subsection.id); }}
+														class="w-full text-left px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-100"
+													>
+														{subsection.title}
+													</button>
+												{/each}
+											</div>
 										{/if}
-									</button>
-									{#if section.subsections}
-										<div class="pl-4 bg-gray-50">
-											{#each section.subsections as subsection}
-												<button
-													on:click={() => { showDocs(); scrollToSection(subsection.id); }}
-													class="w-full text-left px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-100"
-												>
-													{subsection.title}
-												</button>
-											{/each}
-										</div>
-									{/if}
-								</div>
-							{/each}
+									</div>
+								{/each}
+							</div>
 						</div>
-					</div>
+					{/if}
+				</div>
+				
+				{#if isSuperAdminUser}
+					<a href="/docs/ADMIN_GUIDE.md" on:click|preventDefault={() => { showDocs(); loadDoc('ADMIN_GUIDE.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Admin Guide</a>
+					<a href="/docs/TECHNICAL.md" on:click|preventDefault={() => { showDocs(); loadDoc('TECHNICAL.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Technical</a>
+					<a href="/docs/SECURITY.md" on:click|preventDefault={() => { showDocs(); loadDoc('SECURITY.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Security Guide</a>
+					<a href="/docs/SECURITY_AUDIT.md" on:click|preventDefault={() => { showDocs(); loadDoc('SECURITY_AUDIT.md'); }} class="px-3 py-2 text-sm font-medium text-hub-red-600 hover:text-hub-red-900 hover:bg-hub-red-50 rounded-md transition-colors font-semibold">Security Audit</a>
 				{/if}
 			</div>
-			
-			{#if isSuperAdminUser}
-				<a href="/docs/ADMIN_GUIDE.md" on:click|preventDefault={() => { showDocs(); loadDoc('ADMIN_GUIDE.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Admin Guide</a>
-				<a href="/docs/TECHNICAL.md" on:click|preventDefault={() => { showDocs(); loadDoc('TECHNICAL.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Technical</a>
-				<a href="/docs/SECURITY.md" on:click|preventDefault={() => { showDocs(); loadDoc('SECURITY.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Security Guide</a>
-				<a href="/docs/SECURITY_AUDIT.md" on:click|preventDefault={() => { showDocs(); loadDoc('SECURITY_AUDIT.md'); }} class="px-3 py-2 text-sm font-medium text-hub-red-600 hover:text-hub-red-900 hover:bg-hub-red-50 rounded-md transition-colors font-semibold">Security Audit</a>
-			{/if}
-			<button on:click={showVideos} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors flex items-center gap-1">
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-				</svg>
-				Video Tutorials
-			</button>
-		</div>
-	</nav>
+		</nav>
+	{/if}
 	{#if viewMode === 'videos'}
 		<div class="flex-1 p-6">
 			<div class="max-w-4xl mx-auto">
