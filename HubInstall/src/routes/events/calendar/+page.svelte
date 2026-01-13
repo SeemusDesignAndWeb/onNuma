@@ -106,11 +106,14 @@
 
 	// Get occurrences for a specific date
 	function getOccurrencesForDate(date) {
-		const dateStr = date.toISOString().split('T')[0];
+		const targetYear = date.getFullYear();
+		const targetMonth = date.getMonth();
+		const targetDay = date.getDate();
 		return occurrences.filter(occ => {
 			const occDate = new Date(occ.startsAt);
-			const occDateStr = occDate.toISOString().split('T')[0];
-			return occDateStr === dateStr;
+			return occDate.getFullYear() === targetYear &&
+			       occDate.getMonth() === targetMonth &&
+			       occDate.getDate() === targetDay;
 		});
 	}
 
