@@ -401,13 +401,15 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 		}
 		
 		.cards-container {
-			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-			gap: 20px;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 15px;
 			margin-top: 16px;
 		}
 		
 		.date-card {
+			flex: 0 0 calc(33.333% - 10px);
+			min-width: 250px;
 			border: 1px solid #d1d5db;
 			border-radius: 8px;
 			background-color: #fff;
