@@ -3,6 +3,39 @@ import { findById, readCollection, findMany } from '$lib/crm/server/fileStore.js
 import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 
 /**
+ * Format date in a readable format: "Sunday 22nd February at 10am"
+ */
+function formatReadableDate(dateString) {
+	if (!dateString) return '';
+	const date = new Date(dateString);
+	if (isNaN(date.getTime())) return '';
+	
+	const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+	const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+	
+	const dayName = days[date.getDay()];
+	const day = date.getDate();
+	const month = months[date.getMonth()];
+	const year = date.getFullYear();
+	
+	// Get ordinal suffix
+	const getOrdinal = (n) => {
+		const s = ['th', 'st', 'nd', 'rd'];
+		const v = n % 100;
+		return n + (s[(v - 20) % 10] || s[v] || s[0]);
+	};
+	
+	// Format time
+	const hours = date.getHours();
+	const minutes = date.getMinutes();
+	const ampm = hours >= 12 ? 'pm' : 'am';
+	const hour12 = hours % 12 || 12;
+	const timeStr = minutes > 0 ? `${hour12}:${String(minutes).padStart(2, '0')}${ampm}` : `${hour12}${ampm}`;
+	
+	return `${dayName} ${getOrdinal(day)} ${month} at ${timeStr}`;
+}
+
+/**
  * Export all rotas for an event to PDF
  * Note: Requires puppeteer to be installed: npm install puppeteer
  */
@@ -220,8 +253,8 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 			occurrencesToDisplay = [{ id: 'unassigned', startsAt: null, endsAt: null }];
 		}
 		
-		// Generate table rows for this rota
-		let tableRowsHTML = '';
+		// Generate cards for this rota
+		let cardsHTML = '';
 		if (occurrencesToDisplay.length > 0) {
 			occurrencesToDisplay.forEach(occ => {
 				const occAssignees = rota.assigneesByOccurrence[occ.id] || [];
@@ -232,41 +265,42 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 					if (occ.id === 'unassigned') {
 						dateTime = 'Unassigned';
 					} else {
-						dateTime = formatDateTimeUK(occ.startsAt);
+						dateTime = formatReadableDate(occ.startsAt);
 						if (occ.endsAt) {
-							dateTime += ' - ' + formatDateTimeUK(occ.endsAt);
+							const endTime = formatReadableDate(occ.endsAt);
+							// Extract just the time part from endTime
+							const endTimeOnly = endTime.split(' at ')[1] || '';
+							if (endTimeOnly) {
+								dateTime += ` - ${endTimeOnly}`;
+							}
 						}
 					}
 					
-					occAssignees.forEach((assignee, index) => {
-						tableRowsHTML += `
-							<tr>
-								<td>${index === 0 ? escapeHtml(dateTime) : ''}</td>
-								<td>${escapeHtml(assignee.name || 'Unknown')}</td>
-							</tr>
-						`;
-					});
+					const namesHTML = occAssignees.map(assignee => 
+						`<div class="contact-name">${escapeHtml(assignee.name || 'Unknown')}</div>`
+					).join('');
+					
+					cardsHTML += `
+						<div class="date-card">
+							<div class="date-header">${escapeHtml(dateTime)}</div>
+							<div class="contacts-list">
+								${namesHTML}
+							</div>
+						</div>
+					`;
 				}
 			});
 		}
 		
 		// Only add section if there are contacts assigned
-		if (tableRowsHTML) {
+		if (cardsHTML) {
 			rotaSectionsHTML += `
 				<div class="rota-section">
 					<h2 class="rota-name">${escapeHtml(rotaRole)}</h2>
 					${rota.notes ? `<div class="rota-notes">${rota.notes}</div>` : ''}
-					<table>
-						<thead>
-							<tr>
-								<th>Date & Time</th>
-								<th>Name</th>
-							</tr>
-						</thead>
-						<tbody>
-							${tableRowsHTML}
-						</tbody>
-					</table>
+					<div class="cards-container">
+						${cardsHTML}
+					</div>
 				</div>
 			`;
 		}
@@ -350,35 +384,50 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 			padding: 20px;
 		}
 		
-		.rota-section table {
-			width: 100%;
-			border-collapse: collapse;
-			margin-bottom: 0;
+		.cards-container {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+			gap: 20px;
+			margin-top: 16px;
 		}
 		
-		th {
+		.date-card {
+			border: 1px solid #d1d5db;
+			border-radius: 8px;
+			background-color: #fff;
+			overflow: hidden;
+			page-break-inside: avoid;
+		}
+		
+		.date-header {
 			background-color: #f3f4f6;
-			padding: 12px;
-			text-align: left;
+			padding: 14px 16px;
 			font-weight: 600;
-			border: 1px solid #d1d5db;
+			font-size: 15px;
+			color: #111827;
+			border-bottom: 1px solid #d1d5db;
+		}
+		
+		.contacts-list {
+			padding: 12px 16px;
+		}
+		
+		.contact-name {
+			padding: 8px 0;
 			font-size: 14px;
+			color: #374151;
+			border-bottom: 1px solid #f3f4f6;
 		}
 		
-		td {
-			padding: 10px 12px;
-			border: 1px solid #d1d5db;
-			font-size: 13px;
+		.contact-name:last-child {
+			border-bottom: none;
 		}
 		
-		tr:nth-child(even) {
-			background-color: #f9fafb;
-		}
-		
-		.no-contacts {
+		.no-rotas {
 			color: #9ca3af;
 			font-style: italic;
 			text-align: center;
+			padding: 40px 20px;
 		}
 		
 		.footer {
