@@ -1,8 +1,12 @@
 <script>
 	import { page } from '$app/stores';
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
+	import { goto } from '$app/navigation';
 	
 	$: newsletter = $page.data?.newsletter;
+	$: contacts = $page.data?.contacts || [];
+	$: selectedContact = $page.data?.selectedContact;
+	$: personalizedContent = $page.data?.personalizedContent;
 	
 	function getStatusBadgeClass(status) {
 		switch (status) {
@@ -19,6 +23,24 @@
 	
 	function getStatusLabel(status) {
 		return status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Draft';
+	}
+	
+	function handleContactChange(event) {
+		const contactId = event.target.value;
+		const url = new URL(window.location.href);
+		if (contactId) {
+			url.searchParams.set('contactId', contactId);
+		} else {
+			url.searchParams.delete('contactId');
+		}
+		goto(url.pathname + url.search);
+	}
+	
+	function getContactDisplayName(contact) {
+		if (contact.firstName || contact.lastName) {
+			return `${contact.firstName || ''} ${contact.lastName || ''}`.trim();
+		}
+		return contact.email || 'Unknown';
 	}
 </script>
 
@@ -73,13 +95,55 @@
 						Email Preview
 					</h2>
 					<div class="text-xs text-gray-500">
-						This is how the email will appear to recipients
+						{#if selectedContact}
+							Previewing as: {getContactDisplayName(selectedContact)}
+						{:else}
+							This is how the email will appear to recipients
+						{/if}
 					</div>
+				</div>
+			</div>
+			<div class="px-6 py-4 bg-white border-b border-gray-200">
+				<div class="flex items-center gap-3">
+					<label for="contact-selector" class="text-sm font-medium text-gray-700">
+						Preview as user:
+					</label>
+					<select
+						id="contact-selector"
+						on:change={handleContactChange}
+						value={selectedContact?.id || ''}
+						class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-hub-blue-500 focus:border-hub-blue-500 text-sm"
+					>
+						<option value="">-- Select a user to preview --</option>
+						{#each contacts as contact}
+							<option value={contact.id}>
+								{getContactDisplayName(contact)} {contact.email ? `(${contact.email})` : ''}
+							</option>
+						{/each}
+					</select>
+					{#if selectedContact}
+						<button
+							on:click={() => {
+								const url = new URL(window.location.href);
+								url.searchParams.delete('contactId');
+								goto(url.pathname + url.search);
+							}}
+							class="text-sm text-gray-600 hover:text-gray-800 underline"
+						>
+							Clear selection
+						</button>
+					{/if}
 				</div>
 			</div>
 			<div class="p-8 bg-gray-50">
 				<div class="max-w-2xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
-					<div class="newsletter-preview p-6">{@html newsletter.htmlContent || newsletter.textContent || '<p class="text-gray-500 italic">No content available</p>'}</div>
+					<div class="newsletter-preview p-6">
+						{#if personalizedContent}
+							{@html personalizedContent}
+						{:else}
+							{@html newsletter.htmlContent || newsletter.textContent || '<p class="text-gray-500 italic">No content available</p>'}
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>

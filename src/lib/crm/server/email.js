@@ -127,7 +127,7 @@ export async function getUpcomingEvents(event) {
  * @param {string} contactId - Contact ID
  * @returns {Promise<boolean>} True if contact has any rotas assigned
  */
-async function hasAnyRotas(contactId) {
+export async function hasAnyRotas(contactId) {
 	if (!contactId) return false;
 	
 	try {
@@ -169,7 +169,7 @@ async function hasAnyRotas(contactId) {
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<Array>} Array of rota objects with event and occurrence data
  */
-async function getUpcomingRotas(contactId, event) {
+export async function getUpcomingRotas(contactId, event) {
 	const now = new Date();
 	const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
