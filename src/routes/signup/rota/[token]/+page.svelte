@@ -162,6 +162,20 @@
 		{#if rotas.length === 0}
 			<div class="bg-white shadow rounded-lg p-6">
 				<p class="text-gray-500">No rotas available for this event.</p>
+				<p class="text-sm text-gray-400 mt-2">This may be because the rota is set to "Internal" visibility, which is not accessible via public signup links.</p>
+			</div>
+		{:else if occurrences.length === 0 && rotas.length > 0}
+			<div class="bg-white shadow rounded-lg p-6">
+				<p class="text-gray-500">No upcoming occurrences available for this event.</p>
+				<p class="text-sm text-gray-400 mt-2">All occurrences for this event are in the past. Please contact the event organizer for more information.</p>
+				<div class="mt-4 space-y-4">
+					{#each rotas as rota}
+						<div class="border-l-4 border-l-brand-blue border border-gray-200 rounded-lg p-4">
+							<h3 class="text-lg font-semibold text-gray-900">{rota.role}</h3>
+							<p class="text-sm text-gray-500 mt-1">This rota has no upcoming occurrences available for signup.</p>
+						</div>
+					{/each}
+				</div>
 			</div>
 		{:else}
 			<form 

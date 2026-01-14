@@ -20,6 +20,10 @@ export async function load({ params, cookies }) {
 	const eventOccurrences = await findMany('occurrences', o => o.eventId === event.id);
 	const occurrences = filterUpcomingOccurrences(eventOccurrences);
 	
+	console.log('[Rota Signup] Event ID:', event.id);
+	console.log('[Rota Signup] Total event occurrences:', eventOccurrences.length);
+	console.log('[Rota Signup] Upcoming occurrences:', occurrences.length);
+	
 	// Get rotas - if token has a rotaId, only show that specific rota
 	// Otherwise (for backward compatibility), show all rotas for the event
 	// Only show public rotas on public signup pages
@@ -27,8 +31,20 @@ export async function load({ params, cookies }) {
 		? await findMany('rotas', r => r.eventId === event.id && r.id === token.rotaId)
 		: await findMany('rotas', r => r.eventId === event.id);
 	
+	console.log('[Rota Signup] All rotas found:', allRotas.length);
+	console.log('[Rota Signup] Token rotaId:', token.rotaId);
+	
 	// Filter to only show public rotas (internal rotas are not accessible via public signup)
-	const rotas = allRotas.filter(r => (r.visibility || 'public') === 'public');
+	const rotas = allRotas.filter(r => {
+		const visibility = r.visibility || 'public';
+		const isPublic = visibility === 'public';
+		if (!isPublic) {
+			console.log('[Rota Signup] Filtered out rota (not public):', r.id, 'visibility:', visibility);
+		}
+		return isPublic;
+	});
+	
+	console.log('[Rota Signup] Public rotas:', rotas.length);
 	
 	// Load contacts to enrich assignees
 	const contacts = await readCollection('contacts');

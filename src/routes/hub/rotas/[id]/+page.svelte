@@ -422,8 +422,37 @@
 {#if rota}
 	<div class="bg-white shadow rounded-lg p-6 mb-6">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Rota Details</h2>
+			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{rota.role || 'Unknown'} rota</h2>
 			<div class="flex flex-wrap gap-2">
+				{#if signupLink && (rota.visibility || 'public') === 'public'}
+					<button
+						on:click={copySignupLink}
+						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-2 text-sm sm:text-base"
+					>
+						{#if linkCopied}
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+							</svg>
+							Copied!
+						{:else}
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+							</svg>
+							Copy link
+						{/if}
+					</button>
+					<a
+						href={signupLink}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 flex items-center gap-2 text-sm sm:text-base"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+						</svg>
+						Open Signup
+					</a>
+				{/if}
 				{#if editing}
 					<button
 						type="submit"
@@ -440,6 +469,16 @@
 						Back
 					</button>
 				{:else}
+					<a
+						href="/hub/rotas/{rota.id}/export-pdf"
+						target="_blank"
+						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base flex items-center gap-2"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+						</svg>
+						Export PDF
+					</a>
 					<button
 						on:click={() => editing = true}
 						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
@@ -524,10 +563,6 @@
 					<dd class="mt-1 text-sm text-gray-900">{event?.title || 'Unknown'}</dd>
 				</div>
 				<div>
-					<dt class="text-sm font-medium text-gray-500">Role</dt>
-					<dd class="mt-1 text-sm text-gray-900">{rota.role}</dd>
-				</div>
-				<div>
 					<dt class="text-sm font-medium text-gray-500">Capacity per Occurrence</dt>
 					<dd class="mt-1 text-sm text-gray-900">{rota.capacity} {rota.capacity === 1 ? 'person' : 'people'}</dd>
 				</div>
@@ -555,46 +590,6 @@
 		{/if}
 	</div>
 
-	{#if signupLink}
-		<div class="bg-white shadow rounded-lg p-6 mb-6">
-			<h3 class="text-xl font-bold text-gray-900 mb-4">Public Signup Link</h3>
-			<p class="text-sm text-gray-600 mb-3">
-				Share this link with volunteers to allow them to sign up for this rota. No login required.
-			</p>
-			<div class="flex gap-2 items-center">
-				<input
-					type="text"
-					readonly
-					value={signupLink}
-					class="flex-1 rounded-md border border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-4 bg-gray-50 text-sm"
-				/>
-				<button
-					on:click={copySignupLink}
-					class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-2"
-				>
-					{#if linkCopied}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-						</svg>
-						Copied!
-					{:else}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-						</svg>
-						Copy Link
-					{/if}
-				</button>
-			</div>
-			<a
-				href={signupLink}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="mt-2 inline-block text-sm text-hub-blue-600 hover:text-hub-blue-800 underline"
-			>
-				Open signup page in new tab
-			</a>
-		</div>
-	{/if}
 
 	<div class="bg-white shadow rounded-lg p-6">
 		<div class="flex justify-between items-center mb-4">

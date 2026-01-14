@@ -279,6 +279,50 @@
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-3">
 			<h2 class="text-base sm:text-lg md:text-xl font-bold text-gray-900">Event Details</h2>
 			<div class="flex flex-wrap gap-2">
+				{#if !editing && rotaSignupLink}
+					<button
+						on:click={copyRotaSignupLink}
+						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+					>
+						{#if rotaLinkCopied}
+							<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+							</svg>
+							Copied!
+						{:else}
+							<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+							</svg>
+							<span class="hidden sm:inline">Copy Rota Link</span>
+							<span class="sm:hidden">Copy</span>
+						{/if}
+					</button>
+					<a
+						href={rotaSignupLink}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+					>
+						<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+						</svg>
+						<span class="hidden sm:inline">Open Rota Signup</span>
+						<span class="sm:hidden">Rota</span>
+					</a>
+				{/if}
+				{#if !editing && rotas.length > 0}
+					<a
+						href="/hub/events/{event.id}/export-rotas-pdf"
+						target="_blank"
+						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base flex items-center gap-2 whitespace-nowrap"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+						</svg>
+						<span class="hidden sm:inline">Export All Rotas PDF</span>
+						<span class="sm:hidden">Export PDF</span>
+					</a>
+				{/if}
 				{#if editing}
 					<button
 						type="submit"
@@ -423,40 +467,10 @@
 			</div>
 		{/if}
 
-		{#if rotaSignupLink || occurrenceLinks.length > 0}
+		{#if occurrenceLinks.length > 0}
 			<div class="mt-6 space-y-3">
 				<div class="flex flex-wrap gap-2">
-					{#if rotaSignupLink}
-						<button
-							on:click={copyRotaSignupLink}
-							class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
-						>
-							{#if rotaLinkCopied}
-								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-								</svg>
-								Copied!
-							{:else}
-								<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-								</svg>
-								<span class="hidden sm:inline">Copy Rota Link</span>
-								<span class="sm:hidden">Copy</span>
-							{/if}
-						</button>
-						<a
-							href={rotaSignupLink}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
-						>
-							<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-							</svg>
-							<span class="hidden sm:inline">Open Rota Signup</span>
-							<span class="sm:hidden">Rota</span>
-						</a>
-					{/if}
+					<!-- Occurrence links can go here if needed -->
 				</div>
 			</div>
 		{/if}
@@ -575,9 +589,11 @@
 	<div class="bg-white shadow rounded-lg p-3 sm:p-4">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
 			<h3 class="text-base sm:text-lg font-bold text-gray-900">Rotas</h3>
-			<a href="/hub/rotas/new?eventId={event.id}" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base whitespace-nowrap">
-				Add Rota
-			</a>
+			<div class="flex flex-wrap gap-2">
+				<a href="/hub/rotas/new?eventId={event.id}" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base whitespace-nowrap">
+					Add Rota
+				</a>
+			</div>
 		</div>
 		<Table columns={rotaColumns} rows={rotas} onRowClick={(row) => goto(`/hub/rotas/${row.id}`)} />
 	</div>
