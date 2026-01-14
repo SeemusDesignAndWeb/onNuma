@@ -316,13 +316,9 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 				}
 			}
 			
-			// Add signup link based on whether contact has rotas
+			// Add signup link
 			text += '\n';
-			if (hasRotas) {
-				text += `Sign up for other serving opportunities: ${signupPageUrl}`;
-			} else {
-				text += `See how you can be involved, sign up for a rota today! ${signupPageUrl}`;
-			}
+			text += `Sign Up for Rotas: ${signupPageUrl}`;
 			
 			return text;
 		});
@@ -350,22 +346,17 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 							line += ` - ${occurrence.location}`;
 						}
 						
-						html += '<div style="margin-bottom: 15px;">';
-						html += `<p style="margin: 0 0 10px 0; color: #333; font-size: 14px;">${line}</p>`;
+						html += '<div style="margin-bottom: 8px;">';
+						html += `<p style="margin: 0 0 5px 0; color: #333; font-size: 14px;">${line}</p>`;
 						if (signupUrl) {
-							html += `<a href="${signupUrl}" style="display: inline-block; background: #4A97D2; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; margin-top: 5px;">View Rota Details</a>`;
+							html += `<a href="${signupUrl}" style="display: inline-block; background: #4A97D2; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; margin-top: 3px;">View Rota Details</a>`;
 						}
 						html += '</div>';
 					}
 				}
 			
-				// Add signup link based on whether contact has rotas
-				html += '<div style="margin-top: 20px;">';
-				if (hasRotas) {
-					html += `<p style="color: #333; font-size: 14px; margin: 0 0 10px 0;">Sign up for other serving opportunities</p>`;
-				} else {
-					html += `<p style="color: #333; font-size: 14px; margin: 0 0 10px 0;">See how you can be involved, sign up for a rota today!</p>`;
-				}
+				// Add signup link
+				html += '<div style="margin-top: 12px;">';
 				html += `<a href="${signupPageUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">Sign Up for Rotas</a>`;
 				html += '</div>';
 			
@@ -429,8 +420,8 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 					line += ` - ${occurrence.location}`;
 				}
 				
-				html += '<div style="margin-bottom: 15px;">';
-				html += `<p style="margin: 0 0 10px 0; color: #333; font-size: 14px;">${line}</p>`;
+				html += '<div style="margin-bottom: 8px;">';
+				html += `<p style="margin: 0; color: #333; font-size: 14px;">${line}</p>`;
 				html += '</div>';
 			}
 			
@@ -601,8 +592,8 @@ export async function sendRotaInvite({ to, name, token }, rotaData, contact, eve
 	let upcomingRotasHtml = '';
 		if (otherUpcomingRotas.length > 0) {
 		upcomingRotasHtml = `
-			<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #2d7a32;">
-				<h3 style="margin: 0 0 12px 0; color: #333; font-size: 16px; font-weight: 600;">Your Other Upcoming Rotas (Next 14 Days)</h3>
+			<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 12px 0; border-left: 4px solid #2d7a32;">
+				<h3 style="margin: 0 0 8px 0; color: #333; font-size: 16px; font-weight: 600;">Your Other Upcoming Rotas (Next 14 Days)</h3>
 		`;
 		for (const item of otherUpcomingRotas) {
 			const dateStr = new Date(item.occurrence.startsAt).toLocaleDateString('en-GB', {
@@ -614,10 +605,10 @@ export async function sendRotaInvite({ to, name, token }, rotaData, contact, eve
 				minute: '2-digit'
 			});
 			upcomingRotasHtml += `
-				<div style="border-bottom: 1px solid #e5e7eb; padding: 8px 0; margin-bottom: 8px;">
-					<p style="margin: 0 0 4px 0; color: #333; font-size: 14px; font-weight: 600;">${item.event.title} - ${item.rota.role}</p>
-					<p style="margin: 0 0 4px 0; color: #666; font-size: 13px;">${dateStr}</p>
-					${item.occurrence.location ? `<p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">📍 ${item.occurrence.location}</p>` : ''}
+				<div style="border-bottom: 1px solid #e5e7eb; padding: 6px 0; margin-bottom: 6px;">
+					<p style="margin: 0 0 3px 0; color: #333; font-size: 14px; font-weight: 600;">${item.event.title} - ${item.rota.role}</p>
+					<p style="margin: 0 0 3px 0; color: #666; font-size: 13px;">${dateStr}</p>
+					${item.occurrence.location ? `<p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">📍 ${item.occurrence.location}</p>` : ''}
 					${item.signupUrl ? `<a href="${item.signupUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 12px;">View Rota</a>` : ''}
 				</div>
 			`;
@@ -805,8 +796,8 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 			let upcomingRotasHtml = '';
 			if (otherUpcomingRotas.length > 0) {
 				upcomingRotasHtml = `
-					<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #2d7a32;">
-						<h3 style="margin: 0 0 12px 0; color: #333; font-size: 16px; font-weight: 600;">Your Other Upcoming Rotas (Next 14 Days)</h3>
+					<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 12px 0; border-left: 4px solid #2d7a32;">
+						<h3 style="margin: 0 0 8px 0; color: #333; font-size: 16px; font-weight: 600;">Your Other Upcoming Rotas (Next 14 Days)</h3>
 				`;
 				for (const item of otherUpcomingRotas) {
 					const dateStr = new Date(item.occurrence.startsAt).toLocaleDateString('en-GB', {
@@ -818,10 +809,10 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 						minute: '2-digit'
 					});
 					upcomingRotasHtml += `
-						<div style="border-bottom: 1px solid #e5e7eb; padding: 8px 0; margin-bottom: 8px;">
-							<p style="margin: 0 0 4px 0; color: #333; font-size: 14px; font-weight: 600;">${item.event.title} - ${item.rota.role}</p>
-							<p style="margin: 0 0 4px 0; color: #666; font-size: 13px;">${dateStr}</p>
-							${item.occurrence.location ? `<p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">📍 ${item.occurrence.location}</p>` : ''}
+						<div style="border-bottom: 1px solid #e5e7eb; padding: 6px 0; margin-bottom: 6px;">
+							<p style="margin: 0 0 3px 0; color: #333; font-size: 14px; font-weight: 600;">${item.event.title} - ${item.rota.role}</p>
+							<p style="margin: 0 0 3px 0; color: #666; font-size: 13px;">${dateStr}</p>
+							${item.occurrence.location ? `<p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">📍 ${item.occurrence.location}</p>` : ''}
 							${item.signupUrl ? `<a href="${item.signupUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 12px;">View Rota</a>` : ''}
 						</div>
 					`;
