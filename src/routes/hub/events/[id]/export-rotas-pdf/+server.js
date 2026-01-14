@@ -233,6 +233,10 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 	// Generate rota sections HTML - one section per rota
 	let rotaSectionsHTML = '';
 	
+	// Filter out past occurrences - only show today and future dates
+	const now = new Date();
+	now.setHours(0, 0, 0, 0); // Set to start of today for date comparison
+	
 	rotas.forEach(rota => {
 		const rotaRole = rota.role || 'Unknown Role';
 		
@@ -241,11 +245,23 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 		if (rota.occurrenceId) {
 			const specificOcc = eventOccurrences.find(o => o.id === rota.occurrenceId);
 			if (specificOcc) {
-				occurrencesToDisplay = [specificOcc];
+				// Only include if the occurrence date is today or in the future
+				const occDate = specificOcc.startsAt ? new Date(specificOcc.startsAt) : null;
+				if (occDate) {
+					occDate.setHours(0, 0, 0, 0);
+					if (occDate >= now) {
+						occurrencesToDisplay = [specificOcc];
+					}
+				}
 			}
 		} else {
-			// Show all occurrences for this event
-			occurrencesToDisplay = eventOccurrences;
+			// Show all occurrences for this event that are today or in the future
+			occurrencesToDisplay = eventOccurrences.filter(occ => {
+				if (!occ.startsAt) return false;
+				const occDate = new Date(occ.startsAt);
+				occDate.setHours(0, 0, 0, 0);
+				return occDate >= now;
+			});
 		}
 		
 		// If no occurrences, check unassigned assignees

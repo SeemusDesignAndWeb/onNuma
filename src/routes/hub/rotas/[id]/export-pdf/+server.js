@@ -228,15 +228,28 @@ function generateRotaPDFHTML({ rota, event, eventOccurrences, assigneesByOccurre
 	const rotaRole = rota.role || 'Unknown Role';
 	
 	// Get occurrences to display (prioritize the rota's specific occurrence if it has one)
+	// Filter out past occurrences - only show today and future dates
+	const now = new Date();
+	now.setHours(0, 0, 0, 0); // Set to start of today for date comparison
+	
 	let occurrencesToDisplay = [];
 	if (rota.occurrenceId) {
 		const specificOcc = eventOccurrences.find(o => o.id === rota.occurrenceId);
 		if (specificOcc) {
-			occurrencesToDisplay = [specificOcc];
+			// Only include if the occurrence date is today or in the future
+			const occDate = specificOcc.startsAt ? new Date(specificOcc.startsAt) : null;
+			if (occDate && occDate >= now) {
+				occurrencesToDisplay = [specificOcc];
+			}
 		}
 	} else {
-		// Show all occurrences for this event
-		occurrencesToDisplay = eventOccurrences;
+		// Show all occurrences for this event that are today or in the future
+		occurrencesToDisplay = eventOccurrences.filter(occ => {
+			if (!occ.startsAt) return false;
+			const occDate = new Date(occ.startsAt);
+			occDate.setHours(0, 0, 0, 0);
+			return occDate >= now;
+		});
 	}
 	
 	// If no occurrences, show unassigned assignees if any
