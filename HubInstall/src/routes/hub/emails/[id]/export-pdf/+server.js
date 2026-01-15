@@ -38,85 +38,21 @@ export async function GET({ params, locals, url }) {
 		
 		// Personalize newsletter content with default values
 		// For PDF export, remove rota links placeholder and preceding rota-related line to exclude rotas (aimed at ALL people)
-		// Always use htmlContent for PDF export to preserve formatting
 		let subjectContent = newsletter.subject || '';
 		let htmlContentForPersonalization = newsletter.htmlContent || newsletter.textContent || '<p>No content available</p>';
 		
-		// Ensure we have valid HTML content
-		if (!htmlContentForPersonalization.includes('<') && htmlContentForPersonalization.trim()) {
-			// If it's plain text, wrap it in paragraphs
-			htmlContentForPersonalization = '<p>' + htmlContentForPersonalization.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
-		}
-		
 		// Remove rota links placeholder and any preceding line/paragraph that contains "rota"
-		// Wrap in try-catch to ensure we don't break the content
-		try {
-			subjectContent = removeRotaLinksAndPrecedingLine(subjectContent);
-			htmlContentForPersonalization = removeRotaLinksAndPrecedingLine(htmlContentForPersonalization);
-		} catch (removeError) {
-			console.error('Error removing rota links from PDF export:', removeError);
-			console.error('Error stack:', removeError.stack);
-			// If removal fails, just remove the placeholder directly
-			subjectContent = (subjectContent || '').replace(/\{\{rotaLinks\}\}/g, '');
-			htmlContentForPersonalization = (htmlContentForPersonalization || '').replace(/\{\{rotaLinks\}\}/g, '');
-		}
+		subjectContent = removeRotaLinksAndPrecedingLine(subjectContent);
+		htmlContentForPersonalization = removeRotaLinksAndPrecedingLine(htmlContentForPersonalization);
 		
 		let personalizedSubject = subjectContent;
 		let personalizedHtmlContent = htmlContentForPersonalization;
-		
-		// Personalize the content - this MUST succeed for placeholders to be replaced
 		try {
 			personalizedSubject = personalizeContent(subjectContent, null, [], upcomingEvents, eventObj, false);
 			personalizedHtmlContent = personalizeContent(htmlContentForPersonalization, null, [], upcomingEvents, eventObj, false);
 		} catch (personalizeError) {
 			console.error('Error personalizing content for PDF export:', personalizeError);
-			console.error('Error details:', personalizeError.stack);
-			console.error('Content before personalization (first 500 chars):', htmlContentForPersonalization.substring(0, 500));
-			
-			// Try basic placeholder replacement as fallback
-			const contactData = { email: 'subscriber@egcc.co.uk', firstName: 'all', lastName: '', phone: '' };
-			personalizedSubject = (subjectContent || '')
-				.replace(/\{\{firstName\}\}/g, contactData.firstName || 'all')
-				.replace(/\{\{lastName\}\}/g, contactData.lastName || '')
-				.replace(/\{\{name\}\}/g, `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim() || 'Church Member')
-				.replace(/\{\{email\}\}/g, contactData.email || 'subscriber@egcc.co.uk')
-				.replace(/\{\{rotaLinks\}\}/g, '');
-			
-			personalizedHtmlContent = (htmlContentForPersonalization || '')
-				.replace(/\{\{firstName\}\}/g, contactData.firstName || 'all')
-				.replace(/\{\{lastName\}\}/g, contactData.lastName || '')
-				.replace(/\{\{name\}\}/g, `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim() || 'Church Member')
-				.replace(/\{\{email\}\}/g, contactData.email || 'subscriber@egcc.co.uk')
-				.replace(/\{\{rotaLinks\}\}/g, '');
-			
-			// Replace upcomingEvents placeholder manually
-			if (upcomingEvents && upcomingEvents.length > 0) {
-				let eventsHtml = '';
-				for (const item of upcomingEvents) {
-					const { event: eventData, occurrence } = item;
-					const dateStr = new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
-						weekday: 'long',
-						year: 'numeric',
-						month: 'long',
-						day: 'numeric',
-						hour: '2-digit',
-						minute: '2-digit'
-					});
-					let line = `<strong>${eventData.title}</strong>`;
-					line += ` - ${dateStr}`;
-					if (occurrence.location) {
-						line += ` - ${occurrence.location}`;
-					}
-					eventsHtml += '<div style="margin-bottom: 8px;">';
-					eventsHtml += `<p style="margin: 0; color: #333; font-size: 14px;">${line}</p>`;
-					eventsHtml += '</div>';
-				}
-				personalizedHtmlContent = personalizedHtmlContent.replace(/\{\{upcomingEvents\}\}/g, eventsHtml);
-				personalizedSubject = personalizedSubject.replace(/\{\{upcomingEvents\}\}/g, '');
-			} else {
-				personalizedHtmlContent = personalizedHtmlContent.replace(/\{\{upcomingEvents\}\}/g, '<p style="color: #333; font-size: 14px;">There are no upcoming events up to the following Saturday.</p>');
-				personalizedSubject = personalizedSubject.replace(/\{\{upcomingEvents\}\}/g, '');
-			}
+			// Use original content if personalization fails
 		}
 		
 		// Generate HTML for PDF with personalized content
@@ -366,37 +302,29 @@ function generateNewsletterHTML(newsletter) {
  * @returns {string} Content with rotaLinks and preceding rota-related line removed
  */
 function removeRotaLinksAndPrecedingLine(content) {
-	if (!content || typeof content !== 'string') return content;
+	if (!content) return content;
 	
 	let result = content;
 	
-	// First, find all instances of {{rotaLinks}} and work backwards from each
-	// This approach is safer and preserves HTML structure
-	
-	// Pattern 1: Complete structure: <p>Your Rotas</p><p><br></p><p>{{rotaLinks}}</p>
-	// Match a block element with "rota", optional spacing paragraphs, then {{rotaLinks}} in a paragraph
-	result = result.replace(/(<(?:p|h[1-6]|div|li)[^>]*>[\s\S]*?<\/(?:p|h[1-6]|div|li)>)\s*(?:<p[^>]*><br\s*\/?><\/p>|<p[^>]*>\s*<\/p>)\s*<p[^>]*>\s*\{\{rotaLinks\}\}\s*<\/p>/gi, (match, element) => {
-		const textContent = element.replace(/<[^>]+>/g, '').trim();
-		return /rota/i.test(textContent) ? '' : element;
-	});
-	
-	// Pattern 2: <p>Your Rotas</p><p>{{rotaLinks}}</p> (no spacing paragraph)
-	result = result.replace(/(<(?:p|h[1-6]|div|li)[^>]*>[\s\S]*?<\/(?:p|h[1-6]|div|li)>)\s*<p[^>]*>\s*\{\{rotaLinks\}\}\s*<\/p>/gi, (match, element) => {
-		const textContent = element.replace(/<[^>]+>/g, '').trim();
-		return /rota/i.test(textContent) ? '' : element;
-	});
-	
-	// Pattern 3: <p>Your Rotas</p>{{rotaLinks}} (placeholder not in paragraph)
+	// Pattern 1: HTML block element containing "rota" immediately before {{rotaLinks}}
+	// Matches: <p>Your Rotas</p>{{rotaLinks}}, <h2>Your Rotas</h2>{{rotaLinks}}, <div>Your Rotas</div>{{rotaLinks}}
+	// This uses a non-greedy match to get the element immediately before the placeholder
 	result = result.replace(/(<(?:p|h[1-6]|div|li)[^>]*>[\s\S]*?<\/(?:p|h[1-6]|div|li)>)\s*\{\{rotaLinks\}\}/gi, (match, element) => {
+		// Check if the element's text content contains "rota"
 		const textContent = element.replace(/<[^>]+>/g, '').trim();
-		return /rota/i.test(textContent) ? '' : element;
+		if (/rota/i.test(textContent)) {
+			// Remove the entire match (element + placeholder)
+			return '';
+		}
+		// If no "rota" found, just remove the placeholder
+		return element;
 	});
 	
-	// Pattern 4: {{rotaLinks}} within same element: <p>Your Rotas{{rotaLinks}}</p>
-	result = result.replace(/(<(?:p|div)[^>]*>[\s\S]*?rota[\s\S]*?)\{\{rotaLinks\}\}([\s\S]*?<\/(?:p|div)>)/gi, '$1$2');
+	// Pattern 2: Text line containing "rota" immediately before {{rotaLinks}} (plain text or within HTML)
+	// Matches: Your Rotas\n{{rotaLinks}} or Your Rotas {{rotaLinks}} or <p>Your Rotas{{rotaLinks}}</p>
+	result = result.replace(/([^\n<]*rota[^\n<]*[\n\s]*)\{\{rotaLinks\}\}/gi, '');
 	
-	// Pattern 5: Remove any remaining {{rotaLinks}} placeholders
-	result = result.replace(/<p[^>]*>\s*\{\{rotaLinks\}\}\s*<\/p>/gi, '');
+	// Pattern 3: Remove any remaining {{rotaLinks}} placeholders
 	result = result.replace(/\{\{rotaLinks\}\}/g, '');
 	
 	return result;
