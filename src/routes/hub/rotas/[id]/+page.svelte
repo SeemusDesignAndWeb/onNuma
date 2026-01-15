@@ -503,9 +503,11 @@
 				<!-- Basic Information Panel -->
 				<div class="border border-gray-200 rounded-lg p-4 mb-4">
 					<h3 class="text-base font-semibold text-gray-900 mb-3">Basic Information</h3>
-					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1.5fr_2fr] gap-4">
 						<FormField label="Role" name="role" bind:value={formData.role} required />
-						<FormField label="Capacity" name="capacity" type="number" bind:value={formData.capacity} required />
+						<div class="w-20">
+							<FormField label="Capacity" name="capacity" type="number" bind:value={formData.capacity} required />
+						</div>
 						<div>
 							<label for="visibility-select" class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
 							<select id="visibility-select" name="visibility" bind:value={formData.visibility} class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm">
@@ -516,35 +518,35 @@
 						</div>
 						<div>
 							<label for="owner-select" class="block text-sm font-medium text-gray-700 mb-1">Owner</label>
-							<select 
-								id="owner-select"
-								name="ownerId" 
-								value={formData.ownerId || ''}
-								on:change={(e) => {
-									formData.ownerId = e.target.value || '';
-								}}
-								class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm"
-							>
-								<option value="">No owner</option>
-								{#each filteredOwnerContacts as contact (contact.id)}
-									{@const contactId = String(contact.id || '')}
-									<option value={contactId} selected={formData.ownerId === contactId}>
-										{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
-									</option>
-								{/each}
-							</select>
+							<div class="flex gap-2">
+								<select 
+									id="owner-select"
+									name="ownerId" 
+									value={formData.ownerId || ''}
+									on:change={(e) => {
+										formData.ownerId = e.target.value || '';
+									}}
+									class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm"
+								>
+									<option value="">No owner</option>
+									{#each filteredOwnerContacts as contact (contact.id)}
+										{@const contactId = String(contact.id || '')}
+										<option value={contactId} selected={formData.ownerId === contactId}>
+											{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
+										</option>
+									{/each}
+								</select>
+								<input
+									id="owner-search"
+									type="text"
+									bind:value={ownerSearchTerm}
+									placeholder="Search..."
+									class="w-32 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-2 text-sm"
+									title="Search owner by name or email"
+								/>
+							</div>
 							<p class="mt-1 text-xs text-gray-500">Owner gets update notifications</p>
 						</div>
-					</div>
-					<div class="mt-3">
-						<label for="owner-search" class="block text-sm font-medium text-gray-700 mb-1">Search Owner (optional)</label>
-						<input
-							id="owner-search"
-							type="text"
-							bind:value={ownerSearchTerm}
-							placeholder="Search by name or email..."
-							class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm"
-						/>
 					</div>
 				</div>
 
@@ -557,13 +559,13 @@
 				</div>
 			</form>
 		{:else}
-			<dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+			<dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_2fr_1.5fr] gap-4">
 				<div>
 					<dt class="text-sm font-medium text-gray-500">Event</dt>
 					<dd class="mt-1 text-sm text-gray-900">{event?.title || 'Unknown'}</dd>
 				</div>
 				<div>
-					<dt class="text-sm font-medium text-gray-500">Capacity per Occurrence</dt>
+					<dt class="text-sm font-medium text-gray-500 whitespace-nowrap">Capacity per Occurrence</dt>
 					<dd class="mt-1 text-sm text-gray-900">{rota.capacity} {rota.capacity === 1 ? 'person' : 'people'}</dd>
 				</div>
 				<div>
@@ -604,7 +606,7 @@
 						<div class="flex justify-between items-center mb-2">
 							<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
 							<div class="flex items-center gap-2">
-								<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'}">
+								<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'} w-16">
 									{occAssignees.length}/{rota.capacity}
 								</span>
 								{#if isFull}
@@ -639,7 +641,6 @@
 											{:else}
 												<span class="font-medium truncate block">{assignee.name || 'Unknown'}</span>
 											{/if}
-											<span class="text-xs text-gray-500 truncate block">{assignee.email}</span>
 										</div>
 										<button
 											on:click={() => handleRemoveAssignee(assignee)}
@@ -681,7 +682,6 @@
 										{:else}
 											<span class="font-medium truncate block">{assignee.name || 'Unknown'}</span>
 										{/if}
-										<span class="text-xs text-gray-500 truncate block">{assignee.email}</span>
 									</div>
 									<button
 										on:click={() => handleRemoveAssignee(assignee)}
@@ -708,7 +708,6 @@
 							{:else}
 								<span class="font-medium truncate block">{assignee.name || 'Unknown'}</span>
 							{/if}
-							<span class="text-xs text-gray-500 truncate block">{assignee.email}</span>
 						</div>
 						<button
 							on:click={() => handleRemoveAssignee(assignee, index)}

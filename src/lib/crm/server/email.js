@@ -1478,40 +1478,41 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 	// Build assignees HTML section
 	let assigneesHtml = '';
 	if (allAssigneesList.length > 0) {
-		// If rota is for all occurrences, show all assignees together
-		if (!rota.occurrenceId && Object.keys(assigneesByOcc).length > 0) {
-			assigneesHtml = '<div style="margin-top: 15px;"><h3 style="color: #2d7a32; margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">Assignees:</h3><ul style="margin: 0; padding-left: 20px; color: #333; font-size: 14px;">';
-			allAssigneesList.forEach(assignee => {
+		// Always group by occurrence to avoid duplicates and show clear structure
+		assigneesHtml = '<div style="margin-top: 15px;"><h3 style="color: #2d7a32; margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">Assignees by Occurrence:</h3>';
+		for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
+			// Deduplicate assignees within the same occurrence (by email or name)
+			const uniqueAssignees = [];
+			const seenAssignees = new Set();
+			for (const assignee of assignees) {
+				const key = assignee.email || assignee.name;
+				if (!seenAssignees.has(key)) {
+					seenAssignees.add(key);
+					uniqueAssignees.push(assignee);
+				}
+			}
+			
+			if (occKey === 'all' || !occKey) {
+				assigneesHtml += '<div style="margin-bottom: 15px;"><strong style="color: #333; font-size: 14px;">All Occurrences:</strong><ul style="margin: 5px 0; padding-left: 20px; color: #333; font-size: 14px;">';
+			} else {
+				const occ = eventOccurrences.find(o => o.id === occKey);
+				const occDate = occ ? new Date(occ.startsAt).toLocaleDateString('en-GB', {
+					weekday: 'short',
+					year: 'numeric',
+					month: 'short',
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
+				}) : 'Unknown Date';
+				assigneesHtml += `<div style="margin-bottom: 15px;"><strong style="color: #333; font-size: 14px;">${occDate}:</strong><ul style="margin: 5px 0; padding-left: 20px; color: #333; font-size: 14px;">`;
+			}
+			uniqueAssignees.forEach(assignee => {
 				const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
 				assigneesHtml += `<li style="margin: 5px 0;">${displayName}</li>`;
 			});
 			assigneesHtml += '</ul></div>';
-		} else {
-			// Group by occurrence
-			assigneesHtml = '<div style="margin-top: 15px;"><h3 style="color: #2d7a32; margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">Assignees by Occurrence:</h3>';
-			for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
-				if (occKey === 'all' || !occKey) {
-					assigneesHtml += '<div style="margin-bottom: 15px;"><strong style="color: #333; font-size: 14px;">All Occurrences:</strong><ul style="margin: 5px 0; padding-left: 20px; color: #333; font-size: 14px;">';
-				} else {
-					const occ = eventOccurrences.find(o => o.id === occKey);
-					const occDate = occ ? new Date(occ.startsAt).toLocaleDateString('en-GB', {
-						weekday: 'short',
-						year: 'numeric',
-						month: 'short',
-						day: 'numeric',
-						hour: '2-digit',
-						minute: '2-digit'
-					}) : 'Unknown Date';
-					assigneesHtml += `<div style="margin-bottom: 15px;"><strong style="color: #333; font-size: 14px;">${occDate}:</strong><ul style="margin: 5px 0; padding-left: 20px; color: #333; font-size: 14px;">`;
-				}
-				assignees.forEach(assignee => {
-					const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
-					assigneesHtml += `<li style="margin: 5px 0;">${displayName}</li>`;
-				});
-				assigneesHtml += '</ul></div>';
-			}
-			assigneesHtml += '</div>';
 		}
+		assigneesHtml += '</div>';
 	} else {
 		assigneesHtml = '<div style="margin-top: 15px;"><p style="color: #666; font-size: 14px; font-style: italic;">No assignees yet.</p></div>';
 	}
@@ -1519,33 +1520,37 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 	// Build assignees text section
 	let assigneesText = '';
 	if (allAssigneesList.length > 0) {
-		assigneesText = '\n\nAssignees:\n';
-		if (!rota.occurrenceId && Object.keys(assigneesByOcc).length > 0) {
-			allAssigneesList.forEach(assignee => {
+		assigneesText = '\n\nAssignees by Occurrence:\n';
+		for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
+			// Deduplicate assignees within the same occurrence (by email or name)
+			const uniqueAssignees = [];
+			const seenAssignees = new Set();
+			for (const assignee of assignees) {
+				const key = assignee.email || assignee.name;
+				if (!seenAssignees.has(key)) {
+					seenAssignees.add(key);
+					uniqueAssignees.push(assignee);
+				}
+			}
+			
+			if (occKey === 'all' || !occKey) {
+				assigneesText += '\nAll Occurrences:\n';
+			} else {
+				const occ = eventOccurrences.find(o => o.id === occKey);
+				const occDate = occ ? new Date(occ.startsAt).toLocaleDateString('en-GB', {
+					weekday: 'short',
+					year: 'numeric',
+					month: 'short',
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
+				}) : 'Unknown Date';
+				assigneesText += `\n${occDate}:\n`;
+			}
+			uniqueAssignees.forEach(assignee => {
 				const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
 				assigneesText += `- ${displayName}\n`;
 			});
-		} else {
-			for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
-				if (occKey === 'all' || !occKey) {
-					assigneesText += '\nAll Occurrences:\n';
-				} else {
-					const occ = eventOccurrences.find(o => o.id === occKey);
-					const occDate = occ ? new Date(occ.startsAt).toLocaleDateString('en-GB', {
-						weekday: 'short',
-						year: 'numeric',
-						month: 'short',
-						day: 'numeric',
-						hour: '2-digit',
-						minute: '2-digit'
-					}) : 'Unknown Date';
-					assigneesText += `\n${occDate}:\n`;
-				}
-				assignees.forEach(assignee => {
-					const displayName = assignee.email ? `${assignee.name} (${assignee.email})` : assignee.name;
-					assigneesText += `- ${displayName}\n`;
-				});
-			}
 		}
 	} else {
 		assigneesText = '\n\nNo assignees yet.';

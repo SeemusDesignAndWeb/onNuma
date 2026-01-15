@@ -508,7 +508,7 @@
 					<dd class="mt-1 text-sm text-gray-900">{rota.role}</dd>
 				</div>
 				<div>
-					<dt class="text-sm font-medium text-gray-500">Capacity per Occurrence</dt>
+					<dt class="text-sm font-medium text-gray-500 whitespace-nowrap">Capacity per Occurrence</dt>
 					<dd class="mt-1 text-sm text-gray-900">{rota.capacity} {rota.capacity === 1 ? 'person' : 'people'}</dd>
 				</div>
 				<div>
