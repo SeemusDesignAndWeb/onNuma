@@ -89,14 +89,14 @@
 				{#if isArchived}
 					<button
 						on:click={handleUnarchive}
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700"
 					>
 						Unarchive
 					</button>
 				{:else}
 					<button
 						on:click={handleArchive}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 					>
 						Archive
 					</button>

@@ -103,7 +103,7 @@
 				const badgeClass = visibility === 'public' 
 					? 'bg-hub-green-100 text-hub-green-800' 
 					: 'bg-gray-100 text-gray-800';
-				return `<span class="px-2 py-1 text-xs rounded ${badgeClass}">${visibility === 'public' ? 'Public' : 'Internal'}</span>`;
+				return `<span class="px-2.5 py-1.5 text-xs rounded ${badgeClass}">${visibility === 'public' ? 'Public' : 'Internal'}</span>`;
 			}
 		},
 		{
@@ -124,10 +124,10 @@
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Rotas</h2>
 	<div class="flex flex-wrap gap-2">
-		<a href="/hub/rotas/invite" class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base">
+		<a href="/hub/rotas/invite" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs">
 			Bulk Invite
 		</a>
-		<a href="/hub/rotas/new" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base">
+		<a href="/hub/rotas/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs">
 			New Rota
 		</a>
 	</div>
@@ -139,9 +139,9 @@
 			type="text"
 			bind:value={searchInput}
 			placeholder="Search rotas..."
-			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-4 py-2"
+			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-[18px] py-2.5"
 		/>
-		<button type="submit" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base">
+		<button type="submit" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs">
 			Search
 		</button>
 	</form>

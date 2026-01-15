@@ -118,21 +118,21 @@
 				{#if editing}
 					<button
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700"
 					>
 						Back
 					</button>
 				{:else}
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700"
 					>
 						Edit
 					</button>
 					{#if !admin.emailVerified}
 						<button
 							on:click={handleVerify}
-							class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700"
+							class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700"
 						>
 							Verify Email
 						</button>
@@ -140,14 +140,14 @@
 					{#if isAccountLocked()}
 						<button
 							on:click={handleUnlock}
-							class="bg-hub-yellow-600 text-white px-4 py-2 rounded-md hover:bg-hub-yellow-700"
+							class="bg-hub-yellow-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-yellow-700"
 						>
 							Unlock Account
 						</button>
 					{/if}
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-4 py-2 rounded-md hover:bg-hub-red-700"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700"
 					>
 						Delete
 					</button>
@@ -194,7 +194,7 @@
 				</div>
 
 				<div class="flex gap-2 mt-6">
-					<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+					<button type="submit" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 						Save Changes
 					</button>
 					<button
@@ -209,7 +209,7 @@
 								};
 							}
 						}}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700"
 					>
 						Back
 					</button>
@@ -373,7 +373,7 @@
 					</div>
 
 					<div class="flex gap-2 mt-6">
-						<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+						<button type="submit" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 							Reset Password
 						</button>
 						<button
@@ -382,7 +382,7 @@
 								resettingPassword = false;
 								passwordData = { newPassword: '', confirmPassword: '' };
 							}}
-							class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+							class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700"
 						>
 							Back
 						</button>

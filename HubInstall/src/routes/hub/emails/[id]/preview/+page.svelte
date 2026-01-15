@@ -31,7 +31,7 @@
 					<h1 class="text-3xl font-bold mb-2 text-white">{newsletter.subject || 'Untitled Email'}</h1>
 					<div class="flex items-center gap-4 mt-3 text-white">
 						<span class="text-sm">
-							<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 							</svg>
 							{#if newsletter.createdAt}
@@ -40,7 +40,7 @@
 						</span>
 						{#if newsletter.updatedAt && newsletter.updatedAt !== newsletter.createdAt}
 							<span class="text-sm">
-								<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
 								</svg>
 								Updated: {formatDateTimeUK(newsletter.updatedAt)}
@@ -97,18 +97,18 @@
 					<a 
 						href="/hub/emails/{newsletter.id}/export-pdf" 
 						target="_blank"
-						class="bg-hub-red-600 text-white px-4 py-2 rounded-md hover:bg-hub-red-700 transition-colors font-medium inline-flex items-center gap-2"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 transition-colors font-medium inline-flex items-center gap-2"
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 						</svg>
 						Export PDF
 					</a>
-					<a href="/hub/emails/{newsletter.id}" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 transition-colors font-medium">
+					<a href="/hub/emails/{newsletter.id}" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 transition-colors font-medium">
 						Edit Email
 					</a>
 					{#if newsletter.status === 'draft' || !newsletter.status}
-						<a href="/hub/emails/{newsletter.id}/send" class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700 transition-colors font-medium">
+						<a href="/hub/emails/{newsletter.id}/send" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 transition-colors font-medium">
 							Send Email
 						</a>
 					{/if}

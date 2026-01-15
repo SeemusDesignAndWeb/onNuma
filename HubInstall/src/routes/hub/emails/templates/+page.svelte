@@ -24,7 +24,7 @@
 
 	<div class="mb-4 flex justify-between items-center">
 		<h2 class="text-2xl font-bold text-gray-900">Email Templates</h2>
-		<a href="/hub/emails/templates/new" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+		<a href="/hub/emails/templates/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 			New Template
 		</a>
 	</div>

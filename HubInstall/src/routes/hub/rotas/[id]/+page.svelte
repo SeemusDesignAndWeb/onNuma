@@ -408,27 +408,27 @@
 					<button
 						type="submit"
 						form="rota-edit-form"
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700"
 					>
 						Back
 					</button>
 				{:else}
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-4 py-2 rounded-md hover:bg-hub-red-700"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700"
 					>
 						Delete
 					</button>
@@ -550,15 +550,15 @@
 				/>
 				<button
 					on:click={copySignupLink}
-					class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-2"
+					class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 flex items-center gap-2"
 				>
 					{#if linkCopied}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 						</svg>
 						Copied!
 					{:else}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
 						</svg>
 						Copy Link
@@ -604,7 +604,7 @@
 											selectedContactIds = new Set();
 											selectedListId = '';
 										}}
-										class="bg-hub-green-600 text-white px-2 py-1 rounded text-xs hover:bg-hub-green-700"
+										class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-hub-green-700"
 										title="Add assignees to this occurrence"
 									>
 										+ Add
@@ -816,14 +816,14 @@
 							selectedContactIds = new Set(); 
 							selectedListId = '';
 						}}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700"
 					>
 						Back
 					</button>
 					<button
 						on:click={handleAddAssignees}
 						disabled={selectedContactIds.size === 0}
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 disabled:opacity-50"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50"
 					>
 						Add Selected ({selectedContactIds.size})
 					</button>

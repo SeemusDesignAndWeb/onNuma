@@ -21,22 +21,7 @@
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	
-	let rotaLinkCopied = false;
 	let occurrenceLinkCopied = {};
-
-	async function copyRotaSignupLink() {
-		if (!rotaSignupLink) return;
-		try {
-			await navigator.clipboard.writeText(rotaSignupLink);
-			rotaLinkCopied = true;
-			notifications.success('Rota signup link copied to clipboard!');
-			setTimeout(() => {
-				rotaLinkCopied = false;
-			}, 2000);
-		} catch (error) {
-			notifications.error('Failed to copy link');
-		}
-	}
 
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
@@ -95,6 +80,7 @@
 		location: '',
 		visibility: 'private',
 		enableSignup: false,
+		hideFromEmail: false,
 		maxSpaces: '',
 		color: '#9333ea'
 	};
@@ -106,6 +92,7 @@
 			location: event.location || '',
 			visibility: event.visibility || 'private',
 			enableSignup: event.enableSignup || false,
+			hideFromEmail: event.hideFromEmail || false,
 			maxSpaces: event.maxSpaces ? event.maxSpaces.toString() : '',
 			color: event.color || '#9333ea'
 		};
@@ -276,82 +263,83 @@
 
 {#if event}
 	<div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
-		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-3">
+		<div class="mb-3">
 			<h2 class="text-base sm:text-lg md:text-xl font-bold text-gray-900">Event Details</h2>
-			<div class="flex flex-wrap gap-2">
-				{#if !editing && rotaSignupLink}
-					<button
-						on:click={copyRotaSignupLink}
-						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
-					>
-						{#if rotaLinkCopied}
-							<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+		</div>
+		
+		<!-- Buttons Panel -->
+		<div class="bg-gray-50 rounded-lg p-2 mb-3">
+			<div class="flex flex-nowrap justify-between items-center gap-2 overflow-x-auto">
+				<!-- Left-aligned buttons -->
+				<div class="flex flex-nowrap gap-2 overflow-x-auto">
+					{#if !editing && rotaSignupLink}
+						<a
+							href={rotaSignupLink}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 text-xs whitespace-nowrap flex-shrink-0"
+						>
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 							</svg>
-							Copied!
-						{:else}
-							<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+							Open Rota Signup
+						</a>
+					{/if}
+					{#if !editing && rotas.length > 0}
+						<a
+							href="/hub/events/{event.id}/export-rotas-pdf"
+							target="_blank"
+							class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+						>
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 							</svg>
-							<span class="hidden sm:inline">Copy Rota Link</span>
-							<span class="sm:hidden">Copy</span>
-						{/if}
-					</button>
+							Export All Rotas PDF
+						</a>
+					{/if}
+				</div>
+				
+				<!-- Right-aligned buttons -->
+				<div class="flex flex-nowrap gap-2 overflow-x-auto">
 					<a
-						href={rotaSignupLink}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+						href="/hub/events/calendar"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 flex items-center gap-1.5 text-xs whitespace-nowrap flex-shrink-0"
 					>
-						<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 						</svg>
-						<span class="hidden sm:inline">Open Rota Signup</span>
-						<span class="sm:hidden">Rota</span>
+						<span>Back to Calendar</span>
 					</a>
-				{/if}
-				{#if !editing && rotas.length > 0}
-					<a
-						href="/hub/events/{event.id}/export-rotas-pdf"
-						target="_blank"
-						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base flex items-center gap-2 whitespace-nowrap"
-					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-						</svg>
-						<span class="hidden sm:inline">Export All Rotas PDF</span>
-						<span class="sm:hidden">Export PDF</span>
-					</a>
-				{/if}
-				{#if editing}
-					<button
-						type="submit"
-						form="event-edit-form"
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base flex-1 sm:flex-none"
-					>
-						Save Changes
-					</button>
-					<button
-						type="button"
-						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base flex-1 sm:flex-none"
-					>
-						Back
-					</button>
-				{:else}
-					<button
-						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base flex-1 sm:flex-none"
-					>
-						Edit
-					</button>
-					<button
-						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-red-700 text-sm sm:text-base flex-1 sm:flex-none"
-					>
-						Delete
-					</button>
-				{/if}
+					{#if editing}
+						<button
+							type="submit"
+							form="event-edit-form"
+							class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs whitespace-nowrap flex-shrink-0"
+						>
+							Save Changes
+						</button>
+						<button
+							type="button"
+							on:click={() => editing = false}
+							class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs whitespace-nowrap flex-shrink-0"
+						>
+							Back
+						</button>
+					{:else}
+						<button
+							on:click={() => editing = true}
+							class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs whitespace-nowrap flex-shrink-0"
+						>
+							Edit
+						</button>
+						<button
+							on:click={handleDelete}
+							class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs whitespace-nowrap flex-shrink-0"
+						>
+							Delete
+						</button>
+					{/if}
+				</div>
 			</div>
 		</div>
 
@@ -363,7 +351,7 @@
 				<div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
 					<!-- Basic Information Panel - Narrow Column -->
 					<div class="lg:col-span-1 bg-gray-50 rounded-lg p-3">
-						<h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-3">Basic Information</h3>
+						<h3 class="text-xs font-semibold text-gray-900 mb-3">Basic Information</h3>
 						<div class="space-y-3">
 							<FormField label="Title" name="title" bind:value={formData.title} required />
 							<FormField label="Location" name="location" bind:value={formData.location} />
@@ -376,9 +364,9 @@
 							<div>
 								<label class="block text-xs font-medium text-gray-700 mb-1">Visibility</label>
 								<select name="visibility" bind:value={formData.visibility} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2 text-sm">
-									<option value="private">Private</option>
-									<option value="internal">Internal</option>
-									<option value="public">Public</option>
+									<option value="private">Private (Hub Admins only)</option>
+									<option value="internal">Internal (Church only)</option>
+									<option value="public">Public (Everyone)</option>
 								</select>
 							</div>
 							<div>
@@ -404,12 +392,24 @@
 									Enable Signup
 								</label>
 							</div>
+							<div class="flex items-center">
+								<input
+									type="checkbox"
+									id="hideFromEmail"
+									name="hideFromEmail"
+									bind:checked={formData.hideFromEmail}
+									class="h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
+								/>
+								<label for="hideFromEmail" class="ml-2 block text-xs text-gray-700">
+									Hide from email
+								</label>
+							</div>
 						</div>
 					</div>
 					
 					<!-- Description Panel - Wide Column -->
 					<div class="lg:col-span-3 bg-gray-50 rounded-lg p-3">
-						<h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-3">Description</h3>
+						<h3 class="text-xs font-semibold text-gray-900 mb-3">Description</h3>
 						<div>
 							<HtmlEditor bind:value={description} name="description" />
 						</div>
@@ -420,7 +420,7 @@
 			<div class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
 				<!-- Basic Information Panel - Narrow Column -->
 				<div class="lg:col-span-1 bg-gray-50 rounded-lg p-3">
-					<h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-3">Basic Information</h3>
+					<h3 class="text-xs font-semibold text-gray-900 mb-3">Basic Information</h3>
 					<dl class="space-y-3">
 						<div>
 							<dt class="text-xs font-medium text-gray-500 uppercase">Title</dt>
@@ -455,7 +455,7 @@
 				
 				<!-- Description Panel - Wide Column -->
 				<div class="lg:col-span-3 bg-gray-50 rounded-lg p-3">
-					<h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-3">Description</h3>
+					<h3 class="text-xs font-semibold text-gray-900 mb-3">Description</h3>
 					<div class="text-sm text-gray-900 prose prose-sm max-w-none">
 						{#if event.description}
 							{@html event.description}
@@ -480,7 +480,7 @@
 	<div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
 			<h3 class="text-base sm:text-lg font-bold text-gray-900">Occurrences</h3>
-			<a href="/hub/events/{event.id}/occurrences/new" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base whitespace-nowrap">
+			<a href="/hub/events/{event.id}/occurrences/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs whitespace-nowrap">
 				Add Occurrence
 			</a>
 		</div>
@@ -496,7 +496,7 @@
 							<div class="border border-gray-200 rounded-lg p-3 sm:p-4">
 								<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
 									<div class="flex-1">
-										<h5 class="text-sm sm:text-base font-medium text-gray-900">
+										<h5 class="text-xs font-medium text-gray-900">
 											{formatDateTimeUK(occ.startsAt)}
 										</h5>
 										<p class="text-xs sm:text-sm text-gray-600 mt-1">
@@ -554,7 +554,7 @@
 		<div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
 			<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
 				<h3 class="text-base sm:text-lg font-bold text-gray-900">Meeting Planners</h3>
-				<a href="/hub/meeting-planners/new?eventId={event.id}" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base whitespace-nowrap">
+				<a href="/hub/meeting-planners/new?eventId={event.id}" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs whitespace-nowrap">
 					<span class="hidden sm:inline">New Meeting Planner</span>
 					<span class="sm:hidden">New Planner</span>
 				</a>
@@ -590,7 +590,7 @@
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
 			<h3 class="text-base sm:text-lg font-bold text-gray-900">Rotas</h3>
 			<div class="flex flex-wrap gap-2">
-				<a href="/hub/rotas/new?eventId={event.id}" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base whitespace-nowrap">
+				<a href="/hub/rotas/new?eventId={event.id}" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs whitespace-nowrap">
 					Add Rota
 				</a>
 			</div>

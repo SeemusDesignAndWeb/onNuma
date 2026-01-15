@@ -173,7 +173,7 @@ ${scriptContent}
 					class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors flex items-center gap-1"
 				>
 					User Guide
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 					</svg>
 				</button>
@@ -183,7 +183,7 @@ ${scriptContent}
 						<div class="py-1">
 							<button
 								on:click={() => { userGuideDropdownOpen = false; loadDoc('USER_GUIDE.html'); }}
-								class="w-full text-left px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 border-b border-gray-200"
+								class="w-full text-left px-2.5 py-1.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 border-b border-gray-200"
 							>
 								User Guide (Full)
 							</button>
@@ -191,11 +191,11 @@ ${scriptContent}
 								<div>
 									<button
 										on:click={() => scrollToSection(section.id)}
-										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+										class="w-full text-left px-2.5 py-1.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
 									>
 										<span class="font-medium">{section.title}</span>
 										{#if section.subsections}
-											<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 											</svg>
 										{/if}

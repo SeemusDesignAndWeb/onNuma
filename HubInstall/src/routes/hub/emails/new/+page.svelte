@@ -81,10 +81,10 @@
 			<HtmlEditor bind:value={htmlContent} name="htmlContent" showPlaceholders={true} showImagePicker={true} />
 		</div>
 		<div class="flex gap-2">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="submit" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Create Email
 			</button>
-			<a href="/hub/emails" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+			<a href="/hub/emails" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 				Cancel
 			</a>
 		</div>

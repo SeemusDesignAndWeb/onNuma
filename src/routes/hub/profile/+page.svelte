@@ -138,7 +138,7 @@
 						/>
 
 						<div class="flex gap-2 mt-4">
-							<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+							<button type="submit" class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700">
 								Update Email
 							</button>
 							<button
@@ -149,7 +149,7 @@
 										emailData = { email: admin.email || '' };
 									}
 								}}
-								class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+								class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 							>
 								Cancel
 							</button>
@@ -313,7 +313,7 @@
 						</div>
 
 						<div class="flex gap-2 mt-6">
-							<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+							<button type="submit" class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700">
 								Update Password
 							</button>
 							<button
@@ -322,7 +322,7 @@
 									changingPassword = false;
 									passwordData = { currentPassword: '', newPassword: '', confirmPassword: '' };
 								}}
-								class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+								class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 							>
 								Cancel
 							</button>

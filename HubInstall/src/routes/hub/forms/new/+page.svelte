@@ -195,7 +195,7 @@
 							class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-3 px-4"
 							on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
 						/>
-						<button type="button" on:click={addOption} class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+						<button type="button" on:click={addOption} class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 							Add
 						</button>
 					</div>
@@ -210,21 +210,21 @@
 				</div>
 			{/if}
 			
-			<button type="button" on:click={addField} class="mt-4 bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="button" on:click={addField} class="mt-4 bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				{editingField !== null ? 'Update Field' : 'Add Field'}
 			</button>
 			{#if editingField !== null}
-				<button type="button" on:click={() => { editingField = null; fieldForm = { type: 'text', label: '', name: '', required: false, placeholder: '', options: [] }; }} class="mt-4 ml-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+				<button type="button" on:click={() => { editingField = null; fieldForm = { type: 'text', label: '', name: '', required: false, placeholder: '', options: [] }; }} class="mt-4 ml-2 bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 					Cancel
 				</button>
 			{/if}
 		</div>
 
 		<div class="flex gap-2">
-			<button type="submit" disabled={fields.length === 0} class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 disabled:opacity-50">
+			<button type="submit" disabled={fields.length === 0} class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50">
 				Create Form
 			</button>
-			<a href="/hub/forms" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+			<a href="/hub/forms" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 				Cancel
 			</a>
 		</div>

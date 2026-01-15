@@ -81,7 +81,7 @@
 				</div>
 				<a 
 					href="/hub/emails/{newsletter.id}" 
-					class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-md transition-colors font-medium border border-white/30 flex items-center gap-2"
+					class="bg-white/20 hover:bg-white/30 text-white px-[18px] py-2.5 rounded-md transition-colors font-medium border border-white/30 flex items-center gap-2"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -138,7 +138,7 @@
 					<button
 						on:click={sendNewsletter}
 						disabled={sending || !selectedListId || lists.length === 0}
-						class="bg-hub-green-600 text-white px-6 py-3 rounded-md hover:bg-hub-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors"
+						class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors"
 					>
 						{#if sending}
 							<svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -155,7 +155,7 @@
 					</button>
 					<a 
 						href="/hub/emails/{newsletter.id}" 
-						class="bg-gray-600 text-white px-6 py-3 rounded-md hover:bg-gray-700 font-medium inline-flex items-center gap-2 transition-colors"
+						class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700 font-medium inline-flex items-center gap-2 transition-colors"
 					>
 						Cancel
 					</a>

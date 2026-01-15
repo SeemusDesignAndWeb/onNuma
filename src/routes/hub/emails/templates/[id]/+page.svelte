@@ -89,14 +89,14 @@
 					<button
 						type="submit"
 						form="template-edit-form"
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
 					>
 						Back
 					</button>
@@ -104,14 +104,14 @@
 					<button
 						type="button"
 						on:click|preventDefault={startEditing}
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Edit
 					</button>
 					<button
 						type="button"
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-red-700 text-sm sm:text-base"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
 					>
 						Delete
 					</button>

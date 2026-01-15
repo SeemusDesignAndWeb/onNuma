@@ -184,10 +184,10 @@
 		</div>
 
 		<div class="flex gap-2">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="submit" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Create Occurrence{formData.repeatType !== 'none' ? 's' : ''}
 			</button>
-			<a href="/hub/events/{event?.id}" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+			<a href="/hub/events/{event?.id}" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 				Cancel
 			</a>
 		</div>

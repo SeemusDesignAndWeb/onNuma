@@ -66,9 +66,9 @@
 			<div class="flex gap-3">
 				<a
 					href="/hub/rotas"
-					class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center gap-2"
+					class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 flex items-center gap-2"
 				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 					</svg>
 					Back
@@ -85,7 +85,7 @@
 						</svg>
 						Sending...
 					{:else}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
 						</svg>
 						Send Invitations

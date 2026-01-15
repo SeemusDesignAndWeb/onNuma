@@ -552,7 +552,7 @@
 							{event?.title || 'Unknown'}
 						</a>
 					</div>
-					<div class="text-sm sm:text-base">
+					<div class="text-xs">
 						{#if occurrence}
 							{formatDateWithOrdinal(occurrence.startsAt)}
 						{:else}
@@ -564,9 +564,9 @@
 			<div class="flex flex-wrap gap-2 w-full sm:w-auto">
 				<a
 					href="/hub/meeting-planners"
-					class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-none justify-center"
+					class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-none justify-center"
 				>
-					<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 					</svg>
 					Back
@@ -574,14 +574,14 @@
 				<button
 					type="submit"
 					form="meeting-planner-edit-form"
-					class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-xs sm:text-sm flex-1 sm:flex-none"
+					class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs sm:text-sm flex-1 sm:flex-none"
 				>
 					<span class="hidden sm:inline">Save Changes</span>
 					<span class="sm:hidden">Save</span>
 				</button>
 				<button
 					on:click={handleDelete}
-					class="bg-hub-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-red-700 text-xs sm:text-sm flex-1 sm:flex-none"
+					class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs sm:text-sm flex-1 sm:flex-none"
 				>
 					Delete
 				</button>
@@ -608,7 +608,7 @@
 				
 				<!-- Meeting Details Panel -->
 				<div class="bg-white shadow rounded-lg p-2.5 sm:p-3 mb-3 sm:mb-4">
-					<h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Meeting Details</h3>
+					<h3 class="text-xs font-semibold text-gray-900 mb-2 sm:mb-3">Meeting Details</h3>
 					<div class="space-y-2.5 sm:space-y-3">
 						<div class="flex items-center">
 							<input
@@ -656,7 +656,7 @@
 
 				<!-- Notes Panel -->
 				<div class="bg-white shadow rounded-lg p-2.5 sm:p-3">
-					<h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Notes</h3>
+					<h3 class="text-xs font-semibold text-gray-900 mb-2 sm:mb-3">Notes</h3>
 					<div>
 						<HtmlEditor bind:value={notes} name="notes" />
 					</div>
@@ -692,7 +692,7 @@
 												</svg>
 											</a>
 										</div>
-										<div class="text-xs text-gray-500">
+										<div class="text-xs text-gray-500 w-20">
 											<span class="font-medium {rota.assignees?.length >= rota.capacity ? 'text-hub-red-600' : 'text-gray-700'}">
 												{rota.assignees?.length || 0} / {rota.capacity}
 											</span>
@@ -844,14 +844,14 @@
 													selectedContactIds[rotaKey] = new Set(); 
 													selectedListId[rotaKey] = '';
 												}}
-												class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-xs sm:text-sm w-full sm:w-auto"
+												class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs sm:text-sm w-full sm:w-auto"
 											>
 												Back
 											</button>
 											<button
 												on:click={() => handleAddAssignees(rotaKey)}
 												disabled={!selectedContactIds[rotaKey] || selectedContactIds[rotaKey].size === 0 || (eventOccurrences.length > 0 && !selectedOccurrenceId[rotaKey])}
-												class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 disabled:opacity-50 text-xs sm:text-sm w-full sm:w-auto"
+												class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50 text-xs sm:text-sm w-full sm:w-auto"
 											>
 												Add Selected ({selectedContactIds[rotaKey]?.size || 0})
 											</button>

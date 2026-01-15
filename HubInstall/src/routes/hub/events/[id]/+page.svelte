@@ -22,23 +22,8 @@
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	
-	let rotaLinkCopied = false;
 	let publicLinkCopied = false;
 	let occurrenceLinkCopied = {};
-
-	async function copyRotaSignupLink() {
-		if (!rotaSignupLink) return;
-		try {
-			await navigator.clipboard.writeText(rotaSignupLink);
-			rotaLinkCopied = true;
-			notifications.success('Rota signup link copied to clipboard!');
-			setTimeout(() => {
-				rotaLinkCopied = false;
-			}, 2000);
-		} catch (error) {
-			notifications.error('Failed to copy link');
-		}
-	}
 
 	async function copyPublicEventLink() {
 		if (!publicEventLink) return;
@@ -111,6 +96,7 @@
 		location: '',
 		visibility: 'private',
 		enableSignup: false,
+		hideFromEmail: false,
 		maxSpaces: '',
 		color: '#9333ea'
 	};
@@ -122,6 +108,7 @@
 			location: event.location || '',
 			visibility: event.visibility || 'private',
 			enableSignup: event.enableSignup || false,
+			hideFromEmail: event.hideFromEmail || false,
 			maxSpaces: event.maxSpaces ? event.maxSpaces.toString() : '',
 			color: event.color || '#9333ea'
 		};
@@ -207,7 +194,7 @@
 							class="copy-occurrence-link p-1.5 rounded hover:bg-hub-blue-100 text-hub-blue-600"
 							title="Copy link"
 						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
 							</svg>
 						</button>
@@ -218,7 +205,7 @@
 							class="p-1.5 rounded hover:bg-hub-blue-100 text-hub-blue-600"
 							title="Open link"
 						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 							</svg>
 						</a>
@@ -251,7 +238,7 @@
 					
 					// Update button icon
 					button.innerHTML = `
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 						</svg>
 					`;
@@ -259,7 +246,7 @@
 					setTimeout(() => {
 						occurrenceLinkCopied = { ...occurrenceLinkCopied, [occurrenceId]: false };
 						button.innerHTML = `
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
 							</svg>
 						`;
@@ -292,34 +279,47 @@
 
 {#if event}
 	<div class="bg-white shadow rounded-lg p-4 mb-4">
-		<div class="flex justify-between items-center mb-3">
+		<div class="mb-3">
 			<h2 class="text-xl font-bold text-gray-900">Event Details</h2>
-			<div class="flex gap-2">
+		</div>
+		
+		<!-- Buttons Panel -->
+		<div class="bg-gray-50 rounded-lg p-2 mb-3">
+			<div class="flex flex-nowrap justify-end gap-2 overflow-x-auto">
+				<a
+					href="/hub/events/calendar"
+					class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 flex items-center gap-1.5 text-xs whitespace-nowrap flex-shrink-0"
+				>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+					</svg>
+					Back to Calendar
+				</a>
 				{#if editing}
 					<button
 						type="submit"
 						form="event-edit-form"
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs whitespace-nowrap flex-shrink-0"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs whitespace-nowrap flex-shrink-0"
 					>
 						Back
 					</button>
 				{:else}
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs whitespace-nowrap flex-shrink-0"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-4 py-2 rounded-md hover:bg-hub-red-700"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs whitespace-nowrap flex-shrink-0"
 					>
 						Delete
 					</button>
@@ -348,9 +348,9 @@
 							<div>
 								<label class="block text-xs font-medium text-gray-700 mb-1">Visibility</label>
 								<select name="visibility" bind:value={formData.visibility} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2 text-sm">
-									<option value="private">Private</option>
-									<option value="internal">Internal</option>
-									<option value="public">Public</option>
+									<option value="private">Private (Hub Admins only)</option>
+									<option value="internal">Internal (Church only)</option>
+									<option value="public">Public (Everyone)</option>
 								</select>
 							</div>
 							<div>
@@ -374,6 +374,18 @@
 								/>
 								<label for="enableSignup" class="ml-2 block text-xs text-gray-700">
 									Enable Signup
+								</label>
+							</div>
+							<div class="flex items-center">
+								<input
+									type="checkbox"
+									id="hideFromEmail"
+									name="hideFromEmail"
+									bind:checked={formData.hideFromEmail}
+									class="h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
+								/>
+								<label for="hideFromEmail" class="ml-2 block text-xs text-gray-700">
+									Hide from email
 								</label>
 							</div>
 						</div>
@@ -415,7 +427,7 @@
 						<div>
 							<dt class="text-xs font-medium text-gray-500 uppercase">Color</dt>
 							<dd class="mt-1 flex items-center gap-1.5">
-								<div class="w-4 h-4 rounded border border-gray-300" style="background-color: {event.color || '#9333ea'};"></div>
+								<div class="w-3 h-3 rounded border border-gray-300" style="background-color: {event.color || '#9333ea'};"></div>
 								<span class="text-xs text-gray-600">{(() => {
 									const colorOption = EVENT_COLORS.find(c => c.value === (event.color || '#9333ea'));
 									return colorOption ? colorOption.label : 'Purple';
@@ -445,15 +457,15 @@
 					{#if publicEventLink}
 						<button
 							on:click={copyPublicEventLink}
-							class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 flex items-center gap-2"
+							class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 flex items-center gap-2"
 						>
 							{#if publicLinkCopied}
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 								</svg>
 								Copied!
 							{:else}
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
 								</svg>
 								Copy Event Link (All)
@@ -463,38 +475,22 @@
 							href={publicEventLink}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 flex items-center gap-2"
+							class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 flex items-center gap-2"
 						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 							</svg>
 							Open Event (All)
 						</a>
 					{/if}
 					{#if rotaSignupLink}
-						<button
-							on:click={copyRotaSignupLink}
-							class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-2"
-						>
-							{#if rotaLinkCopied}
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-								</svg>
-								Copied!
-							{:else}
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-								</svg>
-								Copy Rota Link
-							{/if}
-						</button>
 						<a
 							href={rotaSignupLink}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-2"
+							class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 flex items-center gap-2"
 						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 							</svg>
 							Open Rota Signup
@@ -509,7 +505,7 @@
 	<div class="bg-white shadow rounded-lg p-4 mb-4">
 		<div class="flex justify-between items-center mb-3">
 			<h3 class="text-lg font-bold text-gray-900">Occurrences</h3>
-			<a href="/hub/events/{event.id}/occurrences/new" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<a href="/hub/events/{event.id}/occurrences/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Add Occurrence
 			</a>
 		</div>
@@ -582,7 +578,7 @@
 		<div class="bg-white shadow rounded-lg p-4 mb-4">
 			<div class="flex justify-between items-center mb-3">
 				<h3 class="text-lg font-bold text-gray-900">Meeting Planners</h3>
-				<a href="/hub/meeting-planners/new?eventId={event.id}" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+				<a href="/hub/meeting-planners/new?eventId={event.id}" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 					New Meeting Planner
 				</a>
 			</div>
@@ -616,7 +612,7 @@
 	<div class="bg-white shadow rounded-lg p-4">
 		<div class="flex justify-between items-center mb-3">
 			<h3 class="text-lg font-bold text-gray-900">Rotas</h3>
-			<a href="/hub/rotas/new?eventId={event.id}" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<a href="/hub/rotas/new?eventId={event.id}" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Add Rota
 			</a>
 		</div>

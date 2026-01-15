@@ -204,10 +204,10 @@
 				</p>
 			</div>
 
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="submit" class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700">
 				Upload and Map Fields
 			</button>
-			<a href="/hub/contacts" class="ml-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 inline-block">
+			<a href="/hub/contacts" class="ml-2 bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700 inline-block">
 				Cancel
 			</a>
 		</form>
@@ -308,14 +308,14 @@
 			<button
 				type="button"
 				on:click={proceedToPreview}
-				class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+				class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700"
 			>
 				Preview Import
 			</button>
 			<button
 				type="button"
 				on:click={() => step = 'upload'}
-				class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+				class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 			>
 				Back
 			</button>
@@ -366,14 +366,14 @@
 			<button
 				type="button"
 				on:click={handleImport}
-				class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+				class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700"
 			>
 				Import {totalRows} Contacts
 			</button>
 			<button
 				type="button"
 				on:click={() => step = 'map'}
-				class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+				class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 			>
 				Back to Mapping
 			</button>
@@ -412,13 +412,13 @@
 
 
 		<div class="flex gap-2">
-			<a href="/hub/contacts" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<a href="/hub/contacts" class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700">
 				View Contacts
 			</a>
 			<button
 				type="button"
 				on:click={() => { step = 'upload'; fileText = ''; fileData = ''; fileType = 'csv'; csvHeaders = []; csvRows = []; fieldMapping = {}; importResults = null; }}
-				class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+				class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 			>
 				Import Another File
 			</button>

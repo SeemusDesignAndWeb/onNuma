@@ -52,10 +52,10 @@
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Events</h2>
 	<div class="flex flex-wrap gap-2">
-		<a href="/hub/events/calendar" class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base">
+		<a href="/hub/events/calendar" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs">
 			Calendar View
 		</a>
-		<a href="/hub/events/new" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base">
+		<a href="/hub/events/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs">
 			New Event
 		</a>
 	</div>
@@ -67,9 +67,9 @@
 			type="text"
 			bind:value={searchInput}
 			placeholder="Search events..."
-			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-3 sm:px-4 py-2 text-sm sm:text-base"
+			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-3 sm:px-[18px] py-2.5 text-xs"
 		/>
-		<button type="submit" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base whitespace-nowrap">
+		<button type="submit" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs whitespace-nowrap">
 			Search
 		</button>
 	</form>

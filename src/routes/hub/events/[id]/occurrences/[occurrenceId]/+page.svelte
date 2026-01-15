@@ -115,40 +115,40 @@
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
 			<div>
 				<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Occurrence Details</h2>
-				<p class="text-gray-600 mt-1 text-sm sm:text-base">Event: {event.title}</p>
+				<p class="text-gray-600 mt-1 text-xs">Event: {event.title}</p>
 			</div>
 			<div class="flex flex-wrap gap-2">
 				{#if editing}
 					<button
 						type="submit"
 						form="occurrence-edit-form"
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
 					>
 						Back
 					</button>
 				{:else}
 					<a
 						href="/hub/events/{event.id}"
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
 					>
 						Back
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-red-700 text-sm sm:text-base"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
 					>
 						Delete
 					</button>
@@ -284,12 +284,12 @@
 					<table class="min-w-full divide-y divide-gray-200">
 						<thead class="bg-gray-50">
 							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Attendees</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signed Up</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Attendees</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signed Up</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
 							</tr>
 						</thead>
 						<tbody class="bg-white divide-y divide-gray-200">
@@ -329,15 +329,15 @@
 						</tbody>
 						<tfoot class="bg-gray-50">
 							<tr>
-								<td colspan="2" class="px-6 py-3 text-sm font-medium text-gray-900">Total</td>
-								<td class="px-6 py-3 text-sm font-medium text-gray-900">
+								<td colspan="2" class="px-[18px] py-2.5 text-sm font-medium text-gray-900">Total</td>
+								<td class="px-[18px] py-2.5 text-sm font-medium text-gray-900">
 									{signups.reduce((sum, s) => sum + (s.guestCount || 0), 0)}
 								</td>
-								<td class="px-6 py-3 text-sm font-bold text-gray-900">
+								<td class="px-[18px] py-2.5 text-sm font-bold text-gray-900">
 									{signups.reduce((sum, s) => sum + (s.guestCount || 0) + 1, 0)}
 								</td>
-								<td class="px-6 py-3"></td>
-								<td class="px-6 py-3"></td>
+								<td class="px-[18px] py-2.5"></td>
+								<td class="px-[18px] py-2.5"></td>
 							</tr>
 						</tfoot>
 					</table>

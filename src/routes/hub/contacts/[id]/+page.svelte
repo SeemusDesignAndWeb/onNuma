@@ -93,36 +93,36 @@
 					<button
 						type="submit"
 						form="contact-edit-form"
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
 					>
 						Back
 					</button>
 				{:else}
 					<a
 						href="/hub/contacts"
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 inline-flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 inline-flex items-center gap-1.5 text-xs"
 					>
-						<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 						</svg>
 						Back
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-red-700 text-sm sm:text-base"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
 					>
 						Delete
 					</button>
@@ -315,7 +315,7 @@
 						{/if}
 						{#if contact.membershipStatus === 'member'}
 							<div class="sm:col-span-2">
-								<a href="/hub/members/{contact.id}" class="inline-flex items-center px-4 py-2 bg-hub-green-600 text-white rounded-md hover:bg-hub-green-700 transition-colors">
+								<a href="/hub/members/{contact.id}" class="inline-flex items-center px-[18px] py-2.5 bg-hub-green-600 text-white rounded-md hover:bg-hub-green-700 transition-colors">
 									<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
 									</svg>

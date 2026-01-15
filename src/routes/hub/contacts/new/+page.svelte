@@ -40,16 +40,16 @@
 					</svg>
 					<h2 class="text-2xl sm:text-3xl font-bold text-white">New Contact</h2>
 				</div>
-				<p class="mt-2 text-hub-blue-100 text-sm sm:text-base">Add a new contact to your database</p>
+				<p class="mt-2 text-hub-blue-100 text-xs">Add a new contact to your database</p>
 			</div>
 			<div class="flex flex-wrap gap-2 sm:gap-3">
-				<a href="/hub/contacts" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 sm:px-6 sm:py-3 rounded-md font-medium inline-flex items-center gap-1.5 sm:gap-2 border border-white/30 text-sm sm:text-base">
+				<a href="/hub/contacts" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 sm:px-6 sm:py-3 rounded-md font-medium inline-flex items-center gap-1.5 border border-white/30 text-xs">
 					<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 					Cancel
 				</a>
-				<button type="submit" form="contact-create-form" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 sm:px-6 sm:py-3 rounded-md font-medium inline-flex items-center gap-1.5 sm:gap-2 border border-white/30 text-sm sm:text-base">
+				<button type="submit" form="contact-create-form" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 sm:px-6 sm:py-3 rounded-md font-medium inline-flex items-center gap-1.5 border border-white/30 text-xs">
 					<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>

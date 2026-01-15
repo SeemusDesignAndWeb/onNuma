@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
+import { rateLimitedSend } from '../crm/server/emailRateLimiter.js';
 
 // Initialize Resend with API key from environment or fallback
 const resend = new Resend(env.RESEND_API_KEY || 're_C88Tpi9d_5uF8M4U2R8r4NbyTwjHBVZ6A');
@@ -53,7 +54,7 @@ export async function sendContactEmail({
 	try {
 		console.log('Sending contact email:', { to, from, replyTo: replyTo || email, name });
 		const branding = getEmailBranding();
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: from,
 			to: [to],
 			replyTo: replyTo || email,
@@ -128,7 +129,7 @@ ${message}
 This email was sent from the contact form on Eltham Green Community Church website.
 Reply to: ${email}
 			`.trim()
-		});
+		}));
 
 		console.log('Contact email sent successfully:', result);
 		return result;
@@ -161,7 +162,7 @@ Reply to: ${email}
 export async function sendConfirmationEmail({ to, from = 'onboarding@resend.dev', name }) {
 	try {
 		const branding = getEmailBranding();
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: from,
 			to: [to],
 			subject: 'Thank you for contacting Eltham Green Community Church',
@@ -208,7 +209,7 @@ If you have any urgent questions, please feel free to call us at 020 8850 1331.
 Eltham Green Community Church
 542 Westhorne Avenue, Eltham, London, SE9 6RR
 			`.trim()
-		});
+		}));
 
 		return result;
 	} catch (error) {

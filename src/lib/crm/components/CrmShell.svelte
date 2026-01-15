@@ -35,7 +35,7 @@
 	let eventsDropdownOpen = false;
 	let eventsDropdownElement;
 	
-	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/videos') || $page.url.pathname.startsWith('/hub/audit-logs');
+	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/videos') || $page.url.pathname.startsWith('/hub/audit-logs') || $page.url.pathname.startsWith('/hub/settings');
 	$: isHelpActive = $page.url.pathname.startsWith('/hub/help');
 	$: isVideoTutorialsActive = $page.url.pathname.startsWith('/hub/video-tutorials');
 	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/lists') || $page.url.pathname.startsWith('/hub/members');
@@ -194,6 +194,9 @@
 									{/if}
 									{#if canAccessUsers}
 										<a href="/hub/audit-logs" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/audit-logs') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Audit Logs</a>
+									{/if}
+									{#if canAccessUsers}
+										<a href="/hub/settings" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/settings') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Settings</a>
 									{/if}
 									{#if canAccessVideos}
 										<a href="/hub/videos" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-hub-blue-50 {$page.url.pathname.startsWith('/hub/videos') ? 'bg-hub-blue-50 text-hub-blue-600' : ''}" role="menuitem">Manage Videos</a>

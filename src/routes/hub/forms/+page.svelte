@@ -59,7 +59,7 @@
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Forms</h2>
-	<a href="/hub/forms/new" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base">
+	<a href="/hub/forms/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs">
 		New Form
 	</a>
 </div>
@@ -72,7 +72,7 @@
 			placeholder="Search forms..."
 			class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-4"
 		/>
-		<button type="submit" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base">
+		<button type="submit" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs">
 			Search
 		</button>
 	</form>
@@ -94,9 +94,9 @@
 			<table class="min-w-full divide-y divide-gray-200">
 				<thead class="bg-gray-50">
 					<tr>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
+						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
+						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
 					</tr>
 				</thead>
 				<tbody class="bg-white divide-y divide-gray-200">

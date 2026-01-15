@@ -89,29 +89,29 @@
 		{#if isSuperAdmin}
 			<button
 				on:click={() => showBulkUpdateDialog = true}
-				class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base"
+				class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs"
 			>
 				Bulk Update
 			</button>
 		{/if}
-		<a href="/signup/membership-form" target="_blank" rel="noopener noreferrer" class="bg-hub-yellow-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-yellow-700 inline-flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
-			<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<a href="/signup/membership-form" target="_blank" rel="noopener noreferrer" class="bg-hub-yellow-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-yellow-700 inline-flex items-center gap-1.5 text-xs">
+			<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 			</svg>
 			<span class="hidden sm:inline">Membership Form</span>
 			<span class="sm:hidden">Membership</span>
 		</a>
-		<a href="/signup/member" target="_blank" rel="noopener noreferrer" class="bg-hub-yellow-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-yellow-700 inline-flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
-			<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<a href="/signup/member" target="_blank" rel="noopener noreferrer" class="bg-hub-yellow-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-yellow-700 inline-flex items-center gap-1.5 text-xs">
+			<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 			</svg>
 			<span class="hidden sm:inline">Public Signup Form</span>
 			<span class="sm:hidden">Signup Form</span>
 		</a>
-		<a href="/hub/contacts/import" class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base">
+		<a href="/hub/contacts/import" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs">
 			Import
 		</a>
-		<a href="/hub/contacts/new" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base">
+		<a href="/hub/contacts/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs">
 			Add Contact
 		</a>
 	</div>
@@ -123,9 +123,9 @@
 			type="text"
 			bind:value={searchInput}
 			placeholder="Search contacts..."
-			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-4 py-2"
+			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-[18px] py-2.5"
 		/>
-		<button type="submit" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base">
+		<button type="submit" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs">
 			Search
 		</button>
 	</form>
@@ -249,14 +249,14 @@
 							updateValue = 'member';
 							filterCondition = 'empty';
 						}}
-						class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+						class="px-[18px] py-2.5 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
 						disabled={isSubmitting}
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						class="px-4 py-2 bg-hub-blue-600 text-white rounded-md hover:bg-hub-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+						class="px-[18px] py-2.5 bg-hub-blue-600 text-white rounded-md hover:bg-hub-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 						disabled={isSubmitting}
 					>
 						{isSubmitting ? 'Updating...' : 'Update Contacts'}

@@ -37,11 +37,19 @@ export async function GET({ params, locals, url }) {
 		}
 		
 		// Personalize newsletter content with default values
-		let personalizedSubject = newsletter.subject || '';
-		let personalizedHtmlContent = newsletter.htmlContent || newsletter.textContent || '<p>No content available</p>';
+		// For PDF export, remove rota links placeholder and preceding rota-related line to exclude rotas (aimed at ALL people)
+		let subjectContent = newsletter.subject || '';
+		let htmlContentForPersonalization = newsletter.htmlContent || newsletter.textContent || '<p>No content available</p>';
+		
+		// Remove rota links placeholder and any preceding line/paragraph that contains "rota"
+		subjectContent = removeRotaLinksAndPrecedingLine(subjectContent);
+		htmlContentForPersonalization = removeRotaLinksAndPrecedingLine(htmlContentForPersonalization);
+		
+		let personalizedSubject = subjectContent;
+		let personalizedHtmlContent = htmlContentForPersonalization;
 		try {
-			personalizedSubject = personalizeContent(newsletter.subject || '', null, [], upcomingEvents, eventObj, false);
-			personalizedHtmlContent = personalizeContent(newsletter.htmlContent || newsletter.textContent || '<p>No content available</p>', null, [], upcomingEvents, eventObj, false);
+			personalizedSubject = personalizeContent(subjectContent, null, [], upcomingEvents, eventObj, false);
+			personalizedHtmlContent = personalizeContent(htmlContentForPersonalization, null, [], upcomingEvents, eventObj, false);
 		} catch (personalizeError) {
 			console.error('Error personalizing content for PDF export:', personalizeError);
 			// Use original content if personalization fails
@@ -286,6 +294,40 @@ function generateNewsletterHTML(newsletter) {
 </body>
 </html>
 	`.trim();
+}
+
+/**
+ * Remove rotaLinks placeholder and the preceding line/paragraph if it contains "rota"
+ * @param {string} content - Content to process
+ * @returns {string} Content with rotaLinks and preceding rota-related line removed
+ */
+function removeRotaLinksAndPrecedingLine(content) {
+	if (!content) return content;
+	
+	let result = content;
+	
+	// Pattern 1: HTML block element containing "rota" immediately before {{rotaLinks}}
+	// Matches: <p>Your Rotas</p>{{rotaLinks}}, <h2>Your Rotas</h2>{{rotaLinks}}, <div>Your Rotas</div>{{rotaLinks}}
+	// This uses a non-greedy match to get the element immediately before the placeholder
+	result = result.replace(/(<(?:p|h[1-6]|div|li)[^>]*>[\s\S]*?<\/(?:p|h[1-6]|div|li)>)\s*\{\{rotaLinks\}\}/gi, (match, element) => {
+		// Check if the element's text content contains "rota"
+		const textContent = element.replace(/<[^>]+>/g, '').trim();
+		if (/rota/i.test(textContent)) {
+			// Remove the entire match (element + placeholder)
+			return '';
+		}
+		// If no "rota" found, just remove the placeholder
+		return element;
+	});
+	
+	// Pattern 2: Text line containing "rota" immediately before {{rotaLinks}} (plain text or within HTML)
+	// Matches: Your Rotas\n{{rotaLinks}} or Your Rotas {{rotaLinks}} or <p>Your Rotas{{rotaLinks}}</p>
+	result = result.replace(/([^\n<]*rota[^\n<]*[\n\s]*)\{\{rotaLinks\}\}/gi, '');
+	
+	// Pattern 3: Remove any remaining {{rotaLinks}} placeholders
+	result = result.replace(/\{\{rotaLinks\}\}/g, '');
+	
+	return result;
 }
 
 /**

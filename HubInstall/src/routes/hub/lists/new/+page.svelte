@@ -38,10 +38,10 @@
 		<FormField label="Name" name="name" bind:value={formData.name} required />
 		<FormField label="Description" name="description" type="textarea" rows="3" bind:value={formData.description} />
 		<div class="flex gap-2">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="submit" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Create List
 			</button>
-			<a href="/hub/lists" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+			<a href="/hub/lists" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 				Cancel
 			</a>
 		</div>

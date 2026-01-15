@@ -547,9 +547,9 @@
 			<div class="flex gap-2">
 				<a
 					href="/hub/meeting-planners"
-					class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
+					class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-sm flex items-center gap-1"
 				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 					</svg>
 					Back
@@ -557,13 +557,13 @@
 				<button
 					type="submit"
 					form="meeting-planner-edit-form"
-					class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 text-sm"
+					class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-sm"
 				>
 					Save Changes
 				</button>
 				<button
 					on:click={handleDelete}
-					class="bg-hub-red-600 text-white px-4 py-2 rounded-md hover:bg-hub-red-700 text-sm"
+					class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-sm"
 				>
 					Delete
 				</button>
@@ -826,14 +826,14 @@
 													selectedContactIds[rotaKey] = new Set(); 
 													selectedListId[rotaKey] = '';
 												}}
-												class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm"
+												class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-sm"
 											>
 												Back
 											</button>
 											<button
 												on:click={() => handleAddAssignees(rotaKey)}
 												disabled={!selectedContactIds[rotaKey] || selectedContactIds[rotaKey].size === 0 || (eventOccurrences.length > 0 && !selectedOccurrenceId[rotaKey])}
-												class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 disabled:opacity-50 text-sm"
+												class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50 text-sm"
 											>
 												Add Selected ({selectedContactIds[rotaKey]?.size || 0})
 											</button>

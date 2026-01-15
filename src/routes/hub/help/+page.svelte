@@ -251,7 +251,7 @@ ${scriptContent}
 							<div class="py-1">
 								<button
 									on:click={() => { userGuideDropdownOpen = false; showDocs(); loadDoc('USER_GUIDE.html'); }}
-									class="w-full text-left px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 border-b border-gray-200"
+									class="w-full text-left px-[18px] py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 border-b border-gray-200"
 								>
 									User Guide (Full)
 								</button>
@@ -259,7 +259,7 @@ ${scriptContent}
 									<div>
 										<button
 											on:click={() => { showDocs(); scrollToSection(section.id); }}
-											class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+											class="w-full text-left px-[18px] py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
 										>
 											<span class="font-medium">{section.title}</span>
 											{#if section.subsections}
@@ -310,7 +310,7 @@ ${scriptContent}
 									isLoadingVideo = true;
 									selectedCategory = tab.id;
 								}}
-								class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedCategory === tab.id ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+								class="px-[18px] py-2.5 text-sm font-medium rounded-md transition-colors {selectedCategory === tab.id ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
 							>
 								{tab.title}
 							</button>
@@ -341,7 +341,7 @@ ${scriptContent}
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
 						</svg>
 						<p class="text-gray-500 text-lg mb-2">No videos available yet</p>
-						<p class="text-gray-400 text-sm">Add videos by editing <code class="bg-gray-100 px-2 py-1 rounded">src/lib/data/loomVideos.js</code></p>
+						<p class="text-gray-400 text-sm">Add videos by editing <code class="bg-gray-100 px-2.5 py-1.5 rounded">src/lib/data/loomVideos.js</code></p>
 					</div>
 				{/if}
 			</div>

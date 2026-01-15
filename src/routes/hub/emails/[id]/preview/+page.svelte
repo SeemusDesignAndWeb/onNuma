@@ -85,7 +85,7 @@
 
 		<!-- Preview Card -->
 		<div class="bg-white shadow-lg rounded-lg overflow-hidden border-2 border-gray-200">
-			<div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
+			<div class="bg-gray-50 border-b border-gray-200 px-[18px] py-2.5">
 				<div class="flex justify-between items-center">
 					<h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
 						<svg class="w-5 h-5 text-hub-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,18 +161,18 @@
 					<a 
 						href="/hub/emails/{newsletter.id}/export-pdf" 
 						target="_blank"
-						class="bg-hub-red-600 text-white px-4 py-2 rounded-md hover:bg-hub-red-700 transition-colors font-medium inline-flex items-center gap-2"
+						class="bg-hub-red-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-red-700 transition-colors font-medium inline-flex items-center gap-2"
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 						</svg>
 						Export PDF
 					</a>
-					<a href="/hub/emails/{newsletter.id}" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 transition-colors font-medium">
+					<a href="/hub/emails/{newsletter.id}" class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700 transition-colors font-medium">
 						Edit Email
 					</a>
 					{#if newsletter.status === 'draft' || !newsletter.status}
-						<a href="/hub/emails/{newsletter.id}/send" class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700 transition-colors font-medium">
+						<a href="/hub/emails/{newsletter.id}/send" class="bg-hub-blue-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-blue-700 transition-colors font-medium">
 							Send Email
 						</a>
 					{/if}

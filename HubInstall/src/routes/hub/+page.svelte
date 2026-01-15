@@ -217,7 +217,7 @@
 										{formatDateUK(newsletter.updatedAt || newsletter.createdAt || Date.now())}
 									</div>
 								</div>
-								<span class="ml-2 text-xs px-2 py-1 rounded-full {newsletter.status === 'sent' ? 'bg-hub-green-100 text-hub-green-800' : 'bg-gray-100 text-gray-800'}">
+								<span class="ml-2 text-xs px-2.5 py-1.5 rounded-full {newsletter.status === 'sent' ? 'bg-hub-green-100 text-hub-green-800' : 'bg-gray-100 text-gray-800'}">
 									{newsletter.status || 'draft'}
 								</span>
 							</div>

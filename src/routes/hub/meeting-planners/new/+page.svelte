@@ -50,10 +50,10 @@
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 			<h2 class="text-lg sm:text-xl font-bold text-gray-900">New Meeting Planner</h2>
 			<div class="flex flex-wrap gap-2">
-				<a href="/hub/meeting-planners" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm">
+				<a href="/hub/meeting-planners" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-sm">
 					Cancel
 				</a>
-				<button type="submit" form="meeting-planner-form" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm">
+				<button type="submit" form="meeting-planner-form" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-sm">
 					<span class="hidden sm:inline">Create Meeting Planner</span>
 					<span class="sm:hidden">Create</span>
 				</button>

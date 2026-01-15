@@ -137,6 +137,7 @@ export const actions = {
 				location: data.get('location'),
 				visibility: ['public', 'private', 'internal'].includes(data.get('visibility')) ? data.get('visibility') : 'private',
 				enableSignup: data.get('enableSignup') === 'on' || data.get('enableSignup') === 'true',
+				hideFromEmail: data.get('hideFromEmail') === 'on' || data.get('hideFromEmail') === 'true',
 				maxSpaces: data.get('maxSpaces') ? parseInt(data.get('maxSpaces')) : null,
 				color: data.get('color') || existingEvent.color || '#9333ea',
 				// Preserve recurrence fields if they exist

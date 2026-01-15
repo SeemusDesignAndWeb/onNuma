@@ -96,10 +96,10 @@
 		</div>
 
 		<div class="flex gap-2 mt-6">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="submit" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Create Admin User
 			</button>
-			<a href="/hub/users" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+			<a href="/hub/users" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 				Cancel
 			</a>
 		</div>

@@ -69,17 +69,17 @@
 	<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
 		<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Edit Video</h2>
 		<div class="flex flex-wrap gap-2">
-			<a href="/hub/videos" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base">
+			<a href="/hub/videos" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs">
 				Back
 			</a>
 			<button 
 				type="button"
 				on:click={handleDelete}
-				class="bg-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-red-700 text-sm sm:text-base"
+				class="bg-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-red-700 text-xs"
 			>
 				Delete
 			</button>
-			<button type="submit" form="video-edit-form" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base">
+			<button type="submit" form="video-edit-form" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs">
 				<span class="hidden sm:inline">Save Changes</span>
 				<span class="sm:hidden">Save</span>
 			</button>
@@ -101,7 +101,7 @@
 				bind:value={formData.embedCode}
 				rows="6"
 				required
-				class="w-full rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-4 py-2 font-mono text-sm"
+				class="w-full rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-[18px] py-2.5 font-mono text-sm"
 				placeholder="Paste the embed code from Loom here..."
 			></textarea>
 			<p class="mt-1 text-sm text-gray-500">

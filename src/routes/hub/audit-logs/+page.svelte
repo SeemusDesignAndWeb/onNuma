@@ -151,14 +151,14 @@
 						<div class="flex items-end gap-2">
 							<button
 								type="submit"
-								class="flex-1 bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+								class="flex-1 bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700"
 							>
 								Search
 							</button>
 							<button
 								type="button"
 								on:click={clearFilters}
-								class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+								class="bg-gray-500 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-600"
 							>
 								Clear
 							</button>
@@ -178,11 +178,11 @@
 					<table class="min-w-full divide-y divide-gray-200">
 						<thead class="bg-gray-50">
 							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+								<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
 							</tr>
 						</thead>
 						<tbody class="bg-white divide-y divide-gray-200">

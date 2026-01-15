@@ -92,10 +92,10 @@
 	<div class="flex justify-between items-center mb-6">
 		<h2 class="text-2xl font-bold text-gray-900">New Rota</h2>
 		<div class="flex gap-2">
-			<a href="/hub/rotas" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+			<a href="/hub/rotas" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 				Cancel
 			</a>
-			<button type="submit" form="rota-create-form" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="submit" form="rota-create-form" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Create Rota
 			</button>
 		</div>

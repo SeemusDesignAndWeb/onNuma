@@ -122,33 +122,33 @@
 					<button
 						type="submit"
 						form="occurrence-edit-form"
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700"
 					>
 						Back
 					</button>
 				{:else}
 					<a
 						href="/hub/events/{event.id}"
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700"
 					>
 						Back
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-4 py-2 rounded-md hover:bg-hub-red-700"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700"
 					>
 						Delete
 					</button>

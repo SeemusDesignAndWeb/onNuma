@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 import { readCollection, findById, update, findMany } from './fileStore.js';
 import { ensureUnsubscribeToken } from './tokens.js';
+import { rateLimitedSend } from './emailRateLimiter.js';
 
 const resend = new Resend(env.RESEND_API_KEY);
 
@@ -83,26 +84,44 @@ async function getUnsubscribeLink(contactIdOrEmail, event) {
 }
 
 /**
- * Get upcoming public events (up to the following Sunday)
+ * Get upcoming public events (up to the following Saturday)
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<Array>} Array of event occurrences
  */
 export async function getUpcomingEvents(event) {
 	const now = new Date();
 	
-	// Calculate the following Sunday (end of day at 23:59:59)
-	const followingSunday = new Date(now);
-	const currentDay = followingSunday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-	const daysUntilSunday = currentDay === 0 ? 7 : 7 - currentDay; // If today is Sunday, get next Sunday
-	followingSunday.setDate(followingSunday.getDate() + daysUntilSunday);
-	followingSunday.setHours(23, 59, 59, 999); // End of Sunday
+	// Calculate the following Saturday (end of day at 23:59:59)
+	// Show events up to next week's Saturday (this Saturday + 7 days)
+	// This typically gives 8-9 days from weekdays, matching the requirement
+	// Example: Thursday 15th -> next week's Saturday (approximately 8-9 days)
+	const followingSaturday = new Date(now);
+	const currentDay = followingSaturday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+	
+	let daysUntilSaturday;
+	if (currentDay === 6) {
+		// Today is Saturday, get next Saturday (7 days)
+		daysUntilSaturday = 7;
+	} else {
+		// Days until this Saturday
+		const daysToThisSaturday = 6 - currentDay;
+		// Always use next week's Saturday (this Saturday + 7 days)
+		daysUntilSaturday = daysToThisSaturday + 7;
+	}
+	
+	followingSaturday.setDate(followingSaturday.getDate() + daysUntilSaturday);
+	followingSaturday.setHours(23, 59, 59, 999); // End of Saturday
 
 	const events = await readCollection('events');
 	const occurrences = await readCollection('occurrences');
 	const baseUrl = getBaseUrl(event);
 
 	// Filter to public and internal events (internal events are for members/contacts only)
-	const memberEvents = events.filter(e => e.visibility === 'public' || e.visibility === 'internal');
+	// Exclude events that are hidden from email
+	const memberEvents = events.filter(e => 
+		(e.visibility === 'public' || e.visibility === 'internal') && 
+		!e.hideFromEmail
+	);
 	const memberEventIds = new Set(memberEvents.map(e => e.id));
 
 	// Get upcoming occurrences for public and internal events
@@ -111,7 +130,7 @@ export async function getUpcomingEvents(event) {
 		if (!memberEventIds.has(occurrence.eventId)) continue;
 
 		const startDate = new Date(occurrence.startsAt);
-		if (startDate >= now && startDate <= followingSunday) {
+		if (startDate >= now && startDate <= followingSaturday) {
 			const eventData = memberEvents.find(e => e.id === occurrence.eventId);
 			if (eventData) {
 				upcoming.push({
@@ -412,7 +431,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 		// Plain text version
 		personalized = personalized.replace(/\{\{upcomingEvents\}\}/g, () => {
 			if (upcomingEvents.length === 0) {
-				return 'There are no upcoming events up to the following Sunday.';
+				return 'There are no upcoming events up to the following Saturday.';
 			}
 
 			let text = '';
@@ -440,7 +459,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 		// HTML version
 		personalized = personalized.replace(/\{\{upcomingEvents\}\}/g, () => {
 			if (upcomingEvents.length === 0) {
-				return '<p style="color: #333; font-size: 14px;">There are no upcoming events up to the following Sunday.</p>';
+				return '<p style="color: #333; font-size: 14px;">There are no upcoming events up to the following Saturday.</p>';
 			}
 
 			let html = '';
@@ -476,16 +495,17 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 }
 
 /**
- * Send newsletter email via Resend
+ * Prepare newsletter email data (without sending)
+ * Used for batch sending
  * @param {object} options - Email options
  * @param {string} options.newsletterId - Newsletter ID
  * @param {string} options.to - Recipient email
  * @param {string} options.name - Recipient name
  * @param {object} contact - Contact object for personalisation
  * @param {object} event - SvelteKit event object (for base URL)
- * @returns {Promise<object>} Resend response
+ * @returns {Promise<object>} Email data ready for sending
  */
-export async function sendNewsletterEmail({ newsletterId, to, name, contact }, event) {
+export async function prepareNewsletterEmail({ newsletterId, to, name, contact }, event) {
 	const email = await findById('emails', newsletterId);
 	if (!email) {
 		throw new Error('Email not found');
@@ -557,20 +577,45 @@ export async function sendNewsletterEmail({ newsletterId, to, name, contact }, e
 
 	personalizedText += unsubscribeText;
 
+	return {
+		from: fromEmail,
+		to: [to],
+		subject: personalizedSubject,
+		html: fullHtml,
+		text: personalizedText,
+		contactEmail: to,
+		newsletterId: newsletterId
+	};
+}
+
+/**
+ * Send newsletter email via Resend (single email)
+ * @param {object} options - Email options
+ * @param {string} options.newsletterId - Newsletter ID
+ * @param {string} options.to - Recipient email
+ * @param {string} options.name - Recipient name
+ * @param {object} contact - Contact object for personalisation
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<object>} Resend response
+ */
+export async function sendNewsletterEmail({ newsletterId, to, name, contact }, event) {
+	const emailData = await prepareNewsletterEmail({ newsletterId, to, name, contact }, event);
+	const email = await findById('emails', newsletterId);
+
 	try {
-		const result = await resend.emails.send({
-			from: fromEmail,
-			to: [to],
-			subject: personalizedSubject,
-			html: fullHtml,
-			text: personalizedText
-		});
+		const result = await rateLimitedSend(() => resend.emails.send({
+			from: emailData.from,
+			to: emailData.to,
+			subject: emailData.subject,
+			html: emailData.html,
+			text: emailData.text
+		}));
 
 		// Log the send
 		const logs = email.logs || [];
 		logs.push({
 			timestamp: new Date().toISOString(),
-			email: to,
+			email: emailData.contactEmail,
 			status: 'sent',
 			messageId: result.data?.id || null
 		});
@@ -583,7 +628,7 @@ export async function sendNewsletterEmail({ newsletterId, to, name, contact }, e
 		const logs = email.logs || [];
 		logs.push({
 			timestamp: new Date().toISOString(),
-			email: to,
+			email: emailData.contactEmail,
 			status: 'error',
 			error: error.message
 		});
@@ -592,6 +637,105 @@ export async function sendNewsletterEmail({ newsletterId, to, name, contact }, e
 
 		throw error;
 	}
+}
+
+/**
+ * Send batch of newsletter emails using Resend batch API
+ * @param {Array} emailDataArray - Array of email data objects from prepareNewsletterEmail
+ * @param {string} newsletterId - Newsletter ID for logging
+ * @returns {Promise<Array>} Results array with status for each email
+ */
+export async function sendNewsletterBatch(emailDataArray, newsletterId) {
+	if (!emailDataArray || emailDataArray.length === 0) {
+		return [];
+	}
+
+	const email = await findById('emails', newsletterId);
+	if (!email) {
+		throw new Error('Email not found');
+	}
+
+	const results = [];
+	const BATCH_SIZE = 100; // Resend batch API limit
+
+	// Process in batches of 100
+	for (let i = 0; i < emailDataArray.length; i += BATCH_SIZE) {
+		const batch = emailDataArray.slice(i, i + BATCH_SIZE);
+		
+		// Prepare batch payload (remove newsletterId and contactEmail from payload)
+		const batchPayload = batch.map(emailData => ({
+			from: emailData.from,
+			to: emailData.to,
+			subject: emailData.subject,
+			html: emailData.html,
+			text: emailData.text
+		}));
+
+		try {
+			// Send batch with rate limiting
+			const result = await rateLimitedSend(() => resend.batch.send(batchPayload));
+
+			// Check for errors in response
+			if (result.error) {
+				throw new Error(result.error.message || 'Batch send failed');
+			}
+
+			// Log results for each email in the batch
+			const logs = email.logs || [];
+			if (result.data && Array.isArray(result.data)) {
+				batch.forEach((emailData, index) => {
+					const messageId = result.data[index]?.id || null;
+					logs.push({
+						timestamp: new Date().toISOString(),
+						email: emailData.contactEmail,
+						status: 'sent',
+						messageId: messageId
+					});
+					results.push({ 
+						email: emailData.contactEmail, 
+						status: 'sent',
+						messageId: messageId
+					});
+				});
+			} else {
+				// Fallback if response format is unexpected
+				batch.forEach((emailData) => {
+					logs.push({
+						timestamp: new Date().toISOString(),
+						email: emailData.contactEmail,
+						status: 'sent',
+						messageId: null
+					});
+					results.push({ 
+						email: emailData.contactEmail, 
+						status: 'sent'
+					});
+				});
+			}
+
+			await update('emails', newsletterId, { logs });
+		} catch (error) {
+			// Log errors for all emails in the failed batch
+			const logs = email.logs || [];
+			batch.forEach((emailData) => {
+				logs.push({
+					timestamp: new Date().toISOString(),
+					email: emailData.contactEmail,
+					status: 'error',
+					error: error.message
+				});
+				results.push({ 
+					email: emailData.contactEmail, 
+					status: 'error', 
+					error: error.message 
+				});
+			});
+
+			await update('emails', newsletterId, { logs });
+		}
+	}
+
+	return results;
 }
 
 /**
@@ -747,13 +891,13 @@ ${upcomingRotasText}
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Volunteer Invitation: ${eventTitle} - ${role}`,
 			html,
 			text
-		});
+		}));
 
 		return result;
 	} catch (error) {
@@ -771,7 +915,7 @@ ${upcomingRotasText}
  * @returns {Promise<Array>} Results array
  */
 export async function sendCombinedRotaInvites(contactInvites, eventData, eventPageUrl, event) {
-	const results = [];
+	const emailDataArray = [];
 	const baseUrl = getBaseUrl(event);
 	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 	
@@ -965,18 +1109,92 @@ Website: ${baseUrl}
 
 			const subject = `Volunteer for ${eventTitle}`;
 
-			const result = await resend.emails.send({
-				from: fromEmail,
-				to: [to],
-				subject,
-				html,
-				text
+			// Store email data for batch sending
+			emailDataArray.push({ 
+				email: to, 
+				emailData: {
+					from: fromEmail,
+					to: [to],
+					subject,
+					html,
+					text
+				}
 			});
-
-			results.push({ email: to, status: 'sent', result });
 		} catch (error) {
-			console.error(`Error sending combined rota invite to ${to}:`, error);
-			results.push({ email: to, status: 'error', error: error.message });
+			console.error(`Error preparing combined rota invite to ${to}:`, error);
+			emailDataArray.push({ email: to, status: 'error', error: error.message });
+		}
+	}
+
+	// Send emails in batches
+	const results = await sendRotaInviteBatch(emailDataArray);
+	return results;
+}
+
+/**
+ * Send batch of rota invite emails using Resend batch API
+ * @param {Array} emailDataArray - Array of {email, emailData} or {email, status, error}
+ * @returns {Promise<Array>} Results array with status for each email
+ */
+async function sendRotaInviteBatch(emailDataArray) {
+	if (!emailDataArray || emailDataArray.length === 0) {
+		return [];
+	}
+
+	const results = [];
+	const BATCH_SIZE = 100; // Resend batch API limit
+	const validEmails = emailDataArray.filter(item => item.emailData);
+	const errors = emailDataArray.filter(item => item.error);
+
+	// Add errors to results
+	errors.forEach(item => {
+		results.push({ email: item.email, status: 'error', error: item.error });
+	});
+
+	// Process valid emails in batches of 100
+	for (let i = 0; i < validEmails.length; i += BATCH_SIZE) {
+		const batch = validEmails.slice(i, i + BATCH_SIZE);
+		
+		// Prepare batch payload
+		const batchPayload = batch.map(item => item.emailData);
+
+		try {
+			// Send batch with rate limiting
+			const result = await rateLimitedSend(() => resend.batch.send(batchPayload));
+
+			// Check for errors in response
+			if (result.error) {
+				throw new Error(result.error.message || 'Batch send failed');
+			}
+
+			// Process results for each email in the batch
+			if (result.data && Array.isArray(result.data)) {
+				batch.forEach((item, index) => {
+					const messageId = result.data[index]?.id || null;
+					results.push({ 
+						email: item.email, 
+						status: 'sent',
+						messageId: messageId
+					});
+				});
+			} else {
+				// Fallback if response format is unexpected
+				batch.forEach((item) => {
+					results.push({ 
+						email: item.email, 
+						status: 'sent'
+					});
+				});
+			}
+		} catch (error) {
+			// Log errors for all emails in the failed batch
+			batch.forEach((item) => {
+				results.push({ 
+					email: item.email, 
+					status: 'error', 
+					error: error.message 
+				});
+			});
 		}
 	}
 
@@ -1146,13 +1364,13 @@ Visit our website: ${baseUrl}
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: 'Welcome to TheHUB - Your Admin Account',
 			html: html,
 			text: text
-		});
+		}));
 
 		return result;
 	} catch (error) {
@@ -1263,13 +1481,13 @@ Visit our website: ${baseUrl}
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: 'Reset Your Password - TheHUB',
 			html: html,
 			text: text
-		});
+		}));
 
 		return result;
 	} catch (error) {
@@ -1405,13 +1623,13 @@ Eltham Green Community Church
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Event Signup Confirmed: ${event.title}`,
 			html: html,
 			text: text
-		});
+		}));
 
 		return result;
 	} catch (error) {
@@ -1657,13 +1875,13 @@ View the rota: ${hubUrl}
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Rota Updated: ${role} - ${eventTitle}`,
 			html,
 			text
-		});
+		}));
 
 		return result;
 	} catch (error) {
@@ -1807,13 +2025,13 @@ Note: If you are unable to fulfill this assignment, please contact the rota coor
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Reminder: ${role} - ${eventTitle} in 3 days`,
 			html,
 			text
-		});
+		}));
 
 		return result;
 	} catch (error) {
@@ -1888,13 +2106,13 @@ Eltham Green Community Church
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: 'Welcome to Eltham Green Community Church',
 			html,
 			text
-		});
+		}));
 
 		return result;
 	} catch (error) {
@@ -2012,13 +2230,13 @@ This email was sent from the member signup form on Eltham Green Community Church
 	`.trim();
 
 	try {
-		const result = await resend.emails.send({
+		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: to,
 			subject: `${isUpdate ? 'Member Information Updated' : 'New Member Signup'}: ${contactName}`,
 			html,
 			text
-		});
+		}));
 
 		return result;
 	} catch (error) {

@@ -31,6 +31,7 @@
 		location: '',
 		visibility: 'private',
 		enableSignup: false,
+		hideFromEmail: false,
 		color: '#9333ea',
 		repeatType: 'none',
 		repeatInterval: 1,
@@ -70,9 +71,9 @@
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
 						<select name="visibility" bind:value={formData.visibility} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-3 px-4">
-							<option value="private">Private</option>
-							<option value="internal">Internal</option>
-							<option value="public">Public</option>
+							<option value="private">Private (Hub Admins only)</option>
+							<option value="internal">Internal (Church only)</option>
+							<option value="public">Public (Everyone)</option>
 						</select>
 					</div>
 				</div>
@@ -86,6 +87,18 @@
 					/>
 					<label for="enableSignup" class="ml-2 block text-sm text-gray-700">
 						Add Signup to this event
+					</label>
+				</div>
+				<div class="flex items-center">
+					<input
+						type="checkbox"
+						id="hideFromEmail"
+						name="hideFromEmail"
+						bind:checked={formData.hideFromEmail}
+						class="h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
+					/>
+					<label for="hideFromEmail" class="ml-2 block text-sm text-gray-700">
+						Hide from email
 					</label>
 				</div>
 				<div>
@@ -206,10 +219,10 @@
 		</div>
 
 		<div class="flex gap-2">
-			<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+			<button type="submit" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 				Create Event
 			</button>
-			<a href="/hub/events" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+			<a href="/hub/events" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 				Cancel
 			</a>
 		</div>

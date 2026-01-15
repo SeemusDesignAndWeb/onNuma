@@ -59,7 +59,7 @@
 
 <div class="mb-4 flex justify-between items-center">
 	<h2 class="text-2xl font-bold text-gray-900">Forms</h2>
-	<a href="/hub/forms/new" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+	<a href="/hub/forms/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 		New Form
 	</a>
 </div>
@@ -72,7 +72,7 @@
 			placeholder="Search forms..."
 			class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-4"
 		/>
-		<button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+		<button type="submit" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700">
 			Search
 		</button>
 	</form>

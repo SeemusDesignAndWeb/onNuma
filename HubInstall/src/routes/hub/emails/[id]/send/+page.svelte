@@ -81,9 +81,9 @@
 				</div>
 				<a 
 					href="/hub/emails/{newsletter.id}" 
-					class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-md transition-colors font-medium border border-white/30 flex items-center gap-2"
+					class="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5 rounded-md transition-colors font-medium border border-white/30 flex items-center gap-2"
 				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 					</svg>
 					Back

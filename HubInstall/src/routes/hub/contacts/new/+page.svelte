@@ -177,10 +177,10 @@
 								type="text"
 								bind:value={servingAreaInput}
 								placeholder="Add serving area"
-								class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-4 py-2"
+								class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 px-2.5 py-1.5"
 								on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addServingArea())}
 							/>
-							<button type="button" on:click={addServingArea} class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+							<button type="button" on:click={addServingArea} class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700">
 								Add
 							</button>
 						</div>
@@ -201,10 +201,10 @@
 								type="text"
 								bind:value={giftingInput}
 								placeholder="Add gifting"
-								class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-blue-500 focus:ring-hub-blue-500 px-4 py-2"
+								class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-hub-blue-500 focus:ring-hub-blue-500 px-2.5 py-1.5"
 								on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addGifting())}
 							/>
-							<button type="button" on:click={addGifting} class="bg-hub-blue-600 text-white px-4 py-2 rounded-md hover:bg-hub-blue-700">
+							<button type="button" on:click={addGifting} class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700">
 								Add
 							</button>
 						</div>

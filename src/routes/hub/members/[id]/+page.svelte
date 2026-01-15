@@ -95,38 +95,38 @@
 					<button
 						type="submit"
 						form="member-edit-form"
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
 					>
 						Back
 					</button>
 				{:else}
 					<a
 						href="/hub/contacts/{member.id}"
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 inline-flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 inline-flex items-center gap-1.5 text-xs"
 					>
-						<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 						</svg>
 						View Contact Details
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Edit
 					</button>
 					<a
 						href="/hub/members"
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 inline-flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 inline-flex items-center gap-1.5 text-xs"
 					>
-						<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 						</svg>
 						Back to Members
@@ -149,7 +149,7 @@
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					<!-- Getting to Know You -->
 					<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-						<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-3">
+						<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-[18px] py-2.5">
 							<h3 class="text-lg font-semibold text-white">Getting to Know You</h3>
 						</div>
 						<div class="p-6 space-y-4">
@@ -177,7 +177,7 @@
 
 					<!-- Previous Church -->
 					<div class="bg-white border-2 border-hub-green-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-6 py-3">
+						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-[18px] py-2.5">
 							<h3 class="text-lg font-semibold text-white">Previous Church</h3>
 						</div>
 						<div class="p-6 space-y-4">
@@ -190,7 +190,7 @@
 					<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:col-span-2">
 						<!-- Faith Journey -->
 						<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-6 py-3">
+							<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
 								<h3 class="text-lg font-semibold text-white">Faith Journey</h3>
 							</div>
 							<div class="p-6 space-y-4">
@@ -266,7 +266,7 @@
 
 						<!-- Community Involvement -->
 						<div class="bg-white border-2 border-hub-red-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-red-500 to-hub-red-600 px-6 py-3">
+							<div class="bg-gradient-to-r from-hub-red-500 to-hub-red-600 px-[18px] py-2.5">
 								<h3 class="text-lg font-semibold text-white">Community Involvement</h3>
 							</div>
 							<div class="p-6 space-y-4">
@@ -325,7 +325,7 @@
 
 						<!-- Membership Reflections -->
 						<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-3">
+							<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-[18px] py-2.5">
 								<h3 class="text-lg font-semibold text-white">Membership Reflections</h3>
 							</div>
 							<div class="p-6">
@@ -342,7 +342,7 @@
 
 					<!-- Additional Information -->
 					<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-6 py-3">
+						<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
 							<h3 class="text-lg font-semibold text-white">Additional Information</h3>
 						</div>
 						<div class="p-6 space-y-4">
@@ -369,7 +369,7 @@
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				<!-- Contact Information Panel -->
 				<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-					<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-3">
+					<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-[18px] py-2.5">
 						<h3 class="text-lg font-semibold text-white">Contact Information</h3>
 					</div>
 					<div class="p-6">
@@ -403,7 +403,7 @@
 				<!-- Getting to Know You Panel -->
 				{#if memberData && (memberData.title || memberData.dateOfBirth || memberData.placeOfBirth || memberData.maritalStatus || memberData.spouseName || memberData.childrenNamesAndAges)}
 					<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-						<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-3">
+						<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-[18px] py-2.5">
 							<h3 class="text-lg font-semibold text-white">Getting to Know You</h3>
 						</div>
 						<div class="p-6">
@@ -452,7 +452,7 @@
 				<!-- Previous Church Panel -->
 				{#if memberData && (memberData.previousChurch || memberData.previousChurchFeelings)}
 					<div class="bg-white border-2 border-hub-green-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-6 py-3">
+						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-[18px] py-2.5">
 							<h3 class="text-lg font-semibold text-white">Previous Church</h3>
 						</div>
 						<div class="p-6">
@@ -479,7 +479,7 @@
 					<!-- Faith Journey Panel -->
 					{#if memberData && (memberData.isChristFollower !== undefined || memberData.hasBeenWaterBaptised !== undefined || memberData.hasBeenFilledWithHolySpirit !== undefined)}
 						<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-6 py-3">
+							<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
 								<h3 class="text-lg font-semibold text-white">Faith Journey</h3>
 							</div>
 							<div class="p-6">
@@ -528,7 +528,7 @@
 					<!-- Community Involvement Panel -->
 					{#if memberData && (memberData.attendingCommunityGroup !== undefined || memberData.currentlyServing !== undefined || memberData.servingArea || memberData.desiredServingArea || memberData.elderMeetingAvailability)}
 						<div class="bg-white border-2 border-hub-red-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-red-500 to-hub-red-600 px-6 py-3">
+							<div class="bg-gradient-to-r from-hub-red-500 to-hub-red-600 px-[18px] py-2.5">
 								<h3 class="text-lg font-semibold text-white">Community Involvement</h3>
 							</div>
 							<div class="p-6">
@@ -579,7 +579,7 @@
 					<!-- Membership Reflections Panel -->
 					{#if memberData && memberData.membershipReflections}
 						<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-3">
+							<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-[18px] py-2.5">
 								<h3 class="text-lg font-semibold text-white">Membership Reflections</h3>
 							</div>
 							<div class="p-6">
@@ -592,7 +592,7 @@
 				<!-- Additional Information Panel -->
 				{#if memberData && (memberData.additionalInfo || memberData.prayerSupportNeeds)}
 					<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-6 py-3">
+						<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
 							<h3 class="text-lg font-semibold text-white">Additional Information</h3>
 						</div>
 						<div class="p-6 space-y-6">

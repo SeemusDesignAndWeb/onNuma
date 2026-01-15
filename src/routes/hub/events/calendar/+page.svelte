@@ -175,10 +175,10 @@
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
 			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Event Calendar</h2>
 			<div class="flex flex-wrap gap-2">
-				<a href="/hub/events?view=list" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base">
+				<a href="/hub/events?view=list" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs">
 					List View
 				</a>
-				<a href="/hub/events/new" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base">
+				<a href="/hub/events/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs">
 					New Event
 				</a>
 			</div>
@@ -188,25 +188,25 @@
 	<div class="flex gap-1 sm:gap-2 mb-4 border-b border-gray-200 overflow-x-auto">
 		<button
 			on:click={() => setView('year')}
-			class="px-2 sm:px-4 py-2 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'year' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
+			class="px-2 sm:px-[18px] py-2.5 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'year' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
 		>
 			Year
 		</button>
 		<button
 			on:click={() => setView('month')}
-			class="px-2 sm:px-4 py-2 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'month' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
+			class="px-2 sm:px-[18px] py-2.5 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'month' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
 		>
 			Month
 		</button>
 		<button
 			on:click={() => setView('week')}
-			class="px-2 sm:px-4 py-2 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'week' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
+			class="px-2 sm:px-[18px] py-2.5 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'week' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
 		>
 			Week
 		</button>
 		<button
 			on:click={() => setView('agenda')}
-			class="px-2 sm:px-4 py-2 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'agenda' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
+			class="px-2 sm:px-[18px] py-2.5 text-xs sm:text-base font-medium transition-colors whitespace-nowrap {viewMode === 'agenda' ? 'text-hub-green-600 border-b-2 border-hub-green-600' : 'text-gray-600 hover:text-gray-900'}"
 		>
 			Agenda
 		</button>
@@ -225,13 +225,13 @@
 						navigateWeek(-1);
 					}
 				}}
-				class="px-2 sm:px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-sm sm:text-base"
+				class="px-2 sm:px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-xs"
 			>
 				←
 			</button>
 			<button
 				on:click={goToToday}
-				class="px-3 sm:px-4 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-sm sm:text-base"
+				class="px-3 sm:px-4 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-xs"
 			>
 				Today
 			</button>
@@ -245,7 +245,7 @@
 						navigateWeek(1);
 					}
 				}}
-				class="px-2 sm:px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-sm sm:text-base"
+				class="px-2 sm:px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 text-xs"
 			>
 				→
 			</button>
@@ -379,7 +379,7 @@
 								{@const colorStyles = getEventColorStyles(occ.event)}
 								<a
 									href="/hub/events/{occ.eventId}"
-									class="block text-xs px-2 py-1.5 rounded hover:opacity-80 transition-colors"
+									class="block text-xs px-2.5 py-1.5.5 rounded hover:opacity-80 transition-colors"
 									style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 								>
 									<div class="font-medium truncate">{occ.event?.title || 'Event'}</div>
@@ -418,7 +418,7 @@
 								{@const colorStyles = getEventColorStyles(occ.event)}
 								<a
 									href="/hub/events/{occ.eventId}"
-									class="block text-xs px-2 py-1 rounded truncate hover:opacity-80 transition-colors"
+									class="block text-xs px-2.5 py-1.5 rounded truncate hover:opacity-80 transition-colors"
 									style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 									title="{occ.event?.title || 'Event'}"
 								>
@@ -469,7 +469,7 @@
 							{@const colorStyles = getEventColorStyles(occ.event)}
 							<a
 								href="/hub/events/{occ.eventId}"
-								class="block text-xs px-2 py-1.5 rounded hover:opacity-80 transition-colors"
+								class="block text-xs px-2.5 py-1.5.5 rounded hover:opacity-80 transition-colors"
 								style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 							>
 								<div class="font-medium truncate">{occ.event?.title || 'Event'}</div>
@@ -516,7 +516,7 @@
 						{@const colorStyles = getEventColorStyles(occ.event)}
 						<a
 							href="/hub/events/{occ.eventId}"
-							class="absolute left-1 right-1 rounded px-2 py-1 text-xs block hover:opacity-80 transition-colors"
+							class="absolute left-1 right-1 rounded px-2.5 py-1.5 text-xs block hover:opacity-80 transition-colors"
 							style="top: {startHour * 24}px; height: {Math.max(duration * 24, 20)}px; background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 							title="{occ.event?.title || 'Event'}"
 						>
@@ -558,7 +558,7 @@
 								</div>
 							</div>
 							<div class="flex-1 min-w-0">
-								<div class="text-sm sm:text-base font-medium text-gray-900 mb-1">
+								<div class="text-xs font-medium text-gray-900 mb-1">
 									{occ.event?.title || 'Event'}
 								</div>
 								<div class="text-xs sm:text-sm text-gray-600">

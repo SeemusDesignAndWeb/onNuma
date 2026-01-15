@@ -135,6 +135,7 @@ export function validateEvent(data) {
 		location: validateString(data.location || '', 'Location', 500),
 		visibility: ['public', 'private', 'internal'].includes(data.visibility) ? data.visibility : 'private',
 		enableSignup: data.enableSignup === true || data.enableSignup === 'true' || data.enableSignup === 'on',
+		hideFromEmail: data.hideFromEmail === true || data.hideFromEmail === 'true' || data.hideFromEmail === 'on',
 		maxSpaces: typeof data.maxSpaces === 'number' && data.maxSpaces > 0 ? data.maxSpaces : (data.maxSpaces ? parseInt(data.maxSpaces) || null : null),
 		color: color, // Default to purple if not provided or invalid
 		// Recurrence fields

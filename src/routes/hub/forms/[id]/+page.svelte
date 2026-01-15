@@ -175,24 +175,24 @@
 				{#if editing}
 					<button
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
 					>
 						Back
 					</button>
 				{:else}
-					<a href="/forms/{form.id}" target="_blank" class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base">
+					<a href="/forms/{form.id}" target="_blank" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs">
 						<span class="hidden sm:inline">View Public Form</span>
 						<span class="sm:hidden">View Form</span>
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-red-700 text-sm sm:text-base"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
 					>
 						Delete
 					</button>
@@ -278,7 +278,7 @@
 									class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500"
 									on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
 								/>
-								<button type="button" on:click={addOption} class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+								<button type="button" on:click={addOption} class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700">
 									Add
 								</button>
 							</div>
@@ -293,17 +293,17 @@
 						</div>
 					{/if}
 					
-					<button type="button" on:click={addField} class="mt-4 bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+					<button type="button" on:click={addField} class="mt-4 bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700">
 						{editingField !== null ? 'Update Field' : 'Add Field'}
 					</button>
 					{#if editingField !== null}
-						<button type="button" on:click={() => { editingField = null; fieldForm = { type: 'text', label: '', name: '', required: false, placeholder: '', options: [] }; }} class="mt-4 ml-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+						<button type="button" on:click={() => { editingField = null; fieldForm = { type: 'text', label: '', name: '', required: false, placeholder: '', options: [] }; }} class="mt-4 ml-2 bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700">
 							Back
 						</button>
 					{/if}
 				</div>
 
-				<button type="submit" class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700">
+				<button type="submit" class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700">
 					Save Changes
 				</button>
 			</form>

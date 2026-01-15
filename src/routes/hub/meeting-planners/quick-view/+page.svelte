@@ -129,27 +129,27 @@
 	<div class="flex flex-wrap gap-2">
 		<button 
 			on:click={toggleFullscreen}
-			class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+			class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 flex items-center gap-1.5 text-xs sm:text-sm"
 			title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
 		>
 			{#if isFullscreen}
-				<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 				</svg>
 				<span class="hidden sm:inline">Exit Fullscreen</span>
 				<span class="sm:hidden">Exit</span>
 			{:else}
-				<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
 				</svg>
 				<span class="hidden sm:inline">Fullscreen</span>
 				<span class="sm:hidden">Full</span>
 			{/if}
 		</button>
-		<a href="/hub/meeting-planners" class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-xs sm:text-sm whitespace-nowrap">
+		<a href="/hub/meeting-planners" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs sm:text-sm whitespace-nowrap">
 			Back to List
 		</a>
-		<a href="/hub/meeting-planners/new" class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-xs sm:text-sm whitespace-nowrap">
+		<a href="/hub/meeting-planners/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs sm:text-sm whitespace-nowrap">
 			<span class="hidden sm:inline">New Meeting Planner</span>
 			<span class="sm:hidden">New</span>
 		</a>
@@ -231,63 +231,63 @@
 		<table class="min-w-full divide-y divide-gray-200 border-collapse table-fixed">
 			<thead class="bg-gray-50 sticky top-0 z-20">
 				<tr>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 sticky left-0 bg-gray-50 z-30 resizable-header" style="width: 200px; min-width: 150px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 sticky left-0 bg-gray-50 z-30 resizable-header" style="width: 200px; min-width: 150px;">
 						<div class="flex items-center justify-between">
 							<span>Event Name</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 150px; min-width: 120px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 150px; min-width: 120px;">
 						<div class="flex items-center justify-between">
 							<span>Date</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 150px; min-width: 120px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 150px; min-width: 120px;">
 						<div class="flex items-center justify-between">
 							<span>Call to Worship</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 180px; min-width: 150px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 180px; min-width: 150px;">
 						<div class="flex items-center justify-between">
 							<span>Meeting Leader</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 180px; min-width: 150px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 180px; min-width: 150px;">
 						<div class="flex items-center justify-between">
 							<span>Speaker</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 200px; min-width: 150px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 200px; min-width: 150px;">
 						<div class="flex items-center justify-between">
 							<span>Speaker Topic</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 250px; min-width: 200px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 250px; min-width: 200px;">
 						<div class="flex items-center justify-between">
 							<span>Worship</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 100px; min-width: 80px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 100px; min-width: 80px;">
 						<div class="flex items-center justify-between">
 							<span>Communion</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 						</div>
 					</th>
 					{#each otherRotaRoles as role}
-						<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 200px; min-width: 150px;">
+						<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 200px; min-width: 150px;">
 							<div class="flex items-center justify-between">
 								<span>{role}</span>
 								<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
 							</div>
 						</th>
 					{/each}
-					<th class="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 300px; min-width: 200px;">
+					<th class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border border-gray-300 resizable-header" style="width: 300px; min-width: 200px;">
 						<div class="flex items-center justify-between">
 							<span>Notes</span>
 							<div class="resize-handle" on:mousedown={(e) => handleMouseDown(e, e.currentTarget.closest('th'))}></div>
@@ -298,36 +298,36 @@
 			<tbody class="bg-white divide-y divide-gray-200">
 				{#each meetingPlanners as mp}
 					<tr class="hover:bg-gray-50 cursor-pointer" on:click={() => goto(`/hub/meeting-planners/${mp.id}`)}>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 border border-gray-300 sticky left-0 bg-white z-10 font-medium" style="width: 200px; min-width: 150px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-900 border border-gray-300 sticky left-0 bg-white z-10 font-medium" style="width: 200px; min-width: 150px;">
 							{mp.eventName}
 						</td>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300 whitespace-nowrap" style="width: 150px; min-width: 120px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300 whitespace-nowrap" style="width: 150px; min-width: 120px;">
 							{formatDateWithOrdinal(mp.occurrenceDate)}
 						</td>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 150px; min-width: 120px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 150px; min-width: 120px;">
 							{formatContactList(mp.callToWorship)}
 						</td>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 180px; min-width: 150px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 180px; min-width: 150px;">
 							{formatContactList(mp.meetingLeader)}
 						</td>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 180px; min-width: 150px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 180px; min-width: 150px;">
 							{formatContactList(mp.speaker)}
 						</td>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 200px; min-width: 150px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 200px; min-width: 150px;">
 							{mp.speakerTopic || '-'}
 						</td>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 250px; min-width: 200px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 250px; min-width: 200px;">
 							{formatContactList(mp.worshipLeader)}
 						</td>
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300 text-center" style="width: 100px; min-width: 80px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300 text-center" style="width: 100px; min-width: 80px;">
 							{mp.communionHappening ? '✓' : '-'}
 						</td>
 						{#each otherRotaRoles as role}
-							<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 200px; min-width: 150px;">
+							<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 200px; min-width: 150px;">
 								{formatContactList(mp.otherRotas[role] || [])}
 							</td>
 						{/each}
-						<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 300px; min-width: 200px;">
+						<td class="px-3 sm:px-[18px] py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700 border border-gray-300" style="width: 300px; min-width: 200px;">
 							{formatNotes(mp.notes)}
 						</td>
 					</tr>

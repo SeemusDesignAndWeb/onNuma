@@ -427,7 +427,7 @@
 				{#if signupLink && (rota.visibility || 'public') === 'public'}
 					<button
 						on:click={copySignupLink}
-						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 flex items-center gap-2 text-sm sm:text-base"
+						class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 flex items-center gap-2 text-xs"
 					>
 						{#if linkCopied}
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -445,7 +445,7 @@
 						href={signupLink}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 flex items-center gap-2 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 flex items-center gap-2 text-xs"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -457,14 +457,14 @@
 					<button
 						type="submit"
 						form="rota-edit-form"
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base"
+						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
 					>
 						Back
 					</button>
@@ -472,7 +472,7 @@
 					<a
 						href="/hub/rotas/{rota.id}/export-pdf"
 						target="_blank"
-						class="bg-hub-blue-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-blue-700 text-sm sm:text-base flex items-center gap-2"
+						class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs flex items-center gap-2"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -481,13 +481,13 @@
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-green-700 text-sm sm:text-base"
+						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-hub-red-700 text-sm sm:text-base"
+						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
 					>
 						Delete
 					</button>
@@ -621,7 +621,7 @@
 											selectedContactIds = new Set();
 											selectedListId = '';
 										}}
-										class="bg-hub-green-600 text-white px-2 py-1 rounded text-xs hover:bg-hub-green-700"
+										class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-hub-green-700"
 										title="Add assignees to this occurrence"
 									>
 										+ Add
@@ -830,14 +830,14 @@
 							selectedContactIds = new Set(); 
 							selectedListId = '';
 						}}
-						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+						class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 					>
 						Back
 					</button>
 					<button
 						on:click={handleAddAssignees}
 						disabled={selectedContactIds.size === 0}
-						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 disabled:opacity-50"
+						class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50"
 					>
 						Add Selected ({selectedContactIds.size})
 					</button>
