@@ -38,8 +38,15 @@ export async function GET({ params, locals, url }) {
 		
 		// Personalize newsletter content with default values
 		// For PDF export, remove rota links placeholder and preceding rota-related line to exclude rotas (aimed at ALL people)
+		// Always use htmlContent for PDF export to preserve formatting
 		let subjectContent = newsletter.subject || '';
 		let htmlContentForPersonalization = newsletter.htmlContent || newsletter.textContent || '<p>No content available</p>';
+		
+		// Ensure we have valid HTML content
+		if (!htmlContentForPersonalization.includes('<') && htmlContentForPersonalization.trim()) {
+			// If it's plain text, wrap it in paragraphs
+			htmlContentForPersonalization = '<p>' + htmlContentForPersonalization.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+		}
 		
 		// Remove rota links placeholder and any preceding line/paragraph that contains "rota"
 		// Wrap in try-catch to ensure we don't break the content
@@ -48,20 +55,68 @@ export async function GET({ params, locals, url }) {
 			htmlContentForPersonalization = removeRotaLinksAndPrecedingLine(htmlContentForPersonalization);
 		} catch (removeError) {
 			console.error('Error removing rota links from PDF export:', removeError);
+			console.error('Error stack:', removeError.stack);
 			// If removal fails, just remove the placeholder directly
-			subjectContent = subjectContent.replace(/\{\{rotaLinks\}\}/g, '');
-			htmlContentForPersonalization = htmlContentForPersonalization.replace(/\{\{rotaLinks\}\}/g, '');
+			subjectContent = (subjectContent || '').replace(/\{\{rotaLinks\}\}/g, '');
+			htmlContentForPersonalization = (htmlContentForPersonalization || '').replace(/\{\{rotaLinks\}\}/g, '');
 		}
 		
 		let personalizedSubject = subjectContent;
 		let personalizedHtmlContent = htmlContentForPersonalization;
+		
+		// Personalize the content - this MUST succeed for placeholders to be replaced
 		try {
 			personalizedSubject = await personalizeContent(subjectContent, null, [], upcomingEvents, eventObj, false, false);
 			personalizedHtmlContent = await personalizeContent(htmlContentForPersonalization, null, [], upcomingEvents, eventObj, false, false);
 		} catch (personalizeError) {
 			console.error('Error personalizing content for PDF export:', personalizeError);
 			console.error('Error details:', personalizeError.stack);
-			// Use content with rotaLinks removed if personalization fails
+			console.error('Content before personalization (first 500 chars):', htmlContentForPersonalization.substring(0, 500));
+			
+			// Try basic placeholder replacement as fallback
+			const contactData = { email: 'subscriber@egcc.co.uk', firstName: 'all', lastName: '', phone: '' };
+			personalizedSubject = (subjectContent || '')
+				.replace(/\{\{firstName\}\}/g, contactData.firstName || 'all')
+				.replace(/\{\{lastName\}\}/g, contactData.lastName || '')
+				.replace(/\{\{name\}\}/g, `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim() || 'Church Member')
+				.replace(/\{\{email\}\}/g, contactData.email || 'subscriber@egcc.co.uk')
+				.replace(/\{\{rotaLinks\}\}/g, '');
+			
+			personalizedHtmlContent = (htmlContentForPersonalization || '')
+				.replace(/\{\{firstName\}\}/g, contactData.firstName || 'all')
+				.replace(/\{\{lastName\}\}/g, contactData.lastName || '')
+				.replace(/\{\{name\}\}/g, `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim() || 'Church Member')
+				.replace(/\{\{email\}\}/g, contactData.email || 'subscriber@egcc.co.uk')
+				.replace(/\{\{rotaLinks\}\}/g, '');
+			
+			// Replace upcomingEvents placeholder manually
+			if (upcomingEvents && upcomingEvents.length > 0) {
+				let eventsHtml = '';
+				for (const item of upcomingEvents) {
+					const { event: eventData, occurrence } = item;
+					const dateStr = new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
+						weekday: 'long',
+						year: 'numeric',
+						month: 'long',
+						day: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
+					});
+					let line = `<strong>${eventData.title}</strong>`;
+					line += ` - ${dateStr}`;
+					if (occurrence.location) {
+						line += ` - ${occurrence.location}`;
+					}
+					eventsHtml += '<div style="margin-bottom: 8px;">';
+					eventsHtml += `<p style="margin: 0; color: #333; font-size: 14px;">${line}</p>`;
+					eventsHtml += '</div>';
+				}
+				personalizedHtmlContent = personalizedHtmlContent.replace(/\{\{upcomingEvents\}\}/g, eventsHtml);
+				personalizedSubject = personalizedSubject.replace(/\{\{upcomingEvents\}\}/g, '');
+			} else {
+				personalizedHtmlContent = personalizedHtmlContent.replace(/\{\{upcomingEvents\}\}/g, '<p style="color: #333; font-size: 14px;">There are no upcoming events up to the following Saturday.</p>');
+				personalizedSubject = personalizedSubject.replace(/\{\{upcomingEvents\}\}/g, '');
+			}
 		}
 		
 		// Generate HTML for PDF with personalized content
