@@ -133,33 +133,6 @@ async function getUpcomingRotas(contactId, event) {
 	const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
 	const rotas = await readCollection('rotas');
-	// Filter rotas where this contact is assigned (handle both old string format and new object format)
-	const contactRotas = rotas.filter(r => {
-		if (!r.assignees || !Array.isArray(r.assignees)) return false;
-		return r.assignees.some(assignee => {
-			// Old format: assignee is just a string (contactId)
-			if (typeof assignee === 'string') {
-				return assignee === contactId;
-			}
-			// New format: assignee is an object with contactId
-			if (assignee && typeof assignee === 'object') {
-				// contactId can be a string or an object (for public signups)
-				if (typeof assignee.contactId === 'string') {
-					return assignee.contactId === contactId;
-				}
-				// Also check assignee.id for backward compatibility
-				if (assignee.id === contactId) {
-					return true;
-				}
-			}
-			return false;
-		});
-	});
-
-	if (contactRotas.length === 0) {
-		return [];
-	}
-
 	const events = await readCollection('events');
 	const occurrences = await readCollection('occurrences');
 	const tokens = await readCollection('rota_tokens');
@@ -167,27 +140,91 @@ async function getUpcomingRotas(contactId, event) {
 
 	const upcoming = [];
 
-	for (const rota of contactRotas) {
+	// Check each rota to see if contact is assigned to specific occurrences
+	for (const rota of rotas) {
+		if (!rota.assignees || !Array.isArray(rota.assignees)) continue;
+
 		const eventData = events.find(e => e.id === rota.eventId);
 		if (!eventData) continue;
 
-		// Get occurrences for this rota
+		// Find which occurrences this contact is assigned to for this rota
+		const assignedOccurrenceIds = new Set();
+		
+		for (const assignee of rota.assignees) {
+			let isContactAssigned = false;
+			let assigneeOccurrenceId = null;
+
+			// Check if this assignee is the contact we're looking for
+			if (typeof assignee === 'string') {
+				// Old format: assignee is just a string (contactId)
+				if (assignee === contactId) {
+					isContactAssigned = true;
+					// For old format, if rota has a specific occurrenceId, use it; otherwise null means all occurrences
+					assigneeOccurrenceId = rota.occurrenceId || null;
+				}
+			} else if (assignee && typeof assignee === 'object') {
+				// New format: assignee is an object with contactId and occurrenceId
+				let assigneeContactId = null;
+				
+				if (typeof assignee.contactId === 'string') {
+					assigneeContactId = assignee.contactId;
+				} else if (assignee.id) {
+					assigneeContactId = assignee.id;
+				}
+				
+				if (assigneeContactId === contactId) {
+					isContactAssigned = true;
+					// Get the occurrenceId from the assignee, or fall back to rota's occurrenceId
+					assigneeOccurrenceId = assignee.occurrenceId !== undefined ? assignee.occurrenceId : rota.occurrenceId;
+				}
+			}
+
+			// If this assignee is the contact, record which occurrence they're assigned to
+			if (isContactAssigned) {
+				if (assigneeOccurrenceId === null) {
+					// Contact is assigned to all occurrences (old format or explicit null)
+					// We'll handle this by checking all occurrences below
+					assignedOccurrenceIds.add('all');
+				} else {
+					// Contact is assigned to a specific occurrence
+					assignedOccurrenceIds.add(assigneeOccurrenceId);
+				}
+			}
+		}
+
+		// If contact is not assigned to any occurrences for this rota, skip
+		if (assignedOccurrenceIds.size === 0) continue;
+
+		// Get occurrences to check
 		let rotaOccurrences = [];
 		if (rota.occurrenceId) {
-			// Specific occurrence
+			// Rota is for a specific occurrence
 			const occurrence = occurrences.find(o => o.id === rota.occurrenceId);
-			if (occurrence) {
+			if (occurrence && (assignedOccurrenceIds.has('all') || assignedOccurrenceIds.has(rota.occurrenceId))) {
 				rotaOccurrences = [occurrence];
 			}
 		} else {
-			// All occurrences for this event
-			rotaOccurrences = occurrences.filter(o => o.eventId === rota.eventId);
+			// Rota is for all occurrences - only include ones where contact is assigned
+			if (assignedOccurrenceIds.has('all')) {
+				// Contact is assigned to all occurrences
+				rotaOccurrences = occurrences.filter(o => o.eventId === rota.eventId);
+			} else {
+				// Contact is assigned to specific occurrences only
+				rotaOccurrences = occurrences.filter(o => 
+					o.eventId === rota.eventId && assignedOccurrenceIds.has(o.id)
+				);
+			}
 		}
 
-		// Filter to upcoming occurrences (within 7 days)
+		// Filter to upcoming occurrences (within 7 days) where contact is assigned
 		for (const occurrence of rotaOccurrences) {
 			const startDate = new Date(occurrence.startsAt);
 			if (startDate >= now && startDate <= sevenDaysFromNow) {
+				// Double-check: if not assigned to 'all', verify this specific occurrence
+				if (!assignedOccurrenceIds.has('all') && !assignedOccurrenceIds.has(occurrence.id)) {
+					continue;
+				}
+
 				// Find token for this rota/occurrence
 				const tokenData = tokens.find(t => 
 					t.rotaId === rota.id && 
