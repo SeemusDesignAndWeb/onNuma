@@ -306,25 +306,43 @@ function removeRotaLinksAndPrecedingLine(content) {
 	
 	let result = content;
 	
-	// Pattern 1: HTML block element containing "rota" immediately before {{rotaLinks}}
-	// Matches: <p>Your Rotas</p>{{rotaLinks}}, <h2>Your Rotas</h2>{{rotaLinks}}, <div>Your Rotas</div>{{rotaLinks}}
-	// This uses a non-greedy match to get the element immediately before the placeholder
-	result = result.replace(/(<(?:p|h[1-6]|div|li)[^>]*>[\s\S]*?<\/(?:p|h[1-6]|div|li)>)\s*\{\{rotaLinks\}\}/gi, (match, element) => {
+	// Pattern 1: HTML block element containing "rota" followed by optional spacing/line breaks and {{rotaLinks}}
+	// Matches cases like:
+	//   <p><strong>Your Rotas</strong></p><p><br></p><p>{{rotaLinks}}</p>
+	//   <h2>Your Rotas</h2><p>{{rotaLinks}}</p>
+	//   <p>Your Rotas</p>{{rotaLinks}}
+	// This pattern handles:
+	// - A block element (p, h1-h6, div, li) containing "rota"
+	// - Optional whitespace, line breaks, or <p><br></p> elements
+	// - The {{rotaLinks}} placeholder (which may be in its own <p> tag)
+	const rotaBlockPattern = /(<(?:p|h[1-6]|div|li)[^>]*>[\s\S]*?<\/(?:p|h[1-6]|div|li)>)\s*(?:<p><br\s*\/?><\/p>|<br\s*\/?>|\s)*<(?:p|div)[^>]*>\s*\{\{rotaLinks\}\}\s*<\/(?:p|div)>/gi;
+	result = result.replace(rotaBlockPattern, (match, element) => {
 		// Check if the element's text content contains "rota"
 		const textContent = element.replace(/<[^>]+>/g, '').trim();
 		if (/rota/i.test(textContent)) {
-			// Remove the entire match (element + placeholder)
+			// Remove the entire match (element + spacing + placeholder)
 			return '';
 		}
-		// If no "rota" found, just remove the placeholder
+		// If no "rota" found, just remove the placeholder part
 		return element;
 	});
 	
-	// Pattern 2: Text line containing "rota" immediately before {{rotaLinks}} (plain text or within HTML)
+	// Pattern 2: Block element containing "rota" followed by {{rotaLinks}} without wrapping paragraph
+	// Matches: <p>Your Rotas</p>{{rotaLinks}} or <h2>Your Rotas</h2>{{rotaLinks}}
+	result = result.replace(/(<(?:p|h[1-6]|div|li)[^>]*>[\s\S]*?<\/(?:p|h[1-6]|div|li)>)\s*\{\{rotaLinks\}\}/gi, (match, element) => {
+		const textContent = element.replace(/<[^>]+>/g, '').trim();
+		if (/rota/i.test(textContent)) {
+			return '';
+		}
+		return element;
+	});
+	
+	// Pattern 3: Text line containing "rota" immediately before {{rotaLinks}} (plain text or within HTML)
 	// Matches: Your Rotas\n{{rotaLinks}} or Your Rotas {{rotaLinks}} or <p>Your Rotas{{rotaLinks}}</p>
 	result = result.replace(/([^\n<]*rota[^\n<]*[\n\s]*)\{\{rotaLinks\}\}/gi, '');
 	
-	// Pattern 3: Remove any remaining {{rotaLinks}} placeholders
+	// Pattern 4: Remove any remaining {{rotaLinks}} placeholders (including those in <p>{{rotaLinks}}</p>)
+	result = result.replace(/<p[^>]*>\s*\{\{rotaLinks\}\}\s*<\/p>/gi, '');
 	result = result.replace(/\{\{rotaLinks\}\}/g, '');
 	
 	return result;
