@@ -1,7 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import { findById, update, remove } from '$lib/crm/server/fileStore.js';
 import { getAdminById, getAdminByEmail, updateAdminPassword, verifyAdminEmail, getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
-import { isSuperAdmin, getAdminPermissions, getAvailableHubAreas, HUB_AREAS } from '$lib/crm/server/permissions.js';
+import { isSuperAdmin, getAdminPermissions, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail } from '$lib/crm/server/permissions.js';
+import { getSuperAdminEmail } from '$lib/crm/server/envConfig.js';
 import { logDataChange, logSensitiveOperation } from '$lib/crm/server/audit.js';
 
 export async function load({ params, cookies, request }) {
@@ -55,6 +56,7 @@ export async function load({ params, cookies, request }) {
 
 	const csrfToken = getCsrfToken(cookies) || '';
 	const availableAreas = getAvailableHubAreas(currentAdmin);
+	const superAdminEmail = getSuperAdminEmail();
 	
 	// Check for creation success message
 	const url = new URL(request.url);
@@ -67,6 +69,7 @@ export async function load({ params, cookies, request }) {
 		currentAdmin: sanitizedCurrentAdmin, // The currently logged-in admin (sanitized)
 		csrfToken, 
 		availableAreas,
+		superAdminEmail,
 		created,
 		createdEmail,
 		emailFailed
@@ -103,9 +106,10 @@ export const actions = {
 				return { error: 'An admin with this email already exists' };
 			}
 
-			// Check if email is john.watson@egcc.co.uk - always super admin (no permissions needed)
+			// Check if email matches super admin email - always super admin (no permissions needed)
 			const normalizedEmail = email.toString().toLowerCase().trim();
-			const isSuperAdminEmail = normalizedEmail === 'john.watson@egcc.co.uk';
+			const superAdminEmail = getSuperAdminEmail();
+			const isSuperAdminEmailMatch = isSuperAdminEmail(normalizedEmail, superAdminEmail);
 
 			// Prepare update data
 			const updateData = {
@@ -126,7 +130,7 @@ export const actions = {
 			}
 			
 			// If SUPER_ADMIN permission is set, grant all other permissions automatically
-			if (hasSuperAdminPermission || isSuperAdminEmail) {
+			if (hasSuperAdminPermission || isSuperAdminEmailMatch) {
 				// Get all regular permissions (excluding SUPER_ADMIN)
 				const allRegularPermissions = Object.values(HUB_AREAS).filter(p => p !== HUB_AREAS.SUPER_ADMIN);
 				validPermissions = [...allRegularPermissions];

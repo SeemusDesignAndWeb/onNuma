@@ -2,7 +2,8 @@ import { redirect } from '@sveltejs/kit';
 import { createAdmin, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
-import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS } from '$lib/crm/server/permissions.js';
+import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail } from '$lib/crm/server/permissions.js';
+import { getSuperAdminEmail } from '$lib/crm/server/envConfig.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ cookies }) {
@@ -18,7 +19,8 @@ export async function load({ cookies }) {
 	
 	const csrfToken = getCsrfToken(cookies) || '';
 	const availableAreas = getAvailableHubAreas(admin);
-	return { csrfToken, availableAreas };
+	const superAdminEmail = getSuperAdminEmail();
+	return { csrfToken, availableAreas, superAdminEmail };
 }
 
 export const actions = {
@@ -50,9 +52,10 @@ export const actions = {
 			return { error: 'You do not have permission to create admins' };
 		}
 
-		// Check if email is john.watson@egcc.co.uk - always super admin (no permissions needed)
+		// Check if email matches super admin email - always super admin (no permissions needed)
 		const normalizedEmail = email.toString().toLowerCase().trim();
-		const isSuperAdminEmail = normalizedEmail === 'john.watson@egcc.co.uk';
+		const superAdminEmail = getSuperAdminEmail();
+		const isSuperAdminEmailMatch = isSuperAdminEmail(normalizedEmail, superAdminEmail);
 
 		// Validate permissions array
 		const validAreas = getAvailableHubAreas(currentAdmin).map(a => a.value);
@@ -67,7 +70,7 @@ export const actions = {
 		}
 		
 		// If SUPER_ADMIN permission is set, grant all other permissions automatically
-		if (hasSuperAdminPermission || isSuperAdminEmail) {
+		if (hasSuperAdminPermission || isSuperAdminEmailMatch) {
 			// Get all regular permissions (excluding SUPER_ADMIN)
 			const allRegularPermissions = Object.values(HUB_AREAS).filter(p => p !== HUB_AREAS.SUPER_ADMIN);
 			validPermissions = [...allRegularPermissions];

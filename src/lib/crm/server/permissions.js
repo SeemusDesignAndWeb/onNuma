@@ -2,7 +2,7 @@
  * Personalized permissions system
  * 
  * Each admin can have personalized access to different areas of the hub.
- * Super Admin (john.watson@egcc.co.uk) always has full access to everything.
+ * Super Admin email is configurable via SUPER_ADMIN_EMAIL environment variable.
  */
 
 // Hub area permission constants
@@ -42,16 +42,48 @@ export const ADMIN_LEVELS = {
 	LEVEL_4: 'level_4'
 };
 
+// Default super admin email (used on client-side)
+const DEFAULT_SUPER_ADMIN_EMAIL = 'john.watson@egcc.co.uk';
+
+/**
+ * Get the super admin email
+ * On server-side, this should be called with the email from envConfig
+ * On client-side, uses default or provided value from page data
+ * @param {string} [providedEmail] - Optional email to use (from server/env)
+ * @returns {string} Super admin email address
+ */
+export function getSuperAdminEmail(providedEmail = null) {
+	// If provided (from server), use it
+	if (providedEmail) {
+		return providedEmail;
+	}
+	// Client-side fallback
+	return DEFAULT_SUPER_ADMIN_EMAIL;
+}
+
+/**
+ * Check if an email is the super admin email
+ * @param {string} email - Email address to check
+ * @param {string} [superAdminEmail] - Optional super admin email to compare against
+ * @returns {boolean} True if email matches super admin email
+ */
+export function isSuperAdminEmail(email, superAdminEmail = null) {
+	if (!email) return false;
+	const adminEmail = superAdminEmail || getSuperAdminEmail();
+	return email.toLowerCase().trim() === adminEmail.toLowerCase().trim();
+}
+
 /**
  * Check if admin is super admin
  * @param {object} admin - Admin user object
+ * @param {string} [superAdminEmail] - Optional super admin email to check against (from server)
  * @returns {boolean} True if admin is super admin
  */
-export function isSuperAdmin(admin) {
+export function isSuperAdmin(admin, superAdminEmail = null) {
 	if (!admin) return false;
 	
-	// Check if email is john.watson@egcc.co.uk for super admin (hardcoded for backward compatibility)
-	if (admin.email && admin.email.toLowerCase() === 'john.watson@egcc.co.uk') {
+	// Check if email matches super admin email (from environment variable)
+	if (admin.email && isSuperAdminEmail(admin.email, superAdminEmail)) {
 		return true;
 	}
 	

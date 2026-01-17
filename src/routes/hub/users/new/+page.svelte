@@ -10,6 +10,7 @@
 	$: availableAreas = $page.data?.availableAreas || [];
 	$: currentAdmin = $page.data?.admin || null;
 	$: isCurrentUserSuperAdmin = currentAdmin && isSuperAdmin(currentAdmin);
+	$: superAdminEmail = $page.data?.superAdminEmail || 'john.watson@egcc.co.uk';
 	
 	// Show notifications from form results
 	$: if (formResult?.error) {
@@ -45,7 +46,7 @@
 	}
 	
 	// Check if email is super admin email
-	$: isSuperAdminEmail = formData.email && formData.email.toLowerCase() === 'john.watson@egcc.co.uk';
+	$: isSuperAdminEmailMatch = formData.email && formData.email.toLowerCase() === superAdminEmail.toLowerCase();
 	
 	// Check if super admin permission is selected
 	$: hasSuperAdminPermission = formData.permissions.includes(HUB_AREAS.SUPER_ADMIN);
@@ -97,7 +98,7 @@
 				<label class="block text-sm font-medium text-gray-700 mb-3">
 					Hub Area Permissions
 				</label>
-				{#if isSuperAdminEmail}
+				{#if isSuperAdminEmailMatch}
 					<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
 						<p class="text-sm text-blue-800">
 							<strong>Super Admin:</strong> This user will have full access to all areas automatically.
@@ -117,15 +118,15 @@
 								type="checkbox"
 								name="permissions"
 								value={superAdminArea.value}
-								checked={hasSuperAdminPermission || isSuperAdminEmail}
-								disabled={isSuperAdminEmail}
-								on:change={() => !isSuperAdminEmail && togglePermission(superAdminArea.value)}
+								checked={hasSuperAdminPermission || isSuperAdminEmailMatch}
+								disabled={isSuperAdminEmailMatch}
+								on:change={() => !isSuperAdminEmailMatch && togglePermission(superAdminArea.value)}
 								class="mt-1 mr-3 h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
 							/>
 							<div class="flex-1">
 								<div class="text-sm font-bold text-purple-900">{superAdminArea.label}</div>
 								<div class="text-xs text-purple-700 mt-1">{superAdminArea.description}</div>
-								{#if hasSuperAdminPermission || isSuperAdminEmail}
+								{#if hasSuperAdminPermission || isSuperAdminEmailMatch}
 									<div class="text-xs text-purple-600 mt-2 font-medium">
 										All permissions will be granted automatically.
 									</div>
@@ -137,14 +138,14 @@
 				
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 					{#each regularAreas as area}
-						<label class="flex items-start p-3 border rounded-lg {(isSuperAdminEmail || hasSuperAdminPermission) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'} {formData.permissions.includes(area.value) || isSuperAdminEmail || hasSuperAdminPermission ? 'border-hub-green-500 bg-hub-green-50' : 'border-gray-300'}">
+						<label class="flex items-start p-3 border rounded-lg {(isSuperAdminEmailMatch || hasSuperAdminPermission) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'} {formData.permissions.includes(area.value) || isSuperAdminEmailMatch || hasSuperAdminPermission ? 'border-hub-green-500 bg-hub-green-50' : 'border-gray-300'}">
 							<input
 								type="checkbox"
 								name="permissions"
 								value={area.value}
-								checked={isSuperAdminEmail || hasSuperAdminPermission || formData.permissions.includes(area.value)}
-								disabled={isSuperAdminEmail || hasSuperAdminPermission}
-								on:change={() => !isSuperAdminEmail && !hasSuperAdminPermission && togglePermission(area.value)}
+								checked={isSuperAdminEmailMatch || hasSuperAdminPermission || formData.permissions.includes(area.value)}
+								disabled={isSuperAdminEmailMatch || hasSuperAdminPermission}
+								on:change={() => !isSuperAdminEmailMatch && !hasSuperAdminPermission && togglePermission(area.value)}
 								class="mt-1 mr-3 h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
 							/>
 							<div class="flex-1">
@@ -155,7 +156,7 @@
 					{/each}
 				</div>
 				<!-- Hidden inputs for form submission -->
-				{#if isSuperAdminEmail}
+				{#if isSuperAdminEmailMatch}
 					<!-- Super admin gets all permissions -->
 					{#each regularAreas as area}
 						<input type="hidden" name="permissions" value={area.value} />

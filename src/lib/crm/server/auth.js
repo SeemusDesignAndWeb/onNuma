@@ -110,12 +110,15 @@ export async function createAdmin({ email, password, name, permissions = [] }) {
 	const verificationToken = generateVerificationToken();
 	const now = new Date();
 	
-	// Check if email is john.watson@egcc.co.uk - automatically set as super admin
+	// Check if email matches super admin email - automatically set as super admin
+	const { getSuperAdminEmail: getSuperAdminEmailFromEnv } = await import('./envConfig.js');
+	const { isSuperAdminEmail } = await import('./permissions.js');
 	const normalizedEmail = email.toLowerCase().trim();
-	const isSuperAdminEmail = normalizedEmail === 'john.watson@egcc.co.uk';
+	const superAdminEmail = getSuperAdminEmailFromEnv();
+	const isSuperAdminEmailMatch = isSuperAdminEmail(normalizedEmail, superAdminEmail);
 	
 	// Super admin gets all permissions, otherwise use provided permissions
-	const finalPermissions = isSuperAdminEmail 
+	const finalPermissions = isSuperAdminEmailMatch 
 		? ['contacts', 'lists', 'rotas', 'events', 'meeting_planners', 'emails', 'forms', 'safeguarding_forms', 'users']
 		: (permissions || []);
 	

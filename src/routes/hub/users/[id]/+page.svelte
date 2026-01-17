@@ -14,6 +14,7 @@
 	$: availableAreas = $page.data?.availableAreas || [];
 	$: currentAdmin = $page.data?.currentAdmin || null; // The currently logged-in admin
 	$: isCurrentUserSuperAdmin = currentAdmin && isSuperAdmin(currentAdmin);
+	$: superAdminEmail = $page.data?.superAdminEmail || 'john.watson@egcc.co.uk';
 	
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
@@ -74,7 +75,7 @@
 		let permissions = admin.permissions || [];
 		// If admin is super admin (by email or permission), ensure SUPER_ADMIN is in permissions
 		const isAdminSuperAdmin = permissions.includes(HUB_AREAS.SUPER_ADMIN) || 
-			(admin.email && admin.email.toLowerCase() === 'john.watson@egcc.co.uk');
+			(admin.email && admin.email.toLowerCase() === superAdminEmail.toLowerCase());
 		if (isAdminSuperAdmin && !permissions.includes(HUB_AREAS.SUPER_ADMIN)) {
 			permissions = [...permissions, HUB_AREAS.SUPER_ADMIN];
 		}
@@ -107,7 +108,7 @@
 	}
 	
 	// Check if email is super admin email
-	$: isSuperAdminEmail = formData.email && formData.email.toLowerCase() === 'john.watson@egcc.co.uk';
+	$: isSuperAdminEmailMatch = formData.email && formData.email.toLowerCase() === superAdminEmail.toLowerCase();
 	
 	// Check if super admin permission is selected
 	$: hasSuperAdminPermission = formData.permissions.includes(HUB_AREAS.SUPER_ADMIN);
@@ -118,7 +119,7 @@
 	
 	// Computed values for displaying admin permissions
 	$: adminPermissions = admin?.permissions || [];
-	$: isAdminSuperAdmin = adminPermissions.includes(HUB_AREAS.SUPER_ADMIN) || (admin?.email && admin.email.toLowerCase() === 'john.watson@egcc.co.uk');
+	$: isAdminSuperAdmin = adminPermissions.includes(HUB_AREAS.SUPER_ADMIN) || (admin?.email && admin.email.toLowerCase() === superAdminEmail.toLowerCase());
 
 	function isAccountLocked() {
 		if (!admin?.accountLockedUntil) return false;
@@ -283,7 +284,7 @@
 						<label class="block text-sm font-medium text-gray-700 mb-3">
 							Hub Area Permissions
 						</label>
-						{#if isSuperAdminEmail}
+						{#if isSuperAdminEmailMatch}
 							<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
 								<p class="text-sm text-blue-800">
 									<strong>Super Admin:</strong> This user has full access to all areas automatically. Permissions cannot be modified.
@@ -323,14 +324,14 @@
 						
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 							{#each regularAreas as area}
-								<label class="flex items-start p-3 border rounded-lg {(isSuperAdminEmail || hasSuperAdminPermission) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'} {formData.permissions.includes(area.value) || isSuperAdminEmail || hasSuperAdminPermission ? 'border-hub-green-500 bg-hub-green-50' : 'border-gray-300'}">
+								<label class="flex items-start p-3 border rounded-lg {(isSuperAdminEmailMatch || hasSuperAdminPermission) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'} {formData.permissions.includes(area.value) || isSuperAdminEmailMatch || hasSuperAdminPermission ? 'border-hub-green-500 bg-hub-green-50' : 'border-gray-300'}">
 									<input
 										type="checkbox"
 										name="permissions"
 										value={area.value}
-										checked={isSuperAdminEmail || hasSuperAdminPermission || formData.permissions.includes(area.value)}
-										disabled={isSuperAdminEmail || hasSuperAdminPermission}
-										on:change={() => !isSuperAdminEmail && !hasSuperAdminPermission && togglePermission(area.value)}
+										checked={isSuperAdminEmailMatch || hasSuperAdminPermission || formData.permissions.includes(area.value)}
+										disabled={isSuperAdminEmailMatch || hasSuperAdminPermission}
+										on:change={() => !isSuperAdminEmailMatch && !hasSuperAdminPermission && togglePermission(area.value)}
 										class="mt-1 mr-3 h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
 									/>
 									<div class="flex-1">
@@ -341,7 +342,7 @@
 							{/each}
 						</div>
 						<!-- Hidden inputs for form submission -->
-						{#if isSuperAdminEmail}
+						{#if isSuperAdminEmailMatch}
 							<!-- Super admin gets all permissions -->
 							{#each regularAreas as area}
 								<input type="hidden" name="permissions" value={area.value} />
