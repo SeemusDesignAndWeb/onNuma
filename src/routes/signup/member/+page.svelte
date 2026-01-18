@@ -55,7 +55,7 @@
 	<div class="max-w-4xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8 pt-20 sm:pt-24">
 		<div class="bg-white shadow rounded-lg p-6 sm:p-8">
 			<div class="mb-8">
-				<h1 class="text-3xl font-bold text-brand-blue mb-2">Contact Sign Up</h1>
+				<h1 class="text-3xl font-bold text-brand-blue mb-2">Get Connected</h1>
 				<p class="text-gray-600">Join our church community! Please fill out the form below to get connected.</p>
 			</div>
 
