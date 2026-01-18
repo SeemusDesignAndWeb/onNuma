@@ -857,7 +857,7 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 		const to = contact.email;
 		
 		if (!to) {
-			results.push({ email: to || 'unknown', status: 'error', error: 'No email address' });
+			emailDataArray.push({ email: to || 'unknown', status: 'error', error: 'No email address' });
 			continue;
 		}
 
