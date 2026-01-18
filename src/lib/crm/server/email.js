@@ -672,8 +672,8 @@ export async function sendNewsletterBatch(emailDataArray, newsletterId) {
 		}));
 
 		try {
-			// Send batch with rate limiting
-			const result = await rateLimitedSend(() => resend.batch.send(batchPayload));
+			// Send batch with rate limiting (pass batch size for tracking)
+			const result = await rateLimitedSend(() => resend.batch.send(batchPayload), batch.length);
 
 			// Check for errors in response
 			if (result.error) {
@@ -925,7 +925,7 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 		const to = contact.email;
 		
 		if (!to) {
-			results.push({ email: to || 'unknown', status: 'error', error: 'No email address' });
+			emailDataArray.push({ email: to || 'unknown', status: 'error', error: 'No email address' });
 			continue;
 		}
 
@@ -1159,8 +1159,8 @@ async function sendRotaInviteBatch(emailDataArray) {
 		const batchPayload = batch.map(item => item.emailData);
 
 		try {
-			// Send batch with rate limiting
-			const result = await rateLimitedSend(() => resend.batch.send(batchPayload));
+			// Send batch with rate limiting (pass batch size for tracking)
+			const result = await rateLimitedSend(() => resend.batch.send(batchPayload), batch.length);
 
 			// Check for errors in response
 			if (result.error) {

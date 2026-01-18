@@ -1,13 +1,14 @@
 import { readCollection } from '$lib/crm/server/fileStore.js';
 
 export async function load({ locals }) {
-	const [contacts, lists, emails, events, rotas, forms] = await Promise.all([
+	const [contacts, lists, emails, events, rotas, forms, emailStats] = await Promise.all([
 		readCollection('contacts'),
 		readCollection('lists'),
 		readCollection('emails'),
 		readCollection('events'),
 		readCollection('rotas'),
-		readCollection('forms')
+		readCollection('forms'),
+		readCollection('email_stats')
 	]);
 
 	// Get latest 3 emails (sorted by updatedAt or createdAt, most recent first)
@@ -44,6 +45,11 @@ export async function load({ locals }) {
 		eventTitle: eventsMap.get(rota.eventId)?.title || 'Unknown Event'
 	}));
 
+	// Calculate emails sent today
+	const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+	const todayStat = emailStats.find(s => s.date === today);
+	const emailsSentToday = todayStat?.count || 0;
+
 	return {
 		admin: locals.admin || null,
 		stats: {
@@ -52,7 +58,8 @@ export async function load({ locals }) {
 			newsletters: emails.length,
 			events: events.length,
 			rotas: rotas.length,
-			forms: forms.length
+			forms: forms.length,
+			emailsSentToday
 		},
 		latestNewsletters,
 		latestRotas: enrichedRotas,

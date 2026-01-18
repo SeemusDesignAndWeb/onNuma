@@ -55,7 +55,10 @@
 
 <!-- Overview Cards with Quick Actions -->
 {#if !accessDenied}
-	<h2 class="text-xl font-bold text-gray-900 mb-4">Overview</h2>
+	<div class="flex justify-between items-center mb-4">
+		<h2 class="text-xl font-bold text-gray-900">Overview</h2>
+		<p class="text-sm text-gray-600"><strong>Emails sent today:</strong> {stats.emailsSentToday || 0}</p>
+	</div>
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6 mb-8">
 		<!-- Contacts -->
 		{#if canAccessContacts}

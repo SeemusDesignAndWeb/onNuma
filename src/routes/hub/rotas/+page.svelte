@@ -124,6 +124,9 @@
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Rotas</h2>
 	<div class="flex flex-wrap gap-2">
+		<a href="/view-rotas" target="_blank" class="bg-purple-600 text-white px-2.5 py-1.5 rounded-md hover:bg-purple-700 text-xs">
+			View Your Rotas
+		</a>
 		<a href="/hub/rotas/invite" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs">
 			Bulk Invite
 		</a>
