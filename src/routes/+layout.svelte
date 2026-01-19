@@ -14,13 +14,14 @@
 
 	// Don't show navbar, banner, or preloader in admin or HUB areas
 	// But DO show navbar for public signup pages (rota, event, and member signups)
-	// Don't show banner on signup pages
+	// Don't show banner on signup pages or sundays page
 	$: isAdminArea = $page.url.pathname.startsWith('/admin');
 	$: isHubArea = $page.url.pathname.startsWith('/hub');
 	$: isSignupPage = $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
+	$: isSundaysPage = $page.url.pathname === '/sundays';
 	$: hideWebsiteElements = isAdminArea || isHubArea;
 	$: showWebsiteNavbar = !hideWebsiteElements || isSignupPage;
-	$: showWebsiteBanner = !hideWebsiteElements && !isSignupPage && showHighlightBanner;
+	$: showWebsiteBanner = !hideWebsiteElements && !isSignupPage && !isSundaysPage && showHighlightBanner;
 
 	// Share banner visibility with child components via store
 	const bannerVisibleStore = writable(false);
@@ -67,11 +68,11 @@
 
 <!-- Website Navbar - only show outside admin area -->
 {#if showWebsiteNavbar}
-	<Navbar bannerVisible={showHighlightBanner && !isSignupPage} class="gallery-hide-when-fullscreen" />
+	<Navbar bannerVisible={showHighlightBanner && !isSignupPage && !isSundaysPage} class="gallery-hide-when-fullscreen" />
 {/if}
 
 <!-- Page Content with dynamic padding to account for fixed navbar and banner -->
-<div class="transition-all duration-300" class:pt-[110px]={showHighlightBanner && !hideWebsiteElements && !isSignupPage} class:pt-[80px]={!showHighlightBanner && !hideWebsiteElements && !isSignupPage} class:pt-0={hideWebsiteElements || isSignupPage}>
+<div class="transition-all duration-300" class:pt-[110px]={showHighlightBanner && !hideWebsiteElements && !isSignupPage && !isSundaysPage} class:pt-[80px]={!showHighlightBanner && !hideWebsiteElements && !isSignupPage && !isSundaysPage} class:pt-0={hideWebsiteElements || isSignupPage || isSundaysPage}>
 	<slot />
 </div>
 
