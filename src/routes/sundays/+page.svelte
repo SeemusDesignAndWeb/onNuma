@@ -91,12 +91,12 @@
 														{@const callToWorship = eventInternalRotas.find(r => r.role.toLowerCase().includes('call to worship') || r.role.toLowerCase().includes('call to'))}
 														{@const worshipTeam = eventInternalRotas.find(r => r.role.toLowerCase().includes('worship team') || r.role.toLowerCase().includes('worship'))}
 														<div class="md:flex-1 border-t md:border-t-0 md:border-l border-gray-300 pt-3 md:pt-0 md:pl-4">
-															<div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-gray-900">
+															<div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-gray-900">
 																<!-- Top row: Meeting Leader, Speaker -->
 																{#if meetingLeader}
 																	{@const hasAssignees = meetingLeader.allAssignees && meetingLeader.allAssignees.length > 0}
 																	<div>
-																		<span class="font-medium">{meetingLeader.role}:</span>
+																		<span class="font-bold">{meetingLeader.role}:</span>
 																		{#if hasAssignees}
 																			<span class="ml-1">{meetingLeader.allAssignees.map(a => a.name).join(', ')}</span>
 																		{:else}
@@ -107,7 +107,7 @@
 																{#if speaker}
 																	{@const hasAssignees = speaker.allAssignees && speaker.allAssignees.length > 0}
 																	<div>
-																		<span class="font-medium">{speaker.role}:</span>
+																		<span class="font-bold">{speaker.role}:</span>
 																		{#if hasAssignees}
 																			<span class="ml-1">{speaker.allAssignees.map(a => a.name).join(', ')}</span>
 																		{:else}
@@ -119,7 +119,7 @@
 																{#if callToWorship}
 																	{@const hasAssignees = callToWorship.allAssignees && callToWorship.allAssignees.length > 0}
 																	<div>
-																		<span class="font-medium">{callToWorship.role}:</span>
+																		<span class="font-bold">{callToWorship.role}:</span>
 																		{#if hasAssignees}
 																			<span class="ml-1">{callToWorship.allAssignees.map(a => a.name).join(', ')}</span>
 																		{:else}
@@ -130,7 +130,7 @@
 																{#if worshipTeam}
 																	{@const hasAssignees = worshipTeam.allAssignees && worshipTeam.allAssignees.length > 0}
 																	<div>
-																		<span class="font-medium">{worshipTeam.role}:</span>
+																		<span class="font-bold">{worshipTeam.role}:</span>
 																		{#if hasAssignees}
 																			<span class="ml-1">{worshipTeam.allAssignees.map(a => a.name).join(', ')}</span>
 																		{:else}
