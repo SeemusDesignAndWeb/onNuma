@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import { isSuperAdmin, HUB_AREAS } from '$lib/crm/server/permissions.js';
@@ -28,6 +29,45 @@
 		name: prefillName,
 		permissions: []
 	};
+	
+	/**
+	 * Generate a random password that meets all requirements:
+	 * - At least 12 characters
+	 * - Contains uppercase letter
+	 * - Contains lowercase letter
+	 * - Contains number
+	 * - Contains special character
+	 */
+	function generateRandomPassword() {
+		const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+		const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		const numbers = '0123456789';
+		const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+		const allChars = lowercase + uppercase + numbers + special;
+		
+		// Ensure at least one of each required character type
+		let password = '';
+		password += lowercase[Math.floor(Math.random() * lowercase.length)];
+		password += uppercase[Math.floor(Math.random() * uppercase.length)];
+		password += numbers[Math.floor(Math.random() * numbers.length)];
+		password += special[Math.floor(Math.random() * special.length)];
+		
+		// Fill the rest to make it at least 16 characters (more secure)
+		const minLength = 16;
+		for (let i = password.length; i < minLength; i++) {
+			password += allChars[Math.floor(Math.random() * allChars.length)];
+		}
+		
+		// Shuffle the password to avoid predictable pattern
+		return password.split('').sort(() => Math.random() - 0.5).join('');
+	}
+	
+	// Generate password when page loads
+	onMount(() => {
+		if (!formData.password) {
+			formData.password = generateRandomPassword();
+		}
+	});
 	
 	// Update formData when URL params change
 	$: if (prefillName || prefillEmail) {
