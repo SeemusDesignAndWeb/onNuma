@@ -90,7 +90,7 @@
 														{@const speaker = eventInternalRotas.find(r => r.role.toLowerCase().includes('speaker'))}
 														{@const callToWorship = eventInternalRotas.find(r => r.role.toLowerCase().includes('call to worship') || r.role.toLowerCase().includes('call to'))}
 														{@const worshipTeam = eventInternalRotas.find(r => r.role.toLowerCase().includes('worship team') || r.role.toLowerCase().includes('worship'))}
-														<div class="md:w-80 md:flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-300 pt-3 md:pt-0 md:pl-4">
+														<div class="md:flex-1 border-t md:border-t-0 md:border-l border-gray-300 pt-3 md:pt-0 md:pl-4">
 															<div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-gray-900">
 																<!-- Top row: Meeting Leader, Speaker -->
 																{#if meetingLeader}
