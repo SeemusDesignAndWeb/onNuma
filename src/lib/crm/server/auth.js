@@ -4,6 +4,7 @@ import { readCollection, create, update, findById, remove, writeCollection } fro
 import { generateId } from './ids.js';
 
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour of inactivity
 const SESSION_COOKIE = 'crm_session';
 const CSRF_COOKIE = 'crm_csrf';
 const PASSWORD_EXPIRATION_DAYS = 90; // Password expires after 90 days
@@ -238,11 +239,13 @@ export async function authenticateAdmin(email, password) {
  * @returns {Promise<object>} Session object
  */
 export async function createSession(adminId) {
+	const now = new Date();
 	const session = {
 		id: generateId(),
 		adminId,
-		createdAt: new Date().toISOString(),
-		expiresAt: new Date(Date.now() + SESSION_DURATION).toISOString()
+		createdAt: now.toISOString(),
+		lastActivityAt: now.toISOString(),
+		expiresAt: new Date(now.getTime() + SESSION_DURATION).toISOString()
 	};
 
 	await create('sessions', session);
@@ -252,9 +255,10 @@ export async function createSession(adminId) {
 /**
  * Get session by ID
  * @param {string} sessionId - Session ID
+ * @param {boolean} updateActivity - Whether to update lastActivityAt (default: true)
  * @returns {Promise<object|null>} Session or null
  */
-export async function getSession(sessionId) {
+export async function getSession(sessionId, updateActivity = true) {
 	const session = await findById('sessions', sessionId);
 	if (!session) {
 		return null;
@@ -264,6 +268,28 @@ export async function getSession(sessionId) {
 	if (new Date(session.expiresAt) < new Date()) {
 		await removeSession(sessionId);
 		return null;
+	}
+
+	// Check inactivity timeout
+	const now = new Date();
+	// For backward compatibility: if lastActivityAt doesn't exist, use createdAt
+	const lastActivity = session.lastActivityAt 
+		? new Date(session.lastActivityAt) 
+		: (session.createdAt ? new Date(session.createdAt) : now);
+	const timeSinceActivity = now.getTime() - lastActivity.getTime();
+
+	if (timeSinceActivity > INACTIVITY_TIMEOUT) {
+		// Session expired due to inactivity
+		await removeSession(sessionId);
+		return null;
+	}
+
+	// Update lastActivityAt if requested
+	if (updateActivity) {
+		await update('sessions', sessionId, {
+			lastActivityAt: now.toISOString()
+		});
+		session.lastActivityAt = now.toISOString();
 	}
 
 	return session;
