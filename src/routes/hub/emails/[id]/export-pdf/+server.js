@@ -165,7 +165,7 @@ function generateNewsletterHTML(newsletter) {
 		}
 		
 		.content p {
-			margin-bottom: 15px;
+			margin-bottom: 1.875px;
 		}
 		
 		/* Quill alignment classes */
