@@ -410,11 +410,20 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 			});
 	}
 
-	// Get week note for current week (before replace to avoid async issues)
-	const { getWeekKey } = await import('$lib/crm/utils/weekUtils.js');
-	const weekNotes = await readCollection('week_notes');
-	const currentWeekKey = getWeekKey(new Date());
-	const weekNote = weekNotes.find(n => n.weekKey === currentWeekKey);
+	// Get week note for next week (before replace to avoid async issues)
+	let weekNote = null;
+	try {
+		const { getWeekKey } = await import('$lib/crm/utils/weekUtils.js');
+		const weekNotes = await readCollection('week_notes');
+		// Get next week's date (7 days from now)
+		const nextWeekDate = new Date();
+		nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+		const nextWeekKey = getWeekKey(nextWeekDate);
+		weekNote = weekNotes.find(n => n.weekKey === nextWeekKey);
+	} catch (error) {
+		console.error('[email] Error loading week notes:', error);
+		// Continue without week note if there's an error
+	}
 
 	// Replace upcoming events placeholders
 	if (isText) {
