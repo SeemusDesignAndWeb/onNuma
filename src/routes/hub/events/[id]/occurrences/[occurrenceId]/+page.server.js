@@ -122,6 +122,8 @@ export const actions = {
 		try {
 			const startsAt = data.get('startsAt');
 			const endsAt = data.get('endsAt');
+			const applyScope = data.get('applyScope') || 'this'; // 'this' or 'future'
+			const allDay = data.get('allDay') === 'true';
 			
 			// Convert datetime-local to ISO format
 			const startISO = startsAt ? new Date(startsAt).toISOString() : null;
@@ -140,11 +142,54 @@ export const actions = {
 				endsAt: endISO,
 				location: data.get('location') || '',
 				maxSpaces: maxSpaces,
-				information: data.get('information') || ''
+				information: data.get('information') || '',
+				allDay: allDay
 			};
 
 			const validated = validateOccurrence(occurrenceData);
+			
+			// Get the current occurrence to check its start time
+			const currentOccurrence = await findById('occurrences', params.occurrenceId);
+			if (!currentOccurrence) {
+				return { error: 'Occurrence not found' };
+			}
+			
+			// Get the original start time before updating (to determine which occurrences are "future")
+			const originalStartTime = new Date(currentOccurrence.startsAt);
+			
+			// Update the current occurrence
 			await update('occurrences', params.occurrenceId, validated);
+			
+			// If applyScope is 'future', update all future occurrences
+			if (applyScope === 'future') {
+				
+				// Find all occurrences for this event that start after the current occurrence's original start time
+				const allOccurrences = await findMany('occurrences', o => o.eventId === params.id);
+				
+				// Filter to future occurrences (starting after the current occurrence's original start time)
+				const futureOccurrences = allOccurrences.filter(occ => {
+					if (occ.id === params.occurrenceId) return false; // Skip the one we already updated
+					const occStart = new Date(occ.startsAt);
+					return occStart > originalStartTime;
+				});
+				
+				// Update each future occurrence with the same changes
+				// Note: We preserve the occurrence's own startsAt/endsAt times, but update other fields
+				for (const futureOcc of futureOccurrences) {
+					const futureOccurrenceData = {
+						eventId: futureOcc.eventId,
+						startsAt: futureOcc.startsAt, // Preserve original start time
+						endsAt: futureOcc.endsAt, // Preserve original end time
+						location: validated.location, // Apply new location
+						maxSpaces: validated.maxSpaces, // Apply new maxSpaces
+						information: validated.information, // Apply new information
+						allDay: validated.allDay // Apply allDay setting
+					};
+					
+					const validatedFuture = validateOccurrence(futureOccurrenceData);
+					await update('occurrences', futureOcc.id, validatedFuture);
+				}
+			}
 
 			return { success: true };
 		} catch (error) {

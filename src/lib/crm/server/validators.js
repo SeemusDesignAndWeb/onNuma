@@ -182,7 +182,8 @@ export function validateOccurrence(data) {
 		endsAt: data.endsAt,
 		location: validateString(data.location || '', 'Location', 500),
 		maxSpaces: typeof data.maxSpaces === 'number' && data.maxSpaces > 0 ? data.maxSpaces : (data.maxSpaces ? parseInt(data.maxSpaces) || null : null),
-		information: validateString(data.information || '', 'Information', 5000)
+		information: validateString(data.information || '', 'Information', 5000),
+		allDay: data.allDay === true || data.allDay === 'true'
 	};
 }
 

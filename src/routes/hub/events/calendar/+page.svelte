@@ -284,6 +284,17 @@
 			b: parseInt(result[3], 16)
 		} : { r: 147, g: 51, b: 234 }; // Default purple
 	}
+
+	// Handle clicking on a day square to create a new event
+	function handleDayClick(day, event) {
+		// Don't navigate if clicking on an event link
+		if (event.target.closest('a')) {
+			return;
+		}
+		// Format date as YYYY-MM-DD
+		const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+		goto(`/hub/events/new?date=${dateStr}`);
+	}
 </script>
 
 	<div class="mb-6">
@@ -617,7 +628,18 @@
 				{#if day}
 					{@const dayOccurrences = getOccurrencesForDate(day)}
 					{@const isToday = day.toDateString() === new Date().toDateString()}
-					<div class="p-3 {isToday ? 'bg-hub-blue-50' : ''}">
+					<div 
+						class="p-3 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
+						on:click={(e) => handleDayClick(day, e)}
+						role="button"
+						tabindex="0"
+						on:keydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								handleDayClick(day, e);
+							}
+						}}
+					>
 						<div class="flex items-center justify-between mb-2">
 							<div class="flex items-center gap-2">
 								<div class="text-sm font-semibold {isToday ? 'text-hub-blue-600' : 'text-gray-900'}">
@@ -640,6 +662,7 @@
 									href="/hub/events/{occ.eventId}"
 									class="block text-xs px-2.5 py-1.5.5 rounded hover:opacity-80 transition-colors"
 									style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
+									on:click|stopPropagation
 								>
 									<div class="font-medium truncate">{occ.event?.title || 'Event'}</div>
 									<div class="text-xs opacity-75 mt-0.5">
@@ -668,7 +691,18 @@
 				{#if day}
 					{@const dayOccurrences = getOccurrencesForDate(day)}
 					{@const isToday = day.toDateString() === new Date().toDateString()}
-					<div class="min-h-[120px] border-r border-b border-gray-200 p-2 {isToday ? 'bg-hub-blue-50' : ''}">
+					<div 
+						class="min-h-[120px] border-r border-b border-gray-200 p-2 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
+						on:click={(e) => handleDayClick(day, e)}
+						role="button"
+						tabindex="0"
+						on:keydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') {
+								e.preventDefault();
+								handleDayClick(day, e);
+							}
+						}}
+					>
 						<div class="text-sm font-medium mb-1 {isToday ? 'text-hub-blue-600' : 'text-gray-900'}">
 							{day.getDate()}
 						</div>
@@ -680,6 +714,7 @@
 									class="block text-xs px-2.5 py-1.5 rounded truncate hover:opacity-80 transition-colors"
 									style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 									title="{occ.event?.title || 'Event'}"
+									on:click|stopPropagation
 								>
 									{new Date(occ.startsAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })} {occ.event?.title || 'Event'}
 								</a>
@@ -707,7 +742,18 @@
 			{#each weekDays as day}
 				{@const dayOccurrences = getOccurrencesForDate(day)}
 				{@const isToday = day.toDateString() === new Date().toDateString()}
-				<div class="p-3 {isToday ? 'bg-hub-blue-50' : ''}">
+				<div 
+					class="p-3 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
+					on:click={(e) => handleDayClick(day, e)}
+					role="button"
+					tabindex="0"
+					on:keydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							handleDayClick(day, e);
+						}
+					}}
+				>
 					<div class="flex items-center gap-2 mb-2">
 						<div class="text-sm font-semibold {isToday ? 'text-hub-blue-600' : 'text-gray-900'}">
 							{dayNames[day.getDay()]}
@@ -730,6 +776,7 @@
 								href="/hub/events/{occ.eventId}"
 								class="block text-xs px-2.5 py-1.5.5 rounded hover:opacity-80 transition-colors"
 								style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
+								on:click|stopPropagation
 							>
 								<div class="font-medium truncate">{occ.event?.title || 'Event'}</div>
 								<div class="text-xs opacity-75 mt-0.5">
@@ -766,7 +813,18 @@
 			{#each weekDays as day}
 				{@const dayOccurrences = getOccurrencesForDate(day)}
 				{@const isToday = day.toDateString() === new Date().toDateString()}
-				<div class="min-h-[576px] border-r border-gray-200 p-1 {isToday ? 'bg-hub-blue-50' : ''} relative">
+				<div 
+					class="min-h-[576px] border-r border-gray-200 p-1 {isToday ? 'bg-hub-blue-50' : ''} relative cursor-pointer hover:bg-gray-50 transition-colors"
+					on:click={(e) => handleDayClick(day, e)}
+					role="button"
+					tabindex="0"
+					on:keydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							handleDayClick(day, e);
+						}
+					}}
+				>
 					{#each dayOccurrences as occ}
 						{@const startTime = new Date(occ.startsAt)}
 						{@const endTime = new Date(occ.endsAt)}
@@ -778,6 +836,7 @@
 							class="absolute left-1 right-1 rounded px-2.5 py-1.5 text-xs block hover:opacity-80 transition-colors"
 							style="top: {startHour * 24}px; height: {Math.max(duration * 24, 20)}px; background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 							title="{occ.event?.title || 'Event'}"
+							on:click|stopPropagation
 						>
 							<div class="font-medium truncate">{occ.event?.title || 'Event'}</div>
 							<div class="text-xs opacity-75">

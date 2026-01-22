@@ -47,12 +47,21 @@ export const actions = {
 			const validated = validateEvent(eventData);
 			const event = await create('events', validated);
 
-			// Generate occurrences if recurrence is enabled
-			if (validated.repeatType !== 'none') {
-				const firstStart = data.get('firstStart');
-				const firstEnd = data.get('firstEnd');
-				
-				if (firstStart && firstEnd) {
+			// Get first occurrence dates
+			let firstStart = data.get('firstStart');
+			let firstEnd = data.get('firstEnd');
+			const allDay = data.get('allDay') === 'true';
+			const firstDate = data.get('firstDate');
+			
+			// If all-day and firstDate is provided but firstStart/firstEnd are missing, create them
+			if (allDay && firstDate && (!firstStart || !firstEnd)) {
+				firstStart = `${firstDate}T00:00`;
+				firstEnd = `${firstDate}T23:59`;
+			}
+			
+			if (firstStart && firstEnd) {
+				// Generate occurrences if recurrence is enabled
+				if (validated.repeatType !== 'none') {
 					const occurrences = generateOccurrences({
 						repeatType: validated.repeatType,
 						repeatInterval: validated.repeatInterval,
@@ -73,12 +82,35 @@ export const actions = {
 							eventId: event.id,
 							startsAt: occ.startsAt,
 							endsAt: occ.endsAt,
-							location: occ.location
+							location: occ.location,
+							allDay: allDay
 						};
 						const validatedOcc = validateOccurrence(occurrenceData);
 						await create('occurrences', validatedOcc);
 					}
+				} else {
+					// Create a single occurrence for non-recurring events
+					const occurrenceData = {
+						eventId: event.id,
+						startsAt: new Date(firstStart).toISOString(),
+						endsAt: new Date(firstEnd).toISOString(),
+						location: validated.location,
+						allDay: allDay
+					};
+					const validatedOcc = validateOccurrence(occurrenceData);
+					await create('occurrences', validatedOcc);
 				}
+			} else if (allDay && firstDate) {
+				// Fallback: if we have firstDate but no firstStart/firstEnd, create occurrence from firstDate
+				const occurrenceData = {
+					eventId: event.id,
+					startsAt: new Date(`${firstDate}T00:00`).toISOString(),
+					endsAt: new Date(`${firstDate}T23:59`).toISOString(),
+					location: validated.location,
+					allDay: true
+				};
+				const validatedOcc = validateOccurrence(occurrenceData);
+				await create('occurrences', validatedOcc);
 			}
 
 			// Log audit event

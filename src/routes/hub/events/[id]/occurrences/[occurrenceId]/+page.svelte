@@ -1,5 +1,4 @@
 <script>
-	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -8,6 +7,7 @@
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import { dialog } from '$lib/crm/stores/notifications.js';
+	import { onMount, onDestroy } from 'svelte';
 
 	$: event = $page.data?.event;
 	$: occurrence = $page.data?.occurrence;
@@ -71,22 +71,78 @@
 		startsAt: '',
 		endsAt: '',
 		location: '',
-		maxSpaces: ''
+		maxSpaces: '',
+		allDay: false,
+		occurrenceDate: ''
 	};
 	let information = '';
+	let showApplyScopeDialog = false;
+	
+	// Handle Escape key to close dialog
+	function handleEscapeKey(e) {
+		if (e.key === 'Escape' && showApplyScopeDialog) {
+			handleCancelDialog();
+		}
+	}
+	
+	// Set up and clean up Escape key listener
+	$: if (browser) {
+		if (showApplyScopeDialog) {
+			window.addEventListener('keydown', handleEscapeKey);
+		} else {
+			window.removeEventListener('keydown', handleEscapeKey);
+		}
+	}
+
+	// Handle all day toggle for occurrence edit
+	function handleAllDayToggle() {
+		if (formData.allDay) {
+			if (formData.startsAt && !formData.occurrenceDate) {
+				formData.occurrenceDate = formData.startsAt.split('T')[0];
+			}
+			if (formData.occurrenceDate) {
+				formData.startsAt = `${formData.occurrenceDate}T00:00`;
+				formData.endsAt = `${formData.occurrenceDate}T23:59`;
+			}
+		} else {
+			if (formData.occurrenceDate && !formData.startsAt) {
+				formData.startsAt = `${formData.occurrenceDate}T09:00`;
+				formData.endsAt = `${formData.occurrenceDate}T17:00`;
+			} else if (formData.startsAt) {
+				formData.occurrenceDate = formData.startsAt.split('T')[0];
+			}
+		}
+	}
+
+	// Update datetime when date changes in all-day mode
+	$: if (formData.allDay && formData.occurrenceDate) {
+		formData.startsAt = `${formData.occurrenceDate}T00:00`;
+		formData.endsAt = `${formData.occurrenceDate}T23:59`;
+	}
 
 	// Initialize form data when occurrence is loaded (avoid hydration issues)
 	$: if (occurrence && !editing) {
-		// Convert ISO dates to datetime-local format
-		const startDate = occurrence.startsAt ? new Date(occurrence.startsAt).toISOString().slice(0, 16) : '';
-		const endDate = occurrence.endsAt ? new Date(occurrence.endsAt).toISOString().slice(0, 16) : '';
+		// Check if this is an all-day event (starts at 00:00 and ends at 23:59 on same day)
+		const startDate = occurrence.startsAt ? new Date(occurrence.startsAt) : null;
+		const endDate = occurrence.endsAt ? new Date(occurrence.endsAt) : null;
+		const isAllDay = occurrence.allDay || (startDate && endDate && 
+			startDate.getHours() === 0 && startDate.getMinutes() === 0 &&
+			endDate.getHours() === 23 && endDate.getMinutes() === 59 &&
+			startDate.toDateString() === endDate.toDateString());
+		
+		// Convert ISO dates to datetime-local format or date format
+		const startDateStr = startDate ? startDate.toISOString().slice(0, 16) : '';
+		const endDateStr = endDate ? endDate.toISOString().slice(0, 16) : '';
+		const dateStr = startDate ? startDate.toISOString().slice(0, 10) : '';
 		
 		// Use occurrence maxSpaces if set, otherwise leave empty to show it's using event default
 		formData = {
-			startsAt: startDate,
-			endsAt: endDate,
+			startsAt: startDateStr,
+			endsAt: endDateStr,
 			location: occurrence.location || '',
-			maxSpaces: occurrence.maxSpaces !== null && occurrence.maxSpaces !== undefined ? occurrence.maxSpaces.toString() : ''
+			maxSpaces: occurrence.maxSpaces !== null && occurrence.maxSpaces !== undefined ? occurrence.maxSpaces.toString() : '',
+			allDay: isAllDay,
+			occurrenceDate: dateStr
 		};
 		information = occurrence.information || '';
 	}
@@ -107,6 +163,109 @@
 			document.body.appendChild(form);
 			form.submit();
 		}
+	}
+
+	function handleFormSubmit(event) {
+		event.preventDefault();
+		showApplyScopeDialog = true;
+	}
+
+	async function handleApplyScope(scope) {
+		showApplyScopeDialog = false;
+		
+		// Get the form
+		const form = document.getElementById('occurrence-edit-form');
+		if (!form) return;
+		
+		// Remove any existing applyScope input
+		const existingScopeInput = form.querySelector('input[name="applyScope"]');
+		if (existingScopeInput) {
+			existingScopeInput.remove();
+		}
+		
+		// Add the selected scope
+		const scopeInput = document.createElement('input');
+		scopeInput.type = 'hidden';
+		scopeInput.name = 'applyScope';
+		scopeInput.value = scope;
+		form.appendChild(scopeInput);
+		
+		// Create FormData and submit via fetch
+		const formData = new FormData(form);
+		
+		// Construct the action URL properly
+		// The form action is "?/update", so we append it to the current page pathname
+		const actionUrl = $page.url.pathname + '?/update';
+		
+		try {
+			const response = await fetch(actionUrl, {
+				method: 'POST',
+				headers: {
+					'Accept': 'application/json'
+				},
+				credentials: 'same-origin',
+				body: formData
+			});
+			
+			// Check if response is successful
+			if (!response.ok) {
+				// If status is not OK, try to get error message
+				let errorMsg = `Server returned status ${response.status}`;
+				try {
+					const contentType = response.headers.get('content-type');
+					if (contentType && contentType.includes('application/json')) {
+						const result = await response.json();
+						errorMsg = result?.error || result?.message || errorMsg;
+					}
+				} catch {
+					// Ignore parsing errors
+				}
+				notifications.error(errorMsg);
+				return;
+			}
+			
+			// Response is OK (200), now parse the result
+			const contentType = response.headers.get('content-type');
+			let result;
+			
+			if (contentType && contentType.includes('application/json')) {
+				result = await response.json();
+			} else {
+				// If not JSON, try to parse as text
+				const text = await response.text();
+				try {
+					result = JSON.parse(text);
+				} catch {
+					// If it's not JSON, but status is 200, assume success
+					result = { success: true };
+				}
+			}
+			
+			// Check if the result indicates success
+			if (result?.success !== false && !result?.error) {
+				// Success!
+				notifications.success(`Occurrence updated successfully${scope === 'future' ? ' (applied to all future occurrences)' : ''}`);
+				// Reset editing mode and reload page data
+				setTimeout(() => {
+					editing = false;
+					if (browser) {
+						goto($page.url, { invalidateAll: true });
+					}
+				}, 100);
+			} else {
+				// Result indicates an error
+				const errorMsg = result?.error || result?.message || 'Failed to update occurrence';
+				console.error('Update failed:', { status: response.status, result });
+				notifications.error(errorMsg);
+			}
+		} catch (error) {
+			console.error('Error updating occurrence:', error);
+			notifications.error('Failed to update occurrence: ' + (error.message || 'Unknown error'));
+		}
+	}
+
+	function handleCancelDialog() {
+		showApplyScopeDialog = false;
 	}
 </script>
 
@@ -157,28 +316,54 @@
 		</div>
 
 		{#if editing}
-			<form id="occurrence-edit-form" method="POST" action="?/update" use:enhance>
+			<form id="occurrence-edit-form" method="POST" action="?/update" on:submit|preventDefault={handleFormSubmit}>
 				<input type="hidden" name="_csrf" value={csrfToken} />
 				<input type="hidden" name="information" value={information} />
+				<input type="hidden" name="allDay" value={formData.allDay ? 'true' : 'false'} />
 				
 				<!-- Date & Time Panel -->
 				<div class="bg-gray-50 rounded-lg p-4 mb-6">
 					<h3 class="text-lg font-semibold text-gray-900 mb-4">Date & Time</h3>
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<FormField 
-							label="Start Date & Time" 
-							name="startsAt" 
-							type="datetime-local" 
-							bind:value={formData.startsAt} 
-							required 
-						/>
-						<FormField 
-							label="End Date & Time" 
-							name="endsAt" 
-							type="datetime-local" 
-							bind:value={formData.endsAt} 
-							required 
-						/>
+					<div class="space-y-4">
+						<div class="flex items-center">
+							<input
+								type="checkbox"
+								id="allDay"
+								name="allDay"
+								bind:checked={formData.allDay}
+								on:change={handleAllDayToggle}
+								class="h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
+							/>
+							<label for="allDay" class="ml-2 block text-sm text-gray-700">
+								All Day Event
+							</label>
+						</div>
+						{#if formData.allDay}
+							<FormField 
+								label="Date" 
+								name="occurrenceDate" 
+								type="date" 
+								bind:value={formData.occurrenceDate} 
+								required 
+							/>
+						{:else}
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormField 
+									label="Start Date & Time" 
+									name="startsAt" 
+									type="datetime-local" 
+									bind:value={formData.startsAt} 
+									required 
+								/>
+								<FormField 
+									label="End Date & Time" 
+									name="endsAt" 
+									type="datetime-local" 
+									bind:value={formData.endsAt} 
+									required 
+								/>
+							</div>
+						{/if}
 					</div>
 				</div>
 				
@@ -221,15 +406,21 @@
 						<div>
 							<dt class="text-sm font-medium text-gray-500">Start</dt>
 							<dd class="mt-1 text-sm text-gray-900">
-								{occurrence.startsAt ? formatDateTimeUK(occurrence.startsAt) : '-'}
+								{#if occurrence.allDay}
+									{occurrence.startsAt ? new Date(occurrence.startsAt).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-'} <span class="text-gray-500">(All Day)</span>
+								{:else}
+									{occurrence.startsAt ? formatDateTimeUK(occurrence.startsAt) : '-'}
+								{/if}
 							</dd>
 						</div>
-						<div>
-							<dt class="text-sm font-medium text-gray-500">End</dt>
-							<dd class="mt-1 text-sm text-gray-900">
-								{occurrence.endsAt ? formatDateTimeUK(occurrence.endsAt) : '-'}
-							</dd>
-						</div>
+						{#if !occurrence.allDay}
+							<div>
+								<dt class="text-sm font-medium text-gray-500">End</dt>
+								<dd class="mt-1 text-sm text-gray-900">
+									{occurrence.endsAt ? formatDateTimeUK(occurrence.endsAt) : '-'}
+								</dd>
+							</div>
+						{/if}
 					</dl>
 				</div>
 				
@@ -409,5 +600,57 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Apply Scope Dialog -->
+	{#if showApplyScopeDialog}
+		<div
+			class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="dialog-title"
+		>
+			<button
+				class="absolute inset-0 w-full h-full cursor-default"
+				on:click={handleCancelDialog}
+				aria-label="Close dialog"
+				tabindex="-1"
+			></button>
+			<div
+				class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-scale-in relative z-10"
+				role="document"
+			>
+				<h3 id="dialog-title" class="text-lg font-semibold text-gray-900 mb-2">
+					Apply Changes To
+				</h3>
+				<p class="text-sm text-gray-600 mb-4">
+					How would you like to apply these changes?
+				</p>
+				<div class="space-y-3 mb-6">
+					<button
+						on:click={() => handleApplyScope('this')}
+						class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md border-2 border-transparent hover:border-hub-green-500 transition-all"
+					>
+						<div class="font-medium text-gray-900">Just this occurrence</div>
+						<div class="text-sm text-gray-600 mt-1">Changes will only be applied to this occurrence.</div>
+					</button>
+					<button
+						on:click={() => handleApplyScope('future')}
+						class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md border-2 border-transparent hover:border-hub-green-500 transition-all"
+					>
+						<div class="font-medium text-gray-900">All future occurrences</div>
+						<div class="text-sm text-gray-600 mt-1">Changes will be applied to this occurrence and all future occurrences of this event.</div>
+					</button>
+				</div>
+				<div class="flex justify-end">
+					<button
+						on:click={handleCancelDialog}
+						class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors font-medium"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 {/if}
 

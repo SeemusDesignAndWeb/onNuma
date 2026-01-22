@@ -9,6 +9,24 @@
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	
+	// Get date from URL parameter and pre-fill form
+	$: {
+		const dateParam = $page.url.searchParams.get('date');
+		if (dateParam && !formData.firstDate && !formData.firstStart) {
+			// Parse YYYY-MM-DD format
+			const [year, month, day] = dateParam.split('-').map(Number);
+			if (year && month && day) {
+				// Set the date for all-day mode
+				formData.firstDate = dateParam;
+				// Also set default times for non-all-day mode (9 AM to 5 PM)
+				const monthStr = String(month).padStart(2, '0');
+				const dayStr = String(day).padStart(2, '0');
+				formData.firstStart = `${year}-${monthStr}-${dayStr}T09:00`;
+				formData.firstEnd = `${year}-${monthStr}-${dayStr}T17:00`;
+			}
+		}
+	}
+	
 	// Show notifications from form results
 	$: if (formResult?.error) {
 		notifications.error(formResult.error);
@@ -42,7 +60,9 @@
 		repeatDayOfWeek: '',
 		repeatWeekOfMonth: '',
 		firstStart: '',
-		firstEnd: ''
+		firstEnd: '',
+		allDay: false,
+		firstDate: ''
 	};
 
 	$: showRecurrenceOptions = formData.repeatType !== 'none';
@@ -50,6 +70,35 @@
 	$: showMonthlyOptions = formData.repeatType === 'monthly';
 	$: showEndDate = formData.repeatEndType === 'date';
 	$: showEndCount = formData.repeatEndType === 'count';
+
+	// Handle all day toggle - convert between date and datetime-local
+	function handleAllDayToggle() {
+		if (formData.allDay) {
+			// When switching to all day, extract date from datetime if available
+			if (formData.firstStart && !formData.firstDate) {
+				formData.firstDate = formData.firstStart.split('T')[0];
+			}
+			// Set to start and end of day
+			if (formData.firstDate) {
+				formData.firstStart = `${formData.firstDate}T00:00`;
+				formData.firstEnd = `${formData.firstDate}T23:59`;
+			}
+		} else {
+			// When switching from all day, extract date and set default time
+			if (formData.firstDate && !formData.firstStart) {
+				formData.firstStart = `${formData.firstDate}T09:00`;
+				formData.firstEnd = `${formData.firstDate}T17:00`;
+			} else if (formData.firstStart) {
+				formData.firstDate = formData.firstStart.split('T')[0];
+			}
+		}
+	}
+
+	// Update datetime when date changes in all-day mode
+	$: if (formData.allDay && formData.firstDate) {
+		formData.firstStart = `${formData.firstDate}T00:00`;
+		formData.firstEnd = `${formData.firstDate}T23:59`;
+	}
 </script>
 
 <div class="bg-white shadow rounded-lg p-4 sm:p-6">
@@ -71,6 +120,8 @@
 		<input type="hidden" name="description" value={description} />
 		<input type="hidden" name="firstStart" value={formData.firstStart} />
 		<input type="hidden" name="firstEnd" value={formData.firstEnd} />
+		<input type="hidden" name="firstDate" value={formData.firstDate} />
+		<input type="hidden" name="allDay" value={formData.allDay ? 'true' : 'false'} />
 		
 		<!-- Basic Information Panel -->
 		<div class="border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -134,9 +185,30 @@
 		<!-- First Occurrence Panel -->
 		<div class="border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
 			<h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">First Occurrence</h3>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-				<FormField label="Start Date & Time" name="firstStart" type="datetime-local" bind:value={formData.firstStart} required />
-				<FormField label="End Date & Time" name="firstEnd" type="datetime-local" bind:value={formData.firstEnd} required />
+			<div class="space-y-3 sm:space-y-4">
+				<div class="flex items-center">
+					<input
+						type="checkbox"
+						id="allDay"
+						name="allDay"
+						bind:checked={formData.allDay}
+						on:change={handleAllDayToggle}
+						class="h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
+					/>
+					<label for="allDay" class="ml-2 block text-sm text-gray-700">
+						All Day Event
+					</label>
+				</div>
+				{#if formData.allDay}
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+						<FormField label="Date" name="firstDate" type="date" bind:value={formData.firstDate} required />
+					</div>
+				{:else}
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+						<FormField label="Start Date & Time" name="firstStart" type="datetime-local" bind:value={formData.firstStart} required />
+						<FormField label="End Date & Time" name="firstEnd" type="datetime-local" bind:value={formData.firstEnd} required />
+					</div>
+				{/if}
 			</div>
 		</div>
 

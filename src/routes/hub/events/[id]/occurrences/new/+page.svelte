@@ -33,7 +33,9 @@
 		repeatCount: '',
 		repeatDayOfMonth: '',
 		repeatDayOfWeek: '',
-		repeatWeekOfMonth: ''
+		repeatWeekOfMonth: '',
+		allDay: false,
+		occurrenceDate: ''
 	};
 	let information = '';
 
@@ -42,6 +44,32 @@
 	$: showMonthlyOptions = formData.repeatType === 'monthly';
 	$: showEndDate = formData.repeatEndType === 'date';
 	$: showEndCount = formData.repeatEndType === 'count';
+
+	// Handle all day toggle for occurrence
+	function handleAllDayToggle() {
+		if (formData.allDay) {
+			if (formData.startsAt && !formData.occurrenceDate) {
+				formData.occurrenceDate = formData.startsAt.split('T')[0];
+			}
+			if (formData.occurrenceDate) {
+				formData.startsAt = `${formData.occurrenceDate}T00:00`;
+				formData.endsAt = `${formData.occurrenceDate}T23:59`;
+			}
+		} else {
+			if (formData.occurrenceDate && !formData.startsAt) {
+				formData.startsAt = `${formData.occurrenceDate}T09:00`;
+				formData.endsAt = `${formData.occurrenceDate}T17:00`;
+			} else if (formData.startsAt) {
+				formData.occurrenceDate = formData.startsAt.split('T')[0];
+			}
+		}
+	}
+
+	// Update datetime when date changes in all-day mode
+	$: if (formData.allDay && formData.occurrenceDate) {
+		formData.startsAt = `${formData.occurrenceDate}T00:00`;
+		formData.endsAt = `${formData.occurrenceDate}T23:59`;
+	}
 </script>
 
 <div class="bg-white shadow rounded-lg p-6">
@@ -64,27 +92,51 @@
 	<form id="occurrence-create-form" method="POST" action="?/create" use:enhance>
 		<input type="hidden" name="_csrf" value={csrfToken} />
 		<input type="hidden" name="information" value={information} />
+		<input type="hidden" name="allDay" value={formData.allDay ? 'true' : 'false'} />
 		
 		<!-- Occurrence Details Panel -->
 		<div class="border border-gray-200 rounded-lg p-6 mb-6">
 			<h3 class="text-lg font-semibold text-gray-900 mb-4">Occurrence Details</h3>
 			<div class="space-y-4">
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<FormField 
-						label="Start Date & Time" 
-						name="startsAt" 
-						type="datetime-local" 
-						bind:value={formData.startsAt} 
-						required 
+				<div class="flex items-center">
+					<input
+						type="checkbox"
+						id="allDay"
+						name="allDay"
+						bind:checked={formData.allDay}
+						on:change={handleAllDayToggle}
+						class="h-4 w-4 text-hub-green-600 focus:ring-hub-green-500 border-gray-300 rounded"
 					/>
-					<FormField 
-						label="End Date & Time" 
-						name="endsAt" 
-						type="datetime-local" 
-						bind:value={formData.endsAt} 
-						required 
-					/>
+					<label for="allDay" class="ml-2 block text-sm text-gray-700">
+						All Day Event
+					</label>
 				</div>
+				{#if formData.allDay}
+					<FormField 
+						label="Date" 
+						name="occurrenceDate" 
+						type="date" 
+						bind:value={formData.occurrenceDate} 
+						required 
+					/>
+				{:else}
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<FormField 
+							label="Start Date & Time" 
+							name="startsAt" 
+							type="datetime-local" 
+							bind:value={formData.startsAt} 
+							required 
+						/>
+						<FormField 
+							label="End Date & Time" 
+							name="endsAt" 
+							type="datetime-local" 
+							bind:value={formData.endsAt} 
+							required 
+						/>
+					</div>
+				{/if}
 				<FormField 
 					label="Location" 
 					name="location" 

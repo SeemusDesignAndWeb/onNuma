@@ -30,6 +30,7 @@ export const actions = {
 			const location = data.get('location') || '';
 			const maxSpaces = data.get('maxSpaces') ? parseInt(data.get('maxSpaces')) : null;
 			const information = data.get('information') || '';
+			const allDay = data.get('allDay') === 'true';
 
 			if (!startsAt || !endsAt) {
 				return fail(400, { error: 'Start and end dates are required' });
@@ -63,7 +64,8 @@ export const actions = {
 						endsAt: occ.endsAt,
 						location: occ.location,
 						maxSpaces: maxSpaces,
-						information: information
+						information: information,
+						allDay: allDay
 					};
 					const validated = validateOccurrence(occurrenceData);
 					await create('occurrences', validated);
@@ -76,7 +78,8 @@ export const actions = {
 					endsAt: endISO,
 					location: location,
 					maxSpaces: maxSpaces,
-					information: information
+					information: information,
+					allDay: allDay
 				};
 
 				const validated = validateOccurrence(occurrenceData);
