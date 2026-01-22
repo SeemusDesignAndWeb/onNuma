@@ -12,6 +12,7 @@
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	$: isArchived = register?.archived || false;
+	$: canDelete = $page.data?.canDelete || false;
 
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
@@ -27,6 +28,8 @@
 				setTimeout(() => {
 					goto(`/hub/forms/${form.id}`);
 				}, 1000);
+			} else if (formResult?.deleted) {
+				notifications.success('Submission deleted successfully');
 			} else {
 				notifications.success('Submission unarchived successfully');
 			}
@@ -76,6 +79,27 @@
 			formEl.submit();
 		}
 	}
+
+	async function handleDelete() {
+		const confirmed = await dialog.confirm(
+			'Are you sure you want to delete this submission? This action cannot be undone and the data will be permanently removed.',
+			'Delete Submission'
+		);
+		if (confirmed) {
+			const formEl = document.createElement('form');
+			formEl.method = 'POST';
+			formEl.action = '?/delete';
+			
+			const csrfInput = document.createElement('input');
+			csrfInput.type = 'hidden';
+			csrfInput.name = '_csrf';
+			csrfInput.value = csrfToken;
+			formEl.appendChild(csrfInput);
+			
+			document.body.appendChild(formEl);
+			formEl.submit();
+		}
+	}
 </script>
 
 {#if form && register}
@@ -99,6 +123,14 @@
 						class="bg-gray-600 text-white px-[18px] py-2.5 rounded-md hover:bg-gray-700"
 					>
 						Archive
+					</button>
+				{/if}
+				{#if canDelete}
+					<button
+						on:click={handleDelete}
+						class="bg-red-600 text-white px-[18px] py-2.5 rounded-md hover:bg-red-700"
+					>
+						Delete
 					</button>
 				{/if}
 			</div>
