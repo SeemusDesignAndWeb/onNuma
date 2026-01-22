@@ -2,8 +2,10 @@
 	import { page } from '$app/stores';
 	import Table from '$lib/crm/components/Table.svelte';
 	import Pager from '$lib/crm/components/Pager.svelte';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { formatDateUK, formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
+	import { dialog } from '$lib/crm/stores/notifications.js';
+	import { notifications } from '$lib/crm/stores/notifications.js';
 
 	$: data = $page.data || {};
 	$: forms = data.forms || [];
@@ -11,8 +13,58 @@
 	$: currentPage = data.currentPage || 1;
 	$: totalPages = data.totalPages || 1;
 	$: search = data.search || '';
+	$: canDelete = data.canDelete ?? false;
+	$: csrfToken = data.csrfToken || '';
+	$: formResult = $page.form;
 
 	let searchInput = search;
+
+	// Track last processed form result to avoid duplicate notifications
+	let lastProcessedFormResult = null;
+
+	// Show notifications from form results
+	$: if (formResult && formResult !== lastProcessedFormResult) {
+		lastProcessedFormResult = formResult;
+		
+		if (formResult?.success) {
+			if (formResult?.type === 'deleteSubmission') {
+				notifications.success('Submission deleted successfully');
+				// Reload page to refresh the list
+				setTimeout(() => {
+					invalidateAll();
+				}, 500);
+			}
+		} else if (formResult?.error) {
+			notifications.error(formResult.error);
+		}
+	}
+
+	async function handleDeleteSubmission(submissionId) {
+		const confirmed = await dialog.confirm(
+			'Are you sure you want to delete this submission? This action cannot be undone and the data will be permanently removed.',
+			'Delete Submission'
+		);
+		if (confirmed) {
+			const formEl = document.createElement('form');
+			formEl.method = 'POST';
+			formEl.action = '?/deleteSubmission';
+			
+			const csrfInput = document.createElement('input');
+			csrfInput.type = 'hidden';
+			csrfInput.name = '_csrf';
+			csrfInput.value = csrfToken;
+			formEl.appendChild(csrfInput);
+			
+			const submissionIdInput = document.createElement('input');
+			submissionIdInput.type = 'hidden';
+			submissionIdInput.name = 'submissionId';
+			submissionIdInput.value = submissionId;
+			formEl.appendChild(submissionIdInput);
+			
+			document.body.appendChild(formEl);
+			formEl.submit();
+		}
+	}
 
 	function handleSearch() {
 		const params = new URLSearchParams();
@@ -97,13 +149,21 @@
 						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
 						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
 						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
+						{#if canDelete}
+							<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"></th>
+						{/if}
 					</tr>
 				</thead>
 				<tbody class="bg-white divide-y divide-gray-200">
 					{#each latestSubmissions as submission}
 						<tr 
 							class="hover:bg-gray-50 cursor-pointer"
-							on:click={() => goto(`/hub/forms/${submission.formId}/submissions/${submission.id}`)}
+							on:click={(e) => {
+								// Don't trigger row click if clicking on delete button
+								if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+									goto(`/hub/forms/${submission.formId}/submissions/${submission.id}`);
+								}
+							}}
 						>
 							<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
 								{submission.formName}
@@ -127,6 +187,17 @@
 									-
 								{/if}
 							</td>
+							{#if canDelete}
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+									<button
+										class="text-red-600 hover:text-red-800 font-bold text-lg w-6 h-6 flex items-center justify-center"
+										data-delete-submission={submission.id}
+										type="button"
+										title="Delete submission"
+										on:click|stopPropagation={() => handleDeleteSubmission(submission.id)}
+									>×</button>
+								</td>
+							{/if}
 						</tr>
 					{/each}
 				</tbody>

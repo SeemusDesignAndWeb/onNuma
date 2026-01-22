@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import { dialog } from '$lib/crm/stores/notifications.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
@@ -8,10 +9,13 @@
 	import { goto } from '$app/navigation';
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 
+	let tableContainer;
+
 	$: form = $page.data?.form;
 	$: registers = $page.data?.registers || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+	$: canDelete = $page.data?.canDelete ?? false;
 	
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
@@ -21,7 +25,15 @@
 		lastProcessedFormResult = formResult;
 		
 		if (formResult?.success) {
-			notifications.success('Form updated successfully');
+			if (formResult?.type === 'deleteSubmission') {
+				notifications.success('Submission deleted successfully');
+				// Reload page to refresh the list
+				setTimeout(() => {
+					window.location.reload();
+				}, 500);
+			} else {
+				notifications.success('Form updated successfully');
+			}
 		} else if (formResult?.error) {
 			notifications.error(formResult.error);
 		}
@@ -131,6 +143,66 @@
 		fieldForm.options = fieldForm.options.filter((_, i) => i !== index);
 	}
 
+	async function handleDeleteSubmission(submissionId) {
+		const confirmed = await dialog.confirm(
+			'Are you sure you want to delete this submission? This action cannot be undone and the data will be permanently removed.',
+			'Delete Submission'
+		);
+		if (confirmed) {
+			const formEl = document.createElement('form');
+			formEl.method = 'POST';
+			formEl.action = '?/deleteSubmission';
+			
+			const csrfInput = document.createElement('input');
+			csrfInput.type = 'hidden';
+			csrfInput.name = '_csrf';
+			csrfInput.value = csrfToken;
+			formEl.appendChild(csrfInput);
+			
+			const submissionIdInput = document.createElement('input');
+			submissionIdInput.type = 'hidden';
+			submissionIdInput.name = 'submissionId';
+			submissionIdInput.value = submissionId;
+			formEl.appendChild(submissionIdInput);
+			
+			document.body.appendChild(formEl);
+			formEl.submit();
+		}
+	}
+
+	// Handle delete button clicks in the table
+	let clickHandler = null;
+	
+	$: if (tableContainer && canDelete && !clickHandler) {
+		// Add handler
+		clickHandler = (e) => {
+			const deleteButton = e.target.closest('[data-delete-submission]');
+			if (deleteButton) {
+				e.preventDefault();
+				e.stopPropagation();
+				const submissionId = deleteButton.getAttribute('data-delete-submission');
+				handleDeleteSubmission(submissionId);
+			}
+		};
+		
+		tableContainer.addEventListener('click', clickHandler);
+	}
+	
+	$: if (tableContainer && !canDelete && clickHandler) {
+		// Remove handler when canDelete becomes false
+		tableContainer.removeEventListener('click', clickHandler);
+		clickHandler = null;
+	}
+	
+	onMount(() => {
+		return () => {
+			// Cleanup on unmount
+			if (tableContainer && clickHandler) {
+				tableContainer.removeEventListener('click', clickHandler);
+			}
+		};
+	});
+
 	async function handleDelete() {
 		const confirmed = await dialog.confirm('Are you sure you want to delete this form? All submissions will also be deleted.', 'Delete Form');
 		if (confirmed) {
@@ -149,7 +221,7 @@
 		}
 	}
 
-	const registerColumns = [
+	$: registerColumns = [
 		{ 
 			key: 'submittedAt', 
 			label: 'Submitted',
@@ -163,7 +235,20 @@
 				const keys = Object.keys(val);
 				return keys.length > 0 ? `${keys[0]}: ${String(val[keys[0]]).substring(0, 30)}...` : '-';
 			}
-		}
+		},
+		// Add actions column if user can delete
+		...(canDelete ? [{
+			key: 'actions',
+			label: '',
+			render: (val, row) => {
+				return `<button 
+					class="text-red-600 hover:text-red-800 font-bold text-lg w-6 h-6 flex items-center justify-center"
+					data-delete-submission="${row.id}"
+					type="button"
+					title="Delete submission"
+				>×</button>`;
+			}
+		}] : [])
 	];
 </script>
 
@@ -334,7 +419,9 @@
 
 	<div class="bg-white shadow rounded-lg p-6">
 		<h3 class="text-xl font-bold text-gray-900 mb-4">Form Submissions ({registers.length})</h3>
-		<Table columns={registerColumns} rows={registers} onRowClick={(row) => goto(`/hub/forms/${form.id}/submissions/${row.id}`)} />
+		<div bind:this={tableContainer}>
+			<Table columns={registerColumns} rows={registers} onRowClick={(row) => goto(`/hub/forms/${form.id}/submissions/${row.id}`)} />
+		</div>
 	</div>
 {/if}
 

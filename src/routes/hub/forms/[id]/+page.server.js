@@ -1,10 +1,11 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, fail } from '@sveltejs/kit';
 import { findById, update, remove, readCollection, findMany } from '$lib/crm/server/fileStore.js';
 import { validateForm } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { decrypt } from '$lib/crm/server/crypto.js';
-import { canAccessSafeguarding, canAccessForms } from '$lib/crm/server/permissions.js';
-import { logSensitiveOperation } from '$lib/crm/server/audit.js';
+import { canAccessSafeguarding, canAccessForms, isSuperAdmin } from '$lib/crm/server/permissions.js';
+import { logSensitiveOperation, logDataChange } from '$lib/crm/server/audit.js';
+import { getSuperAdminEmail } from '$lib/crm/server/envConfig.js';
 
 export async function load({ params, cookies, url, request }) {
 	const admin = await getAdminFromCookies(cookies);
@@ -59,7 +60,12 @@ export async function load({ params, cookies, url, request }) {
 	}));
 
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { form, registers: decryptedRegisters, csrfToken };
+	
+	// Check if admin can delete submissions (super admin or has safeguarding permission)
+	const superAdminEmail = getSuperAdminEmail();
+	const canDelete = isSuperAdmin(admin, superAdminEmail) || canAccessSafeguarding(admin);
+	
+	return { form, registers: decryptedRegisters, csrfToken, canDelete };
 }
 
 export const actions = {
@@ -104,6 +110,56 @@ export const actions = {
 
 		await remove('forms', params.id);
 		throw redirect(302, '/hub/forms');
+	},
+
+	deleteSubmission: async ({ request, params, cookies, locals }) => {
+		const data = await request.formData();
+		const csrfToken = data.get('_csrf');
+
+		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+			return fail(403, { error: 'CSRF token validation failed' });
+		}
+
+		const admin = await getAdminFromCookies(cookies);
+		if (!admin) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		// Check permissions: must be super admin or have safeguarding permission
+		const superAdminEmail = getSuperAdminEmail();
+		const canDelete = isSuperAdmin(admin, superAdminEmail) || canAccessSafeguarding(admin);
+		if (!canDelete) {
+			return fail(403, { error: 'You do not have permission to delete form submissions' });
+		}
+
+		const submissionId = data.get('submissionId');
+		if (!submissionId) {
+			return fail(400, { error: 'Submission ID is required' });
+		}
+
+		const register = await findById('registers', submissionId.toString());
+		if (!register || register.formId !== params.id) {
+			return fail(404, { error: 'Submission not found' });
+		}
+
+		const form = await findById('forms', params.id);
+		if (!form) {
+			return fail(404, { error: 'Form not found' });
+		}
+
+		// Delete the submission
+		await remove('registers', submissionId.toString());
+
+		// Log the delete action
+		const event = { getClientAddress: () => 'unknown', request };
+		await logDataChange(admin.id, 'delete', 'registers', submissionId.toString(), {
+			formId: params.id,
+			formName: form.name || 'Unknown',
+			submissionId: submissionId.toString(),
+			isSafeguarding: form.isSafeguarding || form.requiresEncryption
+		}, event);
+
+		return { success: true, type: 'deleteSubmission' };
 	}
 };
 
