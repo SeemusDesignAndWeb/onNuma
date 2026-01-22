@@ -1,9 +1,19 @@
 <script>
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
+	import { browser } from '$app/environment';
+	import HtmlEditor from '$lib/crm/components/HtmlEditor.svelte';
+	import { notifications } from '$lib/crm/stores/notifications.js';
+	import { dialog } from '$lib/crm/stores/notifications.js';
+	import { getWeekKey, formatWeekKey } from '$lib/crm/utils/weekUtils.js';
 
 	$: events = $page.data?.events || [];
 	$: occurrences = $page.data?.occurrences || [];
+	$: weekNotes = $page.data?.weekNotes || [];
+	$: csrfToken = $page.data?.csrfToken || '';
+	$: formResult = $page.form;
 
 	// Get current month/year from URL params or use current date
 	let viewMode = $page.url.searchParams.get('view') || 'month';
@@ -20,6 +30,111 @@
 		const month = parseInt(params.get('month')) || new Date().getMonth();
 		viewMode = params.get('view') || 'month';
 		currentDate = new Date(year, month, 1);
+	}
+
+	// Week notes state
+	let editingWeekNote = false;
+	let weekNoteDate = '';
+	let weekNoteText = '';
+	let showWeekNotesModal = false;
+	let weekNoteSearchDate = '';
+	let editingWeekKey = null;
+	let lastProcessedFormResult = null;
+	const weekNotesModalStorageKey = 'egcc_week_notes_modal_open';
+
+	$: filteredWeekNotes = (() => {
+		if (weekNoteSearchDate) {
+			const searchKey = getWeekKey(weekNoteSearchDate);
+			return weekNotes.filter(note => note.weekKey === searchKey);
+		}
+		return weekNotes.slice(0, 2);
+	})();
+
+	onMount(() => {
+		if (!browser) return;
+		const shouldReopen = sessionStorage.getItem(weekNotesModalStorageKey) === 'true';
+		if (shouldReopen) {
+			showWeekNotesModal = true;
+			sessionStorage.removeItem(weekNotesModalStorageKey);
+		}
+	});
+
+	$: if (formResult && browser && formResult !== lastProcessedFormResult) {
+		lastProcessedFormResult = formResult;
+
+		if (formResult?.success) {
+			if (formResult?.type === 'weekNote') {
+				notifications.success('Week note saved successfully');
+				editingWeekNote = false;
+				weekNoteDate = '';
+				weekNoteText = '';
+				editingWeekKey = null;
+			} else if (formResult?.type === 'deleteWeekNote') {
+				notifications.success('Week note deleted successfully');
+				cancelEditingWeekNote();
+				if (browser) {
+					sessionStorage.setItem(weekNotesModalStorageKey, 'true');
+				}
+			}
+			setTimeout(() => {
+				if (browser) {
+					goto($page.url, { invalidateAll: true });
+				}
+			}, 100);
+		} else if (formResult?.error) {
+			notifications.error(formResult.error);
+		}
+	}
+
+	function startEditingWeekNote(weekKey = null, existingNote = null) {
+		if (weekKey) {
+			editingWeekKey = weekKey;
+			const [year, month, day] = weekKey.split('-').map(Number);
+			const date = new Date(year, month - 1, day);
+			weekNoteDate = date.toISOString().split('T')[0];
+		} else {
+			editingWeekKey = null;
+			weekNoteDate = new Date().toISOString().split('T')[0];
+		}
+		weekNoteText = existingNote?.note || '';
+		editingWeekNote = true;
+	}
+
+	function cancelEditingWeekNote() {
+		editingWeekNote = false;
+		weekNoteDate = '';
+		weekNoteText = '';
+		editingWeekKey = null;
+	}
+
+	function closeWeekNotesModal() {
+		showWeekNotesModal = false;
+		cancelEditingWeekNote();
+		weekNoteSearchDate = '';
+	}
+
+	async function handleDeleteWeekNote(weekKey) {
+		const confirmed = await dialog.confirm('Are you sure you want to delete this week note?', 'Delete Week Note');
+		if (confirmed) {
+			const form = document.createElement('form');
+			form.method = 'POST';
+			form.action = '?/deleteWeekNote';
+
+			const csrfInput = document.createElement('input');
+			csrfInput.type = 'hidden';
+			csrfInput.name = '_csrf';
+			csrfInput.value = csrfToken;
+			form.appendChild(csrfInput);
+
+			const weekKeyInput = document.createElement('input');
+			weekKeyInput.type = 'hidden';
+			weekKeyInput.name = 'weekKey';
+			weekKeyInput.value = weekKey;
+			form.appendChild(weekKeyInput);
+
+			document.body.appendChild(form);
+			form.submit();
+		}
 	}
 
 	function getMonthName(date) {
@@ -175,6 +290,18 @@
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
 			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Event Calendar</h2>
 			<div class="flex flex-wrap gap-2">
+				<button
+					type="button"
+					on:click={() => {
+						showWeekNotesModal = true;
+						if (!editingWeekNote) {
+							cancelEditingWeekNote();
+						}
+					}}
+					class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs"
+				>
+					Week Notes
+				</button>
 				<a href="/hub/events?view=list" class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs">
 					List View
 				</a>
@@ -300,6 +427,138 @@
 		</div>
 	</div>
 </div>
+
+{#if showWeekNotesModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+		<div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[85vh] overflow-auto">
+			<div class="flex items-center justify-between p-4 border-b border-gray-200">
+				<h3 class="text-lg font-semibold text-gray-900">Week Notes</h3>
+				<button
+					type="button"
+					on:click={closeWeekNotesModal}
+					class="text-gray-500 hover:text-gray-700 text-sm"
+				>
+					Close
+				</button>
+			</div>
+
+			<div class="p-4 space-y-4">
+				{#if !editingWeekNote}
+					<button
+						type="button"
+						on:click={() => startEditingWeekNote()}
+						class="bg-hub-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs whitespace-nowrap"
+					>
+						New Week Note
+					</button>
+				{/if}
+
+				{#if editingWeekNote}
+					<form method="POST" action="?/saveWeekNote" use:enhance>
+						<input type="hidden" name="_csrf" value={csrfToken} />
+						<div class="bg-gray-50 rounded-lg p-3 sm:p-4 space-y-4">
+							<div>
+								<label for="week-note-date" class="block text-xs font-medium text-gray-700 mb-1">
+									Select a date in the week
+								</label>
+								<input
+									id="week-note-date"
+									type="date"
+									name="date"
+									bind:value={weekNoteDate}
+									required
+									class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2 text-sm"
+								/>
+								<p class="mt-1 text-xs text-gray-500">
+									{#if weekNoteDate}
+										Week: {formatWeekKey(getWeekKey(weekNoteDate))}
+									{/if}
+								</p>
+							</div>
+							<div>
+								<p class="block text-xs font-medium text-gray-700 mb-1">Week Note</p>
+								<HtmlEditor bind:value={weekNoteText} name="note" />
+								<p class="mt-1 text-xs text-gray-500">
+									This note appears in emails for the selected week.
+								</p>
+							</div>
+							<div class="flex gap-2">
+					<button
+						type="submit"
+						class="bg-hub-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs whitespace-nowrap"
+					>
+						Save Week Note
+					</button>
+					{#if editingWeekKey}
+						<button
+							type="button"
+							on:click={() => handleDeleteWeekNote(editingWeekKey)}
+							class="bg-hub-red-600 text-white px-3 py-1.5 rounded-md hover:bg-hub-red-700 text-xs whitespace-nowrap"
+						>
+							Delete
+						</button>
+					{/if}
+								<button
+									type="button"
+									on:click={cancelEditingWeekNote}
+									class="bg-gray-600 text-white px-3 py-1.5 rounded-md hover:bg-gray-700 text-xs whitespace-nowrap"
+								>
+						Back
+								</button>
+							</div>
+						</div>
+					</form>
+				{/if}
+
+				{#if !editingWeekNote}
+					<div>
+						<label for="week-note-search" class="block text-xs font-medium text-gray-700 mb-1">
+							Find a week note by date
+						</label>
+						<input
+							id="week-note-search"
+							type="date"
+							bind:value={weekNoteSearchDate}
+							class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2 text-sm"
+						/>
+						<p class="mt-1 text-xs text-gray-500">
+							Showing {weekNoteSearchDate ? 'matching week' : 'latest 2 week notes'}.
+						</p>
+					</div>
+
+					{#if filteredWeekNotes.length === 0}
+						<p class="text-sm text-gray-500">No week notes found.</p>
+					{:else}
+						<div class="space-y-3">
+							{#each filteredWeekNotes as weekNote}
+								<button
+									type="button"
+									on:click={() => startEditingWeekNote(weekNote.weekKey, weekNote)}
+									class="border border-gray-200 rounded-lg p-3 sm:p-4 text-left w-full hover:border-hub-blue-300 hover:shadow-sm transition"
+								>
+									<div class="flex justify-between items-start gap-2 mb-2">
+										<div class="flex-1">
+											<h4 class="text-sm font-semibold text-gray-900">
+												Week of {formatWeekKey(weekNote.weekKey)}
+											</h4>
+										</div>
+									</div>
+									<div class="text-sm text-gray-700 prose prose-sm max-w-none">
+										{#if weekNote.note}
+											{@html weekNote.note}
+										{:else}
+											<p class="text-gray-400 italic">No note content</p>
+										{/if}
+									</div>
+								</button>
+							{/each}
+						</div>
+					{/if}
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Year View -->
 {#if viewMode === 'year'}

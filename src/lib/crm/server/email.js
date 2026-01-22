@@ -84,33 +84,17 @@ async function getUnsubscribeLink(contactIdOrEmail, event) {
 }
 
 /**
- * Get upcoming public events (up to the following Saturday)
+ * Get upcoming public events (next 14 days)
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<Array>} Array of event occurrences
  */
 export async function getUpcomingEvents(event) {
 	const now = new Date();
 	
-	// Calculate the following Saturday (end of day at 23:59:59)
-	// Show events up to next week's Saturday (this Saturday + 7 days)
-	// This typically gives 8-9 days from weekdays, matching the requirement
-	// Example: Thursday 15th -> next week's Saturday (approximately 8-9 days)
-	const followingSaturday = new Date(now);
-	const currentDay = followingSaturday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-	
-	let daysUntilSaturday;
-	if (currentDay === 6) {
-		// Today is Saturday, get next Saturday (7 days)
-		daysUntilSaturday = 7;
-	} else {
-		// Days until this Saturday
-		const daysToThisSaturday = 6 - currentDay;
-		// Always use next week's Saturday (this Saturday + 7 days)
-		daysUntilSaturday = daysToThisSaturday + 7;
-	}
-	
-	followingSaturday.setDate(followingSaturday.getDate() + daysUntilSaturday);
-	followingSaturday.setHours(23, 59, 59, 999); // End of Saturday
+	// Calculate 14 days from now (end of day at 23:59:59)
+	const fourteenDaysFromNow = new Date(now);
+	fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
+	fourteenDaysFromNow.setHours(23, 59, 59, 999); // End of day
 
 	const events = await readCollection('events');
 	const occurrences = await readCollection('occurrences');
@@ -130,7 +114,7 @@ export async function getUpcomingEvents(event) {
 		if (!memberEventIds.has(occurrence.eventId)) continue;
 
 		const startDate = new Date(occurrence.startsAt);
-		if (startDate >= now && startDate <= followingSaturday) {
+		if (startDate >= now && startDate <= fourteenDaysFromNow) {
 			const eventData = memberEvents.find(e => e.id === occurrence.eventId);
 			if (eventData) {
 				upcoming.push({
@@ -426,15 +410,39 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 			});
 	}
 
+	// Get week note for current week (before replace to avoid async issues)
+	const { getWeekKey } = await import('$lib/crm/utils/weekUtils.js');
+	const weekNotes = await readCollection('week_notes');
+	const currentWeekKey = getWeekKey(new Date());
+	const weekNote = weekNotes.find(n => n.weekKey === currentWeekKey);
+
 	// Replace upcoming events placeholders
 	if (isText) {
 		// Plain text version
 		personalized = personalized.replace(/\{\{upcomingEvents\}\}/g, () => {
+			let text = '';
+			
+			// Add week note if it exists
+			if (weekNote && weekNote.note) {
+				// Strip HTML tags for text version
+				const noteText = weekNote.note
+					.replace(/<[^>]*>/g, '')
+					.replace(/&nbsp;/g, ' ')
+					.replace(/&amp;/g, '&')
+					.replace(/&lt;/g, '<')
+					.replace(/&gt;/g, '>')
+					.replace(/&quot;/g, '"')
+					.replace(/&#39;/g, "'")
+					.trim();
+				if (noteText) {
+					text += `${noteText}\n\n`;
+				}
+			}
+			
 			if (upcomingEvents.length === 0) {
-				return 'There are no upcoming events up to the following Saturday.';
+				return text || 'There are no upcoming events in the next 14 days.';
 			}
 
-			let text = '';
 			for (const item of upcomingEvents) {
 				const { event: eventData, occurrence } = item;
 				const dateStr = new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
@@ -458,12 +466,19 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 	} else {
 		// HTML version
 		personalized = personalized.replace(/\{\{upcomingEvents\}\}/g, () => {
-			if (upcomingEvents.length === 0) {
-				return '<p style="color: #333; font-size: 14px;">There are no upcoming events up to the following Saturday.</p>';
-			}
-
 			let html = '';
 			
+			// Add week note if it exists
+			if (weekNote && weekNote.note) {
+				html += '<div style="background: #f0f9ff; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #2d7a32;">';
+				html += `<div style="color: #333; font-size: 14px; line-height: 1.5;">${weekNote.note}</div>`;
+				html += '</div>';
+			}
+			
+			if (upcomingEvents.length === 0) {
+				return html || '<p style="color: #333; font-size: 14px;">There are no upcoming events in the next 14 days.</p>';
+			}
+
 			for (const item of upcomingEvents) {
 				const { event: eventData, occurrence } = item;
 				const dateStr = new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
