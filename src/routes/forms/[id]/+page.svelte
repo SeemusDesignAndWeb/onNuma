@@ -16,6 +16,8 @@
 		for (const field of form.fields) {
 			if (field.type === 'checkbox') {
 				initial[field.name] = [];
+			} else if (field.type === 'radio') {
+				initial[field.name] = null; // Radio buttons need null initially
 			} else {
 				initial[field.name] = '';
 			}
@@ -117,7 +119,8 @@
 													type="radio"
 													name={field.name}
 													value={option}
-													bind:group={formData[field.name]}
+													checked={formData[field.name] === option}
+													on:change={() => formData[field.name] = option}
 													required={field.required}
 													class="mr-2 text-green-600 focus:ring-green-500"
 												/>

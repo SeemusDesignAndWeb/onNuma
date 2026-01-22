@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import { dialog } from '$lib/crm/stores/notifications.js';
@@ -21,7 +22,7 @@
 	let lastProcessedFormResult = null;
 
 	// Show notifications from form results
-	$: if (formResult && formResult !== lastProcessedFormResult) {
+	$: if (formResult && formResult !== lastProcessedFormResult && browser) {
 		lastProcessedFormResult = formResult;
 		
 		if (formResult?.success) {
@@ -29,7 +30,9 @@
 				notifications.success('Submission deleted successfully');
 				// Reload page to refresh the list
 				setTimeout(() => {
-					window.location.reload();
+					if (browser && typeof window !== 'undefined') {
+						window.location.reload();
+					}
 				}, 500);
 			} else {
 				notifications.success('Form updated successfully');

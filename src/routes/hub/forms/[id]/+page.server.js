@@ -113,53 +113,68 @@ export const actions = {
 	},
 
 	deleteSubmission: async ({ request, params, cookies, locals }) => {
-		const data = await request.formData();
-		const csrfToken = data.get('_csrf');
+		try {
+			const data = await request.formData();
+			const csrfToken = data.get('_csrf');
 
-		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
-			return fail(403, { error: 'CSRF token validation failed' });
+			if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+				return fail(403, { error: 'CSRF token validation failed' });
+			}
+
+			const admin = await getAdminFromCookies(cookies);
+			if (!admin) {
+				return fail(401, { error: 'Unauthorized' });
+			}
+
+			// Check permissions: must be super admin or have safeguarding permission
+			const superAdminEmail = getSuperAdminEmail();
+			const canDelete = isSuperAdmin(admin, superAdminEmail) || canAccessSafeguarding(admin);
+			if (!canDelete) {
+				return fail(403, { error: 'You do not have permission to delete form submissions' });
+			}
+
+			const submissionId = data.get('submissionId');
+			if (!submissionId) {
+				return fail(400, { error: 'Submission ID is required' });
+			}
+
+			const register = await findById('registers', submissionId.toString());
+			if (!register || register.formId !== params.id) {
+				return fail(404, { error: 'Submission not found' });
+			}
+
+			const form = await findById('forms', params.id);
+			if (!form) {
+				return fail(404, { error: 'Form not found' });
+			}
+
+			// Delete the submission
+			try {
+				await remove('registers', submissionId.toString());
+			} catch (error) {
+				console.error('Error deleting submission:', error);
+				return fail(500, { error: 'Failed to delete submission' });
+			}
+
+			// Log the delete action (don't fail if logging fails)
+			try {
+				const event = { getClientAddress: () => 'unknown', request };
+				await logDataChange(admin.id, 'delete', 'registers', submissionId.toString(), {
+					formId: params.id,
+					formName: form.name || 'Unknown',
+					submissionId: submissionId.toString(),
+					isSafeguarding: form.isSafeguarding || form.requiresEncryption
+				}, event);
+			} catch (error) {
+				console.error('Error logging delete action:', error);
+				// Continue even if logging fails
+			}
+
+			return { success: true, type: 'deleteSubmission' };
+		} catch (error) {
+			console.error('Unexpected error in deleteSubmission:', error);
+			return fail(500, { error: 'An unexpected error occurred while deleting the submission' });
 		}
-
-		const admin = await getAdminFromCookies(cookies);
-		if (!admin) {
-			return fail(401, { error: 'Unauthorized' });
-		}
-
-		// Check permissions: must be super admin or have safeguarding permission
-		const superAdminEmail = getSuperAdminEmail();
-		const canDelete = isSuperAdmin(admin, superAdminEmail) || canAccessSafeguarding(admin);
-		if (!canDelete) {
-			return fail(403, { error: 'You do not have permission to delete form submissions' });
-		}
-
-		const submissionId = data.get('submissionId');
-		if (!submissionId) {
-			return fail(400, { error: 'Submission ID is required' });
-		}
-
-		const register = await findById('registers', submissionId.toString());
-		if (!register || register.formId !== params.id) {
-			return fail(404, { error: 'Submission not found' });
-		}
-
-		const form = await findById('forms', params.id);
-		if (!form) {
-			return fail(404, { error: 'Form not found' });
-		}
-
-		// Delete the submission
-		await remove('registers', submissionId.toString());
-
-		// Log the delete action
-		const event = { getClientAddress: () => 'unknown', request };
-		await logDataChange(admin.id, 'delete', 'registers', submissionId.toString(), {
-			formId: params.id,
-			formName: form.name || 'Unknown',
-			submissionId: submissionId.toString(),
-			isSafeguarding: form.isSafeguarding || form.requiresEncryption
-		}, event);
-
-		return { success: true, type: 'deleteSubmission' };
 	}
 };
 

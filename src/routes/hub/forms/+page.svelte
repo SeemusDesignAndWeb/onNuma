@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import Table from '$lib/crm/components/Table.svelte';
 	import Pager from '$lib/crm/components/Pager.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -23,7 +24,7 @@
 	let lastProcessedFormResult = null;
 
 	// Show notifications from form results
-	$: if (formResult && formResult !== lastProcessedFormResult) {
+	$: if (formResult && formResult !== lastProcessedFormResult && browser) {
 		lastProcessedFormResult = formResult;
 		
 		if (formResult?.success) {
@@ -31,7 +32,9 @@
 				notifications.success('Submission deleted successfully');
 				// Reload page to refresh the list
 				setTimeout(() => {
-					invalidateAll();
+					if (browser) {
+						invalidateAll();
+					}
 				}, 500);
 			}
 		} else if (formResult?.error) {
@@ -148,7 +151,9 @@
 
 				// Reload the page to show the new forms
 				setTimeout(() => {
-					invalidateAll();
+					if (browser) {
+						invalidateAll();
+					}
 				}, 500);
 			} catch (error) {
 				console.error('Import error:', error);
