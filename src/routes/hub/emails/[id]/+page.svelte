@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import HtmlEditor from '$lib/crm/components/HtmlEditor.svelte';
 	import { dialog } from '$lib/crm/stores/notifications.js';
@@ -45,7 +45,7 @@
 		}
 	}
 
-	let editing = false;
+	let editing = true;
 	let htmlContent = '';
 	let selectedTemplateId = '';
 	let showSaveTemplateModal = false;
@@ -65,9 +65,6 @@
 		// 1. This is a new newsletter (initial load), OR
 		// 2. We're not currently editing AND not submitting (so we can refresh after save, but not during)
 		if (isNewNewsletter || (!editing && !isSubmitting)) {
-			// Don't auto-open in edit mode - always show detail view first
-			// User can click "Edit" button to edit
-			
 			// Populate form data from newsletter
 			formData = {
 				subject: newsletter.subject || ''
@@ -186,111 +183,70 @@
 			<div class="flex justify-between items-start mb-4">
 				<div class="flex-1">
 					<h1 class="text-3xl font-bold mb-2 text-white">{newsletter.subject || 'Untitled Email'}</h1>
-					<div class="flex items-center gap-4 mt-3 text-white">
-						{#if newsletter.createdAt}
-							<span class="text-sm flex items-center gap-1">
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-								Created: {formatDateTimeUK(newsletter.createdAt)}
-							</span>
-						{/if}
-						{#if newsletter.updatedAt && newsletter.updatedAt !== newsletter.createdAt}
-							<span class="text-sm flex items-center gap-1">
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-								</svg>
-								Updated: {formatDateTimeUK(newsletter.updatedAt)}
-							</span>
-						{/if}
-					</div>
 				</div>
 				<div class="flex flex-col items-end gap-2">
-					<span class="px-3 py-1 rounded-full text-sm font-semibold border-2 bg-white/20 text-white border-white/30">
-						{newsletter.status ? newsletter.status.charAt(0).toUpperCase() + newsletter.status.slice(1) : 'Draft'}
-					</span>
-					{#if newsletter.logs && newsletter.logs.length > 0}
-						<span class="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30">
-							{newsletter.logs.length} {newsletter.logs.length === 1 ? 'send' : 'sends'}
-						</span>
-					{/if}
+					<a href="/hub/emails/{newsletter.id}/send" class="bg-hub-blue-500 hover:bg-hub-blue-600 text-white px-4 py-2.5 rounded-md transition-colors text-base font-semibold shadow-md flex items-center gap-1.5">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+						</svg>
+						Send
+					</a>
 				</div>
 			</div>
 			<div class="flex flex-col sm:flex-row gap-2 mt-4 sm:justify-between">
 				<div class="flex flex-wrap gap-2">
-					{#if editing}
-						<button
-							type="submit"
-							form="newsletter-form"
-							class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-hub-green-500/50 flex items-center gap-1.5"
-						>
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-							</svg>
-							<span class="hidden sm:inline">Save Changes</span>
-							<span class="sm:hidden">Save</span>
-						</button>
-						<button
-							type="button"
-							on:click={() => showSaveTemplateModal = true}
-							class="bg-hub-blue-600 hover:bg-hub-blue-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-hub-blue-500/50 flex items-center gap-1.5"
-						>
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-							</svg>
-							<span class="hidden sm:inline">Save as Template</span>
-							<span class="sm:hidden">Template</span>
-						</button>
-					{:else}
-						<button
-							type="button"
-							on:click|preventDefault={() => editing = true}
-							class="bg-hub-yellow-500/80 hover:bg-hub-yellow-600/90 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-hub-yellow-400/50 flex items-center gap-1.5"
-						>
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-							</svg>
-							Edit
-						</button>
-						<a href="/hub/emails/{newsletter.id}/preview" class="bg-hub-red-500/80 hover:bg-hub-red-600/90 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-hub-red-400/50 flex items-center gap-1.5">
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-							</svg>
-							Preview
-						</a>
-						<a href="/hub/emails/{newsletter.id}/export-pdf" target="_blank" class="bg-hub-red-600 hover:bg-hub-red-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-hub-red-500/50 flex items-center gap-1.5">
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-							</svg>
-							<span class="hidden sm:inline">Export PDF</span>
-							<span class="sm:hidden">PDF</span>
-						</a>
-						<a href="/hub/emails/{newsletter.id}/send" class="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-white/30 flex items-center gap-1.5">
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-							</svg>
-							Send
-						</a>
-					{/if}
+					<button
+						type="submit"
+						form="newsletter-form"
+						class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
+					>
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						</svg>
+						<span class="hidden sm:inline">Save Changes</span>
+						<span class="sm:hidden">Save</span>
+					</button>
+					<button
+						type="button"
+						on:click={() => showSaveTemplateModal = true}
+						class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
+					>
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+						</svg>
+						<span class="hidden sm:inline">Save as Template</span>
+						<span class="sm:hidden">Template</span>
+					</button>
+					<a href="/hub/emails/{newsletter.id}/preview" class="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+						</svg>
+						Preview
+					</a>
+					<a href="/hub/emails/{newsletter.id}/export-pdf" target="_blank" class="bg-orange-600 hover:bg-orange-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5">
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+						</svg>
+						<span class="hidden sm:inline">Export PDF</span>
+						<span class="sm:hidden">PDF</span>
+					</a>
 				</div>
 				<div class="flex gap-2">
-					{#if editing}
-						<button
-							type="button"
-							on:click={() => editing = false}
-							class="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-white/30 flex items-center gap-1.5"
-						>
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-							</svg>
-							Back
-						</button>
-					{/if}
+					<button
+						type="button"
+						on:click={() => goto('/hub/emails')}
+						class="bg-gray-600 hover:bg-gray-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
+					>
+						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+						</svg>
+						Back
+					</button>
 					<button
 						type="button"
 						on:click={handleDelete}
-						class="bg-hub-red-500/80 hover:bg-hub-red-600/90 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-medium border border-hub-red-400/50 flex items-center gap-1.5"
+						class="bg-hub-red-600 hover:bg-hub-red-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -302,8 +258,6 @@
 		</div>
 
 		<div class="bg-white shadow rounded-lg p-6">
-
-		{#if editing}
 			<form id="newsletter-form" method="POST" action="?/update" use:enhance={handleEnhance}>
 				<input type="hidden" name="_csrf" value={csrfToken} />
 				<div class="mb-4">
@@ -326,102 +280,6 @@
 					<HtmlEditor bind:value={htmlContent} name="htmlContent" showPlaceholders={true} showImagePicker={true} />
 				</div>
 			</form>
-		{:else}
-			<!-- Info Cards Grid -->
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-				<!-- Status Card -->
-				<div class="bg-gradient-to-br from-hub-blue-500 to-hub-blue-600 border-2 border-hub-blue-400 rounded-lg p-4">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="text-xs font-medium text-white uppercase tracking-wide mb-1">Status</p>
-							<span class="px-3 py-1 rounded-full text-sm font-semibold border-2 {newsletter.status === 'sent' ? 'bg-hub-green-100 text-hub-green-800 border-hub-green-300' : newsletter.status === 'scheduled' ? 'bg-white/20 text-white border-white/30' : 'bg-gray-100 text-gray-800 border-gray-300'}">
-								{newsletter.status ? newsletter.status.charAt(0).toUpperCase() + newsletter.status.slice(1) : 'Draft'}
-							</span>
-						</div>
-						<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-					</div>
-				</div>
-
-				<!-- Stats Card -->
-				<div class="bg-gradient-to-br from-hub-green-500 to-hub-green-600 border-2 border-hub-green-400 rounded-lg p-4">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="text-xs font-medium text-white uppercase tracking-wide mb-1">Sends</p>
-							<p class="text-2xl font-bold text-white">
-								{newsletter.logs?.length || 0}
-							</p>
-						</div>
-						<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-						</svg>
-					</div>
-				</div>
-
-				<!-- Date Card -->
-				<div class="bg-gradient-to-br from-hub-blue-500 to-hub-blue-600 border-2 border-hub-blue-400 rounded-lg p-4">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="text-xs font-medium text-white uppercase tracking-wide mb-1">Created</p>
-							<p class="text-sm font-semibold text-white">
-								{#if newsletter.createdAt}
-									{formatDateTimeUK(newsletter.createdAt)}
-								{:else}
-									Unknown
-								{/if}
-							</p>
-						</div>
-						<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-						</svg>
-					</div>
-				</div>
-			</div>
-
-			<!-- Subject Card -->
-			<div class="bg-white border-2 border-gray-200 rounded-lg p-5 mb-6">
-				<div class="flex items-start gap-3">
-					<div class="flex-shrink-0 w-10 h-10 bg-hub-blue-100 rounded-lg flex items-center justify-center">
-						<svg class="w-6 h-6 text-hub-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-						</svg>
-					</div>
-					<div class="flex-1">
-						<p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Subject Line</p>
-						<p class="text-lg font-semibold text-gray-900">{newsletter.subject || 'Untitled Email'}</p>
-					</div>
-				</div>
-			</div>
-
-			<!-- Content Preview Card -->
-			{#if newsletter.htmlContent}
-				<div class="bg-white border-2 border-gray-200 rounded-lg overflow-hidden">
-					<div class="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-4">
-						<div class="flex items-center justify-between">
-							<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-								<svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-								</svg>
-								Content Preview
-							</h3>
-							<a href="/hub/emails/{newsletter.id}/preview" class="text-sm text-hub-blue-600 hover:text-hub-blue-800 font-medium flex items-center gap-1">
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-								</svg>
-								Full Preview
-							</a>
-						</div>
-					</div>
-					<div class="p-6 bg-gray-50">
-						<div class="max-w-2xl mx-auto bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
-							<div class="newsletter-preview p-6 max-h-96 overflow-y-auto">{@html newsletter.htmlContent}</div>
-						</div>
-					</div>
-				</div>
-			{/if}
-		{/if}
 
 		{#if formResult?.success && formResult?.templateId}
 			{(() => {

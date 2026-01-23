@@ -19,6 +19,9 @@
 	let imageSearchTerm = '';
 	let isUpdatingFromExternal = false; // Track if we're updating from external source (reactive statement)
 	let ResizableImageClass = null; // Store ResizableImage class for resize functionality
+	let showSourceView = false;
+	let sourceContent = value || '';
+	let sourceTextarea = null;
 
 	const placeholders = [
 		{ value: '{{firstName}}', label: 'First Name' },
@@ -103,6 +106,7 @@
 						container: [
 							[{ 'header': [1, 2, 3, false] }],
 							['bold', 'italic', 'underline', 'strike'],
+							[{ 'color': [] }, { 'background': [] }],
 							[{ 'list': 'ordered'}, { 'list': 'bullet' }],
 							[{ 'align': [] }],
 							['link', 'image'],
@@ -236,9 +240,9 @@
 					const html = quill.root.innerHTML;
 					// Sanitize on submit (not on every keystroke to avoid delays)
 					const sanitized = DOMPurify.default.sanitize(html, {
-						ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style'],
+						ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style', 'width', 'height'],
 						ALLOWED_CLASSES: {
-							'*': ['ql-align-center', 'ql-align-right', 'ql-align-justify', 'ql-align-left']
+							'*': ['ql-align-center', 'ql-align-right', 'ql-align-justify', 'ql-align-left', 'ql-resizable-image']
 						}
 					});
 					value = sanitized;
@@ -271,12 +275,35 @@
 		// Only update if the value is actually different
 		if (current !== newValue) {
 			isUpdatingFromExternal = true;
-			quill.root.innerHTML = newValue;
+			// Use Quill's clipboard to properly parse HTML and preserve image attributes
+			const delta = quill.clipboard.convert({ html: newValue });
+			quill.setContents(delta);
 			initialValue = newValue;
-			// Reset flag after a brief delay
+			
+			// Convert any images to resizable format after update
 			setTimeout(() => {
+				if (quill && quill.root) {
+					const images = quill.root.querySelectorAll('img:not(.ql-resizable-image)');
+					images.forEach((img) => {
+						const src = img.getAttribute('src');
+						if (src) {
+							try {
+								const leaf = quill.getLeaf(img);
+								if (leaf && leaf[0]) {
+									const index = quill.getIndex(leaf[0]);
+									const width = img.getAttribute('width');
+									const height = img.getAttribute('height');
+									quill.deleteText(index, 1, 'user');
+									quill.insertEmbed(index, 'resizableImage', { url: src, width, height }, 'user');
+								}
+							} catch (error) {
+								console.warn('Error converting image to resizable format:', error);
+							}
+						}
+					});
+				}
 				isUpdatingFromExternal = false;
-			}, 0);
+			}, 100);
 		} else {
 			initialValue = value;
 		}
@@ -523,10 +550,12 @@
 
 	function openImagePicker() {
 		showImageModal = true;
+		showImageOptions = false;
 		if (images.length === 0) {
 			loadImages();
 		}
 	}
+
 
 	function closeImageModal() {
 		showImageModal = false;
@@ -544,6 +573,129 @@
 	function handleClickOutside(event) {
 		if (showPlaceholderMenu && !event.target.closest('.placeholder-menu-container')) {
 			showPlaceholderMenu = false;
+		}
+	}
+
+	// Format HTML with proper indentation
+	function formatHTML(html) {
+		if (!html || html.trim() === '') return '';
+		
+		try {
+			// Use a simple parser approach
+			let formatted = '';
+			let indent = 0;
+			const indentSize = 2;
+			
+			// Remove extra whitespace between tags
+			let cleaned = html.replace(/>\s+</g, '><').trim();
+			
+			// Split into tokens (tags and text)
+			const tokens = cleaned.split(/(<[^>]*>)/);
+			
+			for (let i = 0; i < tokens.length; i++) {
+				const token = tokens[i];
+				if (!token) continue;
+				
+				// Check if it's a tag
+				if (token.startsWith('<')) {
+					const isClosing = token.startsWith('</');
+					const isSelfClosing = token.endsWith('/>') || /<(br|hr|img|input|meta|link|area|base|col|embed|source|track|wbr)(\s|>)/i.test(token);
+					
+					if (isClosing) {
+						indent = Math.max(0, indent - 1);
+						formatted += ' '.repeat(indent * indentSize) + token + '\n';
+					} else if (isSelfClosing) {
+						formatted += ' '.repeat(indent * indentSize) + token + '\n';
+					} else {
+						formatted += ' '.repeat(indent * indentSize) + token + '\n';
+						indent++;
+					}
+				} else {
+					// It's text content
+					const text = token.trim();
+					if (text) {
+						// Check if next token is a closing tag (inline content)
+						const nextToken = tokens[i + 1];
+						if (nextToken && nextToken.startsWith('</')) {
+							formatted += ' '.repeat(indent * indentSize) + text;
+						} else {
+							formatted += ' '.repeat(indent * indentSize) + text + '\n';
+						}
+					}
+				}
+			}
+			
+			return formatted.trim();
+		} catch (error) {
+			// If formatting fails, return original HTML
+			console.warn('HTML formatting error:', error);
+			return html;
+		}
+	}
+
+	function toggleSourceView() {
+		if (!quill && !showSourceView) {
+			// Can't switch to source if Quill isn't loaded yet
+			return;
+		}
+		
+		if (showSourceView) {
+			// Switching from source to visual - update Quill with source content
+			if (!quill) return;
+			
+			const html = sourceContent;
+			isUpdatingFromExternal = true;
+			const delta = quill.clipboard.convert({ html });
+			quill.setContents(delta);
+			value = html;
+			initialValue = html;
+			
+			// Update hidden input
+			const hiddenInput = quillContainer?.parentElement?.querySelector(`input[name="${name}"]`);
+			if (hiddenInput) {
+				hiddenInput.value = html;
+			}
+			
+			setTimeout(() => {
+				isUpdatingFromExternal = false;
+			}, 0);
+		} else {
+			// Switching from visual to source - get HTML from Quill and format it
+			if (quill) {
+				const rawHTML = quill.root.innerHTML;
+				sourceContent = formatHTML(rawHTML);
+			} else {
+				// If Quill isn't loaded, use current value
+				sourceContent = formatHTML(value || '');
+			}
+		}
+		
+		showSourceView = !showSourceView;
+	}
+
+	function formatSourceCode() {
+		if (sourceTextarea) {
+			sourceContent = formatHTML(sourceContent);
+			value = sourceContent;
+			
+			// Update hidden input
+			const hiddenInput = quillContainer?.parentElement?.querySelector(`input[name="${name}"]`);
+			if (hiddenInput) {
+				hiddenInput.value = sourceContent;
+			}
+		}
+	}
+
+	function handleSourceChange() {
+		if (sourceTextarea) {
+			sourceContent = sourceTextarea.value;
+			value = sourceContent;
+			
+			// Update hidden input
+			const hiddenInput = quillContainer?.parentElement?.querySelector(`input[name="${name}"]`);
+			if (hiddenInput) {
+				hiddenInput.value = sourceContent;
+			}
 		}
 	}
 </script>
@@ -589,7 +741,53 @@
 			</a>
 		</div>
 	{/if}
-	<div bind:this={quillContainer} class="bg-white" dir="ltr"></div>
+	<div class="html-editor-wrapper">
+		<!-- View Source Button - Floating Right on Toolbar -->
+		<button
+			type="button"
+			on:click={toggleSourceView}
+			class="view-source-btn"
+			title={showSourceView ? 'Switch to Visual Editor' : 'View Source'}
+		>
+			{#if showSourceView}
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+				</svg>
+				<span>Visual</span>
+			{:else}
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+				</svg>
+				<span>Source</span>
+			{/if}
+		</button>
+		
+		<div bind:this={quillContainer} class="bg-white quill-wrapper" dir="ltr" class:source-view-mode={showSourceView}></div>
+		<div class="source-view-container" class:hidden={!showSourceView}>
+			<div class="source-view-toolbar">
+				<button
+					type="button"
+					on:click={formatSourceCode}
+					class="format-btn"
+					title="Format HTML code"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+					</svg>
+					<span>Format</span>
+				</button>
+			</div>
+			<textarea
+				bind:this={sourceTextarea}
+				bind:value={sourceContent}
+				on:input={handleSourceChange}
+				class="source-textarea"
+				placeholder="Enter HTML source code..."
+				spellcheck="false"
+			></textarea>
+		</div>
+	</div>
 	<input type="hidden" name={name} value={value} />
 </div>
 
@@ -662,6 +860,143 @@
 {/if}
 
 <style>
+	.html-editor-wrapper {
+		position: relative;
+	}
+
+	.quill-wrapper {
+		position: relative;
+	}
+
+	/* Hide the container element itself when it has source-view-mode class */
+	:global(.ql-container.source-view-mode),
+	:global(.ql-snow.source-view-mode) {
+		display: none !important;
+	}
+
+	/* Hide only the editor container (not toolbar) when in source view */
+	.quill-wrapper.source-view-mode :global(.ql-container),
+	.quill-wrapper.source-view-mode :global(.ql-editor) {
+		display: none !important;
+	}
+
+	/* Ensure toolbar stays visible and has proper border when in source view */
+	.quill-wrapper :global(.ql-toolbar) {
+		display: flex !important;
+	}
+
+	/* Adjust toolbar border when in source view to connect with source container */
+	.quill-wrapper.source-view-mode :global(.ql-toolbar) {
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
+		border-bottom: 1px solid #d1d5db;
+	}
+
+	.view-source-btn {
+		position: absolute;
+		top: 8px;
+		right: 12px;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		font-size: 13px;
+		color: #374151;
+		background: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+	}
+
+	.view-source-btn:hover {
+		background: #f9fafb;
+		color: #111827;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.hidden {
+		display: none !important;
+	}
+
+	.source-view-container {
+		position: relative;
+		border: 1px solid #d1d5db;
+		border-top: none;
+		border-radius: 0 0 4px 4px;
+		background: #1e1e1e;
+		overflow: hidden;
+		margin-top: -1px; /* Overlap with toolbar border */
+		display: flex;
+		flex-direction: column;
+		height: calc(100vh - 300px); /* Expand to near bottom of screen */
+		min-height: 400px;
+		max-height: calc(100vh - 150px);
+	}
+
+	.source-view-toolbar {
+		display: flex;
+		justify-content: flex-end;
+		padding: 8px;
+		background: #252526;
+		border-bottom: 1px solid #3e3e42;
+	}
+
+	.format-btn {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 12px;
+		font-size: 12px;
+		color: #cccccc;
+		background: #2d2d30;
+		border: 1px solid #3e3e42;
+		border-radius: 3px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.format-btn:hover {
+		background: #37373d;
+		border-color: #007acc;
+		color: #ffffff;
+	}
+
+	.source-textarea {
+		width: 100%;
+		flex: 1;
+		min-height: 400px;
+		padding: 16px;
+		font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+		font-size: 13px;
+		line-height: 1.6;
+		color: #d4d4d4;
+		background: #1e1e1e;
+		border: none;
+		outline: none;
+		resize: none;
+		tab-size: 2;
+		white-space: pre-wrap;
+		overflow-wrap: break-word;
+		word-wrap: break-word;
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+
+	.source-textarea::selection {
+		background: #264f78;
+	}
+
+	.source-textarea:focus {
+		outline: none;
+	}
+
+	.view-source-btn svg {
+		flex-shrink: 0;
+	}
+
 	:global(.html-editor .ql-container) {
 		min-height: 200px;
 		font-size: 14px;
