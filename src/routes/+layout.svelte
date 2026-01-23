@@ -8,6 +8,7 @@
 	import { page } from '$app/stores';
 
 	export let data;
+	export let params = {};
 
 	let showPreloader = true;
 	let showHighlightBanner = false;

@@ -265,13 +265,13 @@
 						Insert Placeholder ↓
 					</button>
 					{#if showPlaceholderMenu}
-						<div class="absolute z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg min-w-[200px]" on:click|stopPropagation>
+						<div class="absolute z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg min-w-[350px]" on:click|stopPropagation>
 							<div class="py-1">
 								{#each placeholders as placeholder}
 									<button
 										type="button"
 										on:click={() => insertPlaceholder(placeholder.value)}
-										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap"
 									>
 										<code class="text-xs">{placeholder.value}</code> - {placeholder.label}
 									</button>

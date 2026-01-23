@@ -215,6 +215,11 @@ export function hasRouteAccess(admin, pathname) {
 		return isSuperAdmin(admin);
 	}
 	
+	// Image management pages (/hub/images) are only for super admin
+	if (pathname.startsWith('/hub/images')) {
+		return isSuperAdmin(admin);
+	}
+	
 	// Get the hub area for this route
 	const area = getAreaForRoute(pathname);
 	if (!area) {
