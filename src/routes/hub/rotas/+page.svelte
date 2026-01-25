@@ -130,6 +130,9 @@
 		<a href="/hub/rotas/invite" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs">
 			Bulk Invite
 		</a>
+		<a href="/hub/rotas/bulk-assign" class="bg-hub-blue-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-blue-700 text-xs">
+			Bulk Assign
+		</a>
 		<a href="/hub/rotas/new" class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs">
 			New Rota
 		</a>
