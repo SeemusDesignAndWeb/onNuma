@@ -6,7 +6,7 @@ import { env } from '$env/dynamic/private';
 
 // Get data directory from environment variable or default to ./data
 // In production (Railway), set CRM_DATA_DIR=/data to use the persistent volume
-function getDataDir() {
+export function getDataDir() {
 	const envDataDir = env.CRM_DATA_DIR;
 	if (envDataDir && envDataDir.trim()) {
 		const trimmed = envDataDir.trim();

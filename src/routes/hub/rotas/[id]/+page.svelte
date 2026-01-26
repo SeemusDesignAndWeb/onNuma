@@ -37,6 +37,7 @@
 	$: signupLink = $page.data?.signupLink || '';
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+	$: helpFiles = rota?.helpFiles || [];
 	
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 
@@ -59,7 +60,7 @@
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
 
-	// Show notifications from form results
+		// Show notifications from form results
 	$: if (formResult && browser && formResult !== lastProcessedFormResult) {
 		lastProcessedFormResult = formResult;
 		
@@ -73,7 +74,22 @@
 						invalidateAll();
 					}, 500);
 				}
-			} else if (formResult?.type !== 'addAssignees' && formResult?.type !== 'removeAssignee') {
+			} else if (formResult?.type === 'addHelpFile' || formResult?.type === 'removeHelpFile') {
+				const message = formResult.type === 'addHelpFile' ? 'Help file added successfully' : 'Help file removed successfully';
+				notifications.success(message);
+				// Reset form state
+				showAddHelpFile = false;
+				helpFileUrl = '';
+				helpFileTitle = '';
+				helpFileFile = null;
+				helpFileUploading = false;
+				// Reload to refresh the help files list - only on client
+				if (browser) {
+					setTimeout(() => {
+						invalidateAll();
+					}, 500);
+				}
+			} else if (formResult?.type !== 'addAssignees' && formResult?.type !== 'removeAssignee' && formResult?.type !== 'addHelpFile' && formResult?.type !== 'removeHelpFile') {
 				notifications.success('Rota updated successfully');
 				// Exit editing mode after successful save
 				editing = false;
@@ -202,6 +218,14 @@
 	let selectedContactIds = new Set();
 	let selectedOccurrenceId = '';
 	let selectedListId = '';
+	
+	// Help Files
+	let showAddHelpFile = false;
+	let helpFileType = 'link'; // 'link' or 'file'
+	let helpFileUrl = '';
+	let helpFileTitle = '';
+	let helpFileUploading = false;
+	let helpFileFile = null;
 	
 	// Initialize selected occurrence reactively (only if not already set)
 	$: if (rota && eventOccurrences && !selectedOccurrenceId) {
@@ -443,6 +467,136 @@
 		}
 		}
 	}
+
+	async function handleAddHelpFile() {
+		if (helpFileType === 'link') {
+			if (!helpFileUrl || !helpFileTitle) {
+				await dialog.alert('Please provide both URL and title', 'Validation Error');
+				return;
+			}
+
+			const form = document.createElement('form');
+			form.method = 'POST';
+			form.action = '?/addHelpFile';
+			
+			const csrfInput = document.createElement('input');
+			csrfInput.type = 'hidden';
+			csrfInput.name = '_csrf';
+			csrfInput.value = csrfToken;
+			form.appendChild(csrfInput);
+			
+			const typeInput = document.createElement('input');
+			typeInput.type = 'hidden';
+			typeInput.name = 'type';
+			typeInput.value = 'link';
+			form.appendChild(typeInput);
+			
+			const urlInput = document.createElement('input');
+			urlInput.type = 'hidden';
+			urlInput.name = 'url';
+			urlInput.value = helpFileUrl;
+			form.appendChild(urlInput);
+			
+			const titleInput = document.createElement('input');
+			titleInput.type = 'hidden';
+			titleInput.name = 'title';
+			titleInput.value = helpFileTitle;
+			form.appendChild(titleInput);
+			
+			document.body.appendChild(form);
+			form.submit();
+		} else {
+			// File upload
+			if (!helpFileFile) {
+				await dialog.alert('Please select a PDF file', 'Validation Error');
+				return;
+			}
+
+			helpFileUploading = true;
+			try {
+				// First upload the file
+				const uploadFormData = new FormData();
+				uploadFormData.append('file', helpFileFile);
+
+				const uploadResponse = await fetch(`/hub/rotas/${rota.id}/help-files/upload`, {
+					method: 'POST',
+					body: uploadFormData
+				});
+
+				if (!uploadResponse.ok) {
+					const errorData = await uploadResponse.json().catch(() => ({}));
+					throw new Error(errorData?.error || 'Failed to upload file');
+				}
+
+				const uploadResult = await uploadResponse.json();
+
+				// Then add the help file to the rota
+				const form = document.createElement('form');
+				form.method = 'POST';
+				form.action = '?/addHelpFile';
+				
+				const csrfInput = document.createElement('input');
+				csrfInput.type = 'hidden';
+				csrfInput.name = '_csrf';
+				csrfInput.value = csrfToken;
+				form.appendChild(csrfInput);
+				
+				const typeInput = document.createElement('input');
+				typeInput.type = 'hidden';
+				typeInput.name = 'type';
+				typeInput.value = 'file';
+				form.appendChild(typeInput);
+				
+				const filenameInput = document.createElement('input');
+				filenameInput.type = 'hidden';
+				filenameInput.name = 'filename';
+				filenameInput.value = uploadResult.filename;
+				form.appendChild(filenameInput);
+				
+				const originalNameInput = document.createElement('input');
+				originalNameInput.type = 'hidden';
+				originalNameInput.name = 'originalName';
+				originalNameInput.value = uploadResult.originalName;
+				form.appendChild(originalNameInput);
+				
+				const titleInput = document.createElement('input');
+				titleInput.type = 'hidden';
+				titleInput.name = 'title';
+				titleInput.value = helpFileTitle || uploadResult.originalName;
+				form.appendChild(titleInput);
+				
+				document.body.appendChild(form);
+				form.submit();
+			} catch (error) {
+				helpFileUploading = false;
+				notifications.error(error?.message || 'Failed to upload help file');
+			}
+		}
+	}
+
+	async function handleRemoveHelpFile(index) {
+		const confirmed = await dialog.confirm('Are you sure you want to remove this help file?', 'Remove Help File');
+		if (confirmed) {
+			const form = document.createElement('form');
+			form.method = 'POST';
+			form.action = '?/removeHelpFile';
+			
+			const csrfInput = document.createElement('input');
+			csrfInput.type = 'hidden';
+			csrfInput.name = '_csrf';
+			csrfInput.value = csrfToken;
+			form.appendChild(csrfInput);
+			
+			const indexInput = document.createElement('input');
+			indexInput.type = 'hidden';
+			indexInput.name = 'index';
+			indexInput.value = index.toString();
+			form.appendChild(indexInput);
+			
+			document.body.appendChild(form);
+			form.submit();
+		}
+	}
 </script>
 
 {#if rota}
@@ -583,6 +737,74 @@
 						<HtmlEditor bind:value={notes} name="notes" />
 					</div>
 				</div>
+
+				<!-- Help Files Panel -->
+				<div class="border border-gray-200 rounded-lg p-4 mb-4">
+					<h3 class="text-base font-semibold text-gray-900 mb-3">Help Files</h3>
+					<p class="text-sm text-gray-600 mb-3">Add documents or links that people can download when signing up for this rota.</p>
+					
+					<!-- Existing Help Files -->
+					{#if helpFiles.length > 0}
+						<div class="space-y-2 mb-4">
+							{#each helpFiles as helpFile, index}
+								<div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-2">
+											{#if helpFile.type === 'link'}
+												<svg class="w-5 h-5 text-hub-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+												</svg>
+											{:else}
+												<svg class="w-5 h-5 text-hub-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+												</svg>
+											{/if}
+											<div class="min-w-0 flex-1">
+												<div class="font-medium text-sm text-gray-900 truncate">{helpFile.title || (helpFile.type === 'link' ? helpFile.url : helpFile.originalName)}</div>
+												{#if helpFile.type === 'link'}
+													<div class="text-xs text-gray-500 truncate">{helpFile.url}</div>
+												{:else}
+													<div class="text-xs text-gray-500">{helpFile.originalName}</div>
+												{/if}
+											</div>
+										</div>
+									</div>
+									<button
+										type="button"
+										on:click={() => handleRemoveHelpFile(index)}
+										class="text-hub-red-600 hover:text-hub-red-800 px-2 py-1 rounded text-sm ml-2 flex-shrink-0"
+										title="Remove help file"
+									>
+										×
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Add Help File Form -->
+					<div class="border-t border-gray-200 pt-4">
+						<div class="mb-3">
+							<div class="block text-sm font-medium text-gray-700 mb-2">Add Help File</div>
+							<div class="flex gap-2 mb-2">
+								<button
+									type="button"
+									on:click={() => { showAddHelpFile = true; helpFileType = 'link'; }}
+									class="flex-1 bg-hub-blue-600 text-white px-3 py-2 rounded-md hover:bg-hub-blue-700 text-sm"
+								>
+									Add Link
+								</button>
+								<button
+									type="button"
+									on:click={() => { showAddHelpFile = true; helpFileType = 'file'; }}
+									class="flex-1 bg-hub-green-600 text-white px-3 py-2 rounded-md hover:bg-hub-green-700 text-sm"
+								>
+									Upload PDF
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
 			</form>
 		{:else}
 			<dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_2fr_1.5fr] gap-4">
@@ -615,6 +837,45 @@
 					</div>
 				{/if}
 			</dl>
+			
+			{#if helpFiles.length > 0}
+				<div class="mt-4 border-t border-gray-200 pt-4">
+					<dt class="text-sm font-medium text-gray-500 mb-2">Help Files</dt>
+					<dd class="mt-1">
+						<div class="space-y-2">
+							{#each helpFiles as helpFile}
+								<div class="flex items-center gap-2">
+									{#if helpFile.type === 'link'}
+										<a
+											href={helpFile.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="flex items-center gap-2 text-hub-blue-600 hover:text-hub-blue-700 underline text-sm"
+										>
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+											</svg>
+											<span>{helpFile.title}</span>
+										</a>
+									{:else}
+										<a
+											href="/hub/rotas/help-files/{helpFile.filename}"
+											target="_blank"
+											rel="noopener noreferrer"
+											class="flex items-center gap-2 text-hub-green-600 hover:text-hub-green-700 underline text-sm"
+										>
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+											</svg>
+											<span>{helpFile.title || helpFile.originalName}</span>
+										</a>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</dd>
+				</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -866,6 +1127,97 @@
 						class="bg-hub-green-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50"
 					>
 						Add Selected ({selectedContactIds.size})
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Add Help File Modal -->
+	{#if showAddHelpFile}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="button" tabindex="0" on:click={() => { showAddHelpFile = false; helpFileUrl = ''; helpFileTitle = ''; helpFileFile = null; }} on:keydown={(e) => e.key === 'Escape' && (showAddHelpFile = false)} aria-label="Close modal">
+			<div class="bg-white rounded-lg max-w-md w-full p-6" on:click|stopPropagation role="dialog" aria-modal="true">
+				<h3 class="text-lg font-bold text-gray-900 mb-4">
+					{helpFileType === 'link' ? 'Add Link' : 'Upload PDF'}
+				</h3>
+				
+				{#if helpFileType === 'link'}
+					<div class="space-y-4">
+						<div>
+							<label for="help-file-url" class="block text-sm font-medium text-gray-700 mb-1">URL <span class="text-hub-red-500">*</span></label>
+							<input
+								id="help-file-url"
+								type="url"
+								bind:value={helpFileUrl}
+								placeholder="https://example.com/document.pdf"
+								class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm"
+							/>
+						</div>
+						<div>
+							<label for="help-file-title" class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-hub-red-500">*</span></label>
+							<input
+								id="help-file-title"
+								type="text"
+								bind:value={helpFileTitle}
+								placeholder="Document Title"
+								class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm"
+							/>
+						</div>
+					</div>
+				{:else}
+					<div class="space-y-4">
+						<div>
+							<label for="help-file-upload" class="block text-sm font-medium text-gray-700 mb-1">PDF File <span class="text-hub-red-500">*</span></label>
+							<input
+								id="help-file-upload"
+								type="file"
+								accept=".pdf,application/pdf"
+								on:change={(e) => {
+									const file = e.target.files?.[0];
+									if (file) {
+										helpFileFile = file;
+										if (!helpFileTitle) {
+											helpFileTitle = file.name.replace(/\.pdf$/i, '');
+										}
+									}
+								}}
+								class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm"
+							/>
+							<p class="mt-1 text-xs text-gray-500">Maximum file size: 10MB</p>
+						</div>
+						<div>
+							<label for="help-file-title-file" class="block text-sm font-medium text-gray-700 mb-1">Title (optional)</label>
+							<input
+								id="help-file-title-file"
+								type="text"
+								bind:value={helpFileTitle}
+								placeholder="Document Title"
+								class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3 text-sm"
+							/>
+							<p class="mt-1 text-xs text-gray-500">If not provided, the filename will be used</p>
+						</div>
+					</div>
+				{/if}
+
+				<div class="mt-6 flex gap-2 justify-end">
+					<button
+						type="button"
+						on:click={() => { showAddHelpFile = false; helpFileUrl = ''; helpFileTitle = ''; helpFileFile = null; }}
+						class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm"
+					>
+						Cancel
+					</button>
+					<button
+						type="button"
+						on:click={handleAddHelpFile}
+						disabled={helpFileUploading || (helpFileType === 'link' ? (!helpFileUrl || !helpFileTitle) : !helpFileFile)}
+						class="bg-hub-green-600 text-white px-4 py-2 rounded-md hover:bg-hub-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+					>
+						{#if helpFileUploading}
+							Uploading...
+						{:else}
+							Add
+						{/if}
 					</button>
 				</div>
 			</div>

@@ -236,6 +236,32 @@ export function validateRota(data) {
 	// Validate visibility - must be 'public' or 'internal', default to 'public' for backward compatibility
 	const visibility = data.visibility === 'internal' ? 'internal' : 'public';
 
+	// Validate helpFiles - array of { type: 'link' | 'file', url?: string, filename?: string, originalName?: string, title?: string }
+	const helpFiles = Array.isArray(data.helpFiles) ? data.helpFiles : [];
+	const validatedHelpFiles = helpFiles.map(helpFile => {
+		if (!helpFile || typeof helpFile !== 'object') return null;
+		
+		if (helpFile.type === 'link') {
+			// Link type: requires url and title
+			if (!helpFile.url || !helpFile.title) return null;
+			return {
+				type: 'link',
+				url: validateString(helpFile.url, 'Help file URL', 500),
+				title: validateString(helpFile.title, 'Help file title', 200)
+			};
+		} else if (helpFile.type === 'file') {
+			// File type: requires filename and originalName
+			if (!helpFile.filename || !helpFile.originalName) return null;
+			return {
+				type: 'file',
+				filename: validateString(helpFile.filename, 'Help file filename', 200),
+				originalName: validateString(helpFile.originalName, 'Help file original name', 200),
+				title: helpFile.title ? validateString(helpFile.title, 'Help file title', 200) : helpFile.originalName
+			};
+		}
+		return null;
+	}).filter(hf => hf !== null);
+
 	return {
 		eventId: validateString(data.eventId, 'Event ID', 50),
 		occurrenceId: data.occurrenceId ? validateString(data.occurrenceId, 'Occurrence ID', 50) : null,
@@ -244,7 +270,8 @@ export function validateRota(data) {
 		assignees: validatedAssignees,
 		notes: validateString(data.notes || '', 'Notes', 10000),
 		ownerId: data.ownerId ? validateString(data.ownerId, 'Owner ID', 50) : null,
-		visibility: visibility
+		visibility: visibility,
+		helpFiles: validatedHelpFiles
 	};
 }
 

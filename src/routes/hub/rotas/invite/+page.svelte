@@ -11,6 +11,7 @@
 	let selectedEventId = '';
 	let selectedRotaIds = [];
 	let selectedListId = '';
+	let customMessage = '';
 	let sending = false;
 	let results = null;
 
@@ -44,7 +45,8 @@
 					eventId: selectedEventId,
 					rotaIds: selectedRotaIds,
 					occurrenceIds: [], // Occurrences will be selected on the signup page
-					listId: selectedListId
+					listId: selectedListId,
+					customMessage: customMessage
 				})
 			});
 
@@ -117,6 +119,21 @@
 					{/each}
 				</select>
 			</div>
+		</div>
+	</div>
+
+	<!-- Custom Message Panel -->
+	<div class="bg-white shadow rounded-lg p-6">
+		<h3 class="text-lg font-semibold text-gray-900 mb-4">Email Message</h3>
+		<div>
+			<label class="block text-sm font-medium text-gray-700 mb-1">Custom Message</label>
+			<p class="text-xs text-gray-500 mb-2">The email will start with "Hi {'{{firstname}}'}," followed by your message below, then the list of rotas.</p>
+			<textarea
+				bind:value={customMessage}
+				placeholder="Enter your custom message here..."
+				rows="4"
+				class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 px-3"
+			></textarea>
 		</div>
 	</div>
 

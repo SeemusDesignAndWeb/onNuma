@@ -949,9 +949,10 @@ ${upcomingRotasText}
  * @param {object} eventData - Event data
  * @param {string} eventPageUrl - URL to the public event page
  * @param {object} event - SvelteKit event object
+ * @param {string} customMessage - Optional custom message to include in the email
  * @returns {Promise<Array>} Results array
  */
-export async function sendCombinedRotaInvites(contactInvites, eventData, eventPageUrl, event) {
+export async function sendCombinedRotaInvites(contactInvites, eventData, eventPageUrl, event, customMessage = '') {
 	const emailDataArray = [];
 	const baseUrl = getBaseUrl(event);
 	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
@@ -959,6 +960,7 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 	for (const contactInvite of contactInvites) {
 		const { contact, invites } = contactInvite;
 		const name = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email;
+		const firstName = contact.firstName || '';
 		const to = contact.email;
 		
 		if (!to) {
@@ -967,6 +969,8 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 		}
 
 		try {
+			// Replace {{firstname}} placeholder in custom message with actual first name
+			const personalizedMessage = customMessage ? customMessage.replace(/\{\{firstname\}\}/gi, firstName) : '';
 			// Group invites by rota (one section per rota, not per occurrence)
 			const rotasMap = new Map();
 			
@@ -1062,15 +1066,9 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 						</div>
 						
 						<div style="padding: 0;">
-						<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hello ${name},</p>
+						<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hi ${firstName || 'there'},</p>
 						
-						<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">
-							Thank you for considering volunteering for <strong>${eventTitle}</strong>. We cannot run these events without your support, and we truly appreciate your willingness to help.
-						</p>
-						
-						<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">
-							You've been invited to volunteer in the following role${rotasMap.size > 1 ? 's' : ''}:
-						</p>
+						${personalizedMessage ? `<p style="color: #333; font-size: 15px; margin: 0 0 15px 0; white-space: pre-wrap;">${personalizedMessage}</p>` : ''}
 
 						${rotasHtml}
 
@@ -1129,12 +1127,9 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 			const text = `
 Volunteer Rota Invitations
 
-Hello ${name},
+Hi ${firstName || 'there'},
 
-Thank you for considering volunteering for ${eventTitle}. We cannot run these events without your support, and we truly appreciate your willingness to help.
-
-You've been invited to volunteer in the following role${rotasMap.size > 1 ? 's' : ''}:
-${rotasText}
+${personalizedMessage ? personalizedMessage + '\n\n' : ''}${rotasText}
 ${eventPageUrl ? `\nView Event Page: ${eventPageUrl}` : ''}
 ${upcomingRotasText}
 

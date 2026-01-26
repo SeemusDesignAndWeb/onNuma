@@ -218,7 +218,8 @@ export const actions = {
 				notes: sanitized,
 				assignees: rota.assignees || [], // Preserve existing assignees
 				ownerId: data.get('ownerId') || null,
-				visibility: data.get('visibility') || rota.visibility || 'public' // Preserve existing visibility or default to public
+				visibility: data.get('visibility') || rota.visibility || 'public', // Preserve existing visibility or default to public
+				helpFiles: rota.helpFiles || [] // Preserve existing help files
 			};
 
 			const validated = validateRota({ ...rotaData, eventId: rota.eventId });
@@ -549,6 +550,114 @@ export const actions = {
 				console.error('[SERVER] Error removing assignee:', error);
 				console.error('[SERVER] Error stack:', error.stack);
 				return fail(400, { error: error.message || 'Failed to remove assignee' });
+			}
+		},
+
+		addHelpFile: async ({ request, params, cookies, locals }) => {
+			const data = await request.formData();
+			const csrfToken = data.get('_csrf');
+
+			if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+				return fail(403, { error: 'CSRF token validation failed' });
+			}
+
+			try {
+				const rota = await findById('rotas', params.id);
+				if (!rota) {
+					return fail(404, { error: 'Rota not found' });
+				}
+
+				const type = data.get('type'); // 'link' or 'file'
+				if (!type || (type !== 'link' && type !== 'file')) {
+					return fail(400, { error: 'Invalid help file type' });
+				}
+
+				const existingHelpFiles = Array.isArray(rota.helpFiles) ? [...rota.helpFiles] : [];
+				let newHelpFile;
+
+				if (type === 'link') {
+					const url = data.get('url');
+					const title = data.get('title');
+					if (!url || !title) {
+						return fail(400, { error: 'URL and title are required for link help files' });
+					}
+					newHelpFile = {
+						type: 'link',
+						url: url.trim(),
+						title: title.trim()
+					};
+				} else {
+					// type === 'file'
+					const filename = data.get('filename');
+					const originalName = data.get('originalName');
+					const title = data.get('title') || originalName;
+					if (!filename || !originalName) {
+						return fail(400, { error: 'Filename and original name are required for file help files' });
+					}
+					newHelpFile = {
+						type: 'file',
+						filename: filename.trim(),
+						originalName: originalName.trim(),
+						title: title.trim()
+					};
+				}
+
+				const updatedHelpFiles = [...existingHelpFiles, newHelpFile];
+				const updatedRota = {
+					...rota,
+					helpFiles: updatedHelpFiles
+				};
+				const validated = validateRota(updatedRota);
+				await update('rotas', params.id, validated);
+
+				return { success: true, type: 'addHelpFile', helpFile: newHelpFile };
+			} catch (error) {
+				console.error('Error adding help file:', error);
+				return fail(400, { error: error.message || 'Failed to add help file' });
+			}
+		},
+
+		removeHelpFile: async ({ request, params, cookies, locals }) => {
+			const data = await request.formData();
+			const csrfToken = data.get('_csrf');
+
+			if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+				return fail(403, { error: 'CSRF token validation failed' });
+			}
+
+			try {
+				const rota = await findById('rotas', params.id);
+				if (!rota) {
+					return fail(404, { error: 'Rota not found' });
+				}
+
+				const indexStr = data.get('index');
+				if (indexStr === null || indexStr === undefined) {
+					return fail(400, { error: 'Index required' });
+				}
+
+				const index = parseInt(indexStr, 10);
+				if (isNaN(index) || index < 0) {
+					return fail(400, { error: 'Invalid index' });
+				}
+
+				const existingHelpFiles = Array.isArray(rota.helpFiles) ? [...rota.helpFiles] : [];
+				if (index >= existingHelpFiles.length) {
+					return fail(400, { error: 'Index out of range' });
+				}
+
+				existingHelpFiles.splice(index, 1);
+				const updatedRota = {
+					...rota,
+					helpFiles: existingHelpFiles
+				};
+				const validated = validateRota(updatedRota);
+				await update('rotas', params.id, validated);
+
+				return { success: true, type: 'removeHelpFile' };
+			} catch (error) {
+				console.error('Error removing help file:', error);
+				return fail(400, { error: error.message || 'Failed to remove help file' });
 			}
 		}
 	};

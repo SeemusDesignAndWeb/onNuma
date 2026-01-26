@@ -5,7 +5,6 @@
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
-	import Navbar from '$lib/components/Navbar.svelte';
 
 	$: data = $page.data || {};
 	$: token = data.token;
@@ -154,10 +153,7 @@
 </script>
 
 <div class="min-h-screen bg-gray-50">
-	<!-- Header with EGCC branding - matching main website -->
-	<Navbar bannerVisible={false} />
-
-	<div class="max-w-7xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8 mt-16">
+	<div class="max-w-7xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
 
 		{#if rotas.length === 0}
 			<div class="bg-white shadow rounded-lg p-6">
@@ -287,6 +283,40 @@
 												<p class="text-sm text-gray-500 mt-1 ml-4">
 													Capacity: <span class="font-medium text-brand-blue">{rota.capacity}</span> {rota.capacity === 1 ? 'person' : 'people'} per occurrence
 												</p>
+												{#if rota.helpFiles && rota.helpFiles.length > 0}
+													<div class="mt-2 ml-4">
+														<p class="text-xs font-medium text-gray-700 mb-1">Help Files:</p>
+														<div class="flex flex-wrap gap-2">
+															{#each rota.helpFiles as helpFile}
+																{#if helpFile.type === 'link'}
+																	<a
+																		href={helpFile.url}
+																		target="_blank"
+																		rel="noopener noreferrer"
+																		class="inline-flex items-center gap-1 text-xs text-brand-blue hover:text-brand-blue/80 hover:underline px-2 py-1 rounded bg-brand-blue/5 border border-brand-blue/20"
+																	>
+																		<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+																		</svg>
+																		<span>{helpFile.title}</span>
+																	</a>
+																{:else}
+																	<a
+																		href="/hub/rotas/help-files/{helpFile.filename}"
+																		target="_blank"
+																		rel="noopener noreferrer"
+																		class="inline-flex items-center gap-1 text-xs text-brand-green hover:text-brand-green/80 hover:underline px-2 py-1 rounded bg-brand-green/5 border border-brand-green/20"
+																	>
+																		<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+																		</svg>
+																		<span>{helpFile.title || helpFile.originalName}</span>
+																	</a>
+																{/if}
+															{/each}
+														</div>
+													</div>
+												{/if}
 											</div>
 										</div>
 

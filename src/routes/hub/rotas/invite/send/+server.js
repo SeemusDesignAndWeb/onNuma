@@ -13,7 +13,7 @@ export async function POST({ request, cookies, url }) {
 		throw error(403, 'CSRF token validation failed');
 	}
 
-	const { eventId, rotaIds, occurrenceIds, listId } = data;
+	const { eventId, rotaIds, occurrenceIds, listId, customMessage } = data;
 
 	if (!eventId || !rotaIds || !Array.isArray(rotaIds) || rotaIds.length === 0 || !listId) {
 		throw error(400, 'Invalid request data');
@@ -101,7 +101,7 @@ export async function POST({ request, cookies, url }) {
 	const contactInvites = Array.from(contactInvitesMap.values());
 
 	// Send combined invites (one email per contact)
-	const results = await sendCombinedRotaInvites(contactInvites, event, eventPageUrl, { url });
+	const results = await sendCombinedRotaInvites(contactInvites, event, eventPageUrl, { url }, customMessage || '');
 
 	return json({ success: true, results });
 }
