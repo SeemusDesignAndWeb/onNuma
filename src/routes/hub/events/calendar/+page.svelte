@@ -940,10 +940,11 @@
 				{#if day}
 					{@const dayOccurrences = getOccurrencesForDate(day)}
 					{@const isToday = day.toDateString() === new Date().toDateString()}
-					{@const isWeekend = day.getDay() === 0}
+					{@const dayOfWeek = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getDay()}
+					{@const isSunday = dayOfWeek === 0}
 					<div 
 						class="p-3 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
-						style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
+						style={isSunday && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
 						on:click={(e) => handleDayClick(day, e)}
 						role="button"
 						tabindex="0"
@@ -1005,10 +1006,11 @@
 				{#if day}
 					{@const dayOccurrences = getOccurrencesForDate(day)}
 					{@const isToday = day.toDateString() === new Date().toDateString()}
-					{@const isWeekend = day.getDay() === 0}
+					{@const dayOfWeek = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getDay()}
+					{@const isSunday = dayOfWeek === 0}
 					<div 
 						class="min-h-[120px] border-r border-b border-gray-200 p-2 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
-						style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
+						style={isSunday && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : 'background-color: white;'}
 						on:click={(e) => handleDayClick(day, e)}
 						role="button"
 						tabindex="0"
@@ -1058,10 +1060,11 @@
 			{#each weekDays as day}
 				{@const dayOccurrences = getOccurrencesForDate(day)}
 				{@const isToday = day.toDateString() === new Date().toDateString()}
-				{@const isWeekend = day.getDay() === 0 || day.getDay() === 6}
+				{@const dayOfWeek = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getDay()}
+				{@const isSunday = dayOfWeek === 0}
 				<div 
 					class="p-3 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
-					style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
+					style={isSunday && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
 					on:click={(e) => handleDayClick(day, e)}
 					role="button"
 					tabindex="0"
@@ -1131,10 +1134,11 @@
 			{#each weekDays as day}
 				{@const dayOccurrences = getOccurrencesForDate(day)}
 				{@const isToday = day.toDateString() === new Date().toDateString()}
-				{@const isWeekend = day.getDay() === 0 || day.getDay() === 6}
+				{@const dayOfWeek = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getDay()}
+				{@const isSunday = dayOfWeek === 0}
 				<div 
 					class="min-h-[576px] border-r border-gray-200 p-1 {isToday ? 'bg-hub-blue-50' : ''} relative cursor-pointer hover:bg-gray-50 transition-colors"
-					style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
+					style={isSunday && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
 					on:click={(e) => handleDayClick(day, e)}
 					role="button"
 					tabindex="0"

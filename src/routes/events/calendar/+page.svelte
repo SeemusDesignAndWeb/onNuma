@@ -467,9 +467,10 @@
 						{#if day}
 							{@const dayOccurrences = getOccurrencesForDate(day)}
 							{@const isToday = day.toDateString() === new Date().toDateString()}
-							{@const isWeekend = day.getDay() === 0}
+							{@const dayOfWeek = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getDay()}
+							{@const isSunday = dayOfWeek === 0}
 							<div class="min-h-[120px] border-r border-b border-gray-200 p-2 {isToday ? 'bg-blue-50' : ''}"
-								style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}>
+								style={isSunday && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}>
 								<div class="text-sm font-medium mb-1 {isToday ? 'text-blue-600' : 'text-gray-900'}">
 									{day.getDate()}
 								</div>
@@ -524,9 +525,10 @@
 					{#each weekDays as day}
 						{@const dayOccurrences = getOccurrencesForDate(day)}
 						{@const isToday = day.toDateString() === new Date().toDateString()}
-						{@const isWeekend = day.getDay() === 0 || day.getDay() === 6}
+						{@const dayOfWeek = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getDay()}
+						{@const isSunday = dayOfWeek === 0}
 						<div class="min-h-[576px] border-r border-gray-200 p-1 {isToday ? 'bg-blue-50' : ''} relative"
-							style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}>
+							style={isSunday && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}>
 							{#each dayOccurrences as occ}
 								{@const startTime = new Date(occ.startsAt)}
 								{@const endTime = new Date(occ.endsAt)}
