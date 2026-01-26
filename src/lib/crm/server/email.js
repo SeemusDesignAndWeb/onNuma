@@ -931,7 +931,7 @@ ${upcomingRotasText}
 		const result = await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
-			subject: `Volunteer Invitation: ${eventTitle} - ${role}`,
+			subject: `Can you help with volunteering? - sign up for these rotas`,
 			html,
 			text
 		}));
@@ -1141,7 +1141,7 @@ Email: enquiries@egcc.co.uk
 Website: ${baseUrl}
 			`.trim();
 
-			const subject = `Volunteer for ${eventTitle}`;
+			const subject = `Can you help with volunteering? - sign up for these rotas`;
 
 			// Store email data for batch sending
 			emailDataArray.push({ 

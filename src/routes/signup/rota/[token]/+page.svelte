@@ -152,7 +152,7 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 pt-[70px]">
 	<div class="max-w-7xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
 
 		{#if rotas.length === 0}
@@ -190,7 +190,7 @@
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 					<!-- Your Details - Left column on large screens -->
 					<div class="lg:col-span-1">
-						<div class="bg-white shadow rounded-lg p-6 sticky top-6 space-y-6">
+						<div class="bg-white shadow rounded-lg p-6 sticky top-[76px] space-y-6">
 							<div>
 								<h1 class="text-2xl font-bold text-brand-blue mb-2">{event?.title || 'Volunteer Signup'}</h1>
 								{#if event?.location}
