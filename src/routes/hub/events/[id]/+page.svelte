@@ -10,7 +10,7 @@
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import { dialog } from '$lib/crm/stores/notifications.js';
-	import { EVENT_COLORS } from '$lib/crm/server/validators.js';
+	import { EVENT_COLORS } from '$lib/crm/constants/eventColours.js';
 
 	$: event = $page.data?.event;
 	$: occurrences = $page.data?.occurrences || [];

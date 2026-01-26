@@ -4,7 +4,7 @@
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import HtmlEditor from '$lib/crm/components/HtmlEditor.svelte';
 	import { notifications } from '$lib/crm/stores/notifications.js';
-	import { EVENT_COLORS } from '$lib/crm/server/validators.js';
+	import { EVENT_COLORS } from '$lib/crm/constants/eventColours.js';
 
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
