@@ -121,11 +121,13 @@
 		const lastDay = new Date(year, month + 1, 0);
 		const daysInMonth = lastDay.getDate();
 		const startingDayOfWeek = firstDay.getDay();
+		// Adjust for Monday-first week: Sunday (0) -> column 6, Monday (1) -> column 0, etc.
+		const offset = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
 
 		const days = [];
 		
 		// Add empty cells for days before the first day of the month
-		for (let i = 0; i < startingDayOfWeek; i++) {
+		for (let i = 0; i < offset; i++) {
 			days.push(null);
 		}
 
@@ -141,7 +143,8 @@
 	function getWeekDays(date) {
 		const weekStart = new Date(date);
 		const day = weekStart.getDay();
-		const diff = weekStart.getDate() - day; // Adjust to Sunday
+		// Adjust to Monday: Sunday (0) -> go back 6 days, Monday (1) -> go back 0 days, etc.
+		const diff = weekStart.getDate() - (day === 0 ? 6 : day - 1);
 		weekStart.setDate(diff);
 		
 		const days = [];
@@ -161,7 +164,7 @@
 		new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
 	) : [];
 
-	const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 	// Helper function to get event color styles
 	function getEventColorStyles(event) {
@@ -382,7 +385,9 @@
 						{#if day}
 							{@const dayOccurrences = getOccurrencesForDate(day)}
 							{@const isToday = day.toDateString() === new Date().toDateString()}
-							<div class="min-h-[120px] border-r border-b border-gray-200 p-2 {isToday ? 'bg-blue-50' : ''}">
+							{@const isWeekend = day.getDay() === 0}
+							<div class="min-h-[120px] border-r border-b border-gray-200 p-2 {isToday ? 'bg-blue-50' : ''}"
+								style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}>
 								<div class="text-sm font-medium mb-1 {isToday ? 'text-blue-600' : 'text-gray-900'}">
 									{day.getDate()}
 								</div>
@@ -432,7 +437,7 @@
 					{#each weekDays as day}
 						{@const isToday = day.toDateString() === new Date().toDateString()}
 						<div class="px-4 py-3 text-center text-sm font-semibold text-gray-700 bg-gray-50 {isToday ? 'bg-blue-50' : ''}">
-							<div>{dayNames[day.getDay()]}</div>
+							<div>{dayNames[(day.getDay() + 6) % 7]}</div>
 							<div class="text-xs font-normal mt-1">{day.getDate()}</div>
 						</div>
 					{/each}
@@ -448,7 +453,9 @@
 					{#each weekDays as day}
 						{@const dayOccurrences = getOccurrencesForDate(day)}
 						{@const isToday = day.toDateString() === new Date().toDateString()}
-						<div class="min-h-[576px] border-r border-gray-200 p-1 {isToday ? 'bg-blue-50' : ''} relative">
+						{@const isWeekend = day.getDay() === 0 || day.getDay() === 6}
+						<div class="min-h-[576px] border-r border-gray-200 p-1 {isToday ? 'bg-blue-50' : ''} relative"
+							style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}>
 							{#each dayOccurrences as occ}
 								{@const startTime = new Date(occ.startsAt)}
 								{@const endTime = new Date(occ.endsAt)}

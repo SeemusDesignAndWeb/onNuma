@@ -373,11 +373,13 @@
 		const lastDay = new Date(year, month + 1, 0);
 		const daysInMonth = lastDay.getDate();
 		const startingDayOfWeek = firstDay.getDay();
+		// Adjust for Monday-first week: Sunday (0) -> column 6, Monday (1) -> column 0, etc.
+		const offset = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
 
 		const days = [];
 		
 		// Add empty cells for days before the first day of the month
-		for (let i = 0; i < startingDayOfWeek; i++) {
+		for (let i = 0; i < offset; i++) {
 			days.push(null);
 		}
 
@@ -393,7 +395,8 @@
 	function getWeekDays(date) {
 		const weekStart = new Date(date);
 		const day = weekStart.getDay();
-		const diff = weekStart.getDate() - day; // Adjust to Monday
+		// Adjust to Monday: Sunday (0) -> go back 6 days, Monday (1) -> go back 0 days, etc.
+		const diff = weekStart.getDate() - (day === 0 ? 6 : day - 1);
 		weekStart.setDate(diff);
 		
 		const days = [];
@@ -413,8 +416,8 @@
 		new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
 	) : [];
 
-	const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-	const dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+	const dayNamesFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 	// Helper function to get event color styles
 	function getEventColorStyles(event) {
@@ -937,8 +940,10 @@
 				{#if day}
 					{@const dayOccurrences = getOccurrencesForDate(day)}
 					{@const isToday = day.toDateString() === new Date().toDateString()}
+					{@const isWeekend = day.getDay() === 0}
 					<div 
 						class="p-3 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
+						style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
 						on:click={(e) => handleDayClick(day, e)}
 						role="button"
 						tabindex="0"
@@ -955,7 +960,7 @@
 									{day.getDate()}
 								</div>
 								<div class="text-xs text-gray-500">
-									{dayNames[day.getDay()]}
+									{dayNames[(day.getDay() + 6) % 7]}
 								</div>
 							</div>
 							{#if dayOccurrences.length > 0}
@@ -1000,8 +1005,10 @@
 				{#if day}
 					{@const dayOccurrences = getOccurrencesForDate(day)}
 					{@const isToday = day.toDateString() === new Date().toDateString()}
+					{@const isWeekend = day.getDay() === 0}
 					<div 
 						class="min-h-[120px] border-r border-b border-gray-200 p-2 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
+						style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
 						on:click={(e) => handleDayClick(day, e)}
 						role="button"
 						tabindex="0"
@@ -1051,8 +1058,10 @@
 			{#each weekDays as day}
 				{@const dayOccurrences = getOccurrencesForDate(day)}
 				{@const isToday = day.toDateString() === new Date().toDateString()}
+				{@const isWeekend = day.getDay() === 0 || day.getDay() === 6}
 				<div 
 					class="p-3 {isToday ? 'bg-hub-blue-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors"
+					style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
 					on:click={(e) => handleDayClick(day, e)}
 					role="button"
 					tabindex="0"
@@ -1065,7 +1074,7 @@
 				>
 					<div class="flex items-center gap-2 mb-2">
 						<div class="text-sm font-semibold {isToday ? 'text-hub-blue-600' : 'text-gray-900'}">
-							{dayNames[day.getDay()]}
+							{dayNames[(day.getDay() + 6) % 7]}
 						</div>
 						<div class="text-xs text-gray-500">
 							{day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
@@ -1106,7 +1115,7 @@
 			{#each weekDays as day}
 				{@const isToday = day.toDateString() === new Date().toDateString()}
 				<div class="px-4 py-3 text-center text-sm font-semibold text-gray-700 bg-gray-50 {isToday ? 'bg-hub-blue-50' : ''}">
-					<div>{dayNames[day.getDay()]}</div>
+					<div>{dayNames[(day.getDay() + 6) % 7]}</div>
 					<div class="text-xs font-normal mt-1">{day.getDate()}</div>
 				</div>
 			{/each}
@@ -1122,8 +1131,10 @@
 			{#each weekDays as day}
 				{@const dayOccurrences = getOccurrencesForDate(day)}
 				{@const isToday = day.toDateString() === new Date().toDateString()}
+				{@const isWeekend = day.getDay() === 0 || day.getDay() === 6}
 				<div 
 					class="min-h-[576px] border-r border-gray-200 p-1 {isToday ? 'bg-hub-blue-50' : ''} relative cursor-pointer hover:bg-gray-50 transition-colors"
+					style={isWeekend && !isToday ? 'background-color: rgba(59, 130, 246, 0.05);' : ''}
 					on:click={(e) => handleDayClick(day, e)}
 					role="button"
 					tabindex="0"
