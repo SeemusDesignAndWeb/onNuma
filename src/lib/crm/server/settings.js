@@ -41,8 +41,22 @@ export async function getSettings() {
 	}
 	
 	// Default settings
+	const defaultCalendarColours = [
+		{ value: '#9333ea', label: 'Purple' },
+		{ value: '#3b82f6', label: 'Blue' },
+		{ value: '#10b981', label: 'Green' },
+		{ value: '#ef4444', label: 'Red' },
+		{ value: '#f97316', label: 'Orange' },
+		{ value: '#eab308', label: 'Yellow' },
+		{ value: '#ec4899', label: 'Pink' },
+		{ value: '#6366f1', label: 'Indigo' },
+		{ value: '#14b8a6', label: 'Teal' },
+		{ value: '#f59e0b', label: 'Amber' }
+	];
+	
 	const defaultSettings = {
-		emailRateLimitDelay: 500 // Default: 500ms (2 requests per second)
+		emailRateLimitDelay: 500, // Default: 500ms (2 requests per second)
+		calendarColours: defaultCalendarColours
 	};
 	
 	if (!existsSync(SETTINGS_FILE)) {
@@ -54,8 +68,13 @@ export async function getSettings() {
 	try {
 		const content = await readFile(SETTINGS_FILE, 'utf8');
 		const settings = JSON.parse(content);
+		// Support both old 'calendarColors' and new 'calendarColours' for backward compatibility
+		const colours = settings.calendarColours || settings.calendarColors;
 		settingsCache = {
-			emailRateLimitDelay: settings.emailRateLimitDelay || defaultSettings.emailRateLimitDelay
+			emailRateLimitDelay: settings.emailRateLimitDelay || defaultSettings.emailRateLimitDelay,
+			calendarColours: Array.isArray(colours) && colours.length > 0
+				? colours
+				: defaultSettings.calendarColours
 		};
 		cacheTimestamp = now;
 		return settingsCache;

@@ -8,6 +8,7 @@
 
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+	$: eventColors = $page.data?.eventColors || EVENT_COLORS;
 	
 	// Get date from URL parameter and pre-fill form
 	$: {
@@ -168,7 +169,7 @@
 					<div class="flex items-center gap-2 sm:gap-3">
 						<div class="w-8 h-8 sm:w-10 sm:h-10 rounded border border-gray-300 flex-shrink-0" style="background-color: {formData.color};"></div>
 						<select name="color" bind:value={formData.color} class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-2 sm:py-3 px-3 sm:px-4 text-xs">
-							{#each EVENT_COLORS as colorOption}
+							{#each eventColors as colorOption}
 								<option value={colorOption.value}>{colorOption.label}</option>
 							{/each}
 						</select>

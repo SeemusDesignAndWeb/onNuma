@@ -108,8 +108,8 @@ export function validateList(data) {
  * @returns {object} Validated event data
  * @throws {Error} If validation fails
  */
-// Predefined event colors
-export const EVENT_COLORS = [
+// Default/predefined event colours (fallback)
+export const DEFAULT_EVENT_COLOURS = [
 	{ value: '#9333ea', label: 'Purple' },
 	{ value: '#3b82f6', label: 'Blue' },
 	{ value: '#10b981', label: 'Green' },
@@ -122,12 +122,40 @@ export const EVENT_COLORS = [
 	{ value: '#f59e0b', label: 'Amber' }
 ];
 
-export function validateEvent(data) {
+// Legacy exports for backward compatibility
+export const DEFAULT_EVENT_COLORS = DEFAULT_EVENT_COLOURS;
+export const EVENT_COLORS = DEFAULT_EVENT_COLOURS;
+export const EVENT_COLOURS = DEFAULT_EVENT_COLOURS;
+
+/**
+ * Get event colours from settings
+ * @returns {Promise<Array>} Array of colour objects with value and label
+ */
+export async function getEventColours() {
+	try {
+		const { getSettings } = await import('./settings.js');
+		const settings = await getSettings();
+		// Support both calendarColours and calendarColors for backward compatibility
+		const colours = settings.calendarColours || settings.calendarColors;
+		if (colours && Array.isArray(colours) && colours.length > 0) {
+			return colours;
+		}
+	} catch (error) {
+		console.error('[Validators] Error getting event colours from settings:', error);
+	}
+	return DEFAULT_EVENT_COLOURS;
+}
+
+// Legacy function name for backward compatibility
+export const getEventColors = getEventColours;
+
+export async function validateEvent(data) {
 	requireField(data.title, 'Title');
 	
-	// Validate color - must be one of the predefined colors
-	const allowedColors = EVENT_COLORS.map(c => c.value);
-	const color = allowedColors.includes(data.color) ? data.color : '#9333ea';
+	// Get colours from settings
+	const eventColours = await getEventColours();
+	const allowedColours = eventColours.map(c => c.value);
+	const color = allowedColours.includes(data.color) ? data.color : (eventColours[0]?.value || '#9333ea');
 	
 	return {
 		title: validateString(data.title, 'Title', 200),

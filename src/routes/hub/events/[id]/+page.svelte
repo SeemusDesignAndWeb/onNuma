@@ -18,6 +18,7 @@
 	$: meetingPlanners = $page.data?.meetingPlanners || [];
 	$: rotaSignupLink = $page.data?.rotaSignupLink || '';
 	$: occurrenceLinks = $page.data?.occurrenceLinks || [];
+	$: eventColors = $page.data?.eventColors || EVENT_COLORS;
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	
@@ -374,7 +375,7 @@
 								<div class="flex items-center gap-1.5">
 									<div class="w-5 h-5 rounded border border-gray-300 flex-shrink-0" style="background-color: {formData.color};"></div>
 									<select name="color" bind:value={formData.color} class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-1.5 text-xs">
-										{#each EVENT_COLORS as colorOption}
+										{#each eventColors as colorOption}
 											<option value={colorOption.value}>{colorOption.label}</option>
 										{/each}
 									</select>
@@ -445,7 +446,7 @@
 							<dd class="mt-1 flex items-center gap-1.5">
 								<div class="w-4 h-4 rounded border border-gray-300" style="background-color: {event.color || '#9333ea'};"></div>
 								<span class="text-xs text-gray-600">{(() => {
-									const colorOption = EVENT_COLORS.find(c => c.value === (event.color || '#9333ea'));
+									const colorOption = eventColors.find(c => c.value === (event.color || '#9333ea'));
 									return colorOption ? colorOption.label : 'Purple';
 								})()}</span>
 							</dd>

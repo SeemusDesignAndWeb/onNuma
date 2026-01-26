@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { create } from '$lib/crm/server/fileStore.js';
-import { validateEvent, validateOccurrence } from '$lib/crm/server/validators.js';
+import { validateEvent, validateOccurrence, getEventColors } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
 import { generateOccurrences } from '$lib/crm/server/recurrence.js';
@@ -9,7 +9,8 @@ import { logDataChange } from '$lib/crm/server/audit.js';
 
 export async function load({ cookies }) {
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { csrfToken };
+	const eventColors = await getEventColors();
+	return { csrfToken, eventColors };
 }
 
 export const actions = {
@@ -44,7 +45,7 @@ export const actions = {
 				repeatWeekOfMonth: data.get('repeatWeekOfMonth') || null
 			};
 
-			const validated = validateEvent(eventData);
+			const validated = await validateEvent(eventData);
 			const event = await create('events', validated);
 
 			// Get first occurrence dates

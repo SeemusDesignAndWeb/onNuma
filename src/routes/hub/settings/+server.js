@@ -43,15 +43,46 @@ export async function POST({ request, cookies }) {
 	}
 	
 	const data = await request.json();
-	const { emailRateLimitDelay } = data;
-	
-	// Validate delay (must be between 100ms and 10000ms)
-	if (typeof emailRateLimitDelay !== 'number' || emailRateLimitDelay < 100 || emailRateLimitDelay > 10000) {
-		throw error(400, 'Invalid delay: must be between 100 and 10000 milliseconds');
-	}
+	const { emailRateLimitDelay, calendarColours, calendarColors } = data; // Support both for backward compatibility
 	
 	const settings = await getSettings();
-	settings.emailRateLimitDelay = emailRateLimitDelay;
+	
+	// Update email rate limit delay if provided
+	if (emailRateLimitDelay !== undefined) {
+		// Validate delay (must be between 100ms and 10000ms)
+		if (typeof emailRateLimitDelay !== 'number' || emailRateLimitDelay < 100 || emailRateLimitDelay > 10000) {
+			throw error(400, 'Invalid delay: must be between 100 and 10000 milliseconds');
+		}
+		settings.emailRateLimitDelay = emailRateLimitDelay;
+	}
+	
+	// Update calendar colours if provided (support both calendarColours and calendarColors for backward compatibility)
+	const coloursToUpdate = calendarColours !== undefined ? calendarColours : calendarColors;
+	if (coloursToUpdate !== undefined) {
+		// Validate calendar colours array
+		if (!Array.isArray(coloursToUpdate)) {
+			throw error(400, 'Invalid calendarColours: must be an array');
+		}
+		
+		// Validate each colour object
+		for (const colour of coloursToUpdate) {
+			if (!colour || typeof colour !== 'object') {
+				throw error(400, 'Invalid colour: each colour must be an object');
+			}
+			if (!colour.value || typeof colour.value !== 'string') {
+				throw error(400, 'Invalid colour: each colour must have a value (hex colour)');
+			}
+			// Validate hex colour format
+			if (!/^#[0-9A-Fa-f]{6}$/.test(colour.value)) {
+				throw error(400, `Invalid colour format: ${colour.value} must be a valid hex colour (e.g., #9333ea)`);
+			}
+			if (!colour.label || typeof colour.label !== 'string' || colour.label.trim().length === 0) {
+				throw error(400, 'Invalid colour: each colour must have a non-empty label');
+			}
+		}
+		
+		settings.calendarColours = coloursToUpdate;
+	}
 	
 	await writeSettings(settings);
 	

@@ -1,6 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { findById, update, remove, readCollection, findMany } from '$lib/crm/server/fileStore.js';
-import { validateEvent } from '$lib/crm/server/validators.js';
+import { validateEvent, getEventColors } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
 import { ensureEventToken, ensureOccurrenceToken } from '$lib/crm/server/tokens.js';
@@ -112,7 +112,8 @@ export async function load({ params, cookies, url }) {
 	}
 
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { event, occurrences: occurrencesWithStats, rotas, meetingPlanners, rotaSignupLink, publicEventLink, occurrenceLinks, csrfToken };
+	const eventColors = await getEventColors();
+	return { event, occurrences: occurrencesWithStats, rotas, meetingPlanners, rotaSignupLink, publicEventLink, occurrenceLinks, csrfToken, eventColors };
 }
 
 export const actions = {
@@ -155,7 +156,7 @@ export const actions = {
 				meta: existingEvent.meta || {}
 			};
 
-			const validated = validateEvent(eventData);
+			const validated = await validateEvent(eventData);
 			await update('events', params.id, validated);
 
 			// Log audit event
