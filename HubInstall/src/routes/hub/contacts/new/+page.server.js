@@ -1,11 +1,26 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { create } from '$lib/crm/server/fileStore.js';
+import { create, update, readCollection } from '$lib/crm/server/fileStore.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 
 export async function load({ cookies }) {
+	// Load all contacts for spouse selection dropdown
+	const contacts = await readCollection('contacts');
+	// Sort contacts alphabetically by last name, then first name
+	const sortedContacts = contacts.sort((a, b) => {
+		const aLastName = (a.lastName || '').toLowerCase();
+		const bLastName = (b.lastName || '').toLowerCase();
+		const aFirstName = (a.firstName || '').toLowerCase();
+		const bFirstName = (b.firstName || '').toLowerCase();
+		
+		if (aLastName !== bLastName) {
+			return aLastName.localeCompare(bLastName);
+		}
+		return aFirstName.localeCompare(bFirstName);
+	});
+
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { csrfToken };
+	return { contacts: sortedContacts, csrfToken };
 }
 
 export const actions = {
@@ -38,11 +53,17 @@ export const actions = {
 				servingAreas: servingAreas ? JSON.parse(servingAreas) : [],
 				giftings: giftings ? JSON.parse(giftings) : [],
 				notes: data.get('notes'),
-				subscribed: data.get('subscribed') === 'on' || data.get('subscribed') === 'true'
+				subscribed: data.get('subscribed') === 'on' || data.get('subscribed') === 'true',
+				spouseId: data.get('spouseId') || null
 			};
 
 			const validated = validateContact(contactData);
 			const contact = await create('contacts', validated);
+
+			// Sync bidirectional spouse relationship
+			if (validated.spouseId) {
+				await update('contacts', validated.spouseId, { spouseId: contact.id });
+			}
 
 			throw redirect(302, `/hub/contacts/${contact.id}`);
 		} catch (error) {

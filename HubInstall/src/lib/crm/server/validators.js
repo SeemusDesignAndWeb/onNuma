@@ -86,7 +86,9 @@ export function validateContact(data) {
 		baptismDate: data.baptismDate || null,
 		servingAreas: Array.isArray(data.servingAreas) ? data.servingAreas : [],
 		giftings: Array.isArray(data.giftings) ? data.giftings : [],
-		notes: validateString(data.notes || '', 'Notes', 5000)
+		notes: validateString(data.notes || '', 'Notes', 5000),
+		// Spouse relationship
+		spouseId: data.spouseId && data.spouseId.trim() ? validateString(data.spouseId, 'Spouse ID', 50) : null
 	};
 }
 

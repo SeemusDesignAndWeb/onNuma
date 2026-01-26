@@ -83,7 +83,9 @@ export function validateContact(data) {
 		// Newsletter subscription (default to true if not explicitly set to false)
 		subscribed: data.subscribed !== false && data.subscribed !== 'false',
 		dateJoined: data.dateJoined || null,
-		notes: validateString(data.notes || '', 'Notes', 5000)
+		notes: validateString(data.notes || '', 'Notes', 5000),
+		// Spouse relationship
+		spouseId: data.spouseId && data.spouseId.trim() ? validateString(data.spouseId, 'Spouse ID', 50) : null
 	};
 }
 

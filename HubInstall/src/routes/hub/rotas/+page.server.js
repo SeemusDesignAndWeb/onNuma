@@ -1,6 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { readCollection, remove } from '$lib/crm/server/fileStore.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { isUpcomingOccurrence } from '$lib/crm/utils/occurrenceFilters.js';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -10,6 +11,15 @@ export async function load({ url, cookies }) {
 
 	const rotas = await readCollection('rotas');
 	const events = await readCollection('events');
+	const occurrences = await readCollection('occurrences');
+	
+	// Create a map of upcoming occurrence IDs for quick lookup
+	const now = new Date();
+	const upcomingOccurrenceIds = new Set(
+		occurrences
+			.filter(occ => isUpcomingOccurrence(occ, now))
+			.map(occ => occ.id)
+	);
 	
 	let filtered = rotas;
 	if (search) {
@@ -26,10 +36,80 @@ export async function load({ url, cookies }) {
 	const end = start + ITEMS_PER_PAGE;
 	const paginated = filtered.slice(start, end);
 
-	// Enrich with event data
+	// Enrich with event data and filter assignees to only upcoming occurrences
 	const enriched = paginated.map(rota => {
 		const event = events.find(e => e.id === rota.eventId);
-		return { ...rota, eventTitle: event?.title || 'Unknown Event' };
+		
+		// Get all upcoming occurrences for this event
+		const eventOccurrences = occurrences.filter(occ => 
+			occ.eventId === rota.eventId && isUpcomingOccurrence(occ, now)
+		);
+		
+		// If rota is for a specific occurrence, only consider that occurrence
+		const applicableOccurrences = rota.occurrenceId
+			? eventOccurrences.filter(occ => occ.id === rota.occurrenceId)
+			: eventOccurrences;
+		
+		// Filter assignees to only include those for occurrences on or after today
+		const assignees = Array.isArray(rota.assignees) ? rota.assignees : [];
+		const filteredAssignees = assignees.filter(assignee => {
+			// Determine which occurrence this assignee is for
+			let occurrenceId = null;
+			
+			if (typeof assignee === 'string') {
+				// Old format: just contact ID, use rota's occurrenceId
+				occurrenceId = rota.occurrenceId;
+			} else if (typeof assignee === 'object' && assignee !== null) {
+				// New format: object with occurrenceId
+				occurrenceId = assignee.occurrenceId !== null && assignee.occurrenceId !== undefined
+					? assignee.occurrenceId
+					: rota.occurrenceId;
+			}
+			
+			// If rota is for all occurrences (occurrenceId is null), check if there are any upcoming occurrences for this event
+			if (occurrenceId === null) {
+				// Check if there are any upcoming occurrences for this event
+				return eventOccurrences.length > 0;
+			}
+			
+			// Check if this specific occurrence is upcoming
+			return upcomingOccurrenceIds.has(occurrenceId);
+		});
+		
+		// Calculate number of covered occurrences (occurrences with at least one assignee)
+		let coveredCount = 0;
+		if (applicableOccurrences.length > 0) {
+			const coveredOccurrenceIds = new Set();
+			
+			filteredAssignees.forEach(assignee => {
+				let occurrenceId = null;
+				
+				if (typeof assignee === 'string') {
+					// Old format: just contact ID, use rota's occurrenceId
+					occurrenceId = rota.occurrenceId;
+				} else if (typeof assignee === 'object' && assignee !== null) {
+					// New format: object with occurrenceId
+					occurrenceId = assignee.occurrenceId !== null && assignee.occurrenceId !== undefined
+						? assignee.occurrenceId
+						: rota.occurrenceId;
+				}
+				
+				// If occurrenceId is null (rota for all occurrences, old format assignee),
+				// we can't determine which specific occurrence it's for, so skip it
+				if (occurrenceId !== null && applicableOccurrences.some(occ => occ.id === occurrenceId)) {
+					coveredOccurrenceIds.add(occurrenceId);
+				}
+			});
+			
+			coveredCount = coveredOccurrenceIds.size;
+		}
+		
+		return { 
+			...rota, 
+			eventTitle: event?.title || 'Unknown Event',
+			assignees: filteredAssignees,
+			coveredCount
+		};
 	});
 
 	const csrfToken = getCsrfToken(cookies) || '';

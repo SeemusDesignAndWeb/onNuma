@@ -89,11 +89,15 @@
 	const columns = [
 		{ key: 'eventTitle', label: 'Event' },
 		{ key: 'role', label: 'Role' },
-		{ key: 'capacity', label: 'Capacity' },
 		{ 
 			key: 'assignees', 
-			label: 'Assigned',
+			label: 'People Assigned',
 			render: (val) => Array.isArray(val) ? val.length : 0
+		},
+		{
+			key: 'coveredCount',
+			label: 'Dates Covered',
+			render: (val) => val !== undefined && val !== null ? val : 0
 		},
 		{
 			key: 'visibility',

@@ -8,6 +8,8 @@
 	import { dialog } from '$lib/crm/stores/notifications.js';
 
 	$: contact = $page.data?.contact;
+	$: spouse = $page.data?.spouse;
+	$: contacts = $page.data?.contacts || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	
@@ -41,7 +43,8 @@
 		membershipStatus: '',
 		dateJoined: '',
 		notes: '',
-		subscribed: true
+		subscribed: true,
+		spouseId: ''
 	};
 
 	// Initialize formData when contact loads or changes (including after successful save)
@@ -60,7 +63,8 @@
 			membershipStatus: contact.membershipStatus || '',
 			dateJoined: contact.dateJoined || '',
 			notes: contact.notes || '',
-			subscribed: contact.subscribed !== false // Default to true if not set
+			subscribed: contact.subscribed !== false, // Default to true if not set
+			spouseId: contact.spouseId || ''
 		};
 		initializedContactId = contact.id;
 	}
@@ -85,48 +89,81 @@
 </script>
 
 {#if contact}
-	<div class="bg-white shadow rounded-lg p-6">
-		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Contact Details</h2>
-			<div class="flex flex-wrap gap-2">
-				{#if editing}
-					<button
-						type="submit"
-						form="contact-edit-form"
-						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
-					>
-						Save Changes
-					</button>
-					<button
-						type="button"
-						on:click={() => editing = false}
-						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs"
-					>
-						Back
-					</button>
-				{:else}
-					<a
-						href="/hub/contacts"
-						class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 inline-flex items-center gap-1.5 text-xs"
-					>
-						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-						</svg>
-						Back
-					</a>
-					<button
-						on:click={() => editing = true}
-						class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 text-xs"
-					>
-						Edit
-					</button>
-					<button
-						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
-					>
-						Delete
-					</button>
-				{/if}
+	<div class="space-y-6">
+		<!-- Header Section with Gradient Background -->
+		<div class="bg-gradient-to-r from-hub-blue-600 via-hub-blue-500 to-hub-blue-600 rounded-xl shadow-lg overflow-hidden">
+			<div class="bg-white/10 backdrop-blur-sm p-6 sm:p-8">
+				<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+					<div class="flex-1">
+						<div class="flex items-center gap-3 mb-2">
+							<div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+								<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+								</svg>
+							</div>
+							<div>
+								<h1 class="text-2xl sm:text-3xl font-bold text-white">
+									{contact.firstName || ''} {contact.lastName || ''}
+									{#if !contact.firstName && !contact.lastName}
+										Contact
+									{/if}
+								</h1>
+								{#if contact.email}
+									<p class="text-hub-blue-100 text-sm sm:text-base mt-1">{contact.email}</p>
+								{/if}
+							</div>
+						</div>
+					</div>
+					<div class="flex flex-wrap gap-2 sm:gap-3">
+						{#if editing}
+							<button
+								type="submit"
+								form="contact-edit-form"
+								class="bg-white text-hub-blue-600 px-4 py-2 rounded-lg hover:bg-hub-blue-50 font-medium shadow-md transition-all inline-flex items-center gap-2"
+							>
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								Save Changes
+							</button>
+							<button
+								type="button"
+								on:click={() => editing = false}
+								class="bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 font-medium backdrop-blur-sm transition-all inline-flex items-center gap-2"
+							>
+								Cancel
+							</button>
+						{:else}
+							<a
+								href="/hub/contacts"
+								class="bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 font-medium backdrop-blur-sm transition-all inline-flex items-center gap-2"
+							>
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+								</svg>
+								Back
+							</a>
+							<button
+								on:click={() => editing = true}
+								class="bg-white text-hub-blue-600 px-4 py-2 rounded-lg hover:bg-hub-blue-50 font-medium shadow-md transition-all inline-flex items-center gap-2"
+							>
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+								</svg>
+								Edit
+							</button>
+							<button
+								on:click={handleDelete}
+								class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium shadow-md transition-all inline-flex items-center gap-2"
+							>
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+								</svg>
+								Delete
+							</button>
+						{/if}
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -140,70 +177,93 @@
 				<input type="hidden" name="_csrf" value={csrfToken} />
 				
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<!-- Personal Information Panel -->
-					<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
+					<!-- Personal Information Card -->
+					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
 						<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-4">
-							<div class="flex items-center gap-2">
-								<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-								</svg>
-								<h3 class="text-lg font-semibold text-white">Personal Information</h3>
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+								</div>
+								<h3 class="text-lg font-bold text-white">Personal Information</h3>
 							</div>
 						</div>
-						<div class="p-6 space-y-4">
+						<div class="p-6 space-y-5">
 							<FormField label="Email" name="email" type="email" bind:value={formData.email} required />
-							<FormField label="First Name" name="firstName" bind:value={formData.firstName} />
-							<FormField label="Last Name" name="lastName" bind:value={formData.lastName} />
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+								<FormField label="First Name" name="firstName" bind:value={formData.firstName} />
+								<FormField label="Last Name" name="lastName" bind:value={formData.lastName} />
+							</div>
 							<FormField label="Phone" name="phone" bind:value={formData.phone} />
 							<div>
-								<label class="flex items-center cursor-pointer">
+								<label class="block text-sm font-semibold text-gray-700 mb-2">Spouse</label>
+								<select name="spouseId" bind:value={formData.spouseId} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-hub-blue-500 focus:ring-2 focus:ring-hub-blue-500 py-2.5 px-4 text-gray-900 transition-all">
+									<option value="">None</option>
+									{#each contacts as contactOption}
+										<option value={contactOption.id}>
+											{contactOption.firstName || ''} {contactOption.lastName || ''} {contactOption.email ? `(${contactOption.email})` : ''}
+										</option>
+									{/each}
+								</select>
+							</div>
+							<div class="pt-2">
+								<label class="flex items-center cursor-pointer group">
 									<input
 										type="checkbox"
 										name="subscribed"
 										bind:checked={formData.subscribed}
-										class="w-4 h-4 rounded border-gray-300 text-hub-green-600 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 cursor-pointer"
+										class="w-5 h-5 rounded border-gray-300 text-hub-green-600 shadow-sm focus:border-hub-green-500 focus:ring-2 focus:ring-hub-green-500 cursor-pointer transition-all"
 									/>
-									<span class="ml-2 text-sm text-gray-700">Subscribed to newsletters</span>
+									<span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-gray-900">Subscribed to newsletters</span>
 								</label>
 							</div>
 						</div>
 					</div>
 
-					<!-- Address Panel -->
-					<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-						<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-4">
-							<div class="flex items-center gap-2">
-								<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-								</svg>
-								<h3 class="text-lg font-semibold text-white">Address</h3>
+					<!-- Address Card -->
+					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+						<div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+									</svg>
+								</div>
+								<h3 class="text-lg font-bold text-white">Address</h3>
 							</div>
 						</div>
-						<div class="p-6 space-y-4">
+						<div class="p-6 space-y-5">
 							<FormField label="Address Line 1" name="addressLine1" bind:value={formData.addressLine1} />
 							<FormField label="Address Line 2" name="addressLine2" bind:value={formData.addressLine2} />
-							<FormField label="City" name="city" bind:value={formData.city} />
-							<FormField label="County" name="county" bind:value={formData.county} />
-							<FormField label="Postcode" name="postcode" bind:value={formData.postcode} />
-							<FormField label="Country" name="country" bind:value={formData.country} />
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+								<FormField label="City" name="city" bind:value={formData.city} />
+								<FormField label="County" name="county" bind:value={formData.county} />
+							</div>
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+								<FormField label="Postcode" name="postcode" bind:value={formData.postcode} />
+								<FormField label="Country" name="country" bind:value={formData.country} />
+							</div>
 						</div>
 					</div>
 
-					<!-- Church Membership Panel -->
-					<div class="bg-white border-2 border-hub-green-200 rounded-lg shadow-md overflow-hidden">
+					<!-- Church Membership Card -->
+					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
 						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-6 py-4">
-							<div class="flex items-center gap-2">
-								<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-								</svg>
-								<h3 class="text-lg font-semibold text-white">Church Membership</h3>
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+									</svg>
+								</div>
+								<h3 class="text-lg font-bold text-white">Church Membership</h3>
 							</div>
 						</div>
-						<div class="p-6 space-y-4">
+						<div class="p-6 space-y-5">
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-1">Membership Status</label>
-								<select name="membershipStatus" bind:value={formData.membershipStatus} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-3 px-4">
+								<label class="block text-sm font-semibold text-gray-700 mb-2">Membership Status</label>
+								<select name="membershipStatus" bind:value={formData.membershipStatus} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-hub-green-500 focus:ring-2 focus:ring-hub-green-500 py-2.5 px-4 text-gray-900 transition-all">
 									<option value="">Select status</option>
 									<option value="member">Member</option>
 									<option value="regular-attender">Regular Attender</option>
@@ -215,143 +275,245 @@
 						</div>
 					</div>
 
-					<!-- Additional Information Panel -->
-					<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden">
-						<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-6 py-4">
-							<div class="flex items-center gap-2">
-								<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-								</svg>
-								<h3 class="text-lg font-semibold text-white">Additional Information</h3>
+					<!-- Additional Information Card -->
+					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+						<div class="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4">
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+									</svg>
+								</div>
+								<h3 class="text-lg font-bold text-white">Additional Information</h3>
 							</div>
 						</div>
-						<div class="p-6 space-y-4">
-							<FormField label="Notes" name="notes" type="textarea" rows="4" bind:value={formData.notes} />
+						<div class="p-6">
+							<FormField label="Notes" name="notes" type="textarea" rows="6" bind:value={formData.notes} />
 						</div>
 					</div>
 				</div>
 			</form>
 		{:else}
-			<div class="space-y-6">
-				<div>
-					<h3 class="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-					<dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-						<div>
-							<dt class="text-sm font-medium text-gray-500">Email</dt>
-							<dd class="mt-1 text-sm text-gray-900">{contact.email}</dd>
+			<!-- Main Content Grid -->
+			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<!-- Left Column - Personal & Contact Info -->
+				<div class="lg:col-span-2 space-y-6">
+					<!-- Personal Information Card -->
+					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+						<div class="bg-gradient-to-r from-hub-blue-500 to-hub-blue-600 px-6 py-4">
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+								</div>
+								<h2 class="text-xl font-bold text-white">Personal Information</h2>
+							</div>
 						</div>
-						<div>
-							<dt class="text-sm font-medium text-gray-500">First Name</dt>
-							<dd class="mt-1 text-sm text-gray-900">{contact.firstName || '-'}</dd>
+						<div class="p-6">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+								{#if contact.firstName || contact.lastName}
+									<div>
+										<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Name</dt>
+										<dd class="text-base font-medium text-gray-900">
+											{contact.firstName || ''} {contact.lastName || ''}
+										</dd>
+									</div>
+								{/if}
+								<div>
+									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</dt>
+									<dd class="text-base text-gray-900">
+										<a href="mailto:{contact.email}" class="text-hub-blue-600 hover:text-hub-blue-800 hover:underline">
+											{contact.email}
+										</a>
+									</dd>
+								</div>
+								{#if contact.phone}
+									<div>
+										<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Phone</dt>
+										<dd class="text-base text-gray-900">
+											<a href="tel:{contact.phone}" class="text-hub-blue-600 hover:text-hub-blue-800 hover:underline">
+												{contact.phone}
+											</a>
+										</dd>
+									</div>
+								{/if}
+								{#if spouse}
+									<div>
+										<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Spouse</dt>
+										<dd class="text-base text-gray-900">
+											<a href="/hub/contacts/{spouse.id}" class="inline-flex items-center gap-2 text-hub-blue-600 hover:text-hub-blue-800 hover:underline group">
+												<span>{spouse.firstName || ''} {spouse.lastName || ''}</span>
+												<svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+												</svg>
+											</a>
+										</dd>
+									</div>
+								{/if}
+							</div>
 						</div>
-						<div>
-							<dt class="text-sm font-medium text-gray-500">Last Name</dt>
-							<dd class="mt-1 text-sm text-gray-900">{contact.lastName || '-'}</dd>
+					</div>
+
+					<!-- Address Card -->
+					{#if contact.addressLine1 || contact.city || contact.postcode}
+						<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+							<div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+								<div class="flex items-center gap-3">
+									<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+										<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+										</svg>
+									</div>
+									<h2 class="text-xl font-bold text-white">Address</h2>
+								</div>
+							</div>
+							<div class="p-6">
+								<div class="space-y-1">
+									{#if contact.addressLine1}
+										<p class="text-base text-gray-900 font-medium">
+											{contact.addressLine1}
+										</p>
+										{#if contact.addressLine2}
+											<p class="text-base text-gray-900 font-medium">
+												{contact.addressLine2}
+											</p>
+										{/if}
+									{/if}
+									<div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm text-gray-600">
+										{#if contact.city}
+											<span>{contact.city}</span>
+										{/if}
+										{#if contact.county}
+											<span>{contact.county}</span>
+										{/if}
+										{#if contact.postcode}
+											<span class="font-medium">{contact.postcode}</span>
+										{/if}
+										{#if contact.country}
+											<span>{contact.country}</span>
+										{/if}
+									</div>
+								</div>
+							</div>
 						</div>
-						<div>
-							<dt class="text-sm font-medium text-gray-500">Phone</dt>
-							<dd class="mt-1 text-sm text-gray-900">{contact.phone || '-'}</dd>
+					{/if}
+
+					<!-- Notes Card -->
+					{#if contact.notes}
+						<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+							<div class="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4">
+								<div class="flex items-center gap-3">
+									<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+										<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+										</svg>
+									</div>
+									<h2 class="text-xl font-bold text-white">Notes</h2>
+								</div>
+							</div>
+							<div class="p-6">
+								<p class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{contact.notes}</p>
+							</div>
 						</div>
-					</dl>
+					{/if}
 				</div>
-				
-				{#if contact.addressLine1 || contact.city || contact.postcode}
-					<div>
-						<h3 class="text-lg font-semibold text-gray-900 mb-4">Address</h3>
-						<dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							{#if contact.addressLine1}
-								<div class="sm:col-span-2">
-									<dt class="text-sm font-medium text-gray-500">Address</dt>
-									<dd class="mt-1 text-sm text-gray-900">
-										{contact.addressLine1}
-										{#if contact.addressLine2}<br>{contact.addressLine2}{/if}
+
+				<!-- Right Column - Church Membership & Status -->
+				<div class="space-y-6">
+					<!-- Church Membership Card -->
+					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-6 py-4">
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+									</svg>
+								</div>
+								<h2 class="text-xl font-bold text-white">Membership</h2>
+							</div>
+						</div>
+						<div class="p-6 space-y-5">
+							{#if contact.membershipStatus}
+								<div>
+									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Status</dt>
+									<dd>
+										<span class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-hub-green-100 text-hub-green-800 capitalize shadow-sm">
+											{contact.membershipStatus.replace('-', ' ')}
+										</span>
 									</dd>
 								</div>
 							{/if}
-							{#if contact.city}
+							{#if contact.dateJoined}
 								<div>
-									<dt class="text-sm font-medium text-gray-500">City</dt>
-									<dd class="mt-1 text-sm text-gray-900">{contact.city}</dd>
+									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Date Joined</dt>
+									<dd class="text-base font-medium text-gray-900">{formatDateUK(contact.dateJoined)}</dd>
 								</div>
 							{/if}
-							{#if contact.county}
-								<div>
-									<dt class="text-sm font-medium text-gray-500">County</dt>
-									<dd class="mt-1 text-sm text-gray-900">{contact.county}</dd>
-								</div>
-							{/if}
-							{#if contact.postcode}
-								<div>
-									<dt class="text-sm font-medium text-gray-500">Postcode</dt>
-									<dd class="mt-1 text-sm text-gray-900">{contact.postcode}</dd>
-								</div>
-							{/if}
-							{#if contact.country}
-								<div>
-									<dt class="text-sm font-medium text-gray-500">Country</dt>
-									<dd class="mt-1 text-sm text-gray-900">{contact.country}</dd>
-								</div>
-							{/if}
-						</dl>
-					</div>
-				{/if}
-				
-				<div>
-					<h3 class="text-lg font-semibold text-gray-900 mb-4">Church Membership</h3>
-					<dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-						{#if contact.membershipStatus}
 							<div>
-								<dt class="text-sm font-medium text-gray-500">Membership Status</dt>
-								<dd class="mt-1 text-sm text-gray-900">
-									<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-hub-green-100 text-hub-green-800 capitalize">{contact.membershipStatus.replace('-', ' ')}</span>
+								<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Newsletter</dt>
+								<dd>
+									{#if contact.subscribed !== false}
+										<span class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-green-100 text-green-800 shadow-sm">
+											<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+											</svg>
+											Subscribed
+										</span>
+									{:else}
+										<span class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-red-100 text-red-800 shadow-sm">
+											<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+											Unsubscribed
+										</span>
+									{/if}
 								</dd>
 							</div>
-						{/if}
-						{#if contact.dateJoined}
-							<div>
-								<dt class="text-sm font-medium text-gray-500">Date Joined</dt>
-								<dd class="mt-1 text-sm text-gray-900">{formatDateUK(contact.dateJoined)}</dd>
-							</div>
-						{/if}
-						{#if contact.membershipStatus === 'member'}
-							<div class="sm:col-span-2">
-								<a href="/hub/members/{contact.id}" class="inline-flex items-center px-[18px] py-2.5 bg-hub-green-600 text-white rounded-md hover:bg-hub-green-700 transition-colors">
-									<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-									</svg>
-									View Member Details
-								</a>
-							</div>
-						{/if}
-						<div>
-							<dt class="text-sm font-medium text-gray-500">Newsletter Subscription</dt>
-							<dd class="mt-1 text-sm text-gray-900">
-								{#if contact.subscribed !== false}
-									<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-hub-green-100 text-hub-green-800">Subscribed</span>
-								{:else}
-									<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-hub-red-100 text-hub-red-800">Unsubscribed</span>
-								{/if}
-							</dd>
+							{#if contact.membershipStatus === 'member'}
+								<div class="pt-4 border-t border-gray-200">
+									<a href="/hub/members/{contact.id}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-hub-green-600 text-white rounded-lg hover:bg-hub-green-700 font-medium shadow-md transition-all">
+										<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+										View Member Details
+									</a>
+								</div>
+							{/if}
 						</div>
-					</dl>
-				</div>
-				
-				{#if contact.notes}
-					<div>
-						<h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
-						<p class="text-sm text-gray-900">{contact.notes}</p>
 					</div>
-				{/if}
-				
-				<div>
-					<dt class="text-sm font-medium text-gray-500">Created</dt>
-					<dd class="mt-1 text-sm text-gray-900">
-						{contact.createdAt ? formatDateTimeUK(contact.createdAt) : '-'}
-					</dd>
+
+					<!-- Metadata Card -->
+					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+						<div class="bg-gradient-to-r from-gray-500 to-gray-600 px-6 py-4">
+							<div class="flex items-center gap-3">
+								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+								</div>
+								<h2 class="text-xl font-bold text-white">Information</h2>
+							</div>
+						</div>
+						<div class="p-6 space-y-4">
+							{#if contact.createdAt}
+								<div>
+									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Created</dt>
+									<dd class="text-sm text-gray-700">{formatDateTimeUK(contact.createdAt)}</dd>
+								</div>
+							{/if}
+							{#if contact.updatedAt}
+								<div>
+									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Last Updated</dt>
+									<dd class="text-sm text-gray-700">{formatDateTimeUK(contact.updatedAt)}</dd>
+								</div>
+							{/if}
+						</div>
+					</div>
 				</div>
 			</div>
 		{/if}
-
 	</div>
 {/if}
 

@@ -8,6 +8,8 @@
 	import { dialog } from '$lib/crm/stores/notifications.js';
 
 	$: contact = $page.data?.contact;
+	$: spouse = $page.data?.spouse;
+	$: contacts = $page.data?.contacts || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	
@@ -44,7 +46,8 @@
 		servingAreas: [],
 		giftings: [],
 		notes: '',
-		subscribed: true
+		subscribed: true,
+		spouseId: ''
 	};
 
 	// Only initialize formData when contact loads and not currently editing
@@ -66,7 +69,8 @@
 			servingAreas: Array.isArray(contact.servingAreas) ? contact.servingAreas : [],
 			giftings: Array.isArray(contact.giftings) ? contact.giftings : [],
 			notes: contact.notes || '',
-			subscribed: contact.subscribed !== false // Default to true if not set
+			subscribed: contact.subscribed !== false, // Default to true if not set
+			spouseId: contact.spouseId || ''
 		};
 		initialized = true;
 	}
@@ -179,6 +183,17 @@
 							<FormField label="First Name" name="firstName" bind:value={formData.firstName} />
 							<FormField label="Last Name" name="lastName" bind:value={formData.lastName} />
 							<FormField label="Phone" name="phone" bind:value={formData.phone} />
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-1">Spouse</label>
+								<select name="spouseId" bind:value={formData.spouseId} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-blue-500 focus:ring-hub-blue-500 py-3 px-4">
+									<option value="">None</option>
+									{#each contacts as contactOption}
+										<option value={contactOption.id}>
+											{contactOption.firstName || ''} {contactOption.lastName || ''} {contactOption.email ? `(${contactOption.email})` : ''}
+										</option>
+									{/each}
+								</select>
+							</div>
 							<div>
 								<label class="flex items-center cursor-pointer">
 									<input
@@ -325,6 +340,16 @@
 							<dt class="text-sm font-medium text-gray-500">Phone</dt>
 							<dd class="mt-1 text-sm text-gray-900">{contact.phone || '-'}</dd>
 						</div>
+						{#if spouse}
+							<div>
+								<dt class="text-sm font-medium text-gray-500">Spouse</dt>
+								<dd class="mt-1 text-sm text-gray-900">
+									<a href="/hub/contacts/{spouse.id}" class="text-hub-blue-600 hover:text-hub-blue-800 underline">
+										{spouse.firstName || ''} {spouse.lastName || ''} {spouse.email ? `(${spouse.email})` : ''}
+									</a>
+								</dd>
+							</div>
+						{/if}
 					</dl>
 				</div>
 				

@@ -6,6 +6,7 @@
 
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+	$: contacts = $page.data?.contacts || [];
 	
 	// Show notifications from form results
 	$: if (formResult?.error) {
@@ -29,7 +30,8 @@
 		servingAreas: [],
 		giftings: [],
 		notes: '',
-		subscribed: true // Default to subscribed for new contacts
+		subscribed: true, // Default to subscribed for new contacts
+		spouseId: ''
 	};
 
 	let servingAreaInput = '';
@@ -92,6 +94,17 @@
 						<FormField label="Last Name" name="lastName" bind:value={formData.lastName} />
 					</div>
 					<FormField label="Phone" name="phone" bind:value={formData.phone} />
+					<div>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Spouse</label>
+						<select name="spouseId" bind:value={formData.spouseId} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-blue-500 focus:ring-hub-blue-500 py-3 px-4">
+							<option value="">None</option>
+							{#each contacts as contact}
+								<option value={contact.id}>
+									{contact.firstName || ''} {contact.lastName || ''} {contact.email ? `(${contact.email})` : ''}
+								</option>
+							{/each}
+						</select>
+					</div>
 					<div class="mb-4">
 						<label class="flex items-center">
 							<input

@@ -154,7 +154,39 @@ export const actions = {
 				let matchedContact = null;
 				if (existingContacts.length > 0) {
 					matchedContact = existingContacts[0];
-					// Optionally update contact name if it's missing or different
+					
+					// Check if contact is confirmed
+					if (matchedContact.confirmed === false) {
+						return fail(400, { 
+							error: 'Your contact details need to be confirmed before you can sign up for rotas. Please contact an administrator.' 
+						});
+					}
+					
+					// Validate name matches the contact
+					const contactFirstName = (matchedContact.firstName || '').trim().toLowerCase();
+					const contactLastName = (matchedContact.lastName || '').trim().toLowerCase();
+					const inputFirstName = firstName.trim().toLowerCase();
+					const inputLastName = lastName.trim().toLowerCase();
+					
+					// Check if names match (allow partial matches - at least first name should match)
+					const firstNameMatches = !inputFirstName || contactFirstName.includes(inputFirstName) || inputFirstName.includes(contactFirstName);
+					const lastNameMatches = !inputLastName || !contactLastName || contactLastName.includes(inputLastName) || inputLastName.includes(contactLastName) || inputLastName === '';
+					
+					// If we have a last name in the contact, require it to match
+					if (contactLastName && inputLastName && !lastNameMatches) {
+						return fail(400, { 
+							error: 'The name provided does not match the account for this email address. Please check your details and try again.' 
+						});
+					}
+					
+					// Require first name to match if provided
+					if (inputFirstName && !firstNameMatches) {
+						return fail(400, { 
+							error: 'The name provided does not match the account for this email address. Please check your details and try again.' 
+						});
+					}
+					
+					// Optionally update contact name if it's missing or more complete
 					const existingFullName = `${matchedContact.firstName || ''} ${matchedContact.lastName || ''}`.trim();
 					const newFullName = name.trim();
 					
@@ -172,6 +204,17 @@ export const actions = {
 					return fail(400, { 
 						error: 'No account found with this email address. Please sign up as a member first or contact an administrator to add you to the system.' 
 					});
+				}
+
+				// Check if signing up with spouse
+				const signUpWithSpouse = data.get('signUpWithSpouse') === 'on' || data.get('signUpWithSpouse') === 'true';
+				let spouseContact = null;
+				
+				if (signUpWithSpouse && matchedContact && matchedContact.spouseId) {
+					spouseContact = await findById('contacts', matchedContact.spouseId);
+					if (!spouseContact) {
+						return fail(400, { error: 'Spouse contact not found' });
+					}
 				}
 
 				// Get selected rotas and occurrences
@@ -350,6 +393,36 @@ export const actions = {
 						occurrenceId: targetOccurrenceId 
 					});
 					console.log(`[Rota Signup] Adding assignee. Total assignees after add: ${existingAssignees.length}`);
+
+					// If signing up with spouse, also add spouse
+					if (signUpWithSpouse && spouseContact) {
+						// Check if spouse is already signed up for this occurrence
+						const spouseAlreadySignedUp = assigneesForOccurrence.some(a => {
+							if (typeof a === 'string') {
+								return a === spouseContact.id;
+							}
+							if (a && typeof a === 'object' && a.contactId) {
+								if (typeof a.contactId === 'string') {
+									return a.contactId === spouseContact.id;
+								}
+							}
+							return false;
+						});
+
+						if (!spouseAlreadySignedUp) {
+							// Check capacity for spouse
+							if (assigneesForOccurrence.length + 1 >= rota.capacity) {
+								errors.push(`Rota "${rota.role}" does not have enough capacity for both you and your spouse for this occurrence`);
+								continue;
+							}
+							
+							existingAssignees.push({ 
+								contactId: spouseContact.id, 
+								occurrenceId: targetOccurrenceId 
+							});
+							console.log(`[Rota Signup] Adding spouse assignee. Total assignees after add: ${existingAssignees.length}`);
+						}
+					}
 
 					// Update rota
 					const updatedRota = {
