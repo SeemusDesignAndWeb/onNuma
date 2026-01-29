@@ -31,6 +31,7 @@
 	let previousEmail = '';
 	let previousName = '';
 	let contactConfirmed = true; // Track if contact is confirmed
+	let matchedContact = null; // Store the matched contact record
 
 	// Reactive value for the hidden input
 	$: selectedRotasJson = (() => {
@@ -73,10 +74,16 @@
 		return assignees.length >= rota.capacity;
 	}
 
-	function isEmailAlreadySignedUp(rota, occurrenceId) {
-		if (!email) return false;
+	function isEmailAlreadySignedUp(rota, occurrenceId, currentEmail, currentMatchedContact, currentSignUpWithSpouse, currentSpouse) {
+		if (!currentEmail && !currentMatchedContact) return false;
 		const assignees = getAssigneesForRotaOccurrence(rota, occurrenceId);
-		return assignees.some(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+		
+		const emailsToCheck = new Set();
+		if (currentEmail) emailsToCheck.add(currentEmail.toLowerCase().trim());
+		if (currentMatchedContact?.email) emailsToCheck.add(currentMatchedContact.email.toLowerCase().trim());
+		if (currentSignUpWithSpouse && currentSpouse?.email) emailsToCheck.add(currentSpouse.email.toLowerCase().trim());
+		
+		return assignees.some(a => a.email && emailsToCheck.has(a.email.toLowerCase().trim()));
 	}
 
 	// Action to ensure hidden input is updated on form submit
@@ -152,6 +159,7 @@
 			// Only update if email and name haven't changed while we were checking
 			if (email === emailToCheck && name === nameToCheck) {
 				if (data.matched) {
+					matchedContact = data.contact;
 					contactConfirmed = data.contact?.confirmed !== false;
 					if (data.spouse) {
 						spouse = data.spouse;
@@ -160,6 +168,7 @@
 						signUpWithSpouse = false;
 					}
 				} else {
+					matchedContact = null;
 					contactConfirmed = false;
 					spouse = null;
 					signUpWithSpouse = false;
@@ -193,6 +202,7 @@
 		}
 		
 		if (!email || !email.includes('@') || !name || !name.trim()) {
+			matchedContact = null;
 			contactConfirmed = false;
 			spouse = null;
 			signUpWithSpouse = false;
@@ -281,6 +291,12 @@
 													</span>
 												</div>
 											</label>
+										</div>
+									{/if}
+									{#if matchedContact}
+										<div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
+											<i class="fa fa-heart text-red-500"></i>
+											<span>This shows if you are already signed up</span>
 										</div>
 									{/if}
 								</div>
@@ -389,7 +405,7 @@
 																{@const assignees = getAssigneesForRotaOccurrence(rota, occ.id)}
 																{@const isFull = isRotaFull(rota, occ.id)}
 																{@const isSelected = isRotaSelected(rota.id, occ.id)}
-																{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id)}
+																{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id, email, matchedContact, signUpWithSpouse, spouse)}
 																{@const canSelect = !isFull && !alreadySignedUp}
 																{@const hasSomeFilled = assignees.length > 0 && !isFull}
 																{@const bgColor = isFull ? 'bg-red-100' : (hasSomeFilled ? 'bg-green-100' : 'bg-white')}
@@ -417,8 +433,8 @@
 																					</span>
 																				{/if}
 																				{#if alreadySignedUp}
-																					<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20">
-																						Signed up
+																					<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20" title="Already signed up">
+																						<i class="fa fa-heart text-red-500"></i>
 																					</span>
 																				{/if}
 																			</div>

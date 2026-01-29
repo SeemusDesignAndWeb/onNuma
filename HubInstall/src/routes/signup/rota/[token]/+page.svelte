@@ -30,6 +30,11 @@
 	let email = '';
 	let selectedRotas = new Set(); // Store as "rotaId:occurrenceId" or "rotaId" if no occurrence
 
+	let previousEmail = '';
+	let previousName = '';
+	let contactConfirmed = true; // Track if contact is confirmed
+	let matchedContact = null; // Store the matched contact record
+
 	// Reactive value for the hidden input - explicitly depend on selectedRotas
 	// Convert Set to array and stringify whenever selectedRotas changes
 	$: selectedRotasJson = (() => {
@@ -88,10 +93,19 @@
 		return assignees.length >= rota.capacity;
 	}
 
-	function isEmailAlreadySignedUp(rota, occurrenceId) {
-		if (!email) return false;
+	function isEmailAlreadySignedUp(rota, occurrenceId, currentEmail, currentMatchedContact, currentSignUpWithSpouse, currentSpouse) {
+		if (!currentEmail && !currentMatchedContact) return false;
 		const assignees = getAssigneesForRotaOccurrence(rota, occurrenceId);
-		return assignees.some(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+		
+		const emailsToCheck = new Set();
+		if (currentEmail) emailsToCheck.add(currentEmail.toLowerCase().trim());
+		if (currentMatchedContact?.email) emailsToCheck.add(currentMatchedContact.email.toLowerCase().trim());
+		if (currentSignUpWithSpouse && currentSpouse?.email) emailsToCheck.add(currentSignUpWithSpouse && currentSpouse?.email ? currentSpouse.email.toLowerCase().trim() : '');
+		
+		// Remove empty strings from Set if any
+		emailsToCheck.delete('');
+		
+		return assignees.some(a => a.email && emailsToCheck.has(a.email.toLowerCase().trim()));
 	}
 
 	// Action to ensure hidden input is updated on form submit
@@ -150,6 +164,90 @@
 		const jsonStr = JSON.stringify(selectedArray);
 		console.log('[Rota Signup] Reactive update. selectedRotas.size:', selectedRotas.size, 'selectedArray:', selectedArray, 'jsonStr:', jsonStr);
 		hiddenInputNode.value = jsonStr;
+	}
+
+	let spouse = null;
+	let signUpWithSpouse = false;
+	let checkingSpouse = false;
+	let spouseCheckTimeout = null;
+
+	// Check for spouse when email and name change
+	async function checkSpouse(emailToCheck, nameToCheck) {
+		if (!emailToCheck || !emailToCheck.includes('@') || !nameToCheck || !nameToCheck.trim()) {
+			matchedContact = null;
+			spouse = null;
+			signUpWithSpouse = false;
+			return;
+		}
+
+		checkingSpouse = true;
+		try {
+			const params = new URLSearchParams({
+				email: emailToCheck,
+				name: nameToCheck
+			});
+			const response = await fetch(`/api/check-contact-spouse?${params.toString()}`);
+			const data = await response.json();
+			
+			// Only update if email and name haven't changed while we were checking
+			if (email === emailToCheck && name === nameToCheck) {
+				if (data.matched) {
+					matchedContact = data.contact;
+					contactConfirmed = data.contact?.confirmed !== false;
+					if (data.spouse) {
+						spouse = data.spouse;
+					} else {
+						spouse = null;
+						signUpWithSpouse = false;
+					}
+				} else {
+					matchedContact = null;
+					contactConfirmed = false;
+					spouse = null;
+					signUpWithSpouse = false;
+				}
+			}
+		} catch (error) {
+			console.error('Error checking spouse:', error);
+			// Only update if email and name haven't changed while we were checking
+			if (email === emailToCheck && name === nameToCheck) {
+				matchedContact = null;
+				contactConfirmed = false;
+				spouse = null;
+				signUpWithSpouse = false;
+			}
+		} finally {
+			// Only update checking state if email and name haven't changed
+			if (email === emailToCheck && name === nameToCheck) {
+				checkingSpouse = false;
+			}
+		}
+	}
+
+	// Reactive statement to check spouse when email or name changes
+	$: if (email !== previousEmail || name !== previousName) {
+		previousEmail = email;
+		previousName = name;
+		
+		// Clear any existing timeout
+		if (spouseCheckTimeout) {
+			clearTimeout(spouseCheckTimeout);
+			spouseCheckTimeout = null;
+		}
+		
+		if (!email || !email.includes('@') || !name || !name.trim()) {
+			matchedContact = null;
+			contactConfirmed = false;
+			spouse = null;
+			signUpWithSpouse = false;
+			checkingSpouse = false;
+		} else {
+			// Debounce the check
+			spouseCheckTimeout = setTimeout(() => {
+				checkSpouse(email, name);
+				spouseCheckTimeout = null;
+			}, 500);
+		}
 	}
 </script>
 
@@ -215,7 +313,36 @@
 											required
 											class="w-full rounded-md border border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue py-2 px-4 transition-colors"
 										/>
+										{#if checkingSpouse}
+											<p class="text-xs text-gray-500 mt-1">Checking...</p>
+										{/if}
 									</div>
+									{#if spouse}
+										<div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+											<label class="flex items-start cursor-pointer group">
+												<input
+													type="checkbox"
+													name="signUpWithSpouse"
+													bind:checked={signUpWithSpouse}
+													class="mt-1 mr-3 w-5 h-5 rounded border-gray-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
+												/>
+												<div class="flex-1">
+													<span class="text-sm font-medium text-gray-900 block">
+														Sign up for you and {spouse.firstName || spouse.lastName ? `${spouse.firstName || ''} ${spouse.lastName || ''}`.trim() : 'your partner'}?
+													</span>
+													<span class="text-xs text-gray-600 mt-1 block">
+														Both of you will be signed up for the selected rotas
+													</span>
+												</div>
+											</label>
+										</div>
+									{/if}
+									{#if matchedContact}
+										<div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
+											<i class="fa fa-heart text-red-500"></i>
+											<span>This shows if you are already signed up</span>
+										</div>
+									{/if}
 								</div>
 							</div>
 
@@ -240,10 +367,25 @@
 								</div>
 							{/if}
 
+							{#if !contactConfirmed && email && name}
+								<div class="border-t border-gray-200 pt-6">
+									<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+										<div class="flex items-start gap-3">
+											<svg class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+											</svg>
+											<div class="flex-1">
+												<p class="text-sm font-medium text-yellow-800">Contact Not Confirmed</p>
+												<p class="text-xs text-yellow-700 mt-1">Your contact details need to be confirmed before you can sign up for rotas. Please contact an administrator.</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							{/if}
 							<div class="border-t border-gray-200 pt-6">
 								<button
 									type="submit"
-									disabled={selectedRotas.size === 0 || !name || !email}
+									disabled={selectedRotas.size === 0 || !name || !email || !contactConfirmed}
 									class="w-full bg-brand-green text-white px-8 py-3 rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
 								>
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +425,7 @@
 													{@const assignees = getAssigneesForRotaOccurrence(rota, occ.id)}
 													{@const isFull = isRotaFull(rota, occ.id)}
 													{@const isSelected = isRotaSelected(rota.id, occ.id)}
-													{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id)}
+													{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id, email, matchedContact, signUpWithSpouse, spouse)}
 													{@const canSelect = !isFull && !alreadySignedUp}
 													
 													<div class="border-2 rounded p-2 transition-all {isSelected ? 'bg-brand-green/10 border-brand-green shadow-sm' : 'border-gray-200 hover:border-brand-blue/50'} {!canSelect && !isSelected ? 'opacity-60' : ''}">
@@ -309,8 +451,8 @@
 																		</span>
 																	{/if}
 																	{#if alreadySignedUp}
-																		<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20">
-																			Signed up
+																		<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20" title="Already signed up">
+																			<i class="fa fa-heart text-red-500"></i>
 																		</span>
 																	{/if}
 																</div>
