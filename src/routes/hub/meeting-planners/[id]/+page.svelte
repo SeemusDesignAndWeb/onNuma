@@ -17,6 +17,7 @@
 	$: eventOccurrences = $page.data?.eventOccurrences || [];
 	$: rotas = $page.data?.rotas || {};
 	$: rawRotas = $page.data?.rawRotas || {};
+	$: rotasToLoad = $page.data?.rotasToLoad || [];
 	$: availableContacts = $page.data?.availableContacts || [];
 	$: lists = $page.data?.lists || [];
 	$: speakerSeries = $page.data?.speakerSeries || [];
@@ -511,6 +512,9 @@
 	}
 
 	function getRotaDisplayName(rotaKey) {
+		const item = rotasToLoad.find(i => i.key === rotaKey);
+		if (item) return item.role;
+		
 		const names = {
 			meetingLeader: 'Meeting Leader',
 			worshipLeader: 'Worship Leader and Team',
@@ -671,194 +675,194 @@
 					<h3 class="text-base sm:text-lg font-bold text-gray-900">Rotas</h3>
 				</div>
 				
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-					{#each Object.keys(rotas) as rotaKey}
+				<div class="flex flex-wrap -mx-2">
+					{#each rotasToLoad as item}
+						{@const rotaKey = item.key}
 						{@const rota = rotas[rotaKey]}
 						{@const rawRota = rawRotas[rotaKey]}
 						{#if rota}
-							<div class="border border-gray-200 rounded-lg p-2.5 sm:p-3 flex flex-col">
-								<div class="flex justify-between items-start mb-2 sm:mb-3">
-									<div class="flex-1 min-w-0">
-										<div class="flex items-center gap-1.5 mb-1">
-											<h4 class="text-xs sm:text-sm font-semibold text-gray-900 truncate">{getRotaDisplayName(rotaKey)}</h4>
-											<a 
-												href="/hub/rotas/{rota.id}" 
-												class="text-hub-blue-600 hover:text-hub-blue-800 flex-shrink-0"
-												target="_blank"
-												title="View full details"
-											>
-												<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-												</svg>
-											</a>
-										</div>
-										<div class="text-xs text-gray-500 w-20">
-											<span class="font-medium {rota.assignees?.length >= rota.capacity ? 'text-hub-red-600' : 'text-gray-700'}">
-												{rota.assignees?.length || 0} / {rota.capacity}
-											</span>
-											{#if rota.assignees?.length >= rota.capacity}
-												<span class="ml-1 text-hub-red-600">(Full)</span>
-											{/if}
+							<div class="w-full md:w-1/2 px-2 mb-4">
+								<div class="border border-gray-200 rounded-lg p-2.5 sm:p-3 flex flex-col h-full bg-white">
+									<div class="flex justify-between items-start mb-2 sm:mb-3">
+										<div class="flex-1 min-w-0">
+											<div class="flex items-center gap-1.5 mb-1">
+												<h4 class="text-xs sm:text-sm font-semibold text-gray-900 truncate">{getRotaDisplayName(rotaKey)}</h4>
+												<a 
+													href="/hub/rotas/{rota.id}" 
+													class="text-hub-blue-600 hover:text-hub-blue-800 flex-shrink-0"
+													target="_blank"
+													title="View full details"
+												>
+													<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+													</svg>
+												</a>
+											</div>
+											<div class="text-xs text-gray-500 w-20">
+												<span class="font-medium text-gray-700">
+													{rota.assignees?.length || 0} Assigned
+												</span>
+											</div>
 										</div>
 									</div>
-								</div>
 
-								<div class="flex-1 min-h-[80px] mb-3 {rota.assignees && rota.assignees.length > 3 ? 'max-h-[180px] overflow-y-auto' : ''}">
-									{#if rota.assignees && rota.assignees.length > 0}
-										<div class="space-y-1.5">
-											{#each rota.assignees as assignee, index}
-												<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-													<div class="flex-1 min-w-0 pr-1.5">
-														{#if assignee.id}
-															<a href="/hub/contacts/{assignee.id}" class="text-hub-green-600 hover:text-hub-green-700 underline font-medium text-xs block truncate">
-																{assignee.name || 'Unknown'}
-															</a>
-														{:else}
-															<span class="font-medium text-xs block truncate">{assignee.name || 'Unknown'}</span>
-															<span class="text-xs text-gray-400">(Public)</span>
-														{/if}
-														<span class="text-xs text-gray-500 truncate block">{assignee.email}</span>
+									<div class="flex-1 min-h-[80px] mb-3 {rota.assignees && rota.assignees.length > 3 ? 'max-h-[180px] overflow-y-auto' : ''}">
+										{#if rota.assignees && rota.assignees.length > 0}
+											<div class="space-y-1.5">
+												{#each rota.assignees as assignee, index}
+													<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+														<div class="flex-1 min-w-0 pr-1.5">
+															{#if assignee.id}
+																<a href="/hub/contacts/{assignee.id}" class="text-hub-green-600 hover:text-hub-green-700 underline font-medium text-xs block truncate">
+																	{assignee.name || 'Unknown'}
+																</a>
+															{:else}
+																<span class="font-medium text-xs block truncate">{assignee.name || 'Unknown'}</span>
+																<span class="text-xs text-gray-400">(Public)</span>
+															{/if}
+															<span class="text-xs text-gray-500 truncate block">{assignee.email}</span>
+														</div>
+														<button
+															on:click={() => handleRemoveAssignee(rotaKey, assignee, index)}
+															class="text-hub-red-600 hover:text-hub-red-800 p-1 rounded text-xs flex-shrink-0"
+															title="Remove assignee"
+														>
+															<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+															</svg>
+														</button>
 													</div>
-													<button
-														on:click={() => handleRemoveAssignee(rotaKey, assignee, index)}
-														class="text-hub-red-600 hover:text-hub-red-800 p-1 rounded text-xs flex-shrink-0"
-														title="Remove assignee"
-													>
-														<svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-														</svg>
-													</button>
-												</div>
-											{/each}
-										</div>
-									{:else}
-										<p class="text-xs text-gray-400 italic text-center py-3">No assignees yet</p>
-									{/if}
+												{/each}
+											</div>
+										{:else}
+											<p class="text-xs text-gray-400 italic text-center py-3">No assignees yet</p>
+										{/if}
+									</div>
+
+									<button
+										on:click={() => {
+											showAddAssignees[rotaKey] = true;
+											searchTerm[rotaKey] = '';
+											selectedContactIds[rotaKey] = new Set();
+											selectedListId[rotaKey] = '';
+										}}
+										class="w-full bg-hub-green-600 text-white px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-md hover:bg-hub-green-700 text-xs transition-colors"
+									>
+										+ Add Assignees
+									</button>
 								</div>
 
-								<button
-									on:click={() => {
-										showAddAssignees[rotaKey] = true;
-										searchTerm[rotaKey] = '';
-										selectedContactIds[rotaKey] = new Set();
-										selectedListId[rotaKey] = '';
-									}}
-									class="w-full bg-hub-green-600 text-white px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-md hover:bg-hub-green-700 text-xs transition-colors"
-								>
-									+ Add Assignees
-								</button>
-							</div>
-
-							<!-- Add Assignees Modal -->
-							{#if showAddAssignees[rotaKey]}
-								<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4" on:click={() => showAddAssignees[rotaKey] = false}>
-									<div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] flex flex-col" on:click|stopPropagation>
-										<div class="p-3 sm:p-4 border-b border-gray-200">
-											<h3 class="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Add Assignees - {getRotaDisplayName(rotaKey)}</h3>
-											
-											{#if eventOccurrences.length > 0}
+								<!-- Add Assignees Modal -->
+								{#if showAddAssignees[rotaKey]}
+									<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4" on:click={() => showAddAssignees[rotaKey] = false}>
+										<div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] flex flex-col" on:click|stopPropagation>
+											<div class="p-3 sm:p-4 border-b border-gray-200">
+												<h3 class="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Add Assignees - {getRotaDisplayName(rotaKey)}</h3>
+												
+												{#if eventOccurrences.length > 0}
+													<div class="mb-2 sm:mb-3">
+														<label class="block text-xs font-medium text-gray-700 mb-1">Occurrence <span class="text-hub-red-500">*</span></label>
+														<select bind:value={selectedOccurrenceId[rotaKey]} required class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
+															<option value="">Select an occurrence</option>
+															{#each eventOccurrences as occ}
+																<option value={occ.id}>
+																	{formatDateTimeUK(occ.startsAt)}
+																</option>
+															{/each}
+														</select>
+														<p class="mt-1 text-xs text-gray-500">Rotas apply to all occurrences. Select which occurrence to assign to.</p>
+													</div>
+												{/if}
+												
 												<div class="mb-2 sm:mb-3">
-													<label class="block text-xs font-medium text-gray-700 mb-1">Occurrence <span class="text-hub-red-500">*</span></label>
-													<select bind:value={selectedOccurrenceId[rotaKey]} required class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
-														<option value="">Select an occurrence</option>
-														{#each eventOccurrences as occ}
-															<option value={occ.id}>
-																{formatDateTimeUK(occ.startsAt)}
-															</option>
+													<label class="block text-xs font-medium text-gray-700 mb-1">Filter by List (optional)</label>
+													<select bind:value={selectedListId[rotaKey]} class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
+														<option value="">All Contacts</option>
+														{#each lists as list}
+															<option value={list.id}>{list.name}</option>
 														{/each}
 													</select>
-													<p class="mt-1 text-xs text-gray-500">Rotas apply to all occurrences. Select which occurrence to assign to.</p>
+													<p class="mt-1 text-xs text-gray-500">Select a list to filter contacts</p>
 												</div>
-											{/if}
-											
-											<div class="mb-2 sm:mb-3">
-												<label class="block text-xs font-medium text-gray-700 mb-1">Filter by List (optional)</label>
-												<select bind:value={selectedListId[rotaKey]} class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
-													<option value="">All Contacts</option>
-													{#each lists as list}
-														<option value={list.id}>{list.name}</option>
-													{/each}
-												</select>
-												<p class="mt-1 text-xs text-gray-500">Select a list to filter contacts</p>
+												
+												<div>
+													<input
+														type="text"
+														bind:value={searchTerm[rotaKey]}
+														placeholder="Search contacts..."
+														class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2.5 sm:px-3 text-xs sm:text-sm"
+													/>
+												</div>
 											</div>
-											
-											<div>
-												<input
-													type="text"
-													bind:value={searchTerm[rotaKey]}
-													placeholder="Search contacts..."
-													class="w-full rounded-md border border-gray-500 shadow-sm focus:border-hub-green-500 focus:ring-hub-green-500 py-1.5 px-2.5 sm:px-3 text-xs sm:text-sm"
-												/>
-											</div>
-										</div>
 
-										<div class="flex-1 overflow-y-auto p-3 sm:p-4">
-											{#if filteredContacts[rotaKey] && filteredContacts[rotaKey].length > 0}
-												<div class="mb-3 flex justify-between items-center">
-													<span class="text-xs text-gray-600">
-														Showing {filteredContacts[rotaKey].length} contact{filteredContacts[rotaKey].length !== 1 ? 's' : ''}
-													</span>
-													<div class="flex gap-2">
-														<button
-															on:click={() => selectAllContacts(rotaKey)}
-															class="text-xs text-hub-green-600 hover:text-hub-green-800 underline"
-														>
-															Select All
-														</button>
-														<button
-															on:click={() => deselectAllContacts(rotaKey)}
-															class="text-xs text-gray-600 hover:text-gray-800 underline"
-														>
-															Deselect All
-														</button>
+											<div class="flex-1 overflow-y-auto p-3 sm:p-4">
+												{#if filteredContacts[rotaKey] && filteredContacts[rotaKey].length > 0}
+													<div class="mb-3 flex justify-between items-center">
+														<span class="text-xs text-gray-600">
+															Showing {filteredContacts[rotaKey].length} contact{filteredContacts[rotaKey].length !== 1 ? 's' : ''}
+														</span>
+														<div class="flex gap-2">
+															<button
+																on:click={() => selectAllContacts(rotaKey)}
+																class="text-xs text-hub-green-600 hover:text-hub-green-800 underline"
+															>
+																Select All
+															</button>
+															<button
+																on:click={() => deselectAllContacts(rotaKey)}
+																class="text-xs text-gray-600 hover:text-gray-800 underline"
+															>
+																Deselect All
+															</button>
+														</div>
 													</div>
-												</div>
-												<div class="space-y-1.5">
-													{#each filteredContacts[rotaKey] as contact}
-														<label class="flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer">
-															<input
-																type="checkbox"
-																checked={selectedContactIds[rotaKey]?.has(contact.id)}
-																on:change={() => toggleContactSelection(rotaKey, contact.id)}
-																class="mr-2"
-															/>
-															<div class="flex-1">
-																<div class="font-medium text-sm">
-																	{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
+													<div class="space-y-1.5">
+														{#each filteredContacts[rotaKey] as contact}
+															<label class="flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer">
+																<input
+																	type="checkbox"
+																	checked={selectedContactIds[rotaKey]?.has(contact.id)}
+																	on:change={() => toggleContactSelection(rotaKey, contact.id)}
+																	class="mr-2"
+																/>
+																<div class="flex-1">
+																	<div class="font-medium text-sm">
+																		{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
+																	</div>
+																	<div class="text-xs text-gray-500">{contact.email}</div>
 																</div>
-																<div class="text-xs text-gray-500">{contact.email}</div>
-															</div>
-														</label>
-													{/each}
-												</div>
-											{:else}
-												<p class="text-sm text-gray-500">No available contacts to assign.</p>
-											{/if}
-										</div>
+															</label>
+														{/each}
+													</div>
+												{:else}
+													<p class="text-sm text-gray-500">No available contacts to assign.</p>
+												{/if}
+											</div>
 
-										<div class="p-3 sm:p-4 border-t border-gray-200 flex flex-col sm:flex-row gap-2 sm:justify-end">
-											<button
-												on:click={() => { 
-													showAddAssignees[rotaKey] = false; 
-													searchTerm[rotaKey] = ''; 
-													selectedContactIds[rotaKey] = new Set(); 
-													selectedListId[rotaKey] = '';
-												}}
-												class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs sm:text-sm w-full sm:w-auto"
-											>
-												Back
-											</button>
-											<button
-												on:click={() => handleAddAssignees(rotaKey)}
-												disabled={!selectedContactIds[rotaKey] || selectedContactIds[rotaKey].size === 0 || (eventOccurrences.length > 0 && !selectedOccurrenceId[rotaKey])}
-												class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50 text-xs sm:text-sm w-full sm:w-auto"
-											>
-												Add Selected ({selectedContactIds[rotaKey]?.size || 0})
-											</button>
+											<div class="p-3 sm:p-4 border-t border-gray-200 flex flex-col sm:flex-row gap-2 sm:justify-end">
+												<button
+													on:click={() => { 
+														showAddAssignees[rotaKey] = false; 
+														searchTerm[rotaKey] = ''; 
+														selectedContactIds[rotaKey] = new Set(); 
+														selectedListId[rotaKey] = '';
+													}}
+													class="bg-gray-600 text-white px-2.5 py-1.5 rounded-md hover:bg-gray-700 text-xs sm:text-sm w-full sm:w-auto"
+												>
+													Back
+												</button>
+												<button
+													on:click={() => handleAddAssignees(rotaKey)}
+													disabled={!selectedContactIds[rotaKey] || selectedContactIds[rotaKey].size === 0 || (eventOccurrences.length > 0 && !selectedOccurrenceId[rotaKey])}
+													class="bg-hub-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-green-700 disabled:opacity-50 text-xs sm:text-sm w-full sm:w-auto"
+												>
+													Add Selected ({selectedContactIds[rotaKey]?.size || 0})
+												</button>
+											</div>
 										</div>
 									</div>
-								</div>
-							{/if}
+								{/if}
+							</div>
 						{/if}
 					{/each}
 				</div>

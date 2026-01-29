@@ -3,6 +3,7 @@ import { findById, update, remove, readCollection } from '$lib/crm/server/fileSt
 import { validateMeetingPlanner, validateRota } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
+import { getSettings } from '$lib/crm/server/settings.js';
 
 export async function load({ params, cookies, url }) {
 	const meetingPlanner = await findById('meeting_planners', params.id);
@@ -17,12 +18,76 @@ export async function load({ params, cookies, url }) {
 	const allOccurrences = await readCollection('occurrences');
 	const eventOccurrences = allOccurrences.filter(o => o.eventId === meetingPlanner.eventId);
 
-	// Load all 4 rotas
+	// Load all rotas
 	const rotas = await readCollection('rotas');
-	const meetingLeaderRota = meetingPlanner.meetingLeaderRotaId ? rotas.find(r => r.id === meetingPlanner.meetingLeaderRotaId) : null;
-	const worshipLeaderRota = meetingPlanner.worshipLeaderRotaId ? rotas.find(r => r.id === meetingPlanner.worshipLeaderRotaId) : null;
-	const speakerRota = meetingPlanner.speakerRotaId ? rotas.find(r => r.id === meetingPlanner.speakerRotaId) : null;
-	const callToWorshipRota = meetingPlanner.callToWorshipRotaId ? rotas.find(r => r.id === meetingPlanner.callToWorshipRotaId) : null;
+	const settings = await getSettings();
+	const settingsRotas = settings.meetingPlannerRotas || [];
+	
+	// Determine which rotas to load
+	let rotasToLoad = [];
+	
+	if (meetingPlanner.rotas && Array.isArray(meetingPlanner.rotas) && meetingPlanner.rotas.length > 0) {
+		// New dynamic rotas format
+		rotasToLoad = meetingPlanner.rotas.map(r => ({
+			key: r.role.toLowerCase().replace(/[^a-z0-9]/g, ''),
+			role: r.role,
+			rota: rotas.find(rota => rota.id === r.rotaId)
+		}));
+
+		// Sort based on settings order if available
+		if (settingsRotas.length > 0) {
+			const settingsRolesOrder = settingsRotas.map(sr => (sr.role || '').trim());
+			
+			rotasToLoad.sort((a, b) => {
+				let roleA = (a.role || '').trim();
+				let roleB = (b.role || '').trim();
+				
+				// Fuzzy match for Worship Team legacy name
+				if (roleA === 'Worship Leader and Team') roleA = 'Worship Team';
+				if (roleB === 'Worship Leader and Team') roleB = 'Worship Team';
+
+				const indexA = settingsRolesOrder.indexOf(roleA);
+				const indexB = settingsRolesOrder.indexOf(roleB);
+				
+				// If both found in settings, sort by settings order
+				if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+				// If only one found, put the found one first
+				if (indexA !== -1) return -1;
+				if (indexB !== -1) return 1;
+				// If neither found, sort alphabetically by role
+				return roleA.localeCompare(roleB);
+			});
+		}
+	} else {
+		// Old fixed rotas format
+		rotasToLoad = [
+			{ key: 'meetingLeader', role: 'Meeting Leader', rota: meetingPlanner.meetingLeaderRotaId ? rotas.find(r => r.id === meetingPlanner.meetingLeaderRotaId) : null },
+			{ key: 'worshipLeader', role: 'Worship Leader and Team', rota: meetingPlanner.worshipLeaderRotaId ? rotas.find(r => r.id === meetingPlanner.worshipLeaderRotaId) : null },
+			{ key: 'speaker', role: 'Speaker', rota: meetingPlanner.speakerRotaId ? rotas.find(r => r.id === meetingPlanner.speakerRotaId) : null },
+			{ key: 'callToWorship', role: 'Call to Worship', rota: meetingPlanner.callToWorshipRotaId ? rotas.find(r => r.id === meetingPlanner.callToWorshipRotaId) : null }
+		];
+
+		// Also sort the fixed rotas based on settings order
+		if (settingsRotas.length > 0) {
+			const settingsRolesOrder = settingsRotas.map(sr => (sr.role || '').trim());
+			rotasToLoad.sort((a, b) => {
+				let roleA = (a.role || '').trim();
+				let roleB = (b.role || '').trim();
+
+				// Fuzzy match for Worship Team legacy name
+				if (roleA === 'Worship Leader and Team') roleA = 'Worship Team';
+				if (roleB === 'Worship Leader and Team') roleB = 'Worship Team';
+
+				const indexA = settingsRolesOrder.indexOf(roleA);
+				const indexB = settingsRolesOrder.indexOf(roleB);
+				
+				if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+				if (indexA !== -1) return -1;
+				if (indexB !== -1) return 1;
+				return 0; // Keep fixed order for others
+			});
+		}
+	}
 
 	// Load contacts for assignee selection
 	const contactsRaw = await readCollection('contacts');
@@ -111,24 +176,21 @@ export async function load({ params, cookies, url }) {
 		return processed;
 	}
 
-	const processedRotas = {
-		meetingLeader: meetingLeaderRota ? {
-			...meetingLeaderRota,
-			assignees: processAssignees(meetingLeaderRota)
-		} : null,
-		worshipLeader: worshipLeaderRota ? {
-			...worshipLeaderRota,
-			assignees: processAssignees(worshipLeaderRota)
-		} : null,
-		speaker: speakerRota ? {
-			...speakerRota,
-			assignees: processAssignees(speakerRota)
-		} : null,
-		callToWorship: callToWorshipRota ? {
-			...callToWorshipRota,
-			assignees: processAssignees(callToWorshipRota)
-		} : null
-	};
+	const processedRotas = {};
+	const rawRotas = {};
+	
+	for (const item of rotasToLoad) {
+		if (item.rota) {
+			processedRotas[item.key] = {
+				...item.rota,
+				assignees: processAssignees(item.rota)
+			};
+			rawRotas[item.key] = item.rota;
+		} else {
+			processedRotas[item.key] = null;
+			rawRotas[item.key] = null;
+		}
+	}
 
 	// Get unique speaker series from all meeting planners (excluding current one)
 	const allMeetingPlanners = await readCollection('meeting_planners');
@@ -140,18 +202,15 @@ export async function load({ params, cookies, url }) {
 	)].sort();
 
 	const csrfToken = getCsrfToken(cookies) || '';
+
 	return { 
 		meetingPlanner, 
 		event, 
 		occurrence,
 		eventOccurrences,
 		rotas: processedRotas,
-		rawRotas: {
-			meetingLeader: meetingLeaderRota,
-			worshipLeader: worshipLeaderRota,
-			speaker: speakerRota,
-			callToWorship: callToWorshipRota
-		},
+		rawRotas: rawRotas,
+		rotasToLoad, // Include this so the UI knows the order and roles
 		availableContacts: contacts,
 		lists,
 		speakerSeries,
@@ -187,7 +246,8 @@ export const actions = {
 				meetingLeaderRotaId: meetingPlanner.meetingLeaderRotaId,
 				worshipLeaderRotaId: meetingPlanner.worshipLeaderRotaId,
 				speakerRotaId: meetingPlanner.speakerRotaId,
-				callToWorshipRotaId: meetingPlanner.callToWorshipRotaId
+				callToWorshipRotaId: meetingPlanner.callToWorshipRotaId,
+				rotas: meetingPlanner.rotas || []
 			};
 
 			const validated = validateMeetingPlanner(meetingPlannerData);

@@ -1,6 +1,7 @@
 <script lang="js">
 	import { onMount } from 'svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -68,15 +69,21 @@
 
 			if (response.ok) {
 				await loadTeam();
+				notifications.success('Team member saved successfully!');
 				cancelEdit();
+			} else {
+				const error = await response.json();
+				notifications.error(error.error || 'Failed to save team member');
 			}
 		} catch (error) {
 			console.error('Failed to save team member:', error);
+			notifications.error('Failed to save team member');
 		}
 	}
 
 	async function deleteMember(id) {
-		if (!confirm('Are you sure you want to delete this team member?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this team member?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=team&id=${id}`, {
@@ -85,9 +92,13 @@
 
 			if (response.ok) {
 				await loadTeam();
+				notifications.success('Team member deleted successfully');
+			} else {
+				notifications.error('Failed to delete team member');
 			}
 		} catch (error) {
 			console.error('Failed to delete team member:', error);
+			notifications.error('Failed to delete team member');
 		}
 	}
 </script>

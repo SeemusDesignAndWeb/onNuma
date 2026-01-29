@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -242,15 +243,21 @@
 
 			if (response.ok) {
 				await loadPages();
+				notifications.success('Page saved successfully!');
 				cancelEdit();
+			} else {
+				const error = await response.json();
+				notifications.error(error.error || 'Failed to save page');
 			}
 		} catch (error) {
 			console.error('Failed to save page:', error);
+			notifications.error('Failed to save page');
 		}
 	}
 
 	async function deletePage(id) {
-		if (!confirm('Are you sure you want to delete this page?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this page?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=page&id=${id}`, {
@@ -259,9 +266,13 @@
 
 			if (response.ok) {
 				await loadPages();
+				notifications.success('Page deleted successfully');
+			} else {
+				notifications.error('Failed to delete page');
 			}
 		} catch (error) {
 			console.error('Failed to delete page:', error);
+			notifications.error('Failed to delete page');
 		}
 	}
 
@@ -280,9 +291,13 @@
 
 			if (response.ok) {
 				await loadPages();
+				notifications.success(`Page "${page.title}" navigation visibility updated`);
+			} else {
+				notifications.error('Failed to update navigation visibility');
 			}
 		} catch (error) {
 			console.error('Failed to update navigation visibility:', error);
+			notifications.error('Failed to update navigation visibility');
 		}
 	}
 
@@ -331,8 +346,10 @@
 
 			await Promise.all(savePromises);
 			await loadPages();
+			notifications.success('Page order updated successfully');
 		} catch (error) {
 			console.error('Failed to update page order:', error);
+			notifications.error('Failed to update page order');
 		}
 
 		draggedIndex = null;

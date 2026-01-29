@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -64,7 +65,7 @@
 		if (!editing) return;
 
 		if (!editing.id || !editing.title) {
-			alert('Please fill in ID and Title');
+			notifications.error('Please fill in ID and Title');
 			return;
 		}
 
@@ -77,19 +78,21 @@
 
 			if (response.ok) {
 				await loadActivities();
+				notifications.success('Activity saved successfully!');
 				cancelEdit();
 			} else {
 				const error = await response.json();
-				alert(error.error || 'Failed to save activity');
+				notifications.error(error.error || 'Failed to save activity');
 			}
 		} catch (error) {
 			console.error('Failed to save activity:', error);
-			alert('Failed to save activity');
+			notifications.error('Failed to save activity');
 		}
 	}
 
 	async function deleteActivity(id) {
-		if (!confirm('Are you sure you want to delete this activity?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this activity?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=activity&id=${id}`, {
@@ -98,12 +101,13 @@
 
 			if (response.ok) {
 				await loadActivities();
+				notifications.success('Activity deleted successfully');
 			} else {
-				alert('Failed to delete activity');
+				notifications.error('Failed to delete activity');
 			}
 		} catch (error) {
 			console.error('Failed to delete activity:', error);
-			alert('Failed to delete activity');
+			notifications.error('Failed to delete activity');
 		}
 	}
 

@@ -1,5 +1,6 @@
 <script lang="js">
 	import { onMount } from 'svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -180,7 +181,7 @@
 		if (!editing) return;
 
 		if (!editing.audioUrl) {
-			uploadError = 'Please upload an audio file';
+			notifications.error('Please upload an audio file');
 			return;
 		}
 
@@ -206,19 +207,21 @@
 
 			if (response.ok) {
 				await loadPodcasts();
+				notifications.success('Podcast saved successfully!');
 				cancelEdit();
 			} else {
 				const error = await response.json();
-				uploadError = error.error || 'Failed to save podcast';
+				notifications.error(error.error || 'Failed to save podcast');
 			}
 		} catch (error) {
 			console.error('Failed to save podcast:', error);
-			uploadError = 'Failed to save podcast';
+			notifications.error('Failed to save podcast');
 		}
 	}
 
 	async function deletePodcast(id) {
-		if (!confirm('Are you sure you want to delete this podcast?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this podcast?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/audio?id=${id}`, {
@@ -227,9 +230,13 @@
 
 			if (response.ok) {
 				await loadPodcasts();
+				notifications.success('Podcast deleted successfully');
+			} else {
+				notifications.error('Failed to delete podcast');
 			}
 		} catch (error) {
 			console.error('Failed to delete podcast:', error);
+			notifications.error('Failed to delete podcast');
 		}
 	}
 
@@ -256,7 +263,6 @@
 
 	async function savePodcastSettings() {
 		savingSettings = true;
-		settingsSaved = false;
 		try {
 			// Merge with existing settings (siteName, primaryColor)
 			const currentSettings = await fetch('/api/content?type=settings').then(r => r.json());
@@ -272,11 +278,13 @@
 			});
 
 			if (response.ok) {
-				settingsSaved = true;
-				setTimeout(() => (settingsSaved = false), 3000);
+				notifications.success('Podcast settings saved successfully!');
+			} else {
+				throw new Error('Failed to save settings');
 			}
 		} catch (error) {
 			console.error('Failed to save podcast settings:', error);
+			notifications.error('Failed to save podcast settings');
 		} finally {
 			savingSettings = false;
 		}
@@ -563,14 +571,15 @@
 			if (response.ok) {
 				await loadPodcasts();
 				await loadSeries();
+				notifications.success('Series updated successfully!');
 				closeSeriesModal();
 			} else {
 				const error = await response.json();
-				alert(error.error || 'Failed to save series');
+				notifications.error(error.error || 'Failed to save series');
 			}
 		} catch (error) {
 			console.error('Failed to save series:', error);
-			alert('Failed to save series');
+			notifications.error('Failed to save series');
 		} finally {
 			savingSeries = false;
 		}
@@ -583,12 +592,6 @@
 
 <div class="container mx-auto px-4 py-8">
 	<h1 class="text-3xl font-bold mb-8">Manage Podcasts</h1>
-
-	{#if settingsSaved}
-		<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-			Podcast settings saved successfully!
-		</div>
-	{/if}
 
 	<!-- Settings and Migration Toggle Buttons -->
 	<div class="mb-6 flex gap-4">

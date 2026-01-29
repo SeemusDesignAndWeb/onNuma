@@ -1,8 +1,6 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
-	import ConfirmDialog from '$lib/crm/components/ConfirmDialog.svelte';
 	import { hasRouteAccess, isSuperAdmin } from '$lib/crm/server/permissions.js';
 	
 	export let admin = null;
@@ -325,12 +323,6 @@
 			</div>
 		</footer>
 	{/if}
-
-	<!-- Global Notification Popups -->
-	<NotificationPopup />
-	
-	<!-- Global Dialog/Confirm -->
-	<ConfirmDialog />
 </div>
 
 <style>

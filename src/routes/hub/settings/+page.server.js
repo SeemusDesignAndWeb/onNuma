@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
 import { getSettings } from '$lib/crm/server/settings.js';
+import { readCollection } from '$lib/crm/server/fileStore.js';
 
 export async function load({ cookies }) {
 	const admin = await getAdminFromCookies(cookies);
@@ -16,8 +17,13 @@ export async function load({ cookies }) {
 	
 	const settings = await getSettings();
 	
+	// Get all unique rota roles for selection
+	const rotas = await readCollection('rotas');
+	const uniqueRoles = [...new Set(rotas.map(r => r.role))].sort();
+	
 	return {
 		admin,
-		settings
+		settings,
+		availableRoles: uniqueRoles
 	};
 }

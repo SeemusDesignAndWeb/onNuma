@@ -14,6 +14,13 @@ export async function load() {
 		if (mp.worshipLeaderRotaId) standardRotaIds.add(mp.worshipLeaderRotaId);
 		if (mp.speakerRotaId) standardRotaIds.add(mp.speakerRotaId);
 		if (mp.callToWorshipRotaId) standardRotaIds.add(mp.callToWorshipRotaId);
+		
+		// Also include dynamic rotas
+		if (mp.rotas && Array.isArray(mp.rotas)) {
+			mp.rotas.forEach(r => {
+				if (r.rotaId) standardRotaIds.add(r.rotaId);
+			});
+		}
 	});
 
 	// Helper function to get assignee names for a rota, filtered by occurrence if needed
@@ -83,7 +90,18 @@ export async function load() {
 			const speakerRota = mp.speakerRotaId ? rotas.find(r => r.id === mp.speakerRotaId) : null;
 			const callToWorshipRota = mp.callToWorshipRotaId ? rotas.find(r => r.id === mp.callToWorshipRotaId) : null;
 
-			// Get other rotas for this event (not the 4 standard ones)
+			// Handle dynamic rotas
+			const dynamicRotas = {};
+			if (mp.rotas && Array.isArray(mp.rotas)) {
+				mp.rotas.forEach(r => {
+					const rota = rotas.find(rotaRecord => rotaRecord.id === r.rotaId);
+					if (rota) {
+						dynamicRotas[r.role] = getAssigneeNames(rota, mp.occurrenceId);
+					}
+				});
+			}
+
+			// Get other rotas for this event (not the 4 standard ones and not dynamic ones)
 			const otherRotas = rotas.filter(r => 
 				r.eventId === mp.eventId && 
 				!standardRotaIds.has(r.id)
@@ -111,6 +129,14 @@ export async function load() {
 				otherRotasData[role] = [...new Set(allAssignees)];
 			});
 
+			// Add dynamic rotas that are not the standard 4 to otherRotasData
+			const standardRoles = ['Meeting Leader', 'Worship Leader and Team', 'Speaker', 'Call to Worship'];
+			Object.keys(dynamicRotas).forEach(role => {
+				if (!standardRoles.includes(role)) {
+					otherRotasData[role] = dynamicRotas[role];
+				}
+			});
+
 			return {
 				id: mp.id,
 				eventName: event?.title || 'Unknown Event',
@@ -121,10 +147,11 @@ export async function load() {
 				speakerTopic: mp.speakerTopic || '',
 				speakerSeries: mp.speakerSeries || '',
 				notes: mp.notes || '',
-				meetingLeader: getAssigneeNames(meetingLeaderRota, mp.occurrenceId),
-				worshipLeader: getAssigneeNames(worshipLeaderRota, mp.occurrenceId),
-				speaker: getAssigneeNames(speakerRota, mp.occurrenceId),
-				callToWorship: getAssigneeNames(callToWorshipRota, mp.occurrenceId),
+				meetingLeader: dynamicRotas['Meeting Leader'] || getAssigneeNames(meetingLeaderRota, mp.occurrenceId),
+				worshipLeader: dynamicRotas['Worship Leader and Team'] || getAssigneeNames(worshipLeaderRota, mp.occurrenceId),
+				speaker: dynamicRotas['Speaker'] || getAssigneeNames(speakerRota, mp.occurrenceId),
+				callToWorship: dynamicRotas['Call to Worship'] || getAssigneeNames(callToWorshipRota, mp.occurrenceId),
+				dynamicRotas: dynamicRotas, // For any extra rotas not in the 4 standard ones
 				otherRotas: otherRotasData
 			};
 		})

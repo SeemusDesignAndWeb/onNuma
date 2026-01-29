@@ -1,6 +1,7 @@
 <script lang="js">
 	import { onMount } from 'svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -54,15 +55,21 @@
 
 			if (response.ok) {
 				await loadTestimonials();
+				notifications.success('Testimonial saved successfully!');
 				cancelEdit();
+			} else {
+				const error = await response.json();
+				notifications.error(error.error || 'Failed to save testimonial');
 			}
 		} catch (error) {
 			console.error('Failed to save testimonial:', error);
+			notifications.error('Failed to save testimonial');
 		}
 	}
 
 	async function deleteTestimonial(id) {
-		if (!confirm('Are you sure you want to delete this testimonial?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this testimonial?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=testimonial&id=${id}`, {
@@ -71,9 +78,13 @@
 
 			if (response.ok) {
 				await loadTestimonials();
+				notifications.success('Testimonial deleted successfully');
+			} else {
+				notifications.error('Failed to delete testimonial');
 			}
 		} catch (error) {
 			console.error('Failed to delete testimonial:', error);
+			notifications.error('Failed to delete testimonial');
 		}
 	}
 </script>

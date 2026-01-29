@@ -53,10 +53,18 @@ export async function getSettings() {
 		{ value: '#14b8a6', label: 'Teal' },
 		{ value: '#f59e0b', label: 'Amber' }
 	];
+
+	const defaultMeetingPlannerRotas = [
+		{ role: 'Meeting Leader', capacity: 1 },
+		{ role: 'Worship Leader and Team', capacity: 8 },
+		{ role: 'Speaker', capacity: 1 },
+		{ role: 'Call to Worship', capacity: 1 }
+	];
 	
 	const defaultSettings = {
 		emailRateLimitDelay: 500, // Default: 500ms (2 requests per second)
-		calendarColours: defaultCalendarColours
+		calendarColours: defaultCalendarColours,
+		meetingPlannerRotas: defaultMeetingPlannerRotas
 	};
 	
 	if (!existsSync(SETTINGS_FILE)) {
@@ -74,7 +82,10 @@ export async function getSettings() {
 			emailRateLimitDelay: settings.emailRateLimitDelay || defaultSettings.emailRateLimitDelay,
 			calendarColours: Array.isArray(colours) && colours.length > 0
 				? colours
-				: defaultSettings.calendarColours
+				: defaultSettings.calendarColours,
+			meetingPlannerRotas: Array.isArray(settings.meetingPlannerRotas)
+				? settings.meetingPlannerRotas
+				: defaultSettings.meetingPlannerRotas
 		};
 		cacheTimestamp = now;
 		return settingsCache;

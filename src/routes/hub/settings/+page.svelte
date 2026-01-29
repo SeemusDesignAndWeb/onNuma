@@ -1,37 +1,43 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 	
 	export let data;
 	
 	$: admin = data?.admin || null;
-	$: settings = data?.settings || { emailRateLimitDelay: 500, calendarColours: [] };
+	let settings = data?.settings || { emailRateLimitDelay: 500, calendarColours: [], meetingPlannerRotas: [] };
+	let availableRoles = data?.availableRoles || [];
 	
 	let emailRateLimitDelay = settings?.emailRateLimitDelay || 500;
-	let calendarColours = settings?.calendarColours || [];
+	let calendarColours = JSON.parse(JSON.stringify(settings?.calendarColours || []));
+	let meetingPlannerRotas = JSON.parse(JSON.stringify(settings?.meetingPlannerRotas || []));
 	let saving = false;
-	let saved = false;
-	let error = null;
 	let editingColourIndex = null;
 	let originalColour = null; // Store original colour when editing starts
 	let newColour = { value: '#9333ea', label: '' };
 	let showAddColour = false;
-	let activeTab = 'colours'; // 'email' or 'colours'
+	let activeTab = 'colours'; // 'email', 'colours', or 'meeting-planner'
 	
-	// Update emailRateLimitDelay when settings change
-	$: if (settings?.emailRateLimitDelay !== undefined) {
+	// Meeting Planner Rota state
+	let editingRotaIndex = null;
+	let originalRota = null;
+	let showAddRota = false;
+	let newRota = { role: '' };
+	
+	// Update local state when data changes (e.g. after invalidateAll)
+	$: if (data?.settings) {
+		settings = data.settings;
 		emailRateLimitDelay = settings.emailRateLimitDelay;
+		calendarColours = JSON.parse(JSON.stringify(settings.calendarColours || []));
+		meetingPlannerRotas = JSON.parse(JSON.stringify(settings.meetingPlannerRotas || []));
 	}
 	
-	// Update calendarColours when settings change
-	$: if (settings?.calendarColours !== undefined) {
-		calendarColours = JSON.parse(JSON.stringify(settings.calendarColours));
-	}
+	$: availableRoles = data?.availableRoles || [];
 	
 	async function saveSettings() {
 		saving = true;
-		saved = false;
-		error = null;
 		
 		try {
 			const response = await fetch('/hub/settings', {
@@ -50,15 +56,11 @@
 			}
 			
 			const result = await response.json();
-			saved = true;
-			setTimeout(() => (saved = false), 3000);
+			notifications.success('Settings saved successfully!');
 			
-			// Update local settings
-			if (result.settings) {
-				settings = result.settings;
-			}
+			await invalidateAll();
 		} catch (err) {
-			error = err.message || 'Failed to save settings';
+			notifications.error(err.message || 'Failed to save settings');
 			console.error('Error saving settings:', err);
 		} finally {
 			saving = false;
@@ -67,8 +69,6 @@
 	
 	async function saveCalendarColours() {
 		saving = true;
-		saved = false;
-		error = null;
 		
 		try {
 			const response = await fetch('/hub/settings', {
@@ -87,22 +87,59 @@
 			}
 			
 			const result = await response.json();
-			saved = true;
-			setTimeout(() => (saved = false), 3000);
+			notifications.success('Calendar colours saved successfully!');
 			
-			// Update local settings
-			if (result.settings) {
-				settings = result.settings;
-				calendarColours = JSON.parse(JSON.stringify(result.settings.calendarColours));
-			}
+			await invalidateAll();
 			
 			// Reset editing state
 			editingColourIndex = null;
 			showAddColour = false;
 			newColour = { value: '#9333ea', label: '' };
 		} catch (err) {
-			error = err.message || 'Failed to save calendar colours';
+			notifications.error(err.message || 'Failed to save calendar colours');
 			console.error('Error saving calendar colours:', err);
+		} finally {
+			saving = false;
+		}
+	}
+
+	async function saveMeetingPlannerRotas() {
+		saving = true;
+		
+		try {
+			// Ensure all rotas have a capacity of 1 for validation
+			const rotasToSave = meetingPlannerRotas.map(r => ({
+				...r,
+				capacity: r.capacity || 1
+			}));
+
+			const response = await fetch('/hub/settings', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					meetingPlannerRotas: rotasToSave
+				})
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({ message: 'Failed to save meeting planner rotas' }));
+				throw new Error(errorData.message || 'Failed to save meeting planner rotas');
+			}
+			
+			const result = await response.json();
+			notifications.success('Meeting planner rotas saved successfully!');
+			
+			await invalidateAll();
+			
+			// Reset editing state
+			editingRotaIndex = null;
+			showAddRota = false;
+			newRota = { role: '' };
+		} catch (err) {
+			notifications.error(err.message || 'Failed to save meeting planner rotas');
+			console.error('Error saving meeting planner rotas:', err);
 		} finally {
 			saving = false;
 		}
@@ -120,35 +157,44 @@
 		if (editingColourIndex !== null && originalColour) {
 			calendarColours[editingColourIndex] = { ...originalColour };
 		}
+		// Restore original rota if we were editing
+		if (editingRotaIndex !== null && originalRota) {
+			meetingPlannerRotas[editingRotaIndex] = { ...originalRota };
+		}
 		editingColourIndex = null;
 		originalColour = null;
 		showAddColour = false;
 		newColour = { value: '#9333ea', label: '' };
+		
+		editingRotaIndex = null;
+		originalRota = null;
+		showAddRota = false;
+		newRota = { role: '' };
 	}
 	
 	async function addColour() {
 		if (!newColour.value || !newColour.label.trim()) {
-			error = 'Please provide both a colour and a label';
+			notifications.error('Please provide both a colour and a label');
 			return;
 		}
 		
 		// Validate hex colour
 		if (!/^#[0-9A-Fa-f]{6}$/.test(newColour.value)) {
-			error = 'Invalid colour format. Please use a hex colour (e.g., #9333ea)';
+			notifications.error('Invalid colour format. Please use a hex colour (e.g., #9333ea)');
 			return;
 		}
 		
 		calendarColours = [...calendarColours, { value: newColour.value, label: newColour.label.trim() }];
 		newColour = { value: '#9333ea', label: '' };
 		showAddColour = false;
-		error = null;
 		
 		// Automatically save all calendar colours
 		await saveCalendarColours();
 	}
 	
 	async function removeColour(index) {
-		if (confirm('Are you sure you want to remove this colour?')) {
+		const confirmed = await dialog.confirm('Are you sure you want to remove this colour?');
+		if (confirmed) {
 			calendarColours = calendarColours.filter((_, i) => i !== index);
 			// Automatically save all calendar colours
 			await saveCalendarColours();
@@ -163,22 +209,98 @@
 		// Validate the colour before saving
 		const colour = calendarColours[editingColourIndex];
 		if (!colour.value || !colour.label.trim()) {
-			error = 'Please provide both a colour and a label';
+			notifications.error('Please provide both a colour and a label');
 			return;
 		}
 		
 		// Validate hex colour
 		if (!/^#[0-9A-Fa-f]{6}$/.test(colour.value)) {
-			error = 'Invalid colour format. Please use a hex colour (e.g., #9333ea)';
+			notifications.error('Invalid colour format. Please use a hex colour (e.g., #9333ea)');
 			return;
 		}
 		
-		error = null;
 		editingColourIndex = null;
 		originalColour = null;
 		
 		// Automatically save all calendar colours
 		await saveCalendarColours();
+	}
+
+	function startEditRota(index) {
+		editingRotaIndex = index;
+		originalRota = { ...meetingPlannerRotas[index] };
+		showAddRota = false;
+	}
+
+	function updateRota(index, field, value) {
+		meetingPlannerRotas[index] = { ...meetingPlannerRotas[index], [field]: value };
+	}
+
+	async function saveRotaEdit() {
+		const rota = meetingPlannerRotas[editingRotaIndex];
+		if (!rota.role.trim()) {
+			notifications.error('Please provide a role name');
+			return;
+		}
+		
+		editingRotaIndex = null;
+		originalRota = null;
+		
+		await saveMeetingPlannerRotas();
+	}
+
+	async function addRota() {
+		if (!newRota.role.trim()) {
+			notifications.error('Please select a rota');
+			return;
+		}
+		
+		meetingPlannerRotas = [...meetingPlannerRotas, { role: newRota.role.trim() }];
+		newRota = { role: '' };
+		showAddRota = false;
+		
+		await saveMeetingPlannerRotas();
+	}
+
+	async function removeRota(index) {
+		const confirmed = await dialog.confirm('Are you sure you want to remove this rota? New meeting planners will no longer include this role.');
+		if (confirmed) {
+			meetingPlannerRotas = meetingPlannerRotas.filter((_, i) => i !== index);
+			await saveMeetingPlannerRotas();
+		}
+	}
+
+	// Drag and Drop for Rotas
+	let draggedRotaIndex = null;
+	let dragOverRotaIndex = null;
+
+	function handleRotaDragStart(index) {
+		draggedRotaIndex = index;
+	}
+
+	function handleRotaDragOver(e, index) {
+		e.preventDefault();
+		dragOverRotaIndex = index;
+	}
+
+	async function handleRotaDrop(e, index) {
+		e.preventDefault();
+		if (draggedRotaIndex === null || draggedRotaIndex === index) return;
+
+		const updatedRotas = [...meetingPlannerRotas];
+		const [draggedItem] = updatedRotas.splice(draggedRotaIndex, 1);
+		updatedRotas.splice(index, 0, draggedItem);
+
+		meetingPlannerRotas = updatedRotas;
+		draggedRotaIndex = null;
+		dragOverRotaIndex = null;
+
+		await saveMeetingPlannerRotas();
+	}
+
+	function handleRotaDragEnd() {
+		draggedRotaIndex = null;
+		dragOverRotaIndex = null;
 	}
 	
 	function calculateRequestsPerSecond() {
@@ -196,36 +318,6 @@
 		<h1 class="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
 		<p class="text-gray-600 mb-6">Manage system settings (Superadmin only)</p>
 		
-		{#if saved}
-			<div class="mb-4 bg-green-50 border-l-4 border-green-400 p-4">
-				<div class="flex">
-					<div class="flex-shrink-0">
-						<svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-						</svg>
-					</div>
-					<div class="ml-3">
-						<p class="text-sm text-green-700">Settings saved successfully!</p>
-					</div>
-				</div>
-			</div>
-		{/if}
-		
-		{#if error}
-			<div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
-				<div class="flex">
-					<div class="flex-shrink-0">
-						<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-						</svg>
-					</div>
-					<div class="ml-3">
-						<p class="text-sm text-red-700">{error}</p>
-					</div>
-				</div>
-			</div>
-		{/if}
-		
 		<!-- Tabs -->
 		<div class="border-b border-gray-200 mb-6">
 			<nav class="-mb-px flex space-x-8" aria-label="Tabs">
@@ -234,6 +326,12 @@
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'colours' ? 'border-hub-blue-500 text-hub-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 				>
 					Calendar Colours
+				</button>
+				<button
+					on:click={() => activeTab = 'meeting-planner'}
+					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'meeting-planner' ? 'border-hub-blue-500 text-hub-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+				>
+					Meeting Planner
 				</button>
 				<button
 					on:click={() => activeTab = 'email'}
@@ -390,7 +488,7 @@
 					</div>
 				{:else}
 					<button
-						on:click={() => { showAddColour = true; editingColourIndex = null; error = null; }}
+						on:click={() => { showAddColour = true; editingColourIndex = null; }}
 						class="w-full px-4 py-2 text-sm text-hub-blue-600 bg-white border-2 border-dashed border-hub-blue-300 rounded-md hover:bg-hub-blue-50"
 					>
 						+ Add New Colour
@@ -399,6 +497,139 @@
 			</div>
 		</div>
 		{/if}
+
+		<!-- Meeting Planner Settings -->
+		{#if activeTab === 'meeting-planner'}
+		<div class="border-b border-gray-200 pb-6 mb-6">
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Meeting Planner Rotas</h2>
+			<p class="text-sm text-gray-600 mb-4">
+				Manage the default rotas that are automatically created and attached to new meeting planners.
+			</p>
+			
+			<div class="space-y-4">
+				<!-- Existing Rotas -->
+				<div class="space-y-2">
+					{#each meetingPlannerRotas as rota, index}
+						<div 
+							class="flex items-center gap-3 p-3 border border-gray-200 rounded-md transition-all duration-200 {draggedRotaIndex === index ? 'opacity-40 grayscale' : 'bg-gray-50'} {dragOverRotaIndex === index ? 'border-hub-blue-500 border-t-4' : ''}"
+							draggable={editingRotaIndex === null}
+							on:dragstart={() => handleRotaDragStart(index)}
+							on:dragover={(e) => handleRotaDragOver(e, index)}
+							on:drop={(e) => handleRotaDrop(e, index)}
+							on:dragend={handleRotaDragEnd}
+						>
+							{#if editingRotaIndex === index}
+								<!-- Edit Mode -->
+								<div class="flex-1 flex items-center gap-3">
+									<div class="flex-1">
+										<label class="block text-xs font-medium text-gray-700 mb-1">Rota Name</label>
+										<select
+											value={rota.role}
+											on:change={(e) => updateRota(index, 'role', e.target.value)}
+											class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hub-blue-500 focus:border-hub-blue-500"
+										>
+											<option value="">-- Select a rota --</option>
+											{#each availableRoles as role}
+												<option value={role}>{role}</option>
+											{/each}
+										</select>
+									</div>
+									<div class="flex gap-2">
+										<button
+											on:click={cancelEdit}
+											class="p-2 text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+											title="Cancel"
+										>
+											<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+										<button
+											on:click={saveRotaEdit}
+											class="p-2 text-green-600 bg-white border border-green-300 rounded-md hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500"
+											title="Save"
+										>
+											<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+											</svg>
+										</button>
+									</div>
+								</div>
+							{:else}
+								<!-- View Mode -->
+								<div class="flex items-center gap-2 cursor-move text-gray-400 hover:text-gray-600" title="Drag to reorder">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+									</svg>
+								</div>
+								<div class="flex-1 flex items-center gap-3">
+									<div class="flex-1">
+										<div class="font-medium text-gray-900">{rota.role}</div>
+									</div>
+									<div class="flex gap-2">
+										<button
+											on:click={() => startEditRota(index)}
+											class="px-3 py-1 text-sm text-hub-blue-600 bg-white border border-hub-blue-300 rounded-md hover:bg-hub-blue-50"
+										>
+											Edit
+										</button>
+										<button
+											on:click={() => removeRota(index)}
+											class="px-3 py-1 text-sm text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50"
+										>
+											Remove
+										</button>
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+				
+				<!-- Add New Rota -->
+				{#if showAddRota}
+					<div class="p-4 border-2 border-dashed border-gray-300 rounded-md bg-gray-50">
+						<div class="flex items-center gap-3">
+								<div class="flex-1">
+									<label class="block text-xs font-medium text-gray-700 mb-1">Rota Name</label>
+									<select
+										bind:value={newRota.role}
+										class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hub-blue-500 focus:border-hub-blue-500"
+									>
+									<option value="">-- Select a rota --</option>
+									{#each availableRoles as role}
+										<option value={role}>{role}</option>
+									{/each}
+								</select>
+							</div>
+							<div class="flex gap-2 items-end">
+								<button
+									on:click={addRota}
+									class="px-3 py-1 text-sm text-white bg-hub-green-600 rounded-md hover:bg-hub-green-700"
+								>
+									Add
+								</button>
+								<button
+									on:click={cancelEdit}
+									class="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+								>
+									Cancel
+								</button>
+							</div>
+						</div>
+					</div>
+				{:else}
+					<button
+						on:click={() => { showAddRota = true; editingRotaIndex = null; }}
+						class="w-full px-4 py-2 text-sm text-hub-blue-600 bg-white border-2 border-dashed border-hub-blue-300 rounded-md hover:bg-hub-blue-50"
+					>
+						+ Add New Rota
+					</button>
+				{/if}
+			</div>
+		</div>
+		{/if}
+		
 		
 		<!-- Email Rate Limiting Settings -->
 		{#if activeTab === 'email'}

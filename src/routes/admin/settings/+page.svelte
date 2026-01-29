@@ -1,5 +1,6 @@
 <script lang="js">
 	import { onMount } from 'svelte';
+	import { notifications } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -20,7 +21,6 @@
 	let showLatestMessagePopup = false;
 	let loading = true;
 	let saving = false;
-	let saved = false;
 
 	onMount(async () => {
 		await loadSettings();
@@ -33,6 +33,11 @@
 				fetch('/api/content?type=service-times'),
 				fetch('/api/content?type=settings')
 			]);
+			
+			if (!contactRes.ok || !timesRes.ok || !settingsRes.ok) {
+				throw new Error('Failed to load some settings');
+			}
+
 			contact = await contactRes.json();
 			serviceTimes = await timesRes.json();
 			const settings = await settingsRes.json();
@@ -42,6 +47,7 @@
 			showLatestMessagePopup = settings.showLatestMessagePopup || false;
 		} catch (error) {
 			console.error('Failed to load settings:', error);
+			notifications.error('Failed to load settings');
 		} finally {
 			loading = false;
 		}
@@ -49,7 +55,6 @@
 
 	async function saveContact() {
 		saving = true;
-		saved = false;
 		try {
 			const response = await fetch('/api/content', {
 				method: 'POST',
@@ -58,11 +63,13 @@
 			});
 
 			if (response.ok) {
-				saved = true;
-				setTimeout(() => (saved = false), 3000);
+				notifications.success('Contact information saved successfully!');
+			} else {
+				throw new Error('Failed to save contact information');
 			}
 		} catch (error) {
 			console.error('Failed to save contact:', error);
+			notifications.error(error.message || 'Failed to save contact information');
 		} finally {
 			saving = false;
 		}
@@ -70,7 +77,6 @@
 
 	async function saveTimes() {
 		saving = true;
-		saved = false;
 		try {
 			const response = await fetch('/api/content', {
 				method: 'POST',
@@ -79,11 +85,13 @@
 			});
 
 			if (response.ok) {
-				saved = true;
-				setTimeout(() => (saved = false), 3000);
+				notifications.success('Service times saved successfully!');
+			} else {
+				throw new Error('Failed to save service times');
 			}
 		} catch (error) {
 			console.error('Failed to save service times:', error);
+			notifications.error(error.message || 'Failed to save service times');
 		} finally {
 			saving = false;
 		}
@@ -91,10 +99,12 @@
 
 	async function saveYouTubeSettings() {
 		saving = true;
-		saved = false;
 		try {
 			// Merge with existing settings
-			const currentSettings = await fetch('/api/content?type=settings').then(r => r.json());
+			const currentSettingsRes = await fetch('/api/content?type=settings');
+			if (!currentSettingsRes.ok) throw new Error('Failed to fetch current settings');
+			
+			const currentSettings = await currentSettingsRes.json();
 			const mergedSettings = {
 				...currentSettings,
 				youtubePlaylistId: youtubePlaylistId,
@@ -110,11 +120,13 @@
 			});
 
 			if (response.ok) {
-				saved = true;
-				setTimeout(() => (saved = false), 3000);
+				notifications.success('Settings saved successfully!');
+			} else {
+				throw new Error('Failed to save settings');
 			}
 		} catch (error) {
 			console.error('Failed to save settings:', error);
+			notifications.error(error.message || 'Failed to save settings');
 		} finally {
 			saving = false;
 		}
@@ -129,12 +141,6 @@
 
 <div class="container mx-auto px-4 py-8">
 	<h1 class="text-3xl font-bold mb-8">Settings</h1>
-
-	{#if saved}
-		<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-			Settings saved successfully!
-		</div>
-	{/if}
 
 	<div class="grid md:grid-cols-2 gap-8">
 		<!-- Contact Information -->

@@ -1,5 +1,6 @@
 <script lang="js">
 	import { onMount } from 'svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -46,7 +47,7 @@
 		if (!editing) return;
 
 		if (!editing.id || !editing.day || !editing.time) {
-			alert('Please fill in ID, Day, and Time');
+			notifications.error('Please fill in ID, Day, and Time');
 			return;
 		}
 
@@ -59,19 +60,21 @@
 
 			if (response.ok) {
 				await loadGroups();
+				notifications.success('Community group saved successfully!');
 				cancelEdit();
 			} else {
 				const error = await response.json();
-				alert(error.error || 'Failed to save community group');
+				notifications.error(error.error || 'Failed to save community group');
 			}
 		} catch (error) {
 			console.error('Failed to save community group:', error);
-			alert('Failed to save community group');
+			notifications.error('Failed to save community group');
 		}
 	}
 
 	async function deleteGroup(id) {
-		if (!confirm('Are you sure you want to delete this community group?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this community group?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=community-group&id=${id}`, {
@@ -80,12 +83,13 @@
 
 			if (response.ok) {
 				await loadGroups();
+				notifications.success('Community group deleted successfully');
 			} else {
-				alert('Failed to delete community group');
+				notifications.error('Failed to delete community group');
 			}
 		} catch (error) {
 			console.error('Failed to delete community group:', error);
-			alert('Failed to delete community group');
+			notifications.error('Failed to delete community group');
 		}
 	}
 

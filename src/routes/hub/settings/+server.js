@@ -43,7 +43,7 @@ export async function POST({ request, cookies }) {
 	}
 	
 	const data = await request.json();
-	const { emailRateLimitDelay, calendarColours, calendarColors } = data; // Support both for backward compatibility
+	const { emailRateLimitDelay, calendarColours, calendarColors, meetingPlannerRotas } = data; // Support both for backward compatibility
 	
 	const settings = await getSettings();
 	
@@ -82,6 +82,27 @@ export async function POST({ request, cookies }) {
 		}
 		
 		settings.calendarColours = coloursToUpdate;
+	}
+
+	// Update meeting planner rotas if provided
+	if (meetingPlannerRotas !== undefined) {
+		if (!Array.isArray(meetingPlannerRotas)) {
+			throw error(400, 'Invalid meetingPlannerRotas: must be an array');
+		}
+
+		for (const rota of meetingPlannerRotas) {
+			if (!rota || typeof rota !== 'object') {
+				throw error(400, 'Invalid rota: each rota must be an object');
+			}
+			if (!rota.role || typeof rota.role !== 'string' || rota.role.trim().length === 0) {
+				throw error(400, 'Invalid rota: each rota must have a role name');
+			}
+			if (typeof rota.capacity !== 'number' || rota.capacity < 1) {
+				throw error(400, 'Invalid rota: each rota must have a capacity of at least 1');
+			}
+		}
+
+		settings.meetingPlannerRotas = meetingPlannerRotas;
 	}
 	
 	await writeSettings(settings);

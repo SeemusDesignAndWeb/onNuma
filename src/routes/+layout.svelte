@@ -3,6 +3,8 @@
 	import Preloader from '$lib/components/Preloader.svelte';
 	import EventHighlightBanner from '$lib/components/EventHighlightBanner.svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
+	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
+	import ConfirmDialog from '$lib/crm/components/ConfirmDialog.svelte';
 	import { onMount, setContext } from 'svelte';
 	import { writable } from 'svelte/store';
 	import { page } from '$app/stores';
@@ -76,4 +78,10 @@
 <div class="transition-all duration-300" class:pt-[110px]={showHighlightBanner && !hideWebsiteElements && !isSignupPage && !isSundaysPage} class:pt-[80px]={!showHighlightBanner && !hideWebsiteElements && !isSignupPage && !isSundaysPage} class:pt-0={hideWebsiteElements || isSignupPage || isSundaysPage}>
 	<slot />
 </div>
+
+<!-- Global Notification Popups -->
+<NotificationPopup />
+
+<!-- Global Dialog/Confirm -->
+<ConfirmDialog />
 

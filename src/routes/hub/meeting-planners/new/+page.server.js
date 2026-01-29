@@ -3,6 +3,7 @@ import { create, readCollection } from '$lib/crm/server/fileStore.js';
 import { validateMeetingPlanner, validateRota } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
+import { getSettings } from '$lib/crm/server/settings.js';
 
 export async function load({ cookies, url }) {
 	const events = await readCollection('events');
@@ -69,13 +70,14 @@ export const actions = {
 				}
 			}
 
-			// Create the 4 standard rotas (or use existing ones)
+			// Create the standard rotas from settings (or use existing ones)
 			// Rotas are always for the entire event (occurrenceId = null) to match all event occurrences
 			// Individual assignees specify their occurrenceId
-			const rotaRoles = [
+			const settings = await getSettings();
+			const rotaRoles = settings.meetingPlannerRotas || [
 				{ role: 'Meeting Leader', capacity: 1 },
-				{ role: 'Worship Leader and Team', capacity: 8 },
 				{ role: 'Speaker', capacity: 1 },
+				{ role: 'Worship Team', capacity: 1 },
 				{ role: 'Call to Worship', capacity: 1 }
 			];
 
@@ -83,6 +85,8 @@ export const actions = {
 			const existingRotas = await readCollection('rotas');
 
 			const rotaIds = {};
+			const dynamicRotas = [];
+
 			for (const rotaRole of rotaRoles) {
 				// Check if a rota with the same role and eventId already exists
 				// Match by eventId and role only - rotas are for all occurrences (occurrenceId = null)
@@ -92,17 +96,10 @@ export const actions = {
 					r.occurrenceId === null // Only match rotas for all occurrences
 				);
 
+				let rotaId;
 				if (existingRota) {
 					// Use existing rota
-					if (rotaRole.role === 'Meeting Leader') {
-						rotaIds.meetingLeaderRotaId = existingRota.id;
-					} else if (rotaRole.role === 'Worship Leader and Team') {
-						rotaIds.worshipLeaderRotaId = existingRota.id;
-					} else if (rotaRole.role === 'Speaker') {
-						rotaIds.speakerRotaId = existingRota.id;
-					} else if (rotaRole.role === 'Call to Worship') {
-						rotaIds.callToWorshipRotaId = existingRota.id;
-					}
+					rotaId = existingRota.id;
 				} else {
 					// Create new rota - always for all occurrences (occurrenceId = null)
 					// Meeting planner rotas are internal by default
@@ -110,7 +107,7 @@ export const actions = {
 						eventId: eventId,
 						occurrenceId: null, // Always null - rota applies to all occurrences
 						role: rotaRole.role,
-						capacity: rotaRole.capacity,
+						capacity: rotaRole.capacity || 1,
 						assignees: [],
 						notes: '',
 						visibility: 'internal'
@@ -118,17 +115,24 @@ export const actions = {
 
 					const validated = validateRota(rotaData);
 					const rota = await create('rotas', validated);
+					rotaId = rota.id;
+				}
 
-					// Store rota ID with a key based on role
-					if (rotaRole.role === 'Meeting Leader') {
-						rotaIds.meetingLeaderRotaId = rota.id;
-					} else if (rotaRole.role === 'Worship Leader and Team') {
-						rotaIds.worshipLeaderRotaId = rota.id;
-					} else if (rotaRole.role === 'Speaker') {
-						rotaIds.speakerRotaId = rota.id;
-					} else if (rotaRole.role === 'Call to Worship') {
-						rotaIds.callToWorshipRotaId = rota.id;
-					}
+				// Store for dynamic rotas array
+				dynamicRotas.push({
+					role: rotaRole.role,
+					rotaId: rotaId
+				});
+
+				// Maintain backward compatibility for the 4 standard roles
+				if (rotaRole.role === 'Meeting Leader') {
+					rotaIds.meetingLeaderRotaId = rotaId;
+				} else if (rotaRole.role === 'Worship Leader and Team') {
+					rotaIds.worshipLeaderRotaId = rotaId;
+				} else if (rotaRole.role === 'Speaker') {
+					rotaIds.speakerRotaId = rotaId;
+				} else if (rotaRole.role === 'Call to Worship') {
+					rotaIds.callToWorshipRotaId = rotaId;
 				}
 			}
 
@@ -140,7 +144,8 @@ export const actions = {
 				notes: sanitized,
 				speakerTopic: '',
 				speakerSeries: '',
-				...rotaIds
+				...rotaIds,
+				rotas: dynamicRotas
 			};
 
 			const validated = validateMeetingPlanner(meetingPlannerData);

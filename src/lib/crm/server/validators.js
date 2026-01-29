@@ -440,6 +440,10 @@ export function validateMeetingPlanner(data) {
 		meetingLeaderRotaId: data.meetingLeaderRotaId ? validateString(data.meetingLeaderRotaId, 'Meeting Leader Rota ID', 50) : null,
 		worshipLeaderRotaId: data.worshipLeaderRotaId ? validateString(data.worshipLeaderRotaId, 'Worship Leader Rota ID', 50) : null,
 		speakerRotaId: data.speakerRotaId ? validateString(data.speakerRotaId, 'Speaker Rota ID', 50) : null,
-		callToWorshipRotaId: data.callToWorshipRotaId ? validateString(data.callToWorshipRotaId, 'Call to Worship Rota ID', 50) : null
+		callToWorshipRotaId: data.callToWorshipRotaId ? validateString(data.callToWorshipRotaId, 'Call to Worship Rota ID', 50) : null,
+		rotas: Array.isArray(data.rotas) ? data.rotas.map(r => ({
+			role: validateString(r.role, 'Rota Role', 100),
+			rotaId: validateString(r.rotaId, 'Rota ID', 50)
+		})) : []
 	};
 }

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -72,7 +73,7 @@
 		if (!editing) return;
 
 		if (!editing.id || !editing.title || !editing.date) {
-			alert('Please fill in ID, Title, and Date');
+			notifications.error('Please fill in ID, Title, and Date');
 			return;
 		}
 
@@ -85,19 +86,21 @@
 
 			if (response.ok) {
 				await loadEvents();
+				notifications.success('Event saved successfully!');
 				cancelEdit();
 			} else {
 				const error = await response.json();
-				alert(error.error || 'Failed to save event');
+				notifications.error(error.error || 'Failed to save event');
 			}
 		} catch (error) {
 			console.error('Failed to save event:', error);
-			alert('Failed to save event');
+			notifications.error('Failed to save event');
 		}
 	}
 
 	async function deleteEvent(id) {
-		if (!confirm('Are you sure you want to delete this event?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this event?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=event&id=${id}`, {
@@ -106,12 +109,13 @@
 
 			if (response.ok) {
 				await loadEvents();
+				notifications.success('Event deleted successfully');
 			} else {
-				alert('Failed to delete event');
+				notifications.error('Failed to delete event');
 			}
 		} catch (error) {
 			console.error('Failed to delete event:', error);
-			alert('Failed to delete event');
+			notifications.error('Failed to delete event');
 		}
 	}
 

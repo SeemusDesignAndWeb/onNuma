@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -56,9 +57,10 @@
 				await saveServiceData(s);
 			}
 			await loadServices();
+			notifications.success('Services reordered successfully');
 		} catch (error) {
 			console.error('Failed to reorder services:', error);
-			alert('Failed to reorder services');
+			notifications.error('Failed to reorder services');
 		}
 	}
 
@@ -76,9 +78,10 @@
 				await saveServiceData(s);
 			}
 			await loadServices();
+			notifications.success('Services reordered successfully');
 		} catch (error) {
 			console.error('Failed to reorder services:', error);
-			alert('Failed to reorder services');
+			notifications.error('Failed to reorder services');
 		}
 	}
 
@@ -123,15 +126,17 @@
 		try {
 			await saveServiceData(editing);
 			await loadServices();
+			notifications.success('Service saved successfully!');
 			cancelEdit();
 		} catch (error) {
 			console.error('Failed to save service:', error);
-			alert('Failed to save service');
+			notifications.error('Failed to save service');
 		}
 	}
 
 	async function deleteService(id) {
-		if (!confirm('Are you sure you want to delete this service?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this service?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=service&id=${id}`, {
@@ -140,9 +145,13 @@
 
 			if (response.ok) {
 				await loadServices();
+				notifications.success('Service deleted successfully');
+			} else {
+				notifications.error('Failed to delete service');
 			}
 		} catch (error) {
 			console.error('Failed to delete service:', error);
+			notifications.error('Failed to delete service');
 		}
 	}
 </script>

@@ -1,6 +1,7 @@
 <script lang="js">
 	import { onMount } from 'svelte';
 	import ImagePicker from '$lib/components/ImagePicker.svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -79,15 +80,21 @@
 
 			if (response.ok) {
 				await loadSlides();
+				notifications.success('Hero slide saved successfully!');
 				cancelEdit();
+			} else {
+				const error = await response.json();
+				notifications.error(error.error || 'Failed to save hero slide');
 			}
 		} catch (error) {
 			console.error('Failed to save hero slide:', error);
+			notifications.error('Failed to save hero slide');
 		}
 	}
 
 	async function deleteSlide(id) {
-		if (!confirm('Are you sure you want to delete this hero slide?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this hero slide?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/content?type=hero-slide&id=${id}`, {
@@ -96,9 +103,13 @@
 
 			if (response.ok) {
 				await loadSlides();
+				notifications.success('Hero slide deleted successfully');
+			} else {
+				notifications.error('Failed to delete hero slide');
 			}
 		} catch (error) {
 			console.error('Failed to delete hero slide:', error);
+			notifications.error('Failed to delete hero slide');
 		}
 	}
 </script>

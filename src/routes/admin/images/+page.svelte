@@ -1,5 +1,6 @@
 <script lang="js">
 	import { onMount } from 'svelte';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 
 	export let params = {};
 
@@ -54,14 +55,17 @@
 			if (response.ok) {
 				const result = await response.json();
 				await loadImages();
+				notifications.success('Image uploaded successfully!');
 				// Reset file input
 				target.value = '';
 			} else {
 				const error = await response.json();
 				uploadError = error.error || 'Failed to upload image';
+				notifications.error(uploadError);
 			}
 		} catch (error) {
 			uploadError = 'Failed to upload image';
+			notifications.error(uploadError);
 			console.error('Upload error:', error);
 		} finally {
 			uploading = false;
@@ -69,7 +73,8 @@
 	}
 
 	async function deleteImage(id) {
-		if (!confirm('Are you sure you want to delete this image?')) return;
+		const confirmed = await dialog.confirm('Are you sure you want to delete this image?');
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(`/api/images?id=${id}`, {
@@ -78,15 +83,19 @@
 
 			if (response.ok) {
 				await loadImages();
+				notifications.success('Image deleted successfully');
+			} else {
+				notifications.error('Failed to delete image');
 			}
 		} catch (error) {
 			console.error('Failed to delete image:', error);
+			notifications.error('Failed to delete image');
 		}
 	}
 
 	function copyImagePath(path) {
 		navigator.clipboard.writeText(path);
-		// Could add a toast notification here
+		notifications.success('Image path copied to clipboard');
 	}
 
 	function formatFileSize(bytes) {
@@ -188,6 +197,7 @@
 
 			if (response.ok && result.success) {
 				syncMessage = result.message || `Imported successfully! Added: ${result.added}, Updated: ${result.updated}, Total: ${result.total}`;
+				notifications.success('Images imported successfully!');
 				rateLimitResetTime = null;
 				// Reload images after sync
 				await loadImages();
@@ -195,10 +205,12 @@
 				await loadCloudinaryImages();
 			} else {
 				syncError = result.error || 'Failed to import images';
+				notifications.error(syncError);
 				rateLimitResetTime = result.resetTime || null;
 			}
 		} catch (error) {
 			syncError = 'Failed to import images: ' + error.message;
+			notifications.error(syncError);
 			console.error('Import error:', error);
 		} finally {
 			syncing = false;
