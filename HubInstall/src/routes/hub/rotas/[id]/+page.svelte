@@ -130,8 +130,23 @@
 			}
 		}
 		
-		return filtered;
+		return sortContacts([...filtered]);
 	})();
+
+	// Helper function to sort contacts by first name, then last name
+	function sortContacts(contacts) {
+		return contacts.sort((a, b) => {
+			const aFirstName = (a.firstName || '').toLowerCase();
+			const bFirstName = (b.firstName || '').toLowerCase();
+			const aLastName = (a.lastName || '').toLowerCase();
+			const bLastName = (b.lastName || '').toLowerCase();
+			
+			if (aFirstName !== bFirstName) {
+				return aFirstName.localeCompare(bFirstName);
+			}
+			return aLastName.localeCompare(bLastName);
+		});
+	}
 
 	async function handleDelete() {
 		const confirmed = await dialog.confirm('Are you sure you want to delete this rota?', 'Delete Rota');
@@ -161,8 +176,7 @@
 				}
 				return val || 'Unknown';
 			}
-		},
-		{ key: 'email', label: 'Email' }
+		}
 	];
 
 	let showAddAssignees = false;
@@ -189,13 +203,16 @@
 		})()
 		: availableContacts;
 	
-	$: filteredAvailableContacts = searchTerm
-		? contactsFilteredByList.filter(c => 
-			(c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-			(c.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-			(c.lastName || '').toLowerCase().includes(searchTerm.toLowerCase())
-		)
-		: contactsFilteredByList;
+	$: filteredAvailableContacts = (() => {
+		const filtered = searchTerm
+			? contactsFilteredByList.filter(c => 
+				(c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+				(c.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+				(c.lastName || '').toLowerCase().includes(searchTerm.toLowerCase())
+			)
+			: contactsFilteredByList;
+		return sortContacts([...filtered]);
+	})();
 	
 	function toggleContactSelection(contactId) {
 		if (selectedContactIds.has(contactId)) {
@@ -624,7 +641,6 @@
 											{:else}
 												<span class="font-medium truncate block">{assignee.name || 'Unknown'}</span>
 											{/if}
-											<span class="text-xs text-gray-500 truncate block">{assignee.email}</span>
 										</div>
 										<button
 											on:click={() => handleRemoveAssignee(assignee)}
@@ -797,7 +813,6 @@
 										<div class="font-medium">
 											{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
 										</div>
-										<div class="text-sm text-gray-500">{contact.email}</div>
 									</div>
 								</label>
 							{/each}

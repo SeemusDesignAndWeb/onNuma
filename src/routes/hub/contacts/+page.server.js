@@ -12,19 +12,19 @@ export async function load({ url, cookies, locals }) {
 
 	const contacts = await readCollection('contacts');
 	
-	// Sort contacts alphabetically by last name, then first name
+	// Sort contacts alphabetically by first name, then last name
 	const sorted = contacts.sort((a, b) => {
-		const aLastName = (a.lastName || '').toLowerCase();
-		const bLastName = (b.lastName || '').toLowerCase();
 		const aFirstName = (a.firstName || '').toLowerCase();
 		const bFirstName = (b.firstName || '').toLowerCase();
+		const aLastName = (a.lastName || '').toLowerCase();
+		const bLastName = (b.lastName || '').toLowerCase();
 		
-		// First sort by last name
-		if (aLastName !== bLastName) {
-			return aLastName.localeCompare(bLastName);
+		// First sort by first name
+		if (aFirstName !== bFirstName) {
+			return aFirstName.localeCompare(bFirstName);
 		}
-		// If last names are the same, sort by first name
-		return aFirstName.localeCompare(bFirstName);
+		// If first names are the same, sort by last name
+		return aLastName.localeCompare(bLastName);
 	});
 	
 	let filtered = sorted;

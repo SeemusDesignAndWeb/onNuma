@@ -86,18 +86,18 @@
 	let searchTerm = '';
 	let selectedContactIds = new Set();
 	
-	// Helper function to sort contacts by last name, then first name
+	// Helper function to sort contacts by first name, then last name
 	function sortContacts(contacts) {
 		return contacts.sort((a, b) => {
-			const aLastName = (a.lastName || '').toLowerCase();
-			const bLastName = (b.lastName || '').toLowerCase();
 			const aFirstName = (a.firstName || '').toLowerCase();
 			const bFirstName = (b.firstName || '').toLowerCase();
+			const aLastName = (a.lastName || '').toLowerCase();
+			const bLastName = (b.lastName || '').toLowerCase();
 			
-			if (aLastName !== bLastName) {
-				return aLastName.localeCompare(bLastName);
+			if (aFirstName !== bFirstName) {
+				return aFirstName.localeCompare(bFirstName);
 			}
-			return aFirstName.localeCompare(bFirstName);
+			return aLastName.localeCompare(bLastName);
 		});
 	}
 	

@@ -48,17 +48,17 @@ export async function load({ params, cookies, url }) {
 	// Load contacts for assignee selection
 	const contactsRaw = await readCollection('contacts');
 	
-	// Sort contacts alphabetically by last name, then first name
+	// Sort contacts alphabetically by first name, then last name
 	const contacts = contactsRaw.sort((a, b) => {
-		const aLastName = (a.lastName || '').toLowerCase();
-		const bLastName = (b.lastName || '').toLowerCase();
 		const aFirstName = (a.firstName || '').toLowerCase();
 		const bFirstName = (b.firstName || '').toLowerCase();
+		const aLastName = (a.lastName || '').toLowerCase();
+		const bLastName = (b.lastName || '').toLowerCase();
 		
-		if (aLastName !== bLastName) {
-			return aLastName.localeCompare(bLastName);
+		if (aFirstName !== bFirstName) {
+			return aFirstName.localeCompare(bFirstName);
 		}
-		return aFirstName.localeCompare(bFirstName);
+		return aLastName.localeCompare(bLastName);
 	});
 	
 	// Load all lists for filtering contacts

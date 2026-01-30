@@ -225,17 +225,33 @@
 		return result;
 	})();
 
+	// Helper function to sort contacts by first name, then last name
+	function sortContacts(contacts) {
+		return contacts.sort((a, b) => {
+			const aFirstName = (a.firstName || '').toLowerCase();
+			const bFirstName = (b.firstName || '').toLowerCase();
+			const aLastName = (a.lastName || '').toLowerCase();
+			const bLastName = (b.lastName || '').toLowerCase();
+			
+			if (aFirstName !== bFirstName) {
+				return aFirstName.localeCompare(bFirstName);
+			}
+			return aLastName.localeCompare(bLastName);
+		});
+	}
+
 	$: filteredContacts = (() => {
 		const result = {};
 		Object.keys(rotas).forEach(rotaKey => {
 			const baseContacts = contactsFilteredByList[rotaKey] || availableContacts;
-			result[rotaKey] = searchTerm[rotaKey]
+			const filtered = searchTerm[rotaKey]
 				? baseContacts.filter(c => 
 					(c.email || '').toLowerCase().includes(searchTerm[rotaKey].toLowerCase()) ||
 					(c.firstName || '').toLowerCase().includes(searchTerm[rotaKey].toLowerCase()) ||
 					(c.lastName || '').toLowerCase().includes(searchTerm[rotaKey].toLowerCase())
 				)
 				: baseContacts;
+			result[rotaKey] = sortContacts([...filtered]);
 		});
 		return result;
 	})();
@@ -699,7 +715,6 @@
 															<span class="font-medium text-xs block truncate">{assignee.name || 'Unknown'}</span>
 															<span class="text-xs text-gray-400">(Public)</span>
 														{/if}
-														<span class="text-xs text-gray-500 truncate block">{assignee.email}</span>
 													</div>
 													<button
 														on:click={() => handleRemoveAssignee(rotaKey, assignee, index)}
@@ -808,7 +823,6 @@
 																<div class="font-medium text-sm">
 																	{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
 																</div>
-																<div class="text-xs text-gray-500">{contact.email}</div>
 															</div>
 														</label>
 													{/each}

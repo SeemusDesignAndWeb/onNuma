@@ -135,18 +135,18 @@
 		}
 	}
 
-	// Helper function to sort contacts by last name, then first name
+	// Helper function to sort contacts by first name, then last name
 	function sortContacts(contacts) {
 		return contacts.sort((a, b) => {
-			const aLastName = (a.lastName || '').toLowerCase();
-			const bLastName = (b.lastName || '').toLowerCase();
 			const aFirstName = (a.firstName || '').toLowerCase();
 			const bFirstName = (b.firstName || '').toLowerCase();
+			const aLastName = (a.lastName || '').toLowerCase();
+			const bLastName = (b.lastName || '').toLowerCase();
 			
-			if (aLastName !== bLastName) {
-				return aLastName.localeCompare(bLastName);
+			if (aFirstName !== bFirstName) {
+				return aFirstName.localeCompare(bFirstName);
 			}
-			return aFirstName.localeCompare(bFirstName);
+			return aLastName.localeCompare(bLastName);
 		});
 	}
 
@@ -209,8 +209,7 @@
 				}
 				return val || 'Unknown';
 			}
-		},
-		{ key: 'email', label: 'Email' }
+		}
 	];
 
 	let showAddAssignees = false;
@@ -1098,7 +1097,6 @@
 										<div class="font-medium">
 											{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
 										</div>
-										<div class="text-sm text-gray-500">{contact.email}</div>
 									</div>
 								</label>
 							{/each}

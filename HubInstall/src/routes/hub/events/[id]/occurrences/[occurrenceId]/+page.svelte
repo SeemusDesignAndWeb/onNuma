@@ -385,9 +385,6 @@
 										<li class="text-sm text-gray-600 flex items-center gap-2">
 											<span class="w-2 h-2 bg-hub-green-600 rounded-full"></span>
 											<span>{assignee.name}</span>
-											{#if assignee.email}
-												<span class="text-gray-400">({assignee.email})</span>
-											{/if}
 										</li>
 									{/each}
 								</ul>

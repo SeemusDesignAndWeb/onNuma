@@ -12,19 +12,19 @@ export async function load({ url, cookies }) {
 	// Filter to only members (handle null, undefined, and empty strings)
 	const members = contacts.filter(c => c && c.membershipStatus && c.membershipStatus.toLowerCase().trim() === 'member');
 	
-	// Sort members alphabetically by last name, then first name
+	// Sort members alphabetically by first name, then last name
 	const sorted = members.sort((a, b) => {
-		const aLastName = (a.lastName || '').toLowerCase();
-		const bLastName = (b.lastName || '').toLowerCase();
 		const aFirstName = (a.firstName || '').toLowerCase();
 		const bFirstName = (b.firstName || '').toLowerCase();
+		const aLastName = (a.lastName || '').toLowerCase();
+		const bLastName = (b.lastName || '').toLowerCase();
 		
-		// First sort by last name
-		if (aLastName !== bLastName) {
-			return aLastName.localeCompare(bLastName);
+		// First sort by first name
+		if (aFirstName !== bFirstName) {
+			return aFirstName.localeCompare(bFirstName);
 		}
-		// If last names are the same, sort by first name
-		return aFirstName.localeCompare(bFirstName);
+		// If first names are the same, sort by last name
+		return aLastName.localeCompare(bLastName);
 	});
 	
 	let filtered = sorted;
