@@ -246,7 +246,6 @@
 			const baseContacts = contactsFilteredByList[rotaKey] || availableContacts;
 			const filtered = searchTerm[rotaKey]
 				? baseContacts.filter(c => 
-					(c.email || '').toLowerCase().includes(searchTerm[rotaKey].toLowerCase()) ||
 					(c.firstName || '').toLowerCase().includes(searchTerm[rotaKey].toLowerCase()) ||
 					(c.lastName || '').toLowerCase().includes(searchTerm[rotaKey].toLowerCase())
 				)

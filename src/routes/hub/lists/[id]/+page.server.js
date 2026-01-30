@@ -37,7 +37,6 @@ export async function load({ params, cookies, url }) {
 	const search = url.searchParams.get('search') || '';
 	const filteredContacts = search 
 		? sortContacts(availableContacts.filter(c => 
-			(c.email || '').toLowerCase().includes(search.toLowerCase()) ||
 			(c.firstName || '').toLowerCase().includes(search.toLowerCase()) ||
 			(c.lastName || '').toLowerCase().includes(search.toLowerCase())
 		))

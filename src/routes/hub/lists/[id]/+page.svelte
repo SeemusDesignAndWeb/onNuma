@@ -104,7 +104,6 @@
 	$: filteredAvailableContacts = (() => {
 		const filtered = searchTerm
 			? availableContacts.filter(c => 
-				(c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
 				(c.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
 				(c.lastName || '').toLowerCase().includes(searchTerm.toLowerCase())
 			)

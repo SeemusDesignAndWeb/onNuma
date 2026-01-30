@@ -31,7 +31,6 @@ export async function load({ url, cookies }) {
 	if (search) {
 		const searchLower = search.toLowerCase();
 		filtered = sorted.filter(m => 
-			m.email?.toLowerCase().includes(searchLower) ||
 			m.firstName?.toLowerCase().includes(searchLower) ||
 			m.lastName?.toLowerCase().includes(searchLower)
 		);
