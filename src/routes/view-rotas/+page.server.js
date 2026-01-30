@@ -36,7 +36,7 @@ export const actions = {
 			const contactsMap = new Map(contacts.map(c => [c.id, c]));
 
 			// Find rotas where this person is assigned
-			const userRotas = [];
+			let userRotas = [];
 
 			for (const rota of rotas) {
 				if (!rota.assignees || !Array.isArray(rota.assignees)) continue;
@@ -124,6 +124,15 @@ export const actions = {
 					}
 				}
 			}
+
+			// Filter out past rotas (only show present and future)
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			
+			userRotas = userRotas.filter(rota => {
+				if (!rota.date) return true; // Keep rotas without dates
+				return new Date(rota.date) >= today;
+			});
 
 			// Sort by date (upcoming first, then by event title)
 			userRotas.sort((a, b) => {

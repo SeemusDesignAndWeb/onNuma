@@ -314,6 +314,39 @@
 			return;
 		}
 
+		// Check for conflicts
+		const targetOccId = selectedOccurrenceId[rotaKey] || meetingPlanner.occurrenceId;
+		if (targetOccId) {
+			try {
+				const response = await fetch('/api/rotas/check-availability', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						contactIds: contactIdsArray,
+						occurrenceId: targetOccId,
+						currentRotaId: rawRotas[rotaKey].id
+					})
+				});
+
+				if (response.ok) {
+					const { conflicts } = await response.json();
+					if (conflicts && conflicts.length > 0) {
+						let conflictMessage = 'The following contact(s) are already assigned to other rotas on this date:\n\n';
+						conflicts.forEach(c => {
+							conflictMessage += `- ${c.contactName}: ${c.rotaRole} for ${c.eventName}\n`;
+						});
+						conflictMessage += '\nAre you sure you want to proceed with these assignments?';
+
+						const confirmed = await dialog.confirm(conflictMessage, 'Potential Rota Conflict');
+						if (!confirmed) return;
+					}
+				}
+			} catch (error) {
+				console.error('Error checking availability:', error);
+				// Continue with assignment if check fails
+			}
+		}
+
 		const formData = new FormData();
 		formData.append('_csrf', csrfToken);
 		formData.append('rotaId', rawRotas[rotaKey].id);

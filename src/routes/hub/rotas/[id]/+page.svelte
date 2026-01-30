@@ -284,6 +284,38 @@
 			await dialog.alert('Please select at least one contact to assign', 'No Contacts Selected');
 			return;
 		}
+
+		// Check for conflicts if an occurrence is selected
+		if (selectedOccurrenceId) {
+			try {
+				const response = await fetch('/api/rotas/check-availability', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						contactIds: Array.from(selectedContactIds),
+						occurrenceId: selectedOccurrenceId,
+						currentRotaId: rota.id
+					})
+				});
+
+				if (response.ok) {
+					const { conflicts } = await response.json();
+					if (conflicts && conflicts.length > 0) {
+						let conflictMessage = 'The following contact(s) are already assigned to other rotas on this date:\n\n';
+						conflicts.forEach(c => {
+							conflictMessage += `- ${c.contactName}: ${c.rotaRole} for ${c.eventName}\n`;
+						});
+						conflictMessage += '\nAre you sure you want to proceed with these assignments?';
+
+						const confirmed = await dialog.confirm(conflictMessage, 'Potential Rota Conflict');
+						if (!confirmed) return;
+					}
+				}
+			} catch (error) {
+				console.error('Error checking availability:', error);
+				// Continue with assignment if check fails - better to allow than to block
+			}
+		}
 		
 		const form = document.createElement('form');
 		form.method = 'POST';

@@ -90,7 +90,7 @@ export async function load({ params, cookies, url }) {
 	
 	try {
 		const token = await ensureEventToken(params.id);
-		const baseUrl = env.APP_BASE_URL || url.origin || 'http://localhost:5173';
+		const baseUrl = url.origin || env.APP_BASE_URL || 'http://localhost:5173';
 		rotaSignupLink = `${baseUrl}/signup/event/${token.token}`;
 		publicEventLink = `${baseUrl}/event/${token.token}`;
 		

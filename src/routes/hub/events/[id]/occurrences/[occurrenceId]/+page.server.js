@@ -3,8 +3,10 @@ import { findById, update, remove, findMany, readCollection } from '$lib/crm/ser
 import { validateOccurrence } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { isUpcomingOccurrence } from '$lib/crm/utils/occurrenceFilters.js';
+import { ensureOccurrenceToken } from '$lib/crm/server/tokens.js';
+import { env } from '$env/dynamic/private';
 
-export async function load({ params, cookies }) {
+export async function load({ params, cookies, url }) {
 	const event = await findById('events', params.id);
 	if (!event) {
 		throw redirect(302, '/hub/events');
@@ -106,8 +108,18 @@ export async function load({ params, cookies }) {
 		};
 	});
 
+	// Generate public link for this occurrence
+	let publicOccurrenceLink = '';
+	try {
+		const occToken = await ensureOccurrenceToken(params.id, params.occurrenceId);
+		const baseUrl = url.origin || env.APP_BASE_URL || 'http://localhost:5173';
+		publicOccurrenceLink = `${baseUrl}/event/${occToken.token}`;
+	} catch (error) {
+		console.error('Error generating occurrence token:', error);
+	}
+
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { event, occurrence, rotas: rotasWithAssignees, signups: signupsWithDetails, csrfToken };
+	return { event, occurrence, rotas: rotasWithAssignees, signups: signupsWithDetails, publicOccurrenceLink, csrfToken };
 }
 
 export const actions = {

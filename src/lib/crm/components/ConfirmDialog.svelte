@@ -64,7 +64,7 @@
 					<h3 id="dialog-title" class="text-lg font-semibold text-gray-900 mb-2">
 						{dialogData.title}
 					</h3>
-					<p class="text-sm text-gray-600 mb-4">
+					<p class="text-sm text-gray-600 mb-4 whitespace-pre-line">
 						{dialogData.message}
 					</p>
 					<div class="flex gap-2 justify-end">
