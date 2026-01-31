@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import FormField from '$lib/crm/components/FormField.svelte';
-	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
+	import { formatDateTimeUK, formatDateUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
 
@@ -268,6 +268,8 @@
 	let holidayAllDay = true;
 	let bookingHoliday = false;
 	let showHolidayPopup = false;
+	let myHolidays = [];
+	let cancellingHolidayId = null;
 
 	// Set default holiday dates to today/tomorrow
 	$: if (!holidayStart) {
@@ -333,6 +335,7 @@
 			const result = await response.json();
 			if (response.ok) {
 				notifications.success('Away day booked successfully!');
+				await fetchMyHolidays();
 				// Reset holiday dates but keep email/name
 				const nextWeek = new Date(holidayStart);
 				nextWeek.setDate(nextWeek.getDate() + 7);
@@ -349,6 +352,44 @@
 		} finally {
 			bookingHoliday = false;
 		}
+	}
+
+	async function fetchMyHolidays() {
+		if (!email?.trim()) return;
+		try {
+			const res = await fetch(`/api/holidays?email=${encodeURIComponent(email.trim())}`);
+			const data = await res.json();
+			myHolidays = Array.isArray(data) ? data : [];
+		} catch (e) {
+			myHolidays = [];
+		}
+	}
+
+	async function cancelAwayDay(holidayId) {
+		if (!email?.trim()) return;
+		cancellingHolidayId = holidayId;
+		try {
+			const res = await fetch('/api/holidays', {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id: holidayId, email: email.trim() })
+			});
+			const result = await res.json();
+			if (res.ok) {
+				notifications.success('Away day cancelled.');
+				await fetchMyHolidays();
+			} else {
+				notifications.error(result.error || 'Failed to cancel away day');
+			}
+		} catch (e) {
+			notifications.error('An error occurred. Please try again.');
+		} finally {
+			cancellingHolidayId = null;
+		}
+	}
+
+	$: if (showHolidayPopup && email?.trim()) {
+		fetchMyHolidays();
 	}
 </script>
 
@@ -409,7 +450,7 @@
 							<div class="flex-shrink-0 lg:ml-auto hidden lg:flex">
 								<button
 									type="button"
-									on:click={() => showHolidayPopup = true}
+									on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
 									class="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-medium shadow transition-colors flex items-center justify-center gap-2 text-xs whitespace-nowrap"
 								>
 									<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,6 +492,33 @@
 										<p class="text-xs text-yellow-800 font-medium">
 											Please enter your name and email in the main form first.
 										</p>
+									</div>
+								{/if}
+
+								{#if name && email}
+									<div class="mb-4">
+										<p class="text-sm font-medium text-gray-700 mb-2">Your booked away days</p>
+										{#if myHolidays.length > 0}
+											<ul class="space-y-2">
+												{#each myHolidays as h}
+													<li class="flex items-center justify-between gap-2 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
+														<span class="text-gray-700">
+															{h.allDay ? formatDateUK(h.startDate) : formatDateTimeUK(h.startDate)} – {h.allDay ? formatDateUK(h.endDate) : formatDateTimeUK(h.endDate)}
+														</span>
+														<button
+															type="button"
+															on:click={() => cancelAwayDay(h.id)}
+															disabled={cancellingHolidayId === h.id}
+															class="text-red-600 hover:text-red-700 hover:underline text-xs font-medium disabled:opacity-50 shrink-0"
+														>
+															{cancellingHolidayId === h.id ? 'Cancelling...' : 'Cancel'}
+														</button>
+													</li>
+												{/each}
+											</ul>
+										{:else}
+											<p class="text-sm text-gray-500 py-2">You have no away days booked. Add one below.</p>
+										{/if}
 									</div>
 								{/if}
 
@@ -632,7 +700,7 @@
 								<div class="pt-4 flex lg:hidden">
 									<button
 										type="button"
-										on:click={() => showHolidayPopup = true}
+										on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
 										class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-md hover:bg-blue-700 font-medium shadow transition-colors flex items-center justify-center gap-2 text-sm"
 									>
 										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

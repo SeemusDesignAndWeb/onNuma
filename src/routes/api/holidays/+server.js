@@ -1,6 +1,30 @@
 import { json } from '@sveltejs/kit';
-import { addHoliday } from '$lib/crm/server/holidays.js';
-import { findMany } from '$lib/crm/server/fileStore.js';
+import { addHoliday, getHolidaysByContact, deleteHoliday } from '$lib/crm/server/holidays.js';
+import { findMany, findById } from '$lib/crm/server/fileStore.js';
+
+/**
+ * Get holidays for a contact by email
+ * GET /api/holidays?email=...
+ */
+export async function GET({ url }) {
+	try {
+		const email = url.searchParams.get('email')?.trim()?.toLowerCase();
+		if (!email) {
+			return json([]);
+		}
+		const contacts = await findMany('contacts', c =>
+			c.email && c.email.toLowerCase() === email
+		);
+		if (contacts.length === 0) {
+			return json([]);
+		}
+		const holidays = await getHolidaysByContact(contacts[0].id);
+		return json(holidays);
+	} catch (error) {
+		console.error('[Holidays API] GET Error:', error);
+		return json([], { status: 500 });
+	}
+}
 
 /**
  * Book a holiday for a contact
@@ -79,7 +103,41 @@ export async function POST({ request }) {
 
         return json({ success: true, holiday });
     } catch (error) {
-        console.error('[Holidays API] Error:', error);
+        console.error('[Holidays API] POST Error:', error);
         return json({ error: 'Failed to book away day' }, { status: 500 });
+    }
+}
+
+/**
+ * Cancel (delete) an away day. Contact is identified by email.
+ * DELETE /api/holidays
+ * Body: { id: string, email: string }
+ */
+export async function DELETE({ request }) {
+    try {
+        const { id, email } = await request.json();
+        if (!id || !email) {
+            return json({ error: 'Holiday id and email are required' }, { status: 400 });
+        }
+        const normalizedEmail = email.trim().toLowerCase();
+        const contacts = await findMany('contacts', c =>
+            c.email && c.email.toLowerCase() === normalizedEmail
+        );
+        if (contacts.length === 0) {
+            return json({ error: 'No account found with this email address.' }, { status: 404 });
+        }
+        const contact = contacts[0];
+        const holiday = await findById('holidays', id);
+        if (!holiday) {
+            return json({ error: 'Away day not found.' }, { status: 404 });
+        }
+        if (holiday.contactId !== contact.id) {
+            return json({ error: 'You can only cancel your own away days.' }, { status: 403 });
+        }
+        await deleteHoliday(id);
+        return json({ success: true });
+    } catch (error) {
+        console.error('[Holidays API] DELETE Error:', error);
+        return json({ error: 'Failed to cancel away day' }, { status: 500 });
     }
 }
