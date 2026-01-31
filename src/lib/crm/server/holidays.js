@@ -1,4 +1,4 @@
-import { findMany, create, update, deleteItem, readCollection } from './fileStore.js';
+import { findMany, findById, create, update, remove, readCollection } from './fileStore.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const COLLECTION = 'holidays';
@@ -30,7 +30,7 @@ export async function updateHoliday(id, holidayData) {
 }
 
 export async function deleteHoliday(id) {
-    return await deleteItem(COLLECTION, id);
+    return await remove(COLLECTION, id);
 }
 
 export async function checkHolidayConflict(contactId, start, end) {
