@@ -30,8 +30,10 @@
 	let spouseCheckTimeout = null;
 	let previousEmail = '';
 	let previousName = '';
-	let contactConfirmed = true; // Track if contact is confirmed
+	let contactConfirmed = false; // Track if contact is confirmed - default to false until matched
 	let matchedContact = null; // Store the matched contact record
+
+	$: selectedCount = selectedRotas.size;
 
 	// Reactive value for the hidden input
 	$: selectedRotasJson = (() => {
@@ -57,6 +59,7 @@
 			newSet.add(key);
 		}
 		selectedRotas = newSet;
+		console.log('[Rota Signup] Selection changed. Count:', selectedRotas.size);
 	}
 
 	function isRotaSelected(rotaId, occurrenceId) {
@@ -159,6 +162,34 @@
 		expandedRotaDescriptions = expandedRotaDescriptions;
 	}
 
+	// Mobile accordion: only one rota viewable at a time
+	let expandedRotaKey = null;
+	function rotaPanelKey(eventId, rotaId) {
+		return `${String(eventId)}-${String(rotaId)}`;
+	}
+	function toggleRotaPanel(eventId, rotaId) {
+		const key = rotaPanelKey(eventId, rotaId);
+		const previous = expandedRotaKey;
+		expandedRotaKey = expandedRotaKey === key ? null : key;
+		console.log('[Accordion] Toggled panel:', { eventId, rotaId, key, previous, now: expandedRotaKey });
+
+		// If we just expanded a panel, scroll it into view
+		if (expandedRotaKey === key) {
+			setTimeout(() => {
+				const element = document.getElementById(`event-${eventId}-rota-${rotaId}`);
+				if (element) {
+					// offset for the sticky header (76px + some margin)
+					const yOffset = -100;
+					const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+					window.scrollTo({ top: y, behavior: 'smooth' });
+				}
+			}, 50);
+		}
+	}
+	function isRotaPanelExpanded(eventId, rotaId) {
+		return expandedRotaKey === rotaPanelKey(eventId, rotaId);
+	}
+
 	// Holiday / Away Day state
 	let holidayStart = '';
 	let holidayEnd = '';
@@ -241,7 +272,7 @@
 				nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
 				holidayEnd = nextWeekEnd.toISOString().slice(0, 16);
 			} else {
-				notifications.error(result.error || 'Failed to book away day');
+				notifications.error(result.error || 'Failed to submit away dates');
 			}
 		} catch (error) {
 			console.error('Error booking away day:', error);
@@ -367,7 +398,7 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 pb-32">
 	<div class="max-w-7xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8 mt-16">
 		{#if totalRotas === 0}
 			<div class="bg-white shadow rounded-lg p-6">
@@ -387,41 +418,8 @@
 					use:syncHiddenInput
 				/>
 
-				{#if totalRotas > 0}
-					<div class="bg-white shadow rounded-lg p-4 mb-6 lg:sticky top-[76px] z-20 overflow-x-auto lg:overflow-x-visible">
-						<div class="flex flex-col lg:flex-row lg:items-center gap-3">
-							<h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2 flex-shrink-0">
-								<svg class="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-								</svg>
-								Quick Links:
-							</h3>
-							<nav class="flex flex-wrap gap-2 flex-1">
-								{#each eventsWithRotas as { event, rotas }}
-									{#each rotas as rota}
-										<a
-											href="#event-{event.id}-rota-{rota.id}"
-											class="inline-flex items-center text-xs text-brand-blue hover:text-brand-blue/80 hover:underline py-1 px-2 rounded hover:bg-brand-blue/5 border border-brand-blue/10 transition-colors whitespace-nowrap"
-										>
-											<span class="text-gray-400 mr-1">{event.title}:</span> {rota.role}
-										</a>
-									{/each}
-								{/each}
-							</nav>
-							<div class="flex-shrink-0 lg:ml-auto hidden lg:flex">
-								<button
-									type="button"
-									on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
-									class="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-medium shadow transition-colors flex items-center justify-center gap-2 text-xs whitespace-nowrap"
-								>
-									<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-									</svg>
-									Book Away Day
-								</button>
-							</div>
-						</div>
-					</div>
+				{#if totalRotas > 0 && contactConfirmed}
+					<!-- Removed Quick Links bar as requested -->
 				{/if}
 
 				{#if showHolidayPopup}
@@ -432,7 +430,7 @@
 									<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-7l.94-2.06L15 11l-2.06.94L12 14l-.94-2.06L9 11l2.06-.94L12 9z" />
 									</svg>
-									Book Your Away Day
+									Your Away Dates
 								</h3>
 								<button type="button" on:click={() => showHolidayPopup = false} class="text-gray-400 hover:text-gray-600 transition-colors">
 									<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,12 +543,12 @@
 										{#if bookingHoliday}
 											<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 												<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-												<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-											</svg>
-											Booking...
-										{:else}
-											Confirm Away Day
-										{/if}
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+										Saving...
+									{:else}
+										Confirm Away Dates
+									{/if}
 									</button>
 									<button
 										type="button"
@@ -566,8 +564,8 @@
 				{/if}
 
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-					<!-- Your Details - Left column on large screens -->
-					<div class="lg:col-span-1">
+					<!-- Your Details - First on mobile, left column on large screens -->
+					<div class="order-1 lg:order-none lg:col-span-1">
 						<div class="bg-white shadow rounded-lg p-6 lg:sticky top-[76px] space-y-6">
 							<div>
 								<h1 class="text-2xl font-bold text-brand-blue mb-2">Rota Signup</h1>
@@ -628,33 +626,54 @@
 										</div>
 									{/if}
 								</div>
-								<!-- Book Away Day - visible on mobile only (after name/email) -->
-								<div class="pt-4 flex lg:hidden">
-									<button
-										type="button"
-										on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
-										class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-md hover:bg-blue-700 font-medium shadow transition-colors flex items-center justify-center gap-2 text-sm"
-									>
-										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-										</svg>
-										Book Away Day
-									</button>
-								</div>
 							</div>
 
-							<div class="border-t border-gray-200 pt-6">
+				{#if contactConfirmed}
+					<!-- Fixed Bottom Action Bar: visible once contact confirmed -->
+					<div class="fixed bottom-0 left-0 right-0 z-[100] bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.1)] px-4 py-2 flex justify-center">
+						<div class="w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3">
+							<!-- Left side: Away button -->
+							<div class="hidden sm:block">
 								<button
-									type="submit"
-									disabled={selectedRotas.size === 0 || !name || !email || !contactConfirmed}
-									class="w-full bg-brand-green text-white px-8 py-3 rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
+									type="button"
+									on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
+									class="bg-blue-600/10 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-600/20 font-semibold transition-colors flex items-center gap-2 text-sm border border-blue-200"
 								>
-									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 									</svg>
-									Sign Up for Selected Rotas ({selectedRotas.size})
+									Tell us your away
 								</button>
 							</div>
+
+							<!-- Center/Right: Sign up button -->
+							<div class="w-full sm:w-auto flex-1 flex justify-center sm:justify-end gap-3 items-center">
+								<!-- Mobile-only Away button -->
+								<button
+									type="button"
+									on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
+									class="sm:hidden bg-blue-600/10 text-blue-700 p-2.5 rounded-lg hover:bg-blue-600/20 font-semibold transition-colors border border-blue-200"
+									title="Tell us your away"
+								>
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									</svg>
+								</button>
+
+								<button
+									type="submit"
+									disabled={selectedCount === 0}
+									class="flex-1 sm:flex-none sm:min-w-[200px] bg-brand-green text-white py-2 px-8 rounded-lg hover:bg-primary-dark font-bold shadow-sm transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 group"
+								>
+									<svg class="w-5 h-5 {selectedCount > 0 ? 'group-hover:animate-pulse' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+									<span class="text-base whitespace-nowrap">Sign up {selectedCount > 0 ? `(${selectedCount})` : ''}</span>
+								</button>
+							</div>
+						</div>
+					</div>
+				{/if}
 
 							{#if !contactConfirmed && email && name}
 								<div class="border-t border-gray-200 pt-6">
@@ -664,8 +683,8 @@
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
 											</svg>
 											<div class="flex-1">
-												<p class="text-sm font-medium text-yellow-800">Contact Not Confirmed</p>
-												<p class="text-xs text-yellow-700 mt-1">Your contact details need to be confirmed before you can sign up for rotas. Please contact an administrator.</p>
+												<p class="text-sm font-medium text-yellow-800">Pending Confirmation</p>
+												<p class="text-xs text-yellow-700 mt-1">Once your contact details are verified, available rotas will appear here automatically.</p>
 											</div>
 										</div>
 									</div>
@@ -674,134 +693,146 @@
 						</div>
 					</div>
 
-					<!-- Available Rotas - Right column on large screens -->
-					<div class="lg:col-span-2">
-						<div class="space-y-8">
-							{#each eventsWithRotas as { event, rotas, occurrences }}
-								{#if rotas.length > 0}
-									<div class="bg-white shadow rounded-lg p-6">
-										<div class="mb-6">
-											<h2 id="event-{event.id}" class="text-2xl font-bold text-brand-blue mb-2 scroll-mt-[160px]">{event.title}</h2>
-											<div class="flex items-center justify-between gap-4 mb-2">
-												{#if event.location}
-													<div class="flex items-center gap-2 text-gray-600 text-sm">
-														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-														</svg>
-														<span>{event.location}</span>
-													</div>
-												{:else}
-													<div></div>
-												{/if}
+					<!-- Available Rotas - Below login on mobile, right column on large screens -->
+					{#if contactConfirmed}
+						<div class="order-2 lg:order-none lg:col-span-2">
+							<div class="space-y-8">
+								{#each eventsWithRotas as { event, rotas, occurrences }}
+									{#if rotas.length > 0}
+										<div class="bg-white shadow rounded-lg p-4 lg:p-6">
+											<!-- Event header: hidden on mobile (accordion headers show event + rota), visible on lg -->
+											<div class="mb-6 hidden lg:block">
+												<h2 id="event-{event.id}" class="text-2xl font-bold text-brand-blue mb-2 scroll-mt-[160px]">{event.title}</h2>
+												<div class="flex items-center justify-between gap-4 mb-2">
+													{#if event.location}
+														<div class="flex items-center gap-2 text-gray-600 text-sm">
+															<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+															</svg>
+															<span>{event.location}</span>
+														</div>
+													{:else}
+														<div></div>
+													{/if}
 
-												{#if event.description}
-													<button 
-														type="button"
-														on:click={() => toggleDescription(event.id)}
-														class="text-xs text-brand-blue hover:underline focus:outline-none whitespace-nowrap flex items-center gap-1"
-													>
-														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-														</svg>
-														{expandedDescriptions.has(event.id) ? 'Hide Event Description' : 'View Event Description'}
-													</button>
+													{#if event.description}
+														<button 
+															type="button"
+															on:click={() => toggleDescription(event.id)}
+															class="text-xs text-brand-blue hover:underline focus:outline-none whitespace-nowrap flex items-center gap-1"
+														>
+															<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+															</svg>
+															{expandedDescriptions.has(event.id) ? 'Hide Event Description' : 'View Event Description'}
+														</button>
+													{/if}
+												</div>
+
+												{#if event.description && expandedDescriptions.has(event.id)}
+													<div class="text-sm text-gray-600 mt-2 bg-gray-50 p-3 rounded border border-gray-100">
+														{@html event.description}
+													</div>
 												{/if}
 											</div>
 
-											{#if event.description && expandedDescriptions.has(event.id)}
-												<div class="text-sm text-gray-600 mt-2 bg-gray-50 p-3 rounded border border-gray-100">
-													{@html event.description}
-												</div>
-											{/if}
-										</div>
+											<div class="space-y-6">
+												{#each rotas as rota (rotaPanelKey(event.id, rota.id))}
+													<div id="event-{event.id}-rota-{rota.id}" class="border-l-4 border-l-brand-blue border border-gray-200 rounded-lg overflow-hidden scroll-mt-[160px] bg-white hover:shadow-md transition-shadow">
+														<!-- Accordion header (tap to expand/collapse) -->
+														<button
+															type="button"
+															on:click|preventDefault|stopPropagation={() => toggleRotaPanel(event.id, rota.id)}
+															class="w-full flex items-center justify-between gap-3 text-left py-4 px-5 bg-gray-50 hover:bg-gray-100 border-b border-gray-200 transition-colors"
+														>
+															<span class="font-bold text-gray-900 text-lg">{rota.role}</span>
+															<div class="flex items-center gap-3">
+																<span class="hidden sm:inline text-xs text-gray-500">{rota.capacity} people needed</span>
+																<svg class="w-6 h-6 text-brand-blue flex-shrink-0 transition-transform {expandedRotaKey === rotaPanelKey(event.id, rota.id) ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+																</svg>
+															</div>
+														</button>
+														<!-- Content: hidden when collapsed -->
+														<div class="{expandedRotaKey === rotaPanelKey(event.id, rota.id) ? 'block' : 'hidden'} p-5 lg:p-6">
+															<div class="flex items-start justify-between mb-4">
+																<div class="flex-1">
+																	{#if rota.notes}
+																		<button
+																			type="button"
+																			on:click={() => toggleRotaDescription(rota.id)}
+																			class="text-sm text-brand-blue hover:underline focus:outline-none whitespace-nowrap flex items-center gap-1 mt-0 ml-0"
+																		>
+																			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+																			</svg>
+																			{expandedRotaDescriptions.has(rota.id) ? 'Hide Rota Description' : 'View Rota Description'}
+																		</button>
+																	{/if}
+																	{#if rota.notes && expandedRotaDescriptions.has(rota.id)}
+																		<div class="text-sm text-gray-600 mt-3 ml-0 bg-gray-50 p-4 rounded-lg border border-gray-100">{@html rota.notes}</div>
+																	{/if}
+																	<p class="text-sm text-gray-500 mt-2 ml-0 sm:hidden">
+																		Capacity: <span class="font-bold text-brand-blue">{rota.capacity}</span> people needed
+																	</p>
+																</div>
+															</div>
 
-										<div class="space-y-6">
-											{#each rotas as rota}
-												<div id="event-{event.id}-rota-{rota.id}" class="border-l-4 border-l-brand-blue border border-gray-200 rounded-lg p-4 scroll-mt-[160px] bg-white hover:shadow-md transition-shadow">
-													<div class="flex items-start justify-between mb-3">
-														<div class="flex-1">
-															<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-																<span class="w-2 h-2 rounded-full bg-brand-green"></span>
-																{rota.role}
-															</h3>
-															{#if rota.notes}
-																<button
-																	type="button"
-																	on:click={() => toggleRotaDescription(rota.id)}
-																	class="text-xs text-brand-blue hover:underline focus:outline-none whitespace-nowrap flex items-center gap-1 mt-1 ml-4"
-																>
-																	<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-																	</svg>
-																	{expandedRotaDescriptions.has(rota.id) ? 'Hide Rota Description' : 'View Rota Description'}
-																</button>
+															{#if occurrences.length > 0}
+																<!-- Show all occurrences for this rota in a compact grid -->
+																<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+																	{#each occurrences as occ}
+																		{@const assignees = getAssigneesForRotaOccurrence(rota, occ.id)}
+																		{@const isFull = isRotaFull(rota, occ.id)}
+																		{@const isSelected = isRotaSelected(rota.id, occ.id)}
+																		{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id, email, matchedContact, signUpWithSpouse, spouse)}
+																		{@const canSelect = !isFull && !alreadySignedUp}
+																		{@const hasSomeFilled = assignees.length > 0 && !isFull}
+																		{@const bgColor = isFull ? 'bg-red-50' : (isSelected ? 'bg-green-50' : (hasSomeFilled ? 'bg-green-50/30' : 'bg-white'))}
+																		
+																		<label class="block border-2 rounded-lg p-3 transition-all {bgColor} {isSelected ? 'border-brand-green ring-4 ring-brand-green/10' : 'border-gray-200 hover:border-brand-blue/30'} {!canSelect && !isSelected ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}">
+																			<div class="flex items-start gap-3">
+																				<input
+																					type="checkbox"
+																					checked={isSelected}
+																					on:change={() => toggleRotaSelection(rota.id, occ.id)}
+																					disabled={!canSelect && !isSelected}
+																					class="mt-1 w-5 h-5 rounded border-gray-300 text-brand-green focus:ring-brand-green accent-brand-green cursor-pointer"
+																				/>
+																				<div class="flex-1 min-w-0">
+																					<div class="text-sm font-bold text-gray-900 leading-tight mb-1">
+																						{formatDateTimeUK(occ.startsAt)}
+																					</div>
+																					<div class="flex items-center gap-2 flex-wrap">
+																						<span class="text-xs font-bold text-brand-blue">
+																							{assignees.length}/{rota.capacity} filled
+																						</span>
+																						{#if isFull}
+																							<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-red text-white">Full</span>
+																						{/if}
+																						{#if alreadySignedUp}
+																							<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-yellow text-white" title="Already signed up">Signed Up</span>
+																						{/if}
+																					</div>
+																				</div>
+																			</div>
+																		</label>
+																	{/each}
+																</div>
+															{:else}
+																<p class="text-gray-500 text-sm">No occurrences available for this event.</p>
 															{/if}
-															{#if rota.notes && expandedRotaDescriptions.has(rota.id)}
-																<div class="text-sm text-gray-600 mt-2 ml-4 bg-gray-50 p-3 rounded border border-gray-100">{@html rota.notes}</div>
-															{/if}
-															<p class="text-sm text-gray-500 mt-1 ml-4">
-																Capacity: <span class="font-medium text-brand-blue">{rota.capacity}</span> {rota.capacity === 1 ? 'person is' : 'people are'} ideal for this rota
-															</p>
 														</div>
 													</div>
-
-													{#if occurrences.length > 0}
-														<!-- Show all occurrences for this rota in a compact grid -->
-														<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-															{#each occurrences as occ}
-																{@const assignees = getAssigneesForRotaOccurrence(rota, occ.id)}
-																{@const isFull = isRotaFull(rota, occ.id)}
-																{@const isSelected = isRotaSelected(rota.id, occ.id)}
-																{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id, email, matchedContact, signUpWithSpouse, spouse)}
-																{@const canSelect = !isFull && !alreadySignedUp}
-																{@const hasSomeFilled = assignees.length > 0 && !isFull}
-																{@const bgColor = isFull ? 'bg-red-100' : (hasSomeFilled ? 'bg-green-100' : 'bg-white')}
-																
-																<div class="border-2 rounded p-2 transition-all {bgColor} {isSelected ? 'border-brand-green shadow-sm ring-2 ring-brand-green/20' : 'border-gray-200 hover:border-brand-blue/50'} {!canSelect && !isSelected ? 'opacity-60' : ''}">
-																	<label class="flex items-start cursor-pointer {!canSelect && !isSelected ? 'cursor-not-allowed' : ''}">
-																		<input
-																			type="checkbox"
-																			checked={isSelected}
-																			on:change={() => toggleRotaSelection(rota.id, occ.id)}
-																			disabled={!canSelect && !isSelected}
-																			class="mt-0.5 mr-2 flex-shrink-0 accent-brand-green"
-																		/>
-																		<div class="flex-1 min-w-0">
-																			<div class="text-xs font-medium text-gray-900 leading-tight">
-																				{formatDateTimeUK(occ.startsAt)}
-																			</div>
-																			<div class="flex items-center gap-1.5 mt-1 flex-wrap">
-																				<span class="text-xs font-medium text-brand-blue">
-																					{assignees.length}/{rota.capacity}
-																				</span>
-																				{#if isFull}
-																					<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-red/10 text-brand-red border border-brand-red/20">
-																						Full
-																					</span>
-																				{/if}
-																				{#if alreadySignedUp}
-																					<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20" title="Already signed up">
-																						<i class="fa fa-heart text-red-500"></i>
-																					</span>
-																				{/if}
-																			</div>
-																		</div>
-																	</label>
-																</div>
-															{/each}
-														</div>
-													{:else}
-														<p class="text-gray-500 text-sm">No occurrences available for this event.</p>
-													{/if}
-												</div>
-											{/each}
+												{/each}
+											</div>
 										</div>
-									</div>
-								{/if}
-							{/each}
+									{/if}
+								{/each}
+							</div>
 						</div>
-					</div>
+					{/if}
 				</div>
 
 				{#if formResult?.type === 'failure' && formResult.data?.error}
