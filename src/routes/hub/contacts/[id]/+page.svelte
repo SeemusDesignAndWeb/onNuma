@@ -167,6 +167,17 @@
 						{/if}
 					</div>
 				</div>
+				<div class="mt-4 text-white/90 text-sm flex justify-end items-center gap-x-2">
+					{#if contact.createdAt}
+						<span>Created {formatDateTimeUK(contact.createdAt)}</span>
+					{/if}
+					{#if contact.createdAt && contact.updatedAt}
+						<span>|</span>
+					{/if}
+					{#if contact.updatedAt}
+						<span>Last Updated {formatDateTimeUK(contact.updatedAt)}</span>
+					{/if}
+				</div>
 			</div>
 		</div>
 
@@ -482,34 +493,6 @@
 										</svg>
 										View Member Details
 									</a>
-								</div>
-							{/if}
-						</div>
-					</div>
-
-					<!-- Metadata Card -->
-					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-						<div class="bg-gradient-to-r from-gray-500 to-gray-600 px-6 py-4">
-							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-									</svg>
-								</div>
-								<h2 class="text-xl font-bold text-white">Information</h2>
-							</div>
-						</div>
-						<div class="p-6 space-y-4">
-							{#if contact.createdAt}
-								<div>
-									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Created</dt>
-									<dd class="text-sm text-gray-700">{formatDateTimeUK(contact.createdAt)}</dd>
-								</div>
-							{/if}
-							{#if contact.updatedAt}
-								<div>
-									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Last Updated</dt>
-									<dd class="text-sm text-gray-700">{formatDateTimeUK(contact.updatedAt)}</dd>
 								</div>
 							{/if}
 						</div>

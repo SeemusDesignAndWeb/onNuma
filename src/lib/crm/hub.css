@@ -169,7 +169,7 @@
 	box-shadow: 0 0 0 2px white, 0 0 0 4px var(--color-button-3, #3B79A8);
 }
 
-/* Panel background (Hub only) */
+/* Panel background (Hub only) – uses theme Panel background colour via --color-panel-bg set in hub layout */
 .bg-theme-panel {
 	background-color: var(--color-panel-bg, #E8F2F9) !important;
 }

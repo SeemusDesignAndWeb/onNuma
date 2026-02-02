@@ -14,15 +14,12 @@ function configureCloudinary() {
 		throw new Error('Cloudinary API credentials are missing. Please set CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET environment variables.');
 	}
 
-	// Configure Cloudinary
-	// Note: Not setting signature_algorithm to use SDK default (SHA-1)
-	// Some accounts may have issues with SHA-256 or the property name
+	// Configure Cloudinary (SHA-256 required for signature validation on most accounts)
 	cloudinary.config({
 		cloud_name: cloudName,
 		api_key: apiKey,
-		api_secret: apiSecret
-		// Removed signature_algorithm - let SDK use default
-		// If SHA-256 is required, it should be set in Cloudinary account settings
+		api_secret: apiSecret,
+		signature_algorithm: 'sha256'
 	});
 
 	return { cloudName, apiKey, apiSecret };

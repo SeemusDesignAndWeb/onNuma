@@ -49,9 +49,12 @@
 	let showImageBrowser = false;
 	let browseImages = [];
 	let browseImagesLoading = false;
+	let browseImagesUploading = false;
+	let browseImagesUploadError = '';
 	
 	async function openImageBrowser() {
 		showImageBrowser = true;
+		browseImagesUploadError = '';
 		browseImagesLoading = true;
 		browseImages = [];
 		try {
@@ -67,10 +70,39 @@
 	}
 	function closeImageBrowser() {
 		showImageBrowser = false;
+		browseImagesUploadError = '';
 	}
 	function selectImageForLogo(path) {
 		themeLogoPath = path || '';
 		closeImageBrowser();
+	}
+	async function uploadImageForLogo(event) {
+		const input = event.target;
+		const file = input.files?.[0];
+		if (!file) return;
+		browseImagesUploading = true;
+		browseImagesUploadError = '';
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const response = await fetch('/hub/api/images', { method: 'POST', body: formData });
+			if (response.ok) {
+				const result = await response.json();
+				if (result.image) {
+					browseImages = [result.image, ...browseImages];
+					themeLogoPath = result.image.path;
+					closeImageBrowser();
+				}
+			} else {
+				const err = await response.json().catch(() => ({}));
+				browseImagesUploadError = err.error || 'Upload failed';
+			}
+		} catch (err) {
+			browseImagesUploadError = err?.message || 'Upload failed';
+		} finally {
+			browseImagesUploading = false;
+			input.value = '';
+		}
 	}
 	
 	// Track last synced settings so we only overwrite theme fields when server data actually changes (e.g. after save)
@@ -607,12 +639,12 @@
 						<button
 							type="button"
 							on:click={openImageBrowser}
-							class="px-3 py-2 text-sm font-medium btn-theme-light-1 rounded-md"
+							class="px-3 py-2 text-sm font-medium btn-theme-light-1 rounded-md whitespace-nowrap"
 						>
-							Browse
+							Select from library
 						</button>
 					</div>
-					<p class="mt-1 text-xs text-gray-500">Path or URL. Use Browse to pick from uploaded images, or type a path (e.g. /images/logo.png). Empty = default logo.</p>
+					<p class="mt-1 text-xs text-gray-500">Select from the main images library above, or enter a path/URL (e.g. /images/logo.png). Leave empty for default logo.</p>
 				</div>
 				<div>
 					<label for="theme-primary-color" class="block text-sm font-medium text-gray-700 mb-1">Primary colour (green)</label>
@@ -1195,7 +1227,7 @@
 					on:click|stopPropagation
 				>
 					<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-						<h3 class="text-lg font-semibold text-gray-900">Select logo image</h3>
+						<h3 class="text-lg font-semibold text-gray-900">Select from images library</h3>
 						<button
 							type="button"
 							on:click={closeImageBrowser}
@@ -1205,13 +1237,41 @@
 							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
 						</button>
 					</div>
+					<!-- Upload new image -->
+					<div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+						<label for="logo-picker-upload" class="block text-sm font-medium text-gray-700 mb-1">Upload image</label>
+						<div class="flex flex-wrap items-center gap-2">
+							<input
+								id="logo-picker-upload"
+								type="file"
+								accept="image/*"
+								on:change={uploadImageForLogo}
+								disabled={browseImagesUploading}
+								class="text-sm text-gray-600 file:mr-2 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-theme-button-1 file:text-white file:cursor-pointer hover:file:opacity-90 disabled:opacity-50"
+							/>
+							{#if browseImagesUploading}
+								<span class="text-sm text-gray-500">Uploading…</span>
+							{/if}
+						</div>
+						{#if browseImagesUploadError}
+							<p class="mt-1 text-sm text-red-600">{browseImagesUploadError}</p>
+						{/if}
+						<p class="mt-1 text-xs text-gray-500">JPG, PNG, GIF, WebP. Max 10MB. Uploaded image will be set as logo.</p>
+					</div>
 					<div class="overflow-auto p-4 flex-1">
 						{#if browseImagesLoading}
-							<p class="text-sm text-gray-500">Loading images…</p>
+							<p class="text-sm text-gray-500">Loading images from library…</p>
 						{:else if browseImages.length === 0}
-							<p class="text-sm text-gray-500">No images yet. Upload images in <a href="/hub/images" class="text-theme-button-1 hover:underline">Manage Images</a>.</p>
+							<p class="text-sm text-gray-500">No images in the library yet. Upload an image above, or go to <a href="/hub/images" class="text-theme-button-1 hover:underline">Manage Images</a> to upload there.</p>
 						{:else}
 							<div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+								<button
+									type="button"
+									on:click={() => selectImageForLogo('')}
+									class="rounded-lg border-2 border-dashed border-gray-300 overflow-hidden hover:border-theme-button-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-theme-button-1 transition-colors flex flex-col items-center justify-center h-24 min-h-[6rem]"
+								>
+									<span class="text-xs text-gray-500 font-medium">Use default logo</span>
+								</button>
 								{#each browseImages as image}
 									<button
 										type="button"
