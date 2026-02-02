@@ -13,10 +13,45 @@
 	export let data;
 	export let params = {};
 
-	// Theme from Hub settings: only used for Navbar/StandaloneHeader when public "Hub branding" is on. Public site always uses its own CSS (app.css). Hub injects its theme in Hub layout.
+	function getColor(val, fallback) {
+		return typeof val === 'string' && val.trim() && /^#[0-9A-Fa-f]{6}$/.test(val.trim()) ? val.trim() : fallback;
+	}
+
+	// Theme from Hub settings. When "Hub branding" is selected for public pages, use theme on public site too.
 	$: theme = data?.theme || null;
-	// Public pages: always use EGCC branding (own CSS). Hub/admin: use theme.
-	$: effectiveTheme = hideWebsiteElements ? theme : null;
+	// Use theme in Hub/admin; on public pages use theme only when Hub branding is selected.
+	$: effectiveTheme = hideWebsiteElements ? theme : (theme?.publicPagesBranding === 'hub' ? theme : null);
+
+	// When Hub branding is selected for public pages, apply theme CSS variables so Navbar/StandaloneHeader show theme colours (client-side only). When EGCC, reset navbar so public site uses default.
+	$: if (typeof document !== 'undefined' && theme) {
+		const root = document.documentElement;
+		if (theme.publicPagesBranding === 'hub') {
+			root.style.setProperty('--color-primary', getColor(theme.primaryColor, '#4BB170'));
+			root.style.setProperty('--color-brand', getColor(theme.brandColor, '#4A97D2'));
+			const navbarBg = theme.navbarBackgroundColor;
+			if (typeof navbarBg === 'string') {
+				const t = navbarBg.trim();
+				if (t && /^#[0-9A-Fa-f]{6}$/.test(t) && t !== '#FFFFFF' && t !== '#ffffff') {
+					root.style.setProperty('--color-navbar-bg', t);
+				} else {
+					root.style.setProperty('--color-navbar-bg', '#4A97D2');
+				}
+			} else {
+				root.style.setProperty('--color-navbar-bg', '#4A97D2');
+			}
+			root.style.setProperty('--color-button-1', getColor(theme.buttonColors?.[0], '#4A97D2'));
+			root.style.setProperty('--color-button-2', getColor(theme.buttonColors?.[1], '#4BB170'));
+			root.style.setProperty('--color-button-3', getColor(theme.buttonColors?.[2], '#3B79A8'));
+			root.style.setProperty('--color-button-4', getColor(theme.buttonColors?.[3], '#3C8E5A'));
+			root.style.setProperty('--color-button-5', getColor(theme.buttonColors?.[4], '#E6A324'));
+			root.style.setProperty('--color-panel-head-1', getColor(theme.panelHeadColors?.[0], '#4A97D2'));
+			root.style.setProperty('--color-panel-head-2', getColor(theme.panelHeadColors?.[1], '#3B79A8'));
+			root.style.setProperty('--color-panel-head-3', getColor(theme.panelHeadColors?.[2], '#2C5B7E'));
+			root.style.setProperty('--color-panel-bg', getColor(theme.panelBackgroundColor, '#E8F2F9'));
+		} else {
+			root.style.setProperty('--color-navbar-bg', '#FFFFFF');
+		}
+	}
 
 	let showPreloader = true;
 	let showHighlightBanner = false;
