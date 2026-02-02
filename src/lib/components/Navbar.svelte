@@ -68,8 +68,23 @@
 	}
 </script>
 
+<style>
+	/* Prevent white background on nav link hover/focus (global or browser styles) */
+	nav a:hover,
+	nav a:focus,
+	nav a:active {
+		background-color: transparent !important;
+	}
+	/* Override app.css a.text-white:hover so themed nav links show blue (theme button / navbar colour) on hover */
+	nav.navbar--themed a.nav-link:hover,
+	nav.navbar--themed a.nav-link:focus,
+	nav.navbar--themed a.nav-link:active {
+		color: var(--color-button-1, #4A97D2) !important;
+	}
+</style>
+
 <nav
-	class="fixed left-0 right-0 z-50 transition-all duration-300 {bannerVisible ? 'top-[45px]' : 'top-0'} {scrolled ? 'shadow-md' : ''}"
+	class="fixed left-0 right-0 z-50 transition-all duration-300 {bannerVisible ? 'top-[45px]' : 'top-0'} {scrolled ? 'shadow-md' : ''} {theme ? 'navbar--themed' : ''}"
 	style="background-color: var(--color-navbar-bg, #FFFFFF);"
 >
 	<div class="container mx-auto px-4">
@@ -83,7 +98,7 @@
 				/>
 			</a>
 
-			<!-- Desktop menu -->
+			<!-- Desktop menu: hover = blue/theme-button-1 (or navbar colour), no white bg -->
 			<div class="hidden md:flex items-center gap-8">
 				<ul class="flex items-center gap-6">
 					{#each navigationPages as page}
@@ -91,7 +106,7 @@
 							<a
 								href={getPageRoute(page.id)}
 								on:click={() => (menuOpen = false)}
-								class="transition-colors {theme ? 'text-white hover:text-white/90' : 'text-gray-800 hover:text-primary'}"
+								class="nav-link transition-colors rounded px-1 py-0.5 hover:bg-transparent focus:bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 {theme ? 'text-white focus-visible:outline-theme-button-1' : 'text-gray-800 hover:text-primary focus-visible:outline-primary'}"
 							>
 								{getNavigationLabel(page)}
 							</a>
@@ -132,7 +147,7 @@
 							<a
 								href={getPageRoute(page.id)}
 								on:click={() => (menuOpen = false)}
-								class="block transition-colors {theme ? 'text-white hover:text-gray-200' : 'text-gray-800 hover:text-primary'}"
+								class="nav-link block transition-colors rounded py-1 hover:bg-transparent focus:bg-transparent {theme ? 'text-white' : 'text-gray-800 hover:text-primary'}"
 							>
 								{getNavigationLabel(page)}
 							</a>

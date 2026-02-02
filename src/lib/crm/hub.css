@@ -3,6 +3,13 @@
  * Loaded only in Hub layout. Public website uses app.css only.
  */
 
+/* Hub main nav: direct <a> links (non-dropdowns) - override app.css a.text-white:hover so hover shows blue like dropdown buttons */
+.hub-main-nav a.text-white:hover,
+.hub-main-nav a.text-white:focus,
+.hub-main-nav a.text-white:active {
+	color: var(--color-button-1, #4A97D2) !important;
+}
+
 /* Panel head classes - fallback color */
 .panel-head-theme {
 	background-color: #4A97D2 !important;

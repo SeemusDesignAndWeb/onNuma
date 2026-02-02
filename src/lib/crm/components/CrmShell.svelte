@@ -93,7 +93,7 @@
 							<span class="text-xl font-bold text-white">TheHUB</span>
 						</a>
 						{#if !accessDenied}
-							<nav class="ml-8 hidden md:flex space-x-1">
+							<nav class="hub-main-nav ml-8 hidden md:flex space-x-1">
 								<!-- Dashboard (Home Icon) -->
 								<a href="/hub" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {($page.url.pathname === '/hub' || $page.url.pathname === '/hub/') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center" aria-label="Dashboard">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +243,7 @@
 				<!-- Mobile menu -->
 				{#if mobileMenuOpen && !accessDenied}
 					<div class="md:hidden pb-4 border-t border-hub-blue-300 mt-4 pt-4">
-						<nav class="flex flex-col space-y-1">
+						<nav class="hub-main-nav flex flex-col space-y-1">
 							<a href="/hub" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {($page.url.pathname === '/hub' || $page.url.pathname === '/hub/') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center gap-2">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
