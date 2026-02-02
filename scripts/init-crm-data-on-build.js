@@ -21,10 +21,31 @@ const __dirname = dirname(__filename);
 const RAILWAY_DATA_DIR = process.env.CRM_DATA_DIR || '/data';
 const LOCAL_DATA_DIR = join(__dirname, '../data');
 
-// Only initialize admins file (contains login credentials)
-// Other files can be added later if needed, but admins is the critical one
+// All NDJSON collections - copy if missing (no overwrite)
 const CRM_DATA_FILES = [
-	'admins'        // Most important - contains login credentials
+	'admins',
+	'audit_logs',
+	'contact_tokens',
+	'contacts',
+	'email_stats',
+	'email_templates',
+	'emails',
+	'event_signups',
+	'event_tokens',
+	'events',
+	'forms',
+	'holidays',
+	'lists',
+	'loom_videos',
+	'meeting_planners',
+	'members',
+	'occurrence_tokens',
+	'occurrences',
+	'registers',
+	'rota_tokens',
+	'rotas',
+	'sessions',
+	'week_notes'
 ];
 
 console.log('🔄 Initializing CRM data files on Railway volume...\n');

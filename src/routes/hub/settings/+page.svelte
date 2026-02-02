@@ -18,7 +18,10 @@
 	let originalColour = null; // Store original colour when editing starts
 	let newColour = { value: '#9333ea', label: '' };
 	let showAddColour = false;
-	let activeTab = 'colours'; // 'email', 'colours', or 'meeting-planner'
+	let activeTab = 'colours'; // 'email', 'colours', 'meeting-planner', or 'data-store'
+	// Optimistic update: set when we switch so "Current mode" updates before refetch
+	let storeModeOverride = null;
+	$: storeMode = storeModeOverride ?? data?.storeMode ?? 'file';
 	
 	// Meeting Planner Rota state
 	let editingRotaIndex = null;
@@ -307,6 +310,81 @@
 		if (emailRateLimitDelay <= 0) return 'Invalid';
 		return (1000 / emailRateLimitDelay).toFixed(2);
 	}
+
+	// Data store: migrate and switch
+	let migrating = false;
+	let switching = false;
+
+	async function migrateToDatabase() {
+		migrating = true;
+		try {
+			const res = await fetch('/hub/settings/api/migrate-to-database', {
+				method: 'POST',
+				credentials: 'include'
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				notifications.error(data.error || 'Migration failed');
+				return;
+			}
+			const { results } = data;
+			const total = (results?.migrated || []).reduce((n, r) => n + (r.count || 0), 0);
+			const numCollections = (results?.migrated || []).length;
+			if (results?.errors?.length) {
+				const errMsg = results.errors.map((e) => `${e.collection}: ${e.error}`).join('; ');
+				notifications.error(`Migration had errors: ${errMsg}`);
+			}
+			notifications.success(
+				numCollections
+					? `Copied ${numCollections} collections (${total} records) to database.`
+					: total === 0
+						? 'No file data to copy (files empty or missing).'
+						: 'Data copied to database.'
+			);
+			// After a successful copy, switch the app to use the database so the site runs off DB
+			if (numCollections > 0 && storeMode !== 'database') {
+				const switchRes = await fetch('/hub/settings/api/store-mode', {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ dataStore: 'database' })
+				});
+				if (switchRes.ok) {
+					storeModeOverride = 'database';
+					notifications.success('Switched to database. The site now uses PostgreSQL.');
+				}
+			}
+			await invalidateAll();
+		} catch (err) {
+			notifications.error(err.message || 'Migration failed');
+		} finally {
+			migrating = false;
+		}
+	}
+
+	async function setStoreMode(mode) {
+		switching = true;
+		try {
+			const res = await fetch('/hub/settings/api/store-mode', {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ dataStore: mode })
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				notifications.error(data.error || 'Failed to switch');
+				return;
+			}
+			storeModeOverride = mode;
+			notifications.success(mode === 'database' ? 'Switched to database.' : 'Switched to file store.');
+			await invalidateAll();
+		} catch (err) {
+			notifications.error(err.message || 'Failed to switch');
+		} finally {
+			switching = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -338,6 +416,12 @@
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'email' ? 'border-hub-blue-500 text-hub-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 				>
 					Email Rate Limiting
+				</button>
+				<button
+					on:click={() => activeTab = 'data-store'}
+					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'data-store' ? 'border-hub-blue-500 text-hub-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+				>
+					Data store
 				</button>
 			</nav>
 		</div>
@@ -686,6 +770,50 @@
 						class="px-4 py-2 bg-hub-blue-500 text-white rounded-md hover:bg-hub-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-hub-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{saving ? 'Saving...' : 'Save Settings'}
+					</button>
+				</div>
+			</div>
+		</div>
+		{/if}
+
+		<!-- Data store -->
+		{#if activeTab === 'data-store'}
+		<div class="border-b border-gray-200 pb-6 mb-6">
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Data store</h2>
+			<p class="text-sm text-gray-600 mb-4">
+				CRM data can be stored in JSON files (default) or in a PostgreSQL database. Admins and sessions always stay in files so you can log in if the database is unavailable.
+			</p>
+			<p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-4">
+				<strong>Using database:</strong> Click &quot;Copy file data to database&quot; then the app will switch to the database automatically. Or click &quot;Switch to database&quot; to use the DB without copying. If you set <code class="bg-white px-1 rounded">DATA_STORE=database</code> in <code class="bg-white px-1 rounded">.env</code>, restart the app for it to take effect.
+			</p>
+			<div class="space-y-4">
+				<div class="p-4 bg-gray-50 border border-gray-200 rounded-md">
+					<p class="text-sm font-medium text-gray-700">Current mode:</p>
+					<p class="text-lg font-semibold {storeMode === 'database' ? 'text-green-600' : 'text-gray-800'}">
+						{storeMode === 'database' ? 'Database (PostgreSQL)' : 'File (NDJSON)'}
+					</p>
+				</div>
+				<div class="flex flex-wrap gap-3">
+					<button
+						on:click={() => migrateToDatabase()}
+						disabled={migrating}
+						class="px-4 py-2 bg-hub-blue-500 text-white rounded-md hover:bg-hub-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-hub-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{migrating ? 'Copying...' : 'Copy file data to database'}
+					</button>
+					<button
+						on:click={() => setStoreMode('database')}
+						disabled={switching || storeMode === 'database'}
+						class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{switching ? 'Switching...' : 'Switch to database'}
+					</button>
+					<button
+						on:click={() => setStoreMode('file')}
+						disabled={switching || storeMode === 'file'}
+						class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{switching ? 'Switching...' : 'Switch to file store'}
 					</button>
 				</div>
 			</div>
