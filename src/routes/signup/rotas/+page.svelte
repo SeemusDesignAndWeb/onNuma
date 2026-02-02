@@ -932,7 +932,7 @@
 																							<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-red text-white">Full</span>
 																						{/if}
 																						{#if alreadySignedUp}
-																							<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-yellow text-white" title="Already signed up">Signed Up</span>
+																							<span class="inline-flex items-center" title="Already signed up"><i class="fa fa-heart text-red-500"></i></span>
 																						{/if}
 																					</div>
 																				</div>
