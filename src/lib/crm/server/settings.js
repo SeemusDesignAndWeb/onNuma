@@ -53,7 +53,7 @@ function getDefaultTheme() {
 		panelHeadColors: ['#4A97D2', '#3B79A8', '#2C5B7E'],
 		panelBackgroundColor: '#E8F2F9', // Lighter shade of blue for all panels
 		externalPagesLayout: 'integrated', // 'integrated' | 'standalone'
-		publicPagesBranding: 'egcc' // 'egcc' | 'hub' - public website uses EGCC branding or Hub theme
+		publicPagesBranding: 'egcc' // 'egcc' | 'hub' - Hub public pages (signup, forms, etc.) only; main EGCC website is never affected
 	};
 }
 

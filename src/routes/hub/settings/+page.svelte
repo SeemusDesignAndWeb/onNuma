@@ -717,8 +717,8 @@
 					<p class="mt-1 text-xs text-gray-500">Integrated = full site navbar. Standalone = minimal header with logo and “Back to site” link.</p>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">Public pages branding</label>
-					<p class="text-xs text-gray-500 mb-2">Choose how the main website (home, church, events, etc.) appears: EGCC branding or Hub theme.</p>
+					<label class="block text-sm font-medium text-gray-700 mb-2">Hub public pages branding</label>
+					<p class="text-xs text-gray-500 mb-2">Choose how Hub public pages appear (signup links, event signup, forms, unsubscribe, view-rotas). The main EGCC website (home, church, events, etc.) always uses EGCC branding and is never affected.</p>
 					<div class="flex gap-6">
 						<label class="flex items-center gap-2 cursor-pointer">
 							<input type="radio" name="public-branding" value="egcc" bind:group={themePublicPagesBranding} class="text-theme-button-1 focus:ring-theme-button-1" />
@@ -729,7 +729,7 @@
 							<span class="text-sm">Hub branding</span>
 						</label>
 					</div>
-					<p class="mt-1 text-xs text-gray-500">EGCC = default church logo and colours on the public site. Hub = use the theme logo and colours above on the public site.</p>
+					<p class="mt-1 text-xs text-gray-500">EGCC = use church logo and colours on Hub public pages. Hub = use the theme logo and colours above on Hub public pages only.</p>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700 mb-2">Button colours (up to 5)</label>
