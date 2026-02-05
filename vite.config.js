@@ -36,20 +36,9 @@ export default defineConfig({
 		host: true,
 		allowedHosts: ['localhost', '.localhost', ...getAllowedHostsFromOrganisations()]
 	},
-	build: {
-		rollupOptions: {
-			output: {
-				manualChunks: (id) => {
-					if (id.includes('node_modules')) {
-						if (id.includes('svelte')) return 'svelte';
-						if (id.includes('quill')) return 'quill';
-						if (id.includes('cloudinary')) return 'cloudinary';
-						return 'vendor';
-					}
-				}
-			}
-		}
-	},
+	// Don't use manualChunks: splitting into svelte/vendor chunks can cause
+	// "Cannot access 'X' before initialization" in production (e.g. Railway)
+	// when chunk load order differs from dev.
 	ssr: {
 		// pg is CommonJS; let Node load it at runtime instead of Vite bundling it
 		external: ['pg']

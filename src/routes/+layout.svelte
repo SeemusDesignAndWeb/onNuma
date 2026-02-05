@@ -4,8 +4,10 @@
 	import EventHighlightBanner from '$lib/components/EventHighlightBanner.svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import StandaloneHeader from '$lib/components/StandaloneHeader.svelte';
+	import ContactFormPopup from '$lib/components/ContactFormPopup.svelte';
 	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
 	import ConfirmDialog from '$lib/crm/components/ConfirmDialog.svelte';
+	import { contactPopupOpen } from '$lib/stores/contactPopup.js';
 	import { onMount, setContext } from 'svelte';
 	import { writable } from 'svelte/store';
 	import { page } from '$app/stores';
@@ -149,6 +151,11 @@
 
 <!-- Global Notification Popups (MultiOrg uses OnNuma theme colours) -->
 <NotificationPopup useMultiOrgTheme={isMultiOrgArea} />
+
+<!-- Contact form popup (website only) -->
+{#if !hideWebsiteElements}
+	<ContactFormPopup open={$contactPopupOpen} on:close={() => contactPopupOpen.set(false)} />
+{/if}
 
 <!-- Global Dialog/Confirm -->
 <ConfirmDialog />

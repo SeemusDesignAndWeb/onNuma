@@ -1,5 +1,6 @@
 <script lang="js">
 	import { onMount } from 'svelte';
+	import { contactPopupOpen } from '$lib/stores/contactPopup.js';
 
 	export let bannerVisible = false;
 	/** @type {{ logoPath?: string } | null} */
@@ -33,8 +34,18 @@
 		{ id: 'about', label: 'About' },
 		{ id: 'features', label: 'Features' },
 		{ id: 'pricing', label: 'Pricing' },
-		{ id: 'contact', label: 'Contact' }
+		{ id: 'contact', label: 'Contact', openPopup: true }
 	];
+
+	function handleNavClick(e, link) {
+		if (link.openPopup && link.id === 'contact') {
+			e?.preventDefault();
+			menuOpen = false;
+			contactPopupOpen.set(true);
+		} else {
+			scrollTo(e, link.id);
+		}
+	}
 </script>
 
 <nav
@@ -58,7 +69,7 @@
 						<li>
 							<button
 								type="button"
-								on:click={(e) => scrollTo(e, link.id)}
+								on:click={(e) => handleNavClick(e, link)}
 								class="font-medium transition-colors text-[15px] {overHero || darkNav ? 'text-white hover:text-white/90' : 'text-slate-600 hover:text-slate-900'}"
 							>
 								{link.label}
@@ -93,7 +104,7 @@
 						<li>
 							<button
 								type="button"
-								on:click={(e) => scrollTo(e, link.id)}
+								on:click={(e) => handleNavClick(e, link)}
 								class="block w-full text-left py-3 font-medium {overHero || darkNav ? 'text-white hover:text-white/90' : 'text-slate-700 hover:text-slate-900'}"
 							>
 								{link.label}

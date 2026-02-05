@@ -5,7 +5,7 @@
 		"buildCommand": "npm run build"
 	},
 	"deploy": {
-		"startCommand": "node scripts/init-crm-data-on-build.js && node scripts/ensure-db-on-deploy.js && node scripts/fix-phil-poulton-name.js && node -r dotenv/config build/index.js",
+		"startCommand": "node scripts/init-crm-data-on-build.js && node scripts/ensure-db-on-deploy.js && node -r dotenv/config build/index.js",
 		"restartPolicyType": "ON_FAILURE",
 		"restartPolicyMaxRetries": 10
 	}
