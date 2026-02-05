@@ -167,7 +167,7 @@
 				<p class="text-slate-600 text-sm">A simple, organised record of volunteers and staff. No spreadsheets, no duplication.</p>
 			</div>
 			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
-				<h3 class="text-lg font-bold text-brand-blue mb-2">Lists & groups</h3>
+				<h3 class="text-lg font-bold text-brand-blue mb-2">Organise Lists</h3>
 				<p class="text-slate-600 text-sm">Teams, ministries or activities. Communicate with the right people at the right time.</p>
 			</div>
 			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
