@@ -232,10 +232,15 @@ All data modifications require explicit write operations:
 3. **Use** admin interface for all data modifications
 4. **Monitor** Railway logs for database errors
 
+### Repo: No data files tracked (updates never overwrite data)
+- All `data/*.ndjson` and `data/*.json` files are in `.gitignore` and are **not** in the repo.
+- Deployments (git pull / push) only change code; they never overwrite production data.
+- In production, use a persistent path for file-based data: set `CRM_DATA_DIR` to a volume path (e.g. `/data`) or use `DATABASE_URL` so the CRM uses Postgres and no file data lives in the repo tree.
+
 ### Backup Strategy
 - Railway volumes can be backed up using Railway CLI
 - Database can be exported via admin interface
-- Git history can serve as backup (if database was committed at some point)
+- Keep backups of `/data` (or Postgres) elsewhere; the repo does not contain data files
 
 ## Troubleshooting
 

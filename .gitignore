@@ -9,16 +9,10 @@ node_modules
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Data folder - database.json should not be in git
-# It will be stored in Railway volume at /data/database.json
+# Data folder - never commit; deployments must not overwrite production data
 /data/*.json
 data/database.json
-
-# Local contact data - should not be committed (contains real data)
-data/contacts.ndjson
-
-# Hub settings (theme, calendar colours, etc.) - persist in DB or volume, not in git
-data/hub_settings.ndjson
+data/*.ndjson
 
 # Audio files - should not be in git (too large)
 static/audio/uploaded/
