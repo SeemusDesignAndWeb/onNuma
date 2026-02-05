@@ -4,14 +4,20 @@
 
 	export let data;
 	export let params = {};
+	$: page = data?.page ?? null;
+	$: contactInfo = data?.contactInfo ?? null;
 </script>
 
 <svelte:head>
-	<title>{data.page.title} - Eltham Green Community Church</title>
-	<meta name="description" content={data.page.metaDescription || data.page.title} />
+	<title>{page?.title ?? 'Page'} - Eltham Green Community Church</title>
+	<meta name="description" content={page?.metaDescription || page?.title || ''} />
 </svelte:head>
 
-<PageRenderer page={data.page} contactInfo={data.contactInfo} />
+{#if page}
+	<PageRenderer page={page} contactInfo={contactInfo} />
+{:else}
+	<p class="p-8 text-gray-600">Page not found.</p>
+{/if}
 
 <Footer />
 
