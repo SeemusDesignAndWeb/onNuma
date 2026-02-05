@@ -14,7 +14,7 @@ export async function load({ url, locals }) {
 }
 
 export const actions = {
-	default: async ({ request, locals }) => {
+	reset: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const token = (formData.get('token') || '').toString().trim();
 		const email = (formData.get('email') || '').toString().trim().toLowerCase();

@@ -7,7 +7,7 @@ export async function load() {
 }
 
 export const actions = {
-	default: async ({ request, url, locals }) => {
+	requestReset: async ({ request, url, locals }) => {
 		const message =
 			'If an account exists for that email, we\'ve sent a password reset link. Check your inbox and spam folder.';
 

@@ -18,7 +18,7 @@
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8f8fa] via-white to-[#F3DE8A]/30 px-4 py-12">
 	<div class="w-full max-w-md">
 		<div class="text-center mb-8">
-			<img src="/images/OnNuma-Icon.png" alt="OnNuma" class="w-16 h-16 mx-auto mb-4 object-contain" />
+			<img src="/images/onnuma-logo.png" alt="OnNuma" class="w-auto max-w-[200px] h-14 mx-auto mb-4 object-contain" />
 			<h1 class="text-2xl font-bold text-[#272838] tracking-tight">Set new password</h1>
 			<p class="mt-2 text-sm text-[#7E7F9A]">Choose a new password for your MultiOrg account</p>
 		</div>
@@ -36,7 +36,7 @@
 					← Back to sign in
 				</a>
 			{:else}
-				<form method="POST" action="?/default" use:enhance>
+				<form method="POST" action="?/reset" use:enhance>
 					<input type="hidden" name="token" value={token} />
 					<input type="hidden" name="email" value={email} />
 					{#if error}
