@@ -21,6 +21,7 @@ export const actions = {
 			const result = await requestMultiOrgPasswordReset(email);
 
 			if (result) {
+				console.log('[MultiOrg forgot-password] Admin found, sending reset email to:', result.email);
 				const adminSubdomain = !!locals.multiOrgAdminDomain;
 				const eventLike = { url, adminSubdomain };
 				try {
@@ -28,10 +29,13 @@ export const actions = {
 						{ to: result.email, name: result.name || result.email, resetToken: result.passwordResetToken },
 						eventLike
 					);
+					console.log('[MultiOrg forgot-password] Reset email sent successfully');
 				} catch (err) {
 					console.error('MultiOrg password reset email error:', err);
 					return fail(500, { error: 'We couldn\'t send the reset email. Please try again later.', message });
 				}
+			} else {
+				console.log('[MultiOrg forgot-password] No admin found for this email (or enumeration protection)');
 			}
 
 			return { success: true, message };

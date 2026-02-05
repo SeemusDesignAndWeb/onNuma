@@ -1582,6 +1582,10 @@ Visit our website: ${baseUrl}
  * @param {{ url: URL, adminSubdomain?: boolean }} event - url.origin and adminSubdomain (for reset link path)
  */
 export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, event) {
+	if (!env.RESEND_API_KEY || env.RESEND_API_KEY.trim() === '') {
+		console.error('[MultiOrg password reset email] RESEND_API_KEY is not set. Set it in your environment (e.g. Railway variables).');
+		throw new Error('Email is not configured: RESEND_API_KEY is missing.');
+	}
 	const adminSubdomain = !!event?.adminSubdomain;
 	const baseUrl = adminSubdomain ? event.url?.origin : getBaseUrl(event);
 	const path = adminSubdomain ? '/auth/reset-password' : '/multi-org/auth/reset-password';
@@ -1590,35 +1594,37 @@ export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, e
 	const resetLink = `${baseUrl}${path}?token=${encodedToken}&email=${encodedEmail}`;
 
 	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+	const logoUrl = `${baseUrl}/images/onnuma-logo.png`;
 	const html = `
 		<!DOCTYPE html>
 		<html>
-		<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Reset Your Password - MultiOrg</title></head>
-		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f8fafc;">
-			<div style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
-				<div style="background: linear-gradient(135deg, #06b6d4 0%, #14b8a6 100%); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-					<h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Reset Your Password</h1>
-					<p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">MultiOrg – Organisation management</p>
+		<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Reset Your Password - OnNuma</title></head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #272838; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f8f8fa;">
+			<div style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #7E7F9A; box-shadow: 0 2px 8px rgba(39,40,56,0.08);">
+				<div style="background: #FEFCF4; padding: 24px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px solid #F3DE8A;">
+					<img src="${logoUrl}" alt="OnNuma" style="max-width: 180px; height: auto; max-height: 48px; margin-bottom: 12px; display: inline-block;" />
+					<h1 style="color: #272838; margin: 0; font-size: 20px; font-weight: 600;">Reset Your Password</h1>
+					<p style="color: #272838; margin: 8px 0 0 0; font-size: 14px; opacity: 0.85;">OnNuma</p>
 				</div>
-				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hello ${name},</p>
-				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">We received a request to reset your MultiOrg admin password.</p>
-				<div style="background: #ecfeff; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #06b6d4;">
-					<p style="color: #333; font-size: 14px; margin: 0 0 12px 0;">Click the button below to set a new password. This link expires in 24 hours.</p>
-					<a href="${resetLink}" style="display: inline-block; background: #06b6d4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Reset Password</a>
-					<p style="color: #64748b; font-size: 12px; margin: 12px 0 0 0;">Or copy this link: ${resetLink}</p>
+				<p style="color: #272838; font-size: 15px; margin: 0 0 15px 0;">Hello ${name},</p>
+				<p style="color: #272838; font-size: 15px; margin: 0 0 15px 0;">We received a request to reset your OnNuma admin password.</p>
+				<div style="background: #F3DE8A; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #EB9486;">
+					<p style="color: #272838; font-size: 14px; margin: 0 0 12px 0;">Click the button below to set a new password. This link expires in 24 hours.</p>
+					<a href="${resetLink}" style="display: inline-block; background: #EB9486; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Reset Password</a>
+					<p style="color: #7E7F9A; font-size: 12px; margin: 12px 0 0 0;">Or copy this link: ${resetLink}</p>
 				</div>
-				<p style="color: #64748b; font-size: 12px; margin: 16px 0 0 0;">If you didn't request this, you can ignore this email. Your password will not change until you use the link above.</p>
+				<p style="color: #7E7F9A; font-size: 12px; margin: 16px 0 0 0;">If you didn't request this, you can ignore this email. Your password will not change until you use the link above.</p>
 			</div>
 		</body>
 		</html>
 	`;
-	const text = `Reset Your Password - MultiOrg\n\nHello ${name},\n\nWe received a request to reset your MultiOrg admin password.\n\nOpen this link to set a new password (expires in 24 hours):\n${resetLink}\n\nIf you didn't request this, ignore this email.\n`;
+	const text = `Reset Your Password - OnNuma\n\nHello ${name},\n\nWe received a request to reset your OnNuma admin password.\n\nOpen this link to set a new password (expires in 24 hours):\n${resetLink}\n\nIf you didn't request this, ignore this email.\n`;
 
 	try {
 		return await rateLimitedSend(() => resend.emails.send({
 			from: fromEmail,
 			to: [to],
-			subject: 'Reset your MultiOrg password',
+			subject: 'Reset your OnNuma password',
 			html,
 			text
 		}));
