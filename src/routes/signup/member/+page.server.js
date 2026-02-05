@@ -1,7 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import { getCsrfToken, verifyCsrfToken, generateCsrfToken, setCsrfToken } from '$lib/crm/server/auth.js';
 import { validateContact } from '$lib/crm/server/validators.js';
-import { create, findMany, readCollection } from '$lib/crm/server/fileStore.js';
+import { create, readCollection } from '$lib/crm/server/fileStore.js';
+import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
 import { sendMemberSignupConfirmationEmail, sendMemberSignupAdminNotification } from '$lib/crm/server/email.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
 import { env } from '$env/dynamic/private';
@@ -50,9 +51,11 @@ export const actions = {
 
 			// Validate the contact data
 			const validated = validateContact(contactData);
-			
-			// Check if contact with this email already exists
-			const existingContacts = await findMany('contacts', c => 
+			const organisationId = await getCurrentOrganisationId();
+			const contactsInOrg = organisationId
+				? filterByOrganisation(await readCollection('contacts'), organisationId)
+				: await readCollection('contacts');
+			const existingContacts = contactsInOrg.filter(c =>
 				c.email && c.email.toLowerCase() === validated.email.toLowerCase()
 			);
 
@@ -83,8 +86,8 @@ export const actions = {
 				contact = await update('contacts', existingContact.id, updatedContact);
 				isUpdate = true;
 			} else {
-				// Create new contact
-				contact = await create('contacts', validated);
+				// Create new contact (scoped to current org when on hub domain)
+				contact = await create('contacts', withOrganisationId(validated, organisationId));
 			}
 
 			// Send emails

@@ -2,6 +2,8 @@
 	import { contactPopupOpen } from '$lib/stores/contactPopup.js';
 
 	export let data;
+	/** @type {Record<string, string>} */
+	export let params = {};
 	const landing = data?.landing || {};
 	const ctaDemo = landing.ctaRequestDemoUrl || '/multi-org';
 	const ctaStart = landing.ctaStartOrganisationUrl || '/multi-org/organisations/new';
@@ -9,7 +11,7 @@
 
 	// Pricing: scale by contacts (30–700), Professional max £50/month; Free up to 50
 	let contacts = 200;
-	const minContacts = 30;
+	const minContacts = 1;
 	const maxContacts = 700;
 	const freeMaxContacts = 50;
 	$: freeAvailable = contacts <= freeMaxContacts;
@@ -158,13 +160,15 @@
 <!-- Features – card grid like MPP Dashboard / Create / Screen -->
 <section id="features" class="py-16 md:py-24 bg-white">
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-		<p class="text-xs font-semibold tracking-widest text-brand-blue uppercase mb-2">What?</p>
-		<h2 class="text-3xl md:text-4xl font-bold text-brand-blue mb-4">
-			Everything in one clear place
-		</h2>
-		<p class="text-slate-600 mb-12 max-w-2xl">
-			OnNuma brings contacts, events, rotas and communication together so volunteers and admins stay on the same page.
-		</p>
+		<div class="text-center mb-12">
+			<p class="text-xs font-semibold tracking-widest text-brand-blue uppercase mb-2">Keeping volunteering simple and affective</p>
+			<h2 class="text-3xl md:text-4xl font-bold text-brand-blue mb-4">
+				Everything in one clear place
+			</h2>
+			<p class="text-slate-600 max-w-2xl mx-auto">
+				OnNuma brings contacts, events, rotas and communication together so volunteers and admins stay on the same page.
+			</p>
+		</div>
 		<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
 			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
 				<h3 class="text-lg font-bold text-brand-blue mb-2">Contacts</h3>
@@ -341,18 +345,6 @@
 			>
 				Contact us
 			</button>
-			<a
-				href={ctaDemo}
-				class="inline-flex items-center justify-center px-8 py-4 rounded-lg font-semibold bg-white/90 text-brand-blue hover:bg-white transition-colors shadow-lg border-2 border-white"
-			>
-				Request a demo
-			</a>
-			<a
-				href={ctaStart}
-				class="inline-flex items-center justify-center px-8 py-4 rounded-lg font-semibold bg-brand-green text-white hover:bg-primary-dark transition-colors shadow-lg border-2 border-brand-green"
-			>
-				Start your organisation
-			</a>
 		</div>
 	</div>
 </section>

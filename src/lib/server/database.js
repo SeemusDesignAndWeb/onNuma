@@ -34,6 +34,7 @@ const defaultDatabase = {
 	services: [],
 	heroSlides: [],
 	images: [],
+	hubImages: [],
 	podcasts: [],
 	communityGroups: [],
 	events: [],
@@ -403,6 +404,35 @@ export function saveImage(image) {
 export function deleteImage(id) {
 	const db = readDatabase();
 	db.images = db.images.filter((img) => img.id !== id);
+	writeDatabase(db);
+}
+
+// CRUD operations for Hub Images (separate from admin images)
+export function getHubImages() {
+	const db = readDatabase();
+	return db.hubImages || [];
+}
+
+export function getHubImage(id) {
+	const db = readDatabase();
+	return (db.hubImages || []).find((img) => img.id === id);
+}
+
+export function saveHubImage(image) {
+	const db = readDatabase();
+	db.hubImages = db.hubImages || [];
+	const index = db.hubImages.findIndex((img) => img.id === image.id);
+	if (index >= 0) {
+		db.hubImages[index] = image;
+	} else {
+		db.hubImages.push(image);
+	}
+	writeDatabase(db);
+}
+
+export function deleteHubImage(id) {
+	const db = readDatabase();
+	db.hubImages = (db.hubImages || []).filter((img) => img.id !== id);
 	writeDatabase(db);
 }
 

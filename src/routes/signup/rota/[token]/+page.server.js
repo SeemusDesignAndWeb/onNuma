@@ -1,6 +1,7 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { getRotaTokenByToken } from '$lib/crm/server/tokens.js';
 import { findById, update, findMany, readCollection } from '$lib/crm/server/fileStore.js';
+import { getCurrentOrganisationId } from '$lib/crm/server/orgContext.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 import { filterUpcomingOccurrences } from '$lib/crm/utils/occurrenceFilters.js';
@@ -13,6 +14,10 @@ export async function load({ params, cookies }) {
 
 	const event = await findById('events', token.eventId);
 	if (!event) {
+		throw error(404, 'Event not found');
+	}
+	const organisationId = await getCurrentOrganisationId();
+	if (organisationId != null && event.organisationId != null && event.organisationId !== organisationId) {
 		throw error(404, 'Event not found');
 	}
 
@@ -130,6 +135,10 @@ export const actions = {
 
 				const event = await findById('events', token.eventId);
 				if (!event) {
+					return fail(404, { error: 'Event not found' });
+				}
+				const currentOrgId = await getCurrentOrganisationId();
+				if (currentOrgId != null && event.organisationId != null && event.organisationId !== currentOrgId) {
 					return fail(404, { error: 'Event not found' });
 				}
 

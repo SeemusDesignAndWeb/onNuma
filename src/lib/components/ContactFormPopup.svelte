@@ -9,6 +9,8 @@
 	let email = '';
 	let phone = '';
 	let message = '';
+	/** Honeypot - hidden from users, bots fill it; if set, we don't submit */
+	let website = '';
 	let submitting = false;
 	let success = false;
 	let error = '';
@@ -23,6 +25,7 @@
 			email = '';
 			phone = '';
 			message = '';
+			website = '';
 			success = false;
 			error = '';
 		}, 200);
@@ -39,6 +42,10 @@
 	async function handleSubmit(e) {
 		e.preventDefault();
 		if (submitting) return;
+		// Honeypot: if filled, treat as bot - silently abort (don't submit, don't show error)
+		if (website && String(website).trim() !== '') {
+			return;
+		}
 		error = '';
 		submitting = true;
 		const formTime = Math.floor((Date.now() - openedAt) / 1000);
@@ -47,7 +54,7 @@
 			const res = await fetch('/api/contact', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name, email, phone: phone || undefined, message, formTime })
+				body: JSON.stringify({ name, email, phone: phone || undefined, message, formTime, website: website || undefined })
 			});
 			const data = await res.json().catch(() => ({}));
 
@@ -141,6 +148,17 @@
 							bind:value={phone}
 							class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue"
 							placeholder="Optional"
+						/>
+					</div>
+					<!-- Honeypot: hidden from users, bots fill it -->
+					<div class="absolute -left-[9999px] opacity-0 pointer-events-none h-0 overflow-hidden" aria-hidden="true">
+						<label for="contact-website">Website</label>
+						<input
+							id="contact-website"
+							type="text"
+							tabindex="-1"
+							autocomplete="off"
+							bind:value={website}
 						/>
 					</div>
 					<div>

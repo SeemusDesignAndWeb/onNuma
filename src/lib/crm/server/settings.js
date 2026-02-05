@@ -55,7 +55,7 @@ function getDefaultTheme() {
 		panelHeadColors: ['#4A97D2', '#3B79A8', '#2C5B7E'],
 		panelBackgroundColor: '#E8F2F9', // Lighter shade of blue for all panels
 		externalPagesLayout: 'integrated', // 'integrated' | 'standalone'
-		publicPagesBranding: 'egcc' // 'egcc' | 'hub' - Hub public pages (signup, forms, etc.) only; main EGCC website is never affected
+		publicPagesBranding: 'hub' // Hub public pages (signup, forms, etc.) always use theme; main website is never affected
 	};
 }
 
@@ -87,7 +87,7 @@ function mergeWithDefaults(record) {
 	const dt = defaultTheme;
 	const t = record.theme && typeof record.theme === 'object' ? record.theme : {};
 	const layout = t.externalPagesLayout === 'standalone' ? 'standalone' : 'integrated';
-	const publicBranding = t.publicPagesBranding === 'hub' ? 'hub' : 'egcc';
+	const publicBranding = 'hub'; // OnNuma: public hub pages always use theme branding
 	const theme = {
 		logoPath: typeof t.logoPath === 'string' ? t.logoPath : dt.logoPath,
 		loginLogoPath: typeof t.loginLogoPath === 'string' ? t.loginLogoPath : dt.loginLogoPath,

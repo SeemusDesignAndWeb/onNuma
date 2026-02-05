@@ -31,13 +31,13 @@
 
 	// Theme from Hub settings. Only applied in Hub/admin and on public hub pages. Main website (/, /church, /events, etc.) never uses Hub theme.
 	$: theme = data?.theme || null;
-	// Hub/admin: always use theme. Main website: never use theme. External (public hub) pages: use theme only when Hub branding is selected.
-	$: effectiveTheme = hideWebsiteElements ? theme : (isExternalPage && theme?.publicPagesBranding === 'hub' ? theme : null);
+	// Hub/admin: always use theme. Main website: never use theme. External (public hub) pages: always use theme (OnNuma = Hub branding only).
+	$: effectiveTheme = hideWebsiteElements ? theme : (isExternalPage ? theme : null);
 
-	// Apply theme CSS variables only on external (public hub) pages when Hub branding is on. Main website: never touch theme vars (keeps app.css defaults).
+	// Apply theme CSS variables on external (public hub) pages. Main website: never touch theme vars (keeps app.css defaults).
 	$: if (typeof document !== 'undefined') {
 		const root = document.documentElement;
-		if (isExternalPage && theme?.publicPagesBranding === 'hub') {
+		if (isExternalPage && theme) {
 			root.style.setProperty('--color-primary', getColor(theme.primaryColor, '#4BB170'));
 			root.style.setProperty('--color-brand', getColor(theme.brandColor, '#4A97D2'));
 			const navbarBg = theme.navbarBackgroundColor;
@@ -61,7 +61,7 @@
 			root.style.setProperty('--color-panel-head-3', getColor(theme.panelHeadColors?.[2], '#2C5B7E'));
 			root.style.setProperty('--color-panel-bg', getColor(theme.panelBackgroundColor, '#E8F2F9'));
 		} else {
-			// Main website or EGCC branding: ensure navbar uses public site default (white)
+			// Main website: ensure navbar uses public site default (white)
 			root.style.setProperty('--color-navbar-bg', '#FFFFFF');
 		}
 	}
@@ -73,7 +73,8 @@
 	// But DO show navbar for public signup pages (rota, event, and member signups)
 	// Don't show banner on signup pages or sundays page
 	$: isSignupPage = $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
-	$: useStandaloneHeader = theme?.externalPagesLayout === 'standalone' && isExternalPage;
+	// External pages (signup, forms, etc.) always use minimal header with theme branding, no hub nav items
+	$: useStandaloneHeader = isExternalPage;
 	$: isMarketingHome = $page.url.pathname === '/';
 	$: showWebsiteNavbar = !hideWebsiteElements || isSignupPage;
 	$: showStandaloneHeader = showWebsiteNavbar && useStandaloneHeader;
@@ -141,7 +142,7 @@
 {/if}
 <!-- Website Navbar - full site nav when not standalone external page -->
 {#if showFullNavbar}
-	<Navbar theme={effectiveTheme} bannerVisible={showHighlightBanner && !isSignupPage} landing={data?.landing} transparentOverHero={isMarketingHome} class="gallery-hide-when-fullscreen" />
+	<Navbar theme={effectiveTheme} bannerVisible={showHighlightBanner && !isSignupPage} landing={data?.landing} transparentOverHero={isMarketingHome} className="gallery-hide-when-fullscreen" />
 {/if}
 
 <!-- Page Content with dynamic padding to account for fixed navbar and banner -->

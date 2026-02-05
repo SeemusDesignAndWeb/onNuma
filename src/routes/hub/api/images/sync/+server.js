@@ -1,13 +1,15 @@
 import { json } from '@sveltejs/kit';
-import { readDatabase, writeDatabase } from '$lib/server/database';
+import { getHubImages, saveHubImage } from '$lib/server/hubImagesStore.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { env } from '$env/dynamic/private';
 import { randomUUID } from 'crypto';
 
+/** Cloudinary folder for hub images (separate from admin) */
+const HUB_CLOUDINARY_FOLDER = 'egcc/hub';
+
 /**
- * Cloudinary sync endpoint for The HUB
+ * Cloudinary sync endpoint for The HUB – syncs only hub images (egcc/hub folder)
  * Auth is handled by The HUB hook
- * Shares the same database as /api/images/sync so both admin and hub can sync the same images
  */
 
 // Configure Cloudinary
@@ -44,7 +46,7 @@ async function getAllCloudinaryImages() {
 			}
 
 			const options = {
-				expression: 'folder:egcc',
+				expression: `folder:${HUB_CLOUDINARY_FOLDER}`,
 				max_results: 500
 			};
 
@@ -92,9 +94,8 @@ export const GET = async () => {
 		const cloudinaryImages = await getAllCloudinaryImages();
 		console.log(`[Cloudinary Sync] Fetched ${cloudinaryImages.length} images from Cloudinary`);
 
-		// Read current database to check which images already exist
-		const db = readDatabase();
-		const existingImages = db.images || [];
+		// Read current hub images (Postgres or JSON) to check which already exist
+		const existingImages = await getHubImages();
 		const existingPublicIds = new Set();
 		existingImages.forEach(img => {
 			if (img.cloudinaryPublicId) {
@@ -181,11 +182,8 @@ export const POST = async ({ request }) => {
 			}, { status: 404 });
 		}
 
-		// Read current database (same database as admin)
-		const db = readDatabase();
-		const existingImages = db.images || [];
-
-		// Create a map of existing images by Cloudinary public ID
+		// Read current hub images (Postgres or JSON)
+		const existingImages = await getHubImages();
 		const existingByPublicId = new Map();
 		existingImages.forEach(img => {
 			if (img.cloudinaryPublicId) {
@@ -196,31 +194,26 @@ export const POST = async ({ request }) => {
 		let added = 0;
 		let updated = 0;
 
-		// Process each selected Cloudinary image
 		for (const cloudinaryImg of selectedImages) {
 			const publicId = cloudinaryImg.public_id;
 			const existingImage = existingByPublicId.get(publicId);
 
 			if (existingImage) {
-				// Update existing image metadata
-				existingImage.path = cloudinaryImg.secure_url;
-				existingImage.width = cloudinaryImg.width;
-				existingImage.height = cloudinaryImg.height;
-				existingImage.size = cloudinaryImg.bytes || existingImage.size;
-				existingImage.mimeType = cloudinaryImg.format ? `image/${cloudinaryImg.format}` : existingImage.mimeType;
-
-				const index = existingImages.findIndex(img => img.id === existingImage.id);
-				if (index >= 0) {
-					existingImages[index] = existingImage;
-				}
-
+				const updatedImage = {
+					...existingImage,
+					path: cloudinaryImg.secure_url,
+					width: cloudinaryImg.width,
+					height: cloudinaryImg.height,
+					size: cloudinaryImg.bytes ?? existingImage.size,
+					mimeType: cloudinaryImg.format ? `image/${cloudinaryImg.format}` : existingImage.mimeType
+				};
+				await saveHubImage(updatedImage);
 				updated++;
 			} else {
-				// Add new image
 				const filename = cloudinaryImg.filename || publicId.split('/').pop();
 				const newImage = {
 					id: randomUUID(),
-					filename: filename,
+					filename,
 					originalName: filename,
 					path: cloudinaryImg.secure_url,
 					cloudinaryPublicId: publicId,
@@ -230,22 +223,18 @@ export const POST = async ({ request }) => {
 					height: cloudinaryImg.height,
 					uploadedAt: cloudinaryImg.created_at || new Date().toISOString()
 				};
-
-				existingImages.push(newImage);
+				await saveHubImage(newImage);
 				added++;
 			}
 		}
 
-		// Update database (same database as admin)
-		db.images = existingImages;
-		writeDatabase(db);
-
+		const total = existingImages.length + added;
 		return json({
 			success: true,
 			message: `Successfully imported ${selectedImages.length} images from Cloudinary`,
 			added,
 			updated,
-			total: existingImages.length
+			total
 		});
 	} catch (error) {
 		console.error('Error syncing images:', error);

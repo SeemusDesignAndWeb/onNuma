@@ -1,24 +1,25 @@
 import { fail } from '@sveltejs/kit';
 import { readCollection, findMany, findById, update } from '$lib/crm/server/fileStore.js';
+import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 import { validateRota } from '$lib/crm/server/validators.js';
 import { filterUpcomingOccurrences } from '$lib/crm/utils/occurrenceFilters.js';
 
 export async function load({ cookies }) {
-	// Load all public rotas
-	const allRotas = await readCollection('rotas');
+	const organisationId = await getCurrentOrganisationId();
+	const [rotasRaw, eventsRaw, occurrencesRaw, contactsRaw] = await Promise.all([
+		readCollection('rotas'),
+		readCollection('events'),
+		readCollection('occurrences'),
+		readCollection('contacts')
+	]);
+	const allRotas = organisationId ? filterByOrganisation(rotasRaw, organisationId) : rotasRaw;
+	const events = organisationId ? filterByOrganisation(eventsRaw, organisationId) : eventsRaw;
+	const allOccurrences = organisationId ? filterByOrganisation(occurrencesRaw, organisationId) : occurrencesRaw;
+	const contacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
 	const rotas = allRotas.filter(r => (r.visibility || 'public') === 'public');
-	
-	// Load all events
-	const events = await readCollection('events');
-	
-	// Load upcoming occurrences only (date-based cutoff)
-	const allOccurrences = await readCollection('occurrences');
 	const occurrences = filterUpcomingOccurrences(allOccurrences);
-	
-	// Load contacts to enrich assignees
-	const contacts = await readCollection('contacts');
 	
 	// Group rotas by event
 	const eventsMap = new Map(events.map(e => [e.id, e]));
@@ -128,6 +129,7 @@ export const actions = {
 		}
 
 		try {
+			const organisationId = await getCurrentOrganisationId();
 			const name = data.get('name') || '';
 			const email = data.get('email') || '';
 
@@ -140,9 +142,11 @@ export const actions = {
 			const firstName = nameParts[0] || '';
 			const lastName = nameParts.slice(1).join(' ') || '';
 
-			// Try to match with existing contact by email
+			const allContactsForOrg = organisationId
+				? filterByOrganisation(await readCollection('contacts'), organisationId)
+				: await readCollection('contacts');
 			const normalizedEmail = email.trim().toLowerCase();
-			const existingContacts = await findMany('contacts', c => 
+			const existingContacts = allContactsForOrg.filter(c =>
 				c.email && c.email.toLowerCase() === normalizedEmail
 			);
 
@@ -231,12 +235,17 @@ export const actions = {
 				return fail(400, { error: 'Please select at least one rota and occurrence to sign up for' });
 			}
 
-			// Get upcoming occurrences and rotas for validation
-			const allOccurrences = await readCollection('occurrences');
+			const [occurrencesRaw, rotasRaw, contactsRaw, holidaysRaw] = await Promise.all([
+				readCollection('occurrences'),
+				readCollection('rotas'),
+				readCollection('contacts'),
+				readCollection('holidays')
+			]);
+			const allOccurrences = organisationId ? filterByOrganisation(occurrencesRaw, organisationId) : occurrencesRaw;
 			const upcomingOccurrences = filterUpcomingOccurrences(allOccurrences);
-			const allRotas = await readCollection('rotas');
-			const allContacts = await readCollection('contacts');
-			const holidays = await readCollection('holidays');
+			const allRotas = organisationId ? filterByOrganisation(rotasRaw, organisationId) : rotasRaw;
+			const allContacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
+			const holidays = organisationId ? filterByOrganisation(holidaysRaw, organisationId) : holidaysRaw;
 
 			const errors = [];
 

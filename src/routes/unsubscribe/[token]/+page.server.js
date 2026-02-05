@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { findById, update, readCollection } from '$lib/crm/server/fileStore.js';
 import { getUnsubscribeTokenByToken } from '$lib/crm/server/tokens.js';
+import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 
 export async function load({ params }) {
 	const token = await getUnsubscribeTokenByToken(params.token);
@@ -12,8 +13,11 @@ export async function load({ params }) {
 		};
 	}
 
-	// Find contact by ID or email
-	const contacts = await readCollection('contacts');
+	const organisationId = await getCurrentOrganisationId();
+	let contacts = await readCollection('contacts');
+	if (organisationId) {
+		contacts = filterByOrganisation(contacts, organisationId);
+	}
 	const contact = contacts.find(c => 
 		(token.contactId && c.id === token.contactId) || 
 		(token.email && c.email === token.email)
@@ -49,8 +53,11 @@ export const actions = {
 			};
 		}
 
-		// Find contact by ID or email
-		const contacts = await readCollection('contacts');
+		const organisationId = await getCurrentOrganisationId();
+		let contacts = await readCollection('contacts');
+		if (organisationId) {
+			contacts = filterByOrganisation(contacts, organisationId);
+		}
 		const contact = contacts.find(c => 
 			(token.contactId && c.id === token.contactId) || 
 			(token.email && c.email === token.email)

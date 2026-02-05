@@ -147,11 +147,8 @@ export async function POST({ request, cookies }) {
 			settings.theme.externalPagesLayout = v;
 		}
 		if (themeUpdate.publicPagesBranding !== undefined) {
-			const v = themeUpdate.publicPagesBranding;
-			if (v !== 'egcc' && v !== 'hub') {
-				throw error(400, 'Invalid theme.publicPagesBranding: must be "egcc" or "hub"');
-			}
-			settings.theme.publicPagesBranding = v;
+			// OnNuma: only Hub branding; accept 'hub' and normalise any legacy value to 'hub'
+			settings.theme.publicPagesBranding = 'hub';
 		}
 	}
 	

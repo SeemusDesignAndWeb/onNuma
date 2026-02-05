@@ -1,7 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getCsrfToken, verifyCsrfToken, generateCsrfToken, setCsrfToken } from '$lib/crm/server/auth.js';
 import { validateContact, validateMember } from '$lib/crm/server/validators.js';
-import { create, findMany, readCollection } from '$lib/crm/server/fileStore.js';
+import { create, readCollection } from '$lib/crm/server/fileStore.js';
+import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
 import { env } from '$env/dynamic/private';
 
 export async function load({ cookies, url }) {
@@ -66,8 +67,11 @@ export const actions = {
 				return fail(400, { error: 'Email is required' });
 			}
 
-			// Get or create contact
-			const existingContacts = await findMany('contacts', c => 
+			const organisationId = await getCurrentOrganisationId();
+			const contactsInOrg = organisationId
+				? filterByOrganisation(await readCollection('contacts'), organisationId)
+				: await readCollection('contacts');
+			const existingContacts = contactsInOrg.filter(c =>
 				c.email && c.email.toLowerCase() === email.toLowerCase()
 			);
 
@@ -124,11 +128,12 @@ export const actions = {
 					dateJoined: null
 				};
 				const validatedContact = validateContact(newContactData);
-				contact = await create('contacts', validatedContact);
+				contact = await create('contacts', withOrganisationId(validatedContact, organisationId));
 			}
 
-			// Create or update member data
-			const members = await readCollection('members');
+			// Create or update member data (scoped to current org)
+			const membersRaw = await readCollection('members');
+			const members = organisationId ? filterByOrganisation(membersRaw, organisationId) : membersRaw;
 			const existingMember = members.find(m => m.contactId === contact.id);
 
 			const memberData = {
@@ -176,7 +181,7 @@ export const actions = {
 				const { update } = await import('$lib/crm/server/fileStore.js');
 				await update('members', existingMember.id, validatedMember);
 			} else {
-				await create('members', validatedMember);
+				await create('members', withOrganisationId(validatedMember, organisationId));
 			}
 
 			return {

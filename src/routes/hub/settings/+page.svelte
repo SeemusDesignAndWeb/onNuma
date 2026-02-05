@@ -25,7 +25,7 @@
 	let themePanelHeadColors = JSON.parse(JSON.stringify(settings?.theme?.panelHeadColors ?? defaultPanelHeadColors));
 	let themePanelBackgroundColor = settings?.theme?.panelBackgroundColor ?? '#E8F2F9';
 	let themeExternalPagesLayout = settings?.theme?.externalPagesLayout ?? 'integrated';
-	let themePublicPagesBranding = settings?.theme?.publicPagesBranding ?? 'egcc';
+	let themePublicPagesBranding = settings?.theme?.publicPagesBranding ?? 'hub';
 	// Ensure arrays have correct length
 	if (themeButtonColors.length < 5) themeButtonColors = [...themeButtonColors, ...defaultButtonColors.slice(themeButtonColors.length)];
 	if (themePanelHeadColors.length < 3) themePanelHeadColors = [...themePanelHeadColors, ...defaultPanelHeadColors.slice(themePanelHeadColors.length)];
@@ -138,7 +138,7 @@
 			themePanelHeadColors = JSON.parse(JSON.stringify(settings.theme.panelHeadColors ?? defaultPanelHeadColors));
 			themePanelBackgroundColor = settings.theme.panelBackgroundColor ?? '#E8F2F9';
 			themeExternalPagesLayout = settings.theme.externalPagesLayout ?? 'integrated';
-			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'egcc';
+			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'hub';
 			if (themeButtonColors.length < 5) themeButtonColors = [...themeButtonColors, ...defaultButtonColors.slice(themeButtonColors.length)];
 			if (themePanelHeadColors.length < 3) themePanelHeadColors = [...themePanelHeadColors, ...defaultPanelHeadColors.slice(themePanelHeadColors.length)];
 			themeButtonColors = themeButtonColors.slice(0, 5);
@@ -690,42 +690,6 @@
 					<p class="mt-1 text-xs text-gray-500">Logo shown on the Hub login screen only. Leave empty to use the navbar logo or default.</p>
 				</div>
 				<div>
-					<label for="theme-primary-color" class="block text-sm font-medium text-gray-700 mb-1">Primary colour (green)</label>
-					<div class="flex items-center gap-2">
-						<input
-							id="theme-primary-color"
-							type="color"
-							bind:value={themePrimaryColor}
-							class="h-10 w-14 border border-gray-300 rounded-md cursor-pointer"
-						/>
-						<input
-							aria-label="Primary colour hex"
-							type="text"
-							bind:value={themePrimaryColor}
-							class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1 font-mono"
-							placeholder="#4BB170"
-						/>
-					</div>
-				</div>
-				<div>
-					<label for="theme-brand-color" class="block text-sm font-medium text-gray-700 mb-1">Brand colour (blue)</label>
-					<div class="flex items-center gap-2">
-						<input
-							id="theme-brand-color"
-							type="color"
-							bind:value={themeBrandColor}
-							class="h-10 w-14 border border-gray-300 rounded-md cursor-pointer"
-						/>
-						<input
-							aria-label="Brand colour hex"
-							type="text"
-							bind:value={themeBrandColor}
-							class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1 font-mono"
-							placeholder="#4A97D2"
-						/>
-					</div>
-				</div>
-				<div>
 					<label for="theme-navbar-bg" class="block text-sm font-medium text-gray-700 mb-1">Navbar background</label>
 					<div class="flex items-center gap-2">
 						<input
@@ -743,36 +707,6 @@
 						/>
 					</div>
 					<p class="mt-1 text-xs text-gray-500">Website navbar and Hub header when menu open.</p>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">External pages layout</label>
-					<p class="text-xs text-gray-500 mb-2">Signup, event links, forms, unsubscribe and view-rotas can use the full site navbar or a minimal header.</p>
-					<div class="flex gap-6">
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input type="radio" name="external-layout" value="integrated" bind:group={themeExternalPagesLayout} class="text-theme-button-1 focus:ring-theme-button-1" />
-							<span class="text-sm">Integrated</span>
-						</label>
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input type="radio" name="external-layout" value="standalone" bind:group={themeExternalPagesLayout} class="text-theme-button-1 focus:ring-theme-button-1" />
-							<span class="text-sm">Standalone</span>
-						</label>
-					</div>
-					<p class="mt-1 text-xs text-gray-500">Integrated = full site navbar. Standalone = minimal header with logo and “Back to site” link.</p>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">Hub public pages branding</label>
-					<p class="text-xs text-gray-500 mb-2">Choose how Hub public pages appear (signup links, event signup, forms, unsubscribe, view-rotas). The main EGCC website (home, church, events, etc.) always uses EGCC branding and is never affected.</p>
-					<div class="flex gap-6">
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input type="radio" name="public-branding" value="egcc" bind:group={themePublicPagesBranding} class="text-theme-button-1 focus:ring-theme-button-1" />
-							<span class="text-sm">EGCC branding</span>
-						</label>
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input type="radio" name="public-branding" value="hub" bind:group={themePublicPagesBranding} class="text-theme-button-1 focus:ring-theme-button-1" />
-							<span class="text-sm">Hub branding</span>
-						</label>
-					</div>
-					<p class="mt-1 text-xs text-gray-500">EGCC = use church logo and colours on Hub public pages. Hub = use the theme logo and colours above on Hub public pages only.</p>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-gray-700 mb-2">Button colours (up to 5)</label>

@@ -9,8 +9,8 @@
 	export let landing = null;
 	/** When true (marketing home), navbar is transparent over hero until scrolled */
 	export let transparentOverHero = false;
-	const ctaDemo = landing?.ctaRequestDemoUrl || '/multi-org';
-
+	/** Optional class(es) for the root nav element */
+	export let className = '';
 	let menuOpen = false;
 	let scrolled = false;
 	$: overHero = transparentOverHero && !scrolled;
@@ -49,7 +49,7 @@
 </script>
 
 <nav
-	class="fixed left-0 right-0 z-50 transition-all duration-300 {overHero ? 'bg-transparent' : darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm'} {scrolled ? 'shadow-lg' : ''} {bannerVisible ? 'top-[45px]' : 'top-0'}"
+	class="fixed left-0 right-0 z-50 transition-all duration-300 {overHero ? 'bg-transparent' : darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm'} {scrolled ? 'shadow-lg' : ''} {bannerVisible ? 'top-[45px]' : 'top-0'} {className}"
 	style={overHero || darkNav ? undefined : '--color-navbar-bg: #FFFFFF;'}
 >
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -77,12 +77,6 @@
 						</li>
 					{/each}
 				</ul>
-				<a
-					href={ctaDemo}
-					class="ml-4 px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm {overHero ? 'bg-white text-brand-blue hover:bg-white/95' : 'bg-brand-blue text-white hover:bg-brand-blue/90'}"
-				>
-					Request a demo
-				</a>
 			</div>
 
 			<!-- Mobile menu button -->
@@ -98,7 +92,7 @@
 		</div>
 
 		{#if menuOpen}
-			<div class="md:hidden pb-5 pt-2 border-t {overHero || darkNav ? 'border-white/30' : 'border-slate-200'}">
+			<div class="md:hidden pb-5 pt-2 border-t {overHero ? 'bg-slate-800/95 border-white/30' : darkNav ? 'bg-slate-800 border-white/30' : 'bg-white border-slate-200'}">
 				<ul class="flex flex-col gap-1">
 					{#each navLinks as link}
 						<li>
@@ -111,9 +105,6 @@
 							</button>
 						</li>
 					{/each}
-					<li class="pt-3 mt-2 border-t {overHero || darkNav ? 'border-white/30' : 'border-slate-200'}">
-						<a href={ctaDemo} class="block py-3 text-center font-semibold bg-brand-blue text-white rounded-lg">Request a demo</a>
-					</li>
 				</ul>
 			</div>
 		{/if}

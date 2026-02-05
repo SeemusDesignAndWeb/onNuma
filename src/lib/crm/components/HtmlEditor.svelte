@@ -17,6 +17,8 @@
 	let images = [];
 	let loadingImages = false;
 	let imageSearchTerm = '';
+	let imageUploading = false;
+	let imageUploadError = '';
 	let isUpdatingFromExternal = false; // Track if we're updating from external source (reactive statement)
 	let ResizableImageClass = null; // Store ResizableImage class for resize functionality
 	let showSourceView = false;
@@ -309,8 +311,9 @@
 		}
 	}
 
-	async function loadImages() {
-		if (loadingImages || images.length > 0) return;
+	async function loadImages(forceReload = false) {
+		if (!forceReload && (loadingImages || images.length > 0)) return;
+		if (forceReload) images = [];
 		loadingImages = true;
 		try {
 			const response = await fetch('/hub/api/images');
@@ -321,6 +324,41 @@
 			console.error('Failed to load images:', error);
 		} finally {
 			loadingImages = false;
+		}
+	}
+
+	async function handleImageUpload(event) {
+		const target = event.target;
+		const file = target.files?.[0];
+		if (!file) return;
+		if (!file.type.startsWith('image/')) {
+			imageUploadError = 'Please select an image file (JPG, PNG, GIF, WebP).';
+			return;
+		}
+		if (file.size > 10 * 1024 * 1024) {
+			imageUploadError = 'Image must be under 10MB.';
+			return;
+		}
+		imageUploadError = '';
+		imageUploading = true;
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const response = await fetch('/hub/api/images', { method: 'POST', body: formData });
+			if (response.ok) {
+				const result = await response.json();
+				images = [result.image, ...images];
+				insertImage(result.image.path);
+				closeImageModal();
+			} else {
+				const err = await response.json();
+				imageUploadError = err.error || 'Upload failed';
+			}
+		} catch (err) {
+			imageUploadError = err?.message || 'Upload failed';
+		} finally {
+			imageUploading = false;
+			target.value = '';
 		}
 	}
 
@@ -560,6 +598,7 @@
 	function closeImageModal() {
 		showImageModal = false;
 		imageSearchTerm = '';
+		imageUploadError = '';
 	}
 
 	$: filteredImages = imageSearchTerm
@@ -816,6 +855,28 @@
 					placeholder="Search images..."
 					class="w-full px-4 py-2 border border-gray-500 rounded-md focus:border-green-500 focus:ring-green-500"
 				/>
+			</div>
+
+			<!-- Upload -->
+			<div class="px-6 py-4 border-b bg-gray-50">
+				<label for="html-editor-image-upload" class="block text-sm font-medium text-gray-700 mb-2">Upload new image</label>
+				<div class="flex flex-wrap items-center gap-3">
+					<input
+						id="html-editor-image-upload"
+						type="file"
+						accept="image/*"
+						on:change={handleImageUpload}
+						disabled={imageUploading}
+						class="text-sm text-gray-600 file:mr-2 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-green-600 file:text-white file:cursor-pointer hover:file:bg-green-700 disabled:opacity-50"
+					/>
+					{#if imageUploading}
+						<span class="text-sm text-gray-500">Uploading…</span>
+					{/if}
+				</div>
+				{#if imageUploadError}
+					<p class="mt-2 text-sm text-red-600">{imageUploadError}</p>
+				{/if}
+				<p class="mt-1 text-xs text-gray-500">JPG, PNG, GIF or WebP. Max 10MB. Image will be inserted into the email.</p>
 			</div>
 			
 			<!-- Content -->

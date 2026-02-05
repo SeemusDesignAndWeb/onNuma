@@ -1,21 +1,23 @@
 import { json } from '@sveltejs/kit';
-import { getImages, saveImage, deleteImage } from '$lib/server/database.js';
+import { getHubImages, getHubImage, saveHubImage, deleteHubImage } from '$lib/server/hubImagesStore.js';
 import { uploadImage, deleteImage as deleteCloudinaryImage } from '$lib/server/cloudinary';
 import { randomUUID } from 'crypto';
 
+/** Cloudinary folder for hub uploads (separate from admin images) */
+const HUB_CLOUDINARY_FOLDER = 'egcc/hub';
+
 /**
- * Get images from the database (accessible from The HUB)
- * This endpoint is for The HUB use only - auth is handled by The HUB hook
- * Shares the same database as /api/images so both admin and hub can see all images
+ * Get images from the hub image library (The HUB only – separate from admin images)
+ * Stored in Postgres when DATABASE_URL is set, else JSON file. Auth is handled by The HUB hook.
  */
 export async function GET({ url }) {
 	try {
 		const id = url.searchParams.get('id');
 		if (id) {
-			const image = getImages().find((img) => img.id === id);
+			const image = await getHubImage(id);
 			return image ? json(image) : json({ error: 'Image not found' }, { status: 404 });
 		}
-		const images = getImages();
+		const images = await getHubImages();
 		return json(images);
 	} catch (error) {
 		console.error('Error fetching images:', error);
@@ -50,9 +52,9 @@ export async function POST({ request }) {
 		const arrayBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
 
-		// Upload to Cloudinary
+		// Upload to Cloudinary in hub folder (separate from admin)
 		const uploadResult = await uploadImage(buffer, file.name, {
-			public_id: `egcc/${randomUUID()}`
+			public_id: `${HUB_CLOUDINARY_FOLDER}/${randomUUID()}`
 		});
 
 		// Create image metadata
@@ -60,8 +62,8 @@ export async function POST({ request }) {
 			id: randomUUID(),
 			filename: uploadResult.public_id.split('/').pop(),
 			originalName: file.name,
-			path: uploadResult.secure_url, // Store Cloudinary URL
-			cloudinaryPublicId: uploadResult.public_id, // Store Cloudinary public ID for deletion
+			path: uploadResult.secure_url,
+			cloudinaryPublicId: uploadResult.public_id,
 			size: file.size,
 			mimeType: file.type,
 			width: uploadResult.width,
@@ -69,8 +71,7 @@ export async function POST({ request }) {
 			uploadedAt: new Date().toISOString()
 		};
 
-		// Save metadata to database (same database as admin)
-		saveImage(imageMetadata);
+		await saveHubImage(imageMetadata);
 
 		return json({ success: true, image: imageMetadata });
 	} catch (error) {
@@ -91,23 +92,20 @@ export async function DELETE({ url }) {
 	}
 
 	try {
-		const image = getImages().find((img) => img.id === id);
+		const image = await getHubImage(id);
 		if (!image) {
 			return json({ error: 'Image not found' }, { status: 404 });
 		}
 
-		// Delete from Cloudinary if it has a Cloudinary public ID
 		if (image.cloudinaryPublicId) {
 			try {
 				await deleteCloudinaryImage(image.cloudinaryPublicId);
 			} catch (cloudinaryError) {
 				console.error('Failed to delete from Cloudinary:', cloudinaryError);
-				// Continue with database deletion even if Cloudinary deletion fails
 			}
 		}
 
-		// Delete from database (same database as admin)
-		deleteImage(id);
+		await deleteHubImage(id);
 
 		return json({ success: true });
 	} catch (error) {

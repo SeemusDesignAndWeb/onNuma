@@ -167,7 +167,8 @@
 					email: formData.email,
 					phone: formData.phone,
 					message: formData.message,
-					formTime: timeSpent // Send time spent for server-side validation
+					formTime: timeSpent,
+					website: formData.website || undefined // Honeypot - API rejects if filled
 				})
 			});
 

@@ -25,7 +25,9 @@
 	$: canAccessForms = admin && hasRouteAccess(admin, '/hub/forms', superAdminEmail, organisationAreaPermissions);
 	$: canAccessUsers = admin && isSuperAdmin(admin, superAdminEmail);
 	$: canAccessVideos = admin && isSuperAdmin(admin, superAdminEmail);
-	
+	/** Hide video nav items in navbar for now; set true to show Video Tutorials + Manage Videos */
+	const showVideoInNav = false;
+
 	// Show contacts dropdown if any contacts-related permission exists
 	$: showContactsDropdown = canAccessContacts || canAccessLists || canAccessMembers;
 	// Show events dropdown if any events-related permission exists
@@ -170,12 +172,14 @@
 								{#if canAccessForms}
 									<a href="/hub/forms" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'hub-nav-selected' : 'hub-nav-link'}">Forms</a>
 								{/if}
-								<!-- Video Tutorials (for viewing videos) -->
-								<a href="/hub/video-tutorials" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isVideoTutorialsActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center" aria-label="Video Tutorials">
-									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-									</svg>
-								</a>
+								{#if showVideoInNav}
+									<!-- Video Tutorials (for viewing videos) -->
+									<a href="/hub/video-tutorials" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isVideoTutorialsActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center" aria-label="Video Tutorials">
+										<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+										</svg>
+									</a>
+								{/if}
 								<!-- Help -->
 								<a href="/hub/help" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isHelpActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center" aria-label="Help">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,7 +221,7 @@
 									{#if canAccessUsers}
 										<a href="/hub/settings" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/settings') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">Settings</a>
 									{/if}
-									{#if canAccessVideos}
+									{#if showVideoInNav && canAccessVideos}
 										<a href="/hub/videos" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/videos') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">Manage Videos</a>
 									{/if}
 									{#if canAccessVideos}
@@ -246,7 +250,7 @@
 				
 				<!-- Mobile menu -->
 				{#if mobileMenuOpen && !accessDenied}
-					<div class="md:hidden pb-4 border-t border-hub-blue-300 mt-4 pt-4">
+					<div class="md:hidden pb-4 pt-4 mt-4 border-t border-white/20 bg-[#3B79A8]">
 						<nav class="hub-main-nav flex flex-col space-y-1">
 							<a href="/hub" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {($page.url.pathname === '/hub' || $page.url.pathname === '/hub/') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center gap-2">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,12 +282,14 @@
 							{#if canAccessForms}
 								<a href="/hub/forms" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'hub-nav-selected' : 'hub-nav-link'}">Forms</a>
 							{/if}
-							<a href="/hub/video-tutorials" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/video-tutorials') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center gap-2">
-								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-								</svg>
-								Video Tutorials
-							</a>
+							{#if showVideoInNav}
+								<a href="/hub/video-tutorials" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/video-tutorials') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center gap-2">
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+									</svg>
+									Video Tutorials
+								</a>
+							{/if}
 							<a href="/hub/help" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/help') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center gap-2">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -299,7 +305,7 @@
 							{#if canAccessUsers}
 								<a href="/hub/audit-logs" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/audit-logs') ? 'hub-nav-selected' : 'hub-nav-link'}">Audit Logs</a>
 							{/if}
-							{#if canAccessVideos}
+							{#if showVideoInNav && canAccessVideos}
 								<a href="/hub/videos" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/videos') ? 'hub-nav-selected' : 'hub-nav-link'}">Video Tutorials</a>
 							{/if}
 							{#if canAccessVideos}

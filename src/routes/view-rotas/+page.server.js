@@ -1,4 +1,5 @@
 import { readCollection } from '$lib/crm/server/fileStore.js';
+import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { fail } from '@sveltejs/kit';
 
 export async function load() {
@@ -22,13 +23,18 @@ export const actions = {
 				return fail(400, { error: 'Please enter a valid email address' });
 			}
 
-			// Load all rotas, events, occurrences, and contacts
-			const [rotas, events, occurrences, contacts] = await Promise.all([
+			const organisationId = await getCurrentOrganisationId();
+			// Load and scope to current organisation (hub domain or default org)
+			const [rotasRaw, eventsRaw, occurrencesRaw, contactsRaw] = await Promise.all([
 				readCollection('rotas'),
 				readCollection('events'),
 				readCollection('occurrences'),
 				readCollection('contacts')
 			]);
+			const rotas = organisationId ? filterByOrganisation(rotasRaw, organisationId) : rotasRaw;
+			const events = organisationId ? filterByOrganisation(eventsRaw, organisationId) : eventsRaw;
+			const occurrences = organisationId ? filterByOrganisation(occurrencesRaw, organisationId) : occurrencesRaw;
+			const contacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
 
 			// Create maps for quick lookup
 			const eventsMap = new Map(events.map(e => [e.id, e]));

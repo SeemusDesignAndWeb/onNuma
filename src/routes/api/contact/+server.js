@@ -73,7 +73,13 @@ function checkRateLimit(ip) {
 
 export const POST = async (event) => {
 	try {
-		const { name, email, phone, message, formTime } = await event.request.json();
+		const body = await event.request.json();
+		const { name, email, phone, message, formTime, website: honeypot } = body;
+
+		// Honeypot: if filled, treat as bot - return success without sending (silent reject)
+		if (honeypot != null && String(honeypot).trim() !== '') {
+			return json({ success: true, message: 'Thank you for your message. We will get back to you soon!' });
+		}
 		
 		// Get client IP for rate limiting
 		let clientIp = 'unknown';

@@ -11,6 +11,7 @@ export const FILE_ONLY_COLLECTIONS = [];
 export const ALL_COLLECTIONS = [
 	'admins',
 	'audit_logs',
+	'hub_images',
 	'contact_tokens',
 	'contacts',
 	'email_stats',
