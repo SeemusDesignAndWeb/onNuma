@@ -3,7 +3,7 @@ import { crmHandle } from '$lib/crm/server/hook-plugin.js';
 import { cleanupExpiredSessions } from '$lib/crm/server/auth.js';
 import { isMultiOrgAdminDomain } from '$lib/crm/server/hubDomain.js';
 
-/** When host is MULTI_ORG_ADMIN_DOMAIN (e.g. admin.onnuma.com), rewrite / and /auth/*, /organisations/* to /multi-org/* so multi-org is served at root. */
+/** When host is MULTI_ORG_ADMIN_DOMAIN (e.g. admin.onnuma.com), set locals so multi-org links use /auth/* not /multi-org/auth/*. Path rewrite for route matching is done in hooks.js reroute. */
 async function multiOrgAdminDomainHandle({ event, resolve }) {
 	// Prefer X-Forwarded-Host when behind a proxy (Railway, Vercel, etc.)
 	const host =
@@ -14,18 +14,6 @@ async function multiOrgAdminDomainHandle({ event, resolve }) {
 	if (!isMultiOrgAdminDomain(host)) return resolve(event);
 
 	event.locals.multiOrgAdminDomain = true;
-	const pathname = event.url.pathname;
-	const rewrite =
-		pathname === '/' ||
-		pathname.startsWith('/auth') ||
-		pathname.startsWith('/organisations');
-	if (!rewrite) return resolve(event);
-
-	const newPath = pathname === '/' ? '/multi-org' : '/multi-org' + pathname;
-	const newUrl = new URL(event.url);
-	newUrl.pathname = newPath;
-	event.url = newUrl;
-	event.request = new Request(newUrl, event.request);
 	return resolve(event);
 }
 

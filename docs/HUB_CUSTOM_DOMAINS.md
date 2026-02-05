@@ -25,8 +25,9 @@ You can serve the **Multi-org** area (organisation management) on its own subdom
    The main site (e.g. `onnuma.com`) stays unchanged and can host the front-facing website.
 
 4. **If you get 404 on admin.yourdomain.com/auth/login**  
-   - **Set the env var in production**: `MULTI_ORG_ADMIN_DOMAIN` must be set on the server (e.g. in Railway → your service → Variables). If it’s missing, the app won’t rewrite `/auth/login` to `/multi-org/auth/login`, so no route matches and you get 404.  
-   - **Host header**: The app checks `Host` and `X-Forwarded-Host` (for proxies). Ensure your host forwards the original host; when you add the custom domain, that’s usually automatic.
+   - **Set the env var in production**: `MULTI_ORG_ADMIN_DOMAIN` must be set on the server (e.g. in Railway → your service → Variables). If it’s missing, the `reroute` hook won’t rewrite the path and no route matches.  
+   - **Host header**: The app checks `Host` and `X-Forwarded-Host` (for proxies). Ensure your host forwards the original host; when you add the custom domain, that’s usually automatic.  
+   - Path rewriting for route matching is done in **`src/hooks.js`** (`reroute` hook); the handle in `hooks.server.js` only sets `locals.multiOrgAdminDomain` for links.
 
 ## Where to set the Hub domain in MultiOrg
 
@@ -117,6 +118,7 @@ To test custom hub domains on your Mac without DNS or Railway:
 
 - `src/lib/crm/server/hubDomain.js` – host normalisation, `hubDomain` validation, resolve org from host; `MULTI_ORG_ADMIN_DOMAIN` check and `getMultiOrgPublicPath()` for admin subdomain.
 - `src/lib/crm/server/requestOrg.js` – request-scoped org (AsyncLocalStorage) so `getCurrentOrganisationId()` uses the domain’s org.
-- `src/hooks.server.js` – `multiOrgAdminDomainHandle`: when host is `MULTI_ORG_ADMIN_DOMAIN`, rewrites `/` and `/auth/*`, `/organisations/*` to `/multi-org/*`.
+- `src/hooks.js` – **`reroute`**: when host is `MULTI_ORG_ADMIN_DOMAIN`, returns `/multi-org` or `/multi-org` + path so SvelteKit matches the multi-org route (fixes 404).
+- `src/hooks.server.js` – `multiOrgAdminDomainHandle`: when host is `MULTI_ORG_ADMIN_DOMAIN`, sets `locals.multiOrgAdminDomain` so links use `/auth/*` not `/multi-org/auth/*`.
 - `src/lib/crm/server/hook-plugin.js` – for `/hub` and `/signup`, resolves org from host; for `/multi-org`, uses public path for redirects when on admin subdomain.
 - Organisation `hubDomain` is stored in `data/organisations.ndjson` and edited in MultiOrg (organisation create/edit).
