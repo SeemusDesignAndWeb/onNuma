@@ -658,7 +658,8 @@ export function setSessionCookie(cookies, sessionId, isProduction = false) {
  * @param {object} cookies - SvelteKit cookies object
  */
 export function clearSessionCookie(cookies) {
-	cookies.delete(SESSION_COOKIE, { path: '/' });
+	// Must match path used in setSessionCookie so the cookie is actually removed
+	cookies.delete(SESSION_COOKIE, { path: '/hub' });
 }
 
 /**
