@@ -24,6 +24,10 @@ You can serve the **Multi-org** area (organisation management) on its own subdom
    All links and redirects stay on the admin subdomain (e.g. `/auth/logout`, `/organisations/new`).  
    The main site (e.g. `onnuma.com`) stays unchanged and can host the front-facing website.
 
+4. **If you get 404 on admin.yourdomain.com/auth/login**  
+   - **Set the env var in production**: `MULTI_ORG_ADMIN_DOMAIN` must be set on the server (e.g. in Railway → your service → Variables). If it’s missing, the app won’t rewrite `/auth/login` to `/multi-org/auth/login`, so no route matches and you get 404.  
+   - **Host header**: The app checks `Host` and `X-Forwarded-Host` (for proxies). Ensure your host forwards the original host; when you add the custom domain, that’s usually automatic.
+
 ## Where to set the Hub domain in MultiOrg
 
 1. Log in to **MultiOrg** at `/multi-org` (e.g. `http://localhost:5173/multi-org`).

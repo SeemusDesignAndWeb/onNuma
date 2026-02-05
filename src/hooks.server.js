@@ -5,7 +5,12 @@ import { isMultiOrgAdminDomain } from '$lib/crm/server/hubDomain.js';
 
 /** When host is MULTI_ORG_ADMIN_DOMAIN (e.g. admin.onnuma.com), rewrite / and /auth/*, /organisations/* to /multi-org/* so multi-org is served at root. */
 async function multiOrgAdminDomainHandle({ event, resolve }) {
-	const host = event.request.headers.get('host') || event.url?.host || '';
+	// Prefer X-Forwarded-Host when behind a proxy (Railway, Vercel, etc.)
+	const host =
+		event.request.headers.get('x-forwarded-host') ||
+		event.request.headers.get('host') ||
+		event.url?.host ||
+		'';
 	if (!isMultiOrgAdminDomain(host)) return resolve(event);
 
 	event.locals.multiOrgAdminDomain = true;
