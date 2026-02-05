@@ -99,7 +99,7 @@
 						{#if !accessDenied}
 							<nav class="hub-main-nav ml-8 hidden md:flex space-x-1">
 								<!-- Dashboard (Home Icon) -->
-								<a href="/hub" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {($page.url.pathname === '/hub' || $page.url.pathname === '/hub/') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center" aria-label="Dashboard">
+								<a href="/hub" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {($page.url.pathname === '/hub' || $page.url.pathname === '/hub/') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center" aria-label="Dashboard">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
 									</svg>
@@ -109,7 +109,7 @@
 									<div class="relative" bind:this={contactsDropdownElement}>
 										<button
 											on:click|stopPropagation={() => contactsDropdownOpen = !contactsDropdownOpen}
-											class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isContactsActive ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center"
+											class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isContactsActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center"
 											aria-label="Contacts"
 											aria-expanded={contactsDropdownOpen}
 											aria-haspopup="true"
@@ -139,7 +139,7 @@
 									<div class="relative" bind:this={eventsDropdownElement}>
 										<button
 											on:click|stopPropagation={() => eventsDropdownOpen = !eventsDropdownOpen}
-											class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isEventsActive ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center"
+											class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isEventsActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center"
 											aria-label="Events"
 											aria-expanded={eventsDropdownOpen}
 											aria-haspopup="true"
@@ -162,22 +162,22 @@
 									</div>
 								{/if}
 								{#if canAccessRotas}
-									<a href="/hub/rotas" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/rotas') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Rotas</a>
+									<a href="/hub/rotas" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/rotas') ? 'hub-nav-selected' : 'hub-nav-link'}">Rotas</a>
 								{/if}
 								{#if canAccessNewsletters}
-									<a href="/hub/emails" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/emails') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Emails</a>
+									<a href="/hub/emails" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/emails') ? 'hub-nav-selected' : 'hub-nav-link'}">Emails</a>
 								{/if}
 								{#if canAccessForms}
-									<a href="/hub/forms" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Forms</a>
+									<a href="/hub/forms" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'hub-nav-selected' : 'hub-nav-link'}">Forms</a>
 								{/if}
 								<!-- Video Tutorials (for viewing videos) -->
-								<a href="/hub/video-tutorials" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isVideoTutorialsActive ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center" aria-label="Video Tutorials">
+								<a href="/hub/video-tutorials" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isVideoTutorialsActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center" aria-label="Video Tutorials">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
 									</svg>
 								</a>
 								<!-- Help -->
-								<a href="/hub/help" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isHelpActive ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center" aria-label="Help">
+								<a href="/hub/help" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {isHelpActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center" aria-label="Help">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 									</svg>
@@ -193,7 +193,7 @@
 						<div class="relative hidden md:block" bind:this={settingsDropdownElement}>
 							<button
 								on:click|stopPropagation={() => settingsDropdownOpen = !settingsDropdownOpen}
-								class="p-2 rounded-lg text-sm font-medium transition-colors {isSettingsActive ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center"
+								class="p-2 rounded-lg text-sm font-medium transition-colors {isSettingsActive ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center"
 								aria-label="Settings"
 								aria-expanded={settingsDropdownOpen}
 								aria-haspopup="true"
@@ -229,7 +229,7 @@
 						<!-- Mobile menu button -->
 						<button
 							on:click={() => mobileMenuOpen = !mobileMenuOpen}
-							class="md:hidden p-2 text-white hover:bg-white hover:text-theme-button-1 rounded-lg transition-colors"
+							class="md:hidden p-2 hub-nav-link rounded-lg transition-colors"
 							aria-label="Toggle menu"
 						>
 							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,64 +248,64 @@
 				{#if mobileMenuOpen && !accessDenied}
 					<div class="md:hidden pb-4 border-t border-hub-blue-300 mt-4 pt-4">
 						<nav class="hub-main-nav flex flex-col space-y-1">
-							<a href="/hub" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {($page.url.pathname === '/hub' || $page.url.pathname === '/hub/') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center gap-2">
+							<a href="/hub" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {($page.url.pathname === '/hub' || $page.url.pathname === '/hub/') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center gap-2">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
 								</svg>
 								<span>Dashboard</span>
 							</a>
 							{#if canAccessContacts}
-								<a href="/hub/contacts" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/contacts') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Contacts</a>
+								<a href="/hub/contacts" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/contacts') ? 'hub-nav-selected' : 'hub-nav-link'}">Contacts</a>
 							{/if}
 							{#if canAccessLists}
-								<a href="/hub/lists" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/lists') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Lists</a>
+								<a href="/hub/lists" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/lists') ? 'hub-nav-selected' : 'hub-nav-link'}">Lists</a>
 							{/if}
 							{#if canAccessMembers}
-								<a href="/hub/members" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/members') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Members</a>
+								<a href="/hub/members" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/members') ? 'hub-nav-selected' : 'hub-nav-link'}">Members</a>
 							{/if}
 							{#if canAccessEvents}
-								<a href="/hub/events/calendar" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/events') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Events</a>
+								<a href="/hub/events/calendar" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/events') ? 'hub-nav-selected' : 'hub-nav-link'}">Events</a>
 							{/if}
 							{#if canAccessMeetingPlanners}
-								<a href="/hub/meeting-planners" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/meeting-planners') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Meeting Planners</a>
+								<a href="/hub/meeting-planners" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/meeting-planners') ? 'hub-nav-selected' : 'hub-nav-link'}">Meeting Planners</a>
 							{/if}
 							{#if canAccessRotas}
-								<a href="/hub/rotas" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/rotas') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Rotas</a>
+								<a href="/hub/rotas" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/rotas') ? 'hub-nav-selected' : 'hub-nav-link'}">Rotas</a>
 							{/if}
 							{#if canAccessNewsletters}
-								<a href="/hub/emails" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/emails') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Emails</a>
+								<a href="/hub/emails" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/emails') ? 'hub-nav-selected' : 'hub-nav-link'}">Emails</a>
 							{/if}
 							{#if canAccessForms}
-								<a href="/hub/forms" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Forms</a>
+								<a href="/hub/forms" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/forms') ? 'hub-nav-selected' : 'hub-nav-link'}">Forms</a>
 							{/if}
-							<a href="/hub/video-tutorials" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/video-tutorials') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center gap-2">
+							<a href="/hub/video-tutorials" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/video-tutorials') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center gap-2">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
 								</svg>
 								Video Tutorials
 							</a>
-							<a href="/hub/help" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/help') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'} flex items-center gap-2">
+							<a href="/hub/help" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/help') ? 'hub-nav-selected' : 'hub-nav-link'} flex items-center gap-2">
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 								</svg>
 								Help
 							</a>
 							{#if admin}
-								<a href="/hub/profile" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/profile') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Profile</a>
+								<a href="/hub/profile" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/profile') ? 'hub-nav-selected' : 'hub-nav-link'}">Profile</a>
 							{/if}
 							{#if canAccessUsers}
-								<a href="/hub/users" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/users') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Admins</a>
+								<a href="/hub/users" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/users') ? 'hub-nav-selected' : 'hub-nav-link'}">Admins</a>
 							{/if}
 							{#if canAccessUsers}
-								<a href="/hub/audit-logs" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/audit-logs') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Audit Logs</a>
+								<a href="/hub/audit-logs" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/audit-logs') ? 'hub-nav-selected' : 'hub-nav-link'}">Audit Logs</a>
 							{/if}
 							{#if canAccessVideos}
-								<a href="/hub/videos" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/videos') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Video Tutorials</a>
+								<a href="/hub/videos" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/videos') ? 'hub-nav-selected' : 'hub-nav-link'}">Video Tutorials</a>
 							{/if}
 							{#if canAccessVideos}
-								<a href="/hub/images" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/images') ? 'bg-theme-button-3 text-white' : 'text-white hover:bg-white hover:text-theme-button-1'}">Manage Images</a>
+								<a href="/hub/images" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/images') ? 'hub-nav-selected' : 'hub-nav-link'}">Manage Images</a>
 							{/if}
-							<a href="/hub/auth/logout" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:bg-white hover:text-theme-button-1 border-t border-hub-blue-300 pt-2 mt-2">
+							<a href="/hub/auth/logout" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors hub-nav-link border-t border-white/20 pt-2 mt-2">
 								Logout
 							</a>
 						</nav>

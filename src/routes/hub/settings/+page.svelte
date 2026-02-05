@@ -36,14 +36,12 @@
 	let originalColour = null; // Store original colour when editing starts
 	let newColour = { value: '#9333ea', label: '' };
 	let showAddColour = false;
-	let activeTab = 'theme'; // 'theme', 'email', 'colours', 'meeting-planner', or 'data-store'
+	let activeTab = 'theme'; // 'theme', 'colours', 'meeting-planner', 'email', 'data-store', or 'advanced'
 	// Optimistic update: set when we switch so "Current mode" updates before refetch
 	let storeModeOverride = null;
 	$: storeMode = storeModeOverride ?? data?.storeMode ?? 'file';
 	$: currentOrganisationId = data?.currentOrganisationId ?? null;
 	$: currentOrganisation = data?.currentOrganisation ?? null;
-	$: contactsCountForCurrentOrg = data?.contactsCountForCurrentOrg ?? null;
-	let assignUnassignedSubmitting = false;
 	
 	// Meeting Planner Rota state
 	let editingRotaIndex = null;
@@ -601,70 +599,6 @@
 		<h1 class="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
 		<p class="text-gray-600 mb-6">Manage system settings (Superadmin only)</p>
 
-		<!-- Organisation (Multi-org) – for testing that Hub recognises current org -->
-		<div class="mb-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
-			<h2 class="text-sm font-semibold text-gray-700 mb-2">Current organisation (Hub context)</h2>
-			{#if currentOrganisationId}
-				<dl class="grid grid-cols-1 gap-1 text-sm">
-					<div>
-						<dt class="text-gray-500">Organisation ID</dt>
-						<dd class="font-mono text-gray-900 break-all">{currentOrganisationId}</dd>
-					</div>
-					{#if currentOrganisation}
-						<div>
-							<dt class="text-gray-500">Name</dt>
-							<dd class="text-gray-900">{currentOrganisation.name || '—'}</dd>
-						</div>
-						{#if currentOrganisation.contactName}
-							<div>
-								<dt class="text-gray-500">Contact</dt>
-								<dd class="text-gray-900">{currentOrganisation.contactName}</dd>
-							</div>
-						{/if}
-					{/if}
-					{#if contactsCountForCurrentOrg !== null}
-						<div>
-							<dt class="text-gray-500">Contacts for this org (from DB)</dt>
-							<dd class="text-gray-900 font-mono">{contactsCountForCurrentOrg}</dd>
-						</div>
-						<p class="mt-1 text-xs text-gray-500">Same filter as Hub Contacts list: organisationId === current org.</p>
-					{/if}
-					{#if !currentOrganisation}
-						<div>
-							<dt class="text-gray-500">Name</dt>
-							<dd class="text-amber-700">Organisation record not found (ID may be from another source)</dd>
-						</div>
-					{/if}
-				</dl>
-				<p class="mt-2 text-xs text-gray-500">Set in Multi-org → Organisations → “Set as Hub”.</p>
-				<div class="mt-4 pt-4 border-t border-gray-200">
-					<form method="POST" action="?/assignUnassignedData" use:enhance={() => {
-						assignUnassignedSubmitting = true;
-						return async ({ result, update }) => {
-							assignUnassignedSubmitting = false;
-							if (result?.assignUnassignedData?.success) {
-								notifications.success(`Assigned ${result.assignUnassignedData.totalAssigned} record(s) to this organisation.`);
-								await update();
-							} else if (result?.assignUnassignedData?.error) {
-								notifications.error(result.assignUnassignedData.error);
-							}
-						};
-					}}>
-						<p class="text-xs text-gray-600 mb-2">If data was created before multi-org or has no organisation, it won't show. Assign all unassigned records to the current organisation so they appear here.</p>
-						<button
-							type="submit"
-							class="px-3 py-1.5 text-sm font-medium rounded-md bg-theme-button-2 text-white hover:opacity-90 disabled:opacity-50"
-							disabled={assignUnassignedSubmitting}
-						>
-							{assignUnassignedSubmitting ? 'Assigning…' : 'Assign unassigned data to this organisation'}
-						</button>
-					</form>
-				</div>
-			{:else}
-				<p class="text-gray-600 text-sm">No organisation set. Set one in Multi-org → Organisations → “Set as Hub”.</p>
-			{/if}
-		</div>
-		
 		<!-- Tabs -->
 		<div class="border-b border-gray-200 mb-6">
 			<nav class="-mb-px flex space-x-8" aria-label="Tabs">
@@ -697,6 +631,12 @@
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'data-store' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 				>
 					Data store
+				</button>
+				<button
+					on:click={() => activeTab = 'advanced'}
+					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'advanced' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+				>
+					Advanced
 				</button>
 			</nav>
 		</div>
@@ -1307,6 +1247,44 @@
 						{switching ? 'Switching...' : 'Switch to file store'}
 					</button>
 				</div>
+			</div>
+		</div>
+		{/if}
+
+		<!-- Advanced -->
+		{#if activeTab === 'advanced'}
+		<div class="border-b border-gray-200 pb-6 mb-6">
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Advanced</h2>
+			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
+				<h3 class="text-sm font-semibold text-gray-700 mb-2">Current organisation (Hub context)</h3>
+				{#if currentOrganisationId}
+					<dl class="grid grid-cols-1 gap-1 text-sm">
+						<div>
+							<dt class="text-gray-500">Organisation ID</dt>
+							<dd class="font-mono text-gray-900 break-all">{currentOrganisationId}</dd>
+						</div>
+						{#if currentOrganisation}
+							<div>
+								<dt class="text-gray-500">Name</dt>
+								<dd class="text-gray-900">{currentOrganisation.name || '—'}</dd>
+							</div>
+							{#if currentOrganisation.contactName}
+								<div>
+									<dt class="text-gray-500">Contact</dt>
+									<dd class="text-gray-900">{currentOrganisation.contactName}</dd>
+								</div>
+							{/if}
+						{/if}
+						{#if !currentOrganisation}
+							<div>
+								<dt class="text-gray-500">Name</dt>
+								<dd class="text-amber-700">Organisation record not found (ID may be from another source)</dd>
+							</div>
+						{/if}
+					</dl>
+				{:else}
+					<p class="text-gray-600 text-sm">No organisation set.</p>
+				{/if}
 			</div>
 		</div>
 		{/if}

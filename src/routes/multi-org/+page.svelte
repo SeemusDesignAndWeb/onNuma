@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>MultiOrg</title>
+	<title>OnNuma</title>
 </svelte:head>
 
 <p class="text-slate-500">Redirecting…</p>

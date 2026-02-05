@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-	<title>Sign in – MultiOrg</title>
+	<title>Sign in – OnNuma</title>
 </svelte:head>
 
 <div class="flex flex-1 min-h-0 items-center justify-center px-4 py-8">

@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>New organisation – MultiOrg</title>
+	<title>New organisation – OnNuma</title>
 </svelte:head>
 
 <div class="max-w-2xl">

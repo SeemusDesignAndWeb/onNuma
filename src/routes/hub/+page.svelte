@@ -59,7 +59,7 @@
 {#if !accessDenied}
 	<div class="flex justify-between items-center mb-4">
 		<h2 class="text-xl font-bold text-gray-900">Dashboard</h2>
-		{#if $page.data?.emailModuleEnabled}
+		{#if canAccessNewsletters && $page.data?.emailModuleEnabled}
 			<p class="text-sm text-gray-600"><strong>Emails sent today:</strong> {stats.emailsSentToday || 0}</p>
 		{/if}
 	</div>

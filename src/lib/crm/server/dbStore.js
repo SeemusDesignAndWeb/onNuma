@@ -36,6 +36,8 @@ function getPool() {
 		const useSsl = !isInternal && !isLocalhost;
 		pool = new Pool({
 			connectionString: url,
+			max: 20,
+			idleTimeoutMillis: 30000,
 			...(useSsl ? { ssl: { rejectUnauthorized: false } } : {})
 		});
 	}
@@ -111,8 +113,13 @@ export async function writeCollection(collection, records) {
 }
 
 export async function findById(collection, id) {
-	const records = await readCollection(collection);
-	return records.find((r) => r.id === id) || null;
+	if (id == null) return null;
+	await ensureTable();
+	const res = await getPool().query(
+		`SELECT id, body, created_at, updated_at FROM ${TABLE_NAME} WHERE collection = $1 AND id = $2`,
+		[collection, id]
+	);
+	return res.rows.length > 0 ? rowToRecord(res.rows[0]) : null;
 }
 
 export async function findMany(collection, predicate) {

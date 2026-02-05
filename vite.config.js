@@ -36,6 +36,20 @@ export default defineConfig({
 		host: true,
 		allowedHosts: ['localhost', '.localhost', ...getAllowedHostsFromOrganisations()]
 	},
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks: (id) => {
+					if (id.includes('node_modules')) {
+						if (id.includes('svelte')) return 'svelte';
+						if (id.includes('quill')) return 'quill';
+						if (id.includes('cloudinary')) return 'cloudinary';
+						return 'vendor';
+					}
+				}
+			}
+		}
+	},
 	ssr: {
 		// pg is CommonJS; let Node load it at runtime instead of Vite bundling it
 		external: ['pg']

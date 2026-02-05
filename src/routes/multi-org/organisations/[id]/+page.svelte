@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>{organisation?.name ?? 'Organisation'} – MultiOrg</title>
+	<title>{organisation?.name ?? 'Organisation'} – OnNuma</title>
 </svelte:head>
 
 <div class="max-w-5xl">

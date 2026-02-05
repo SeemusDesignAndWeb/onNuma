@@ -3,11 +3,24 @@
  * Loaded only in Hub layout. Public website uses app.css only.
  */
 
-/* Hub main nav: direct <a> links (non-dropdowns) - override app.css a.text-white:hover so hover shows blue like dropdown buttons */
-.hub-main-nav a.text-white:hover,
-.hub-main-nav a.text-white:focus,
-.hub-main-nav a.text-white:active {
-	color: var(--color-button-1, #4A97D2) !important;
+/* Hub navbar: selected and hover use navbar theme (--color-navbar-bg) so they match the header colour */
+.hub-main-nav a.hub-nav-selected,
+.hub-main-nav button.hub-nav-selected {
+	background-color: color-mix(in srgb, var(--color-navbar-bg, #4A97D2) 75%, white) !important;
+	color: white !important;
+}
+.hub-main-nav a.hub-nav-link,
+.hub-main-nav button.hub-nav-link {
+	color: white;
+}
+.hub-main-nav a.hub-nav-link:hover,
+.hub-main-nav a.hub-nav-link:focus,
+.hub-main-nav a.hub-nav-link:active,
+.hub-main-nav button.hub-nav-link:hover,
+.hub-main-nav button.hub-nav-link:focus,
+.hub-main-nav button.hub-nav-link:active {
+	background-color: color-mix(in srgb, var(--color-navbar-bg, #4A97D2) 88%, white) !important;
+	color: white !important;
 }
 
 /* Panel head classes - fallback color */

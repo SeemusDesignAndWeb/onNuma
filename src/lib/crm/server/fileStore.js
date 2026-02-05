@@ -13,9 +13,14 @@ import { env } from '$env/dynamic/private';
 
 let storeModeCache = null;
 
-/** Resolve store mode: data/store_mode.json (persists across restarts), then env DATA_STORE, default 'file'. */
+/** Resolve store mode: env DATA_STORE wins when set (ensures database-only when DATA_STORE=database), else data/store_mode.json, default 'file'. */
 export async function getStoreMode() {
 	if (storeModeCache !== null) {
+		return storeModeCache;
+	}
+	const envMode = env.DATA_STORE;
+	if (typeof envMode === 'string' && envMode.trim()) {
+		storeModeCache = envMode.trim().toLowerCase() === 'database' ? 'database' : 'file';
 		return storeModeCache;
 	}
 	try {
@@ -29,12 +34,7 @@ export async function getStoreMode() {
 			return storeModeCache;
 		}
 	} catch {
-		// fall through to env
-	}
-	const envMode = env.DATA_STORE;
-	if (typeof envMode === 'string' && envMode.trim()) {
-		storeModeCache = envMode.trim().toLowerCase() === 'database' ? 'database' : 'file';
-		return storeModeCache;
+		// fall through to default
 	}
 	storeModeCache = 'file';
 	return storeModeCache;

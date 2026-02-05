@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>Organisations – MultiOrg</title>
+	<title>Organisations – OnNuma</title>
 </svelte:head>
 
 {#if hubSet}

@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>Set new password – MultiOrg</title>
+	<title>Set new password – OnNuma</title>
 </svelte:head>
 
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8f8fa] via-white to-[#F3DE8A]/30 px-4 py-12">
@@ -20,7 +20,7 @@
 		<div class="text-center mb-8">
 			<img src="/images/onnuma-logo.png" alt="OnNuma" class="w-auto max-w-[200px] h-14 mx-auto mb-4 object-contain" />
 			<h1 class="text-2xl font-bold text-[#272838] tracking-tight">Set new password</h1>
-			<p class="mt-2 text-sm text-[#7E7F9A]">Choose a new password for your MultiOrg account</p>
+			<p class="mt-2 text-sm text-[#7E7F9A]">Choose a new password for your OnNuma account</p>
 		</div>
 
 		<div class="bg-white rounded-2xl shadow-xl shadow-[#7E7F9A]/10 border border-[#7E7F9A]/20 p-8">

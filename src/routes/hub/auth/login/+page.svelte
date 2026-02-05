@@ -55,7 +55,10 @@
 	}
 
 	$: orgFromDomain = $page.data?.hubOrganisationFromDomain;
+	$: currentOrganisation = $page.data?.currentOrganisation ?? null;
 	$: theme = $page.data?.theme ?? null;
+	// Organisation name: from custom domain (hub.egcc.co.uk) or from Hub's current organisation, never hardcoded
+	$: organisationName = orgFromDomain?.name ?? currentOrganisation?.name ?? 'The HUB';
 	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/images/onnuma-logo.png';
 
 	onMount(() => {
@@ -71,14 +74,14 @@
 		<div class="text-center">
 			<img
 				src={loginLogoSrc}
-				alt={orgFromDomain?.name ?? 'Eltham Green Community Church'}
+				alt={organisationName}
 				class="w-auto max-w-full max-h-[130px] object-contain mx-auto mb-4"
 			/>
 			<h2 class="mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
-				Sign in to The HUB
+				Welcome aboard theHub
 			</h2>
 			<p class="mt-2 text-center text-xs sm:text-sm text-gray-600">
-				{orgFromDomain?.name ?? 'Eltham Green Community Church'}
+				{organisationName}
 			</p>
 		</div>
 		<form method="POST" action="?/login" use:enhance>
