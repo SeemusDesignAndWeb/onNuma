@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, isRedirect } from '@sveltejs/kit';
 import { getAdminFromCookies, generateCsrfToken, setCsrfToken, getCsrfToken } from './auth.js';
 import { hasRouteAccess } from './permissions.js';
 import {
@@ -22,6 +22,19 @@ export async function crmHandle({ event, resolve }) {
 	const pathname = url.pathname;
 	const isProduction = process.env.NODE_ENV === 'production';
 
+	try {
+		return await crmHandleInner({ event, resolve, url, request, cookies, pathname, isProduction });
+	} catch (err) {
+		if (isRedirect(err)) throw err;
+		console.error('[crmHandle] Error (can cause 502 if uncaught):', err?.message || err);
+		return new Response('Service temporarily unavailable. Please try again.', {
+			status: 503,
+			headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+		});
+	}
+}
+
+async function crmHandleInner({ event, resolve, url, request, cookies, pathname, isProduction }) {
 	// Set security headers
 	event.setHeaders({
 		'X-Content-Type-Options': 'nosniff',

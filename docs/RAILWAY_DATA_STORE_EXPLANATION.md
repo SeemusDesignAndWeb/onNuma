@@ -244,6 +244,21 @@ All data modifications require explicit write operations:
 
 ## Troubleshooting
 
+### 502 Bad Gateway
+A 502 usually means Railway’s proxy did not get a valid response from your app (crash, timeout, or not listening).
+
+1. **Check Railway logs** (Deployments → View Logs). Look for:
+   - `Error: DATABASE_URL is required when using database store` → Set `DATABASE_URL` in Railway Variables (or use file store and set `CRM_DATA_DIR`).
+   - Postgres connection errors → Ensure `DATABASE_URL` is the correct Postgres URL (Railway Postgres: Connect → Copy URL). Check the Postgres service is running and reachable.
+   - `[DB] Could not create directory` / write errors → Main site DB: set `DATABASE_PATH=/data/database.json` and ensure a volume is mounted at `/data`. CRM file data: set `CRM_DATA_DIR=/data` and ensure the volume exists.
+   - Uncaught errors in `[crmHandle]` → These are now caught and return 503; check logs for the underlying cause (e.g. missing env, store/DB down).
+
+2. **Port and start**  
+   Railway sets `PORT`; the app (adapter-node) listens on `0.0.0.0:PORT`. Do not set `PORT` yourself. Start command should be `node build/index.js` (or `node -r dotenv/config build/index.js` if you rely on a `.env` file; on Railway use Variables instead).
+
+3. **Build vs runtime**  
+   Ensure the build completes (`vite build`) and the start command runs the built app (`node build/index.js`), not the dev server.
+
 ### Database Not Found in Production
 - **Symptom**: Application fails to start with "Database file not found"
 - **Cause**: Volume not mounted or database file missing

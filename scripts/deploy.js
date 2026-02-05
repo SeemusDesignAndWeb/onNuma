@@ -15,7 +15,6 @@
 import { config } from 'dotenv';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync, readFileSync } from 'fs';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import { ulid } from 'ulid';
@@ -25,32 +24,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
 config({ path: join(projectRoot, '.env') });
 
-function getDataDir() {
-	const envDir = process.env.CRM_DATA_DIR;
-	if (envDir && envDir.trim()) {
-		const t = envDir.trim();
-		return t.startsWith('/') ? t : join(projectRoot, t);
-	}
-	return join(projectRoot, 'data');
-}
-
-function getStoreMode() {
-	const dataDir = getDataDir();
-	const modePath = join(dataDir, 'store_mode.json');
-	if (existsSync(modePath)) {
-		try {
-			const content = readFileSync(modePath, 'utf8');
-			const data = JSON.parse(content);
-			return (data.dataStore || 'file').toLowerCase();
-		} catch {
-			// fall through to env
-		}
-	}
+/** Use env only; no JSON file checks (Postgres-only deploy). */
+function isDatabaseStore() {
 	const envMode = process.env.DATA_STORE;
-	if (typeof envMode === 'string' && envMode.trim()) {
-		return envMode.trim().toLowerCase();
-	}
-	return 'file';
+	return typeof envMode === 'string' && envMode.trim().toLowerCase() === 'database';
 }
 
 async function tableExists(client) {
@@ -120,8 +97,7 @@ async function createMultiOrgSuperAdmin(client, { email, password, name }) {
 }
 
 async function main() {
-	const mode = getStoreMode();
-	if (mode !== 'database') {
+	if (!isDatabaseStore()) {
 		console.log('[deploy] DATA_STORE is not database, skipping.');
 		process.exit(0);
 	}
