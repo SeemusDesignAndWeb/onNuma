@@ -8,6 +8,6 @@ export async function GET({ cookies, locals }) {
 	if (sessionId) {
 		await removeMultiOrgSession(sessionId);
 	}
-	clearMultiOrgSessionCookie(cookies);
+	clearMultiOrgSessionCookie(cookies, !!locals.multiOrgAdminDomain);
 	throw redirect(302, getMultiOrgPublicPath('/multi-org/auth/login', !!locals.multiOrgAdminDomain));
 }

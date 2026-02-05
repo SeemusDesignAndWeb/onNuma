@@ -95,6 +95,15 @@ export async function update(collection, id, updates) {
 	return backend.update(collection, id, updates);
 }
 
+/** Single-row body merge; avoids full read-modify-writeCollection race (dbStore only). */
+export async function updatePartial(collection, id, bodyPatch) {
+	const backend = await getBackend(collection);
+	if (typeof backend.updatePartial === 'function') {
+		return backend.updatePartial(collection, id, bodyPatch);
+	}
+	return backend.update(collection, id, { ...bodyPatch, updatedAt: new Date().toISOString() });
+}
+
 export async function remove(collection, id) {
 	const backend = await getBackend(collection);
 	return backend.remove(collection, id);

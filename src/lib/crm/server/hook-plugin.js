@@ -44,25 +44,26 @@ export async function crmHandle({ event, resolve }) {
 		(!!event.locals.multiOrgAdminDomain &&
 			(pathname.startsWith('/auth/login') || pathname === '/auth/logout' || pathname.startsWith('/auth/forgot-password')));
 	if (isMultiOrgPath) {
+		const adminSubdomain = !!event.locals.multiOrgAdminDomain;
 		if (isMultiOrgPublicAuth) {
 			if (request.method === 'GET' && (pathname.startsWith('/multi-org/auth/login') || pathname.startsWith('/auth/login'))) {
 				if (!getMultiOrgCsrfToken(cookies)) {
 					const token = generateMultiOrgCsrfToken();
-					setMultiOrgCsrfToken(cookies, token, isProduction);
+					setMultiOrgCsrfToken(cookies, token, isProduction, adminSubdomain);
 				}
 			}
 			return resolve(event);
 		}
 		const multiOrgAdmin = await getMultiOrgAdminFromCookies(cookies);
 		if (!multiOrgAdmin) {
-			const loginPath = getMultiOrgPublicPath('/multi-org/auth/login', !!event.locals.multiOrgAdminDomain);
+			const loginPath = getMultiOrgPublicPath('/multi-org/auth/login', adminSubdomain);
 			throw redirect(302, loginPath);
 		}
 		event.locals.multiOrgAdmin = multiOrgAdmin;
 		if (request.method === 'GET') {
 			if (!getMultiOrgCsrfToken(cookies)) {
 				const token = generateMultiOrgCsrfToken();
-				setMultiOrgCsrfToken(cookies, token, isProduction);
+				setMultiOrgCsrfToken(cookies, token, isProduction, adminSubdomain);
 			}
 		}
 		return resolve(event);

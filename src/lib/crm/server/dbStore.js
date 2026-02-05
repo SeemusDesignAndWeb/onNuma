@@ -149,6 +149,23 @@ export async function update(collection, id, updates) {
 	return records[index];
 }
 
+/**
+ * Update a single row by merging a partial body and updated_at. Avoids read-modify-writeCollection
+ * so concurrent requests (e.g. session activity updates) don't race and hit duplicate key.
+ */
+export async function updatePartial(collection, id, bodyPatch) {
+	if (!bodyPatch || typeof bodyPatch !== 'object') return null;
+	await ensureTable();
+	const updatedAt = new Date().toISOString();
+	const patchJson = JSON.stringify({ ...bodyPatch, updatedAt });
+	const res = await getPool().query(
+		`UPDATE ${TABLE_NAME} SET body = body || $3::jsonb, updated_at = $4 WHERE collection = $1 AND id = $2 RETURNING id, body, created_at, updated_at`,
+		[collection, id, patchJson, updatedAt]
+	);
+	if (res.rows.length === 0) return null;
+	return rowToRecord(res.rows[0]);
+}
+
 export async function remove(collection, id) {
 	const records = await readCollection(collection);
 	const index = records.findIndex((r) => r.id === id);

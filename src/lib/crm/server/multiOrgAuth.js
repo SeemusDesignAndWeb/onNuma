@@ -141,9 +141,14 @@ export async function getMultiOrgAdminFromCookies(cookies) {
 	return admin || null;
 }
 
-export function setMultiOrgSessionCookie(cookies, sessionId, isProduction = false) {
+/** When adminSubdomain (e.g. admin.onnuma.com), use path '/' so cookie is sent for /auth/login, /organisations, etc. */
+function multiOrgCookiePath(adminSubdomain) {
+	return adminSubdomain ? '/' : '/multi-org';
+}
+
+export function setMultiOrgSessionCookie(cookies, sessionId, isProduction = false, adminSubdomain = false) {
 	cookies.set(MULTI_ORG_SESSION_COOKIE, sessionId, {
-		path: '/multi-org',
+		path: multiOrgCookiePath(adminSubdomain),
 		maxAge: SESSION_DURATION / 1000,
 		httpOnly: true,
 		secure: isProduction,
@@ -151,8 +156,9 @@ export function setMultiOrgSessionCookie(cookies, sessionId, isProduction = fals
 	});
 }
 
-export function clearMultiOrgSessionCookie(cookies) {
-	cookies.delete(MULTI_ORG_SESSION_COOKIE, { path: '/multi-org' });
+export function clearMultiOrgSessionCookie(cookies, adminSubdomain = false) {
+	cookies.delete(MULTI_ORG_SESSION_COOKIE, { path: multiOrgCookiePath(adminSubdomain) });
+	cookies.delete(MULTI_ORG_SESSION_COOKIE, { path: multiOrgCookiePath(!adminSubdomain) });
 }
 
 export function generateMultiOrgCsrfToken() {
@@ -163,9 +169,9 @@ export function getMultiOrgCsrfToken(cookies) {
 	return cookies.get(MULTI_ORG_CSRF_COOKIE) || null;
 }
 
-export function setMultiOrgCsrfToken(cookies, token, isProduction = false) {
+export function setMultiOrgCsrfToken(cookies, token, isProduction = false, adminSubdomain = false) {
 	cookies.set(MULTI_ORG_CSRF_COOKIE, token, {
-		path: '/multi-org',
+		path: multiOrgCookiePath(adminSubdomain),
 		maxAge: 60 * 60 * 24,
 		httpOnly: true,
 		secure: isProduction,

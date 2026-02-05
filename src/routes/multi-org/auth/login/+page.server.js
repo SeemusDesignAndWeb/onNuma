@@ -34,7 +34,12 @@ export const actions = {
 		}
 
 		const session = await createMultiOrgSession(admin.id);
-		setMultiOrgSessionCookie(cookies, session.id, process.env.NODE_ENV === 'production');
+		setMultiOrgSessionCookie(
+			cookies,
+			session.id,
+			process.env.NODE_ENV === 'production',
+			!!locals.multiOrgAdminDomain
+		);
 
 		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations', !!locals.multiOrgAdminDomain));
 	}

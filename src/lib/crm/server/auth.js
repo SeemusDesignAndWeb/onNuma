@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { readCollection, create, update, findById, remove, writeCollection } from './fileStore.js';
+import { readCollection, create, update, updatePartial, findById, remove, writeCollection } from './fileStore.js';
 import { generateId } from './ids.js';
 
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -284,9 +284,9 @@ export async function getSession(sessionId, updateActivity = true) {
 		return null;
 	}
 
-	// Update lastActivityAt if requested
+	// Update lastActivityAt if requested (use updatePartial to avoid race with concurrent requests)
 	if (updateActivity) {
-		await update('sessions', sessionId, {
+		await updatePartial('sessions', sessionId, {
 			lastActivityAt: now.toISOString()
 		});
 		session.lastActivityAt = now.toISOString();
