@@ -29,6 +29,7 @@ export default {
 				'brand-green': '#4BB170',
 				'brand-yellow': '#E6A324',
 				'brand-red': '#A62524',
+				'brand-peach': '#F4A460',
 				'dark-gray': '#252525',
 				'medium-gray': '#353535',
 				'light-gray': '#757575',

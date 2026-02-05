@@ -69,6 +69,12 @@ const defaultDatabase = {
 		aboutTitle: 'Welcome to Eltham Green Community Church',
 		aboutContent: '<p>Eltham Green Community Church is a vibrant, welcoming church family located in the heart of Eltham, London. We are a community of believers committed to following Jesus Christ and sharing His love with our neighbors.</p><p>Our mission is to build a community where everyone can experience God\'s love, grow in faith, and serve others. We believe in creating a space where people from all walks of life can come together to worship, learn, and support one another on their spiritual journey.</p><p>Whether you\'re exploring faith for the first time or looking for a church home, we\'d love to welcome you. Join us for worship, connect with our community, and discover how you can be part of what God is doing here in Eltham.</p>',
 		aboutImage: 'https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066390/egcc/egcc/img-church-bg.jpg'
+	},
+	landing: {
+		tagline: 'Organisation management that people actually use',
+		ctaRequestDemoUrl: '/multi-org',
+		ctaStartOrganisationUrl: '/multi-org/organisations/new',
+		heroImage: ''
 	}
 };
 
@@ -357,6 +363,18 @@ export function getHome() {
 export function saveHome(home) {
 	const db = readDatabase();
 	db.home = { ...db.home, ...home };
+	writeDatabase(db);
+}
+
+// Landing page (OnNuma marketing site)
+export function getLanding() {
+	const db = readDatabase();
+	return db.landing || defaultDatabase.landing;
+}
+
+export function saveLanding(landing) {
+	const db = readDatabase();
+	db.landing = { ...(db.landing || defaultDatabase.landing), ...landing };
 	writeDatabase(db);
 }
 

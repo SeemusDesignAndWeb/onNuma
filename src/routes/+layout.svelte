@@ -71,21 +71,23 @@
 	// But DO show navbar for public signup pages (rota, event, and member signups)
 	// Don't show banner on signup pages or sundays page
 	$: isSignupPage = $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
-	$: isSundaysPage = $page.url.pathname === '/sundays';
 	$: useStandaloneHeader = theme?.externalPagesLayout === 'standalone' && isExternalPage;
+	$: isMarketingHome = $page.url.pathname === '/';
 	$: showWebsiteNavbar = !hideWebsiteElements || isSignupPage;
 	$: showStandaloneHeader = showWebsiteNavbar && useStandaloneHeader;
 	$: showFullNavbar = showWebsiteNavbar && !useStandaloneHeader;
-	$: showWebsiteBanner = !hideWebsiteElements && !isSignupPage && !isSundaysPage && showHighlightBanner;
+	$: showWebsiteBanner = !hideWebsiteElements && !isSignupPage && !isMarketingHome && showHighlightBanner;
 
-	// Single padding class for content (avoid multiple padding classes)
+	// Single padding class for content (avoid multiple padding classes). Marketing home: no top padding so hero extends behind navbar.
 	$: contentPaddingClass = showStandaloneHeader
 		? 'pt-[56px]'
-		: hideWebsiteElements || ((isSignupPage || isSundaysPage) && showFullNavbar)
+		: hideWebsiteElements || (isSignupPage && showFullNavbar)
 			? 'pt-0'
-			: showHighlightBanner
-				? 'pt-[110px]'
-				: 'pt-[80px]';
+			: isMarketingHome
+				? 'pt-0'
+				: showHighlightBanner
+					? 'pt-[110px]'
+					: 'pt-[80px]';
 
 	// Share banner visibility with child components via store
 	const bannerVisibleStore = writable(false);
@@ -96,19 +98,20 @@
 	}
 
 	onMount(() => {
-		// Don't show preloader or banner in admin or CRM areas
-		if (hideWebsiteElements) {
+		// Don't show preloader or banner in admin or CRM areas; skip preloader on marketing home
+		if (hideWebsiteElements || isMarketingHome) {
 			showPreloader = false;
-			return;
+			if (hideWebsiteElements) return;
 		}
 
-		setTimeout(() => {
-			showPreloader = false;
-		}, 1000);
+		if (!isMarketingHome) {
+			setTimeout(() => {
+				showPreloader = false;
+			}, 1000);
+		}
 
-		// Check if banner should be shown
-		// Only show if there's a highlighted event and latest message popup is not enabled
-		if (data?.highlightedEvent && !data.settings?.showLatestMessagePopup) {
+		// Check if banner should be shown (not on marketing home)
+		if (!isMarketingHome && data?.highlightedEvent && !data.settings?.showLatestMessagePopup) {
 			setTimeout(() => {
 				showHighlightBanner = true;
 			}, 300);
@@ -136,7 +139,7 @@
 {/if}
 <!-- Website Navbar - full site nav when not standalone external page -->
 {#if showFullNavbar}
-	<Navbar theme={effectiveTheme} bannerVisible={showHighlightBanner && !isSignupPage && !isSundaysPage} class="gallery-hide-when-fullscreen" />
+	<Navbar theme={effectiveTheme} bannerVisible={showHighlightBanner && !isSignupPage} landing={data?.landing} transparentOverHero={isMarketingHome} class="gallery-hide-when-fullscreen" />
 {/if}
 
 <!-- Page Content with dynamic padding to account for fixed navbar and banner -->

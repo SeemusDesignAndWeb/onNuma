@@ -2,117 +2,76 @@
 	import { onMount } from 'svelte';
 
 	export let bannerVisible = false;
-	/** @type {{ logoPath?: string; primaryColor?: string; brandColor?: string } | null} */
+	/** @type {{ logoPath?: string } | null} */
 	export let theme = null;
+	/** @type {{ ctaRequestDemoUrl?: string; ctaStartOrganisationUrl?: string } | null} */
+	export let landing = null;
+	/** When true (marketing home), navbar is transparent over hero until scrolled */
+	export let transparentOverHero = false;
+	const ctaDemo = landing?.ctaRequestDemoUrl || '/multi-org';
 
 	let menuOpen = false;
 	let scrolled = false;
-	let mounted = false;
-	let navigationPages = [];
+	$: overHero = transparentOverHero && !scrolled;
+	/** Dark navbar (scrolled on home): dark bg + white nav items */
+	$: darkNav = transparentOverHero && scrolled;
 
-	// Page ID to route mapping
-	const pageRoutes = {
-		'im-new': '/im-new',
-		'church': '/church',
-		'team': '/team',
-		'community-groups': '/community-groups',
-		'activities': '/activities',
-		'audio': '/audio',
-		'media': '/media'
-	};
-
-	// Get navigation label for a page (guard against undefined page from API)
-	function getNavigationLabel(page) {
-		return page?.navigationLabel || page?.title || 'Page';
+	function scrollTo(e, targetId) {
+		e?.preventDefault();
+		menuOpen = false;
+		const el = document.getElementById(targetId);
+		if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
-
-	// Get route for a page
-	function getPageRoute(pageId) {
-		return pageRoutes[pageId] || `/${pageId}`;
-	}
-
-	onMount(async () => {
-		// Load pages for navigation
-		try {
-			const response = await fetch('/api/navigation-pages');
-			if (response.ok) {
-				navigationPages = await response.json();
-			}
-		} catch (error) {
-			console.error('Failed to load navigation pages:', error);
-		}
-	});
 
 	onMount(() => {
-		mounted = true;
-		const handleScroll = () => {
-			scrolled = window.scrollY > 50;
-		};
+		const handleScroll = () => { scrolled = window.scrollY > 50; };
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);
 	});
 
-	function smoothScroll(e, targetId) {
-		e.preventDefault();
-		menuOpen = false;
-		const element = document.getElementById(targetId);
-		if (element) {
-			const offset = 49;
-			const elementPosition = element.getBoundingClientRect().top;
-			const offsetPosition = elementPosition + window.pageYOffset - offset;
-			window.scrollTo({
-				top: offsetPosition,
-				behavior: 'smooth'
-			});
-		}
-	}
+	const navLinks = [
+		{ id: 'about', label: 'About' },
+		{ id: 'features', label: 'Features' },
+		{ id: 'pricing', label: 'Pricing' },
+		{ id: 'contact', label: 'Contact' }
+	];
 </script>
 
-<style>
-	/* Prevent white background on nav link hover/focus (global or browser styles) */
-	nav a:hover,
-	nav a:focus,
-	nav a:active {
-		background-color: transparent !important;
-	}
-	/* Override app.css a.text-white:hover so themed nav links show blue (theme button / navbar colour) on hover */
-	nav.navbar--themed a.nav-link:hover,
-	nav.navbar--themed a.nav-link:focus,
-	nav.navbar--themed a.nav-link:active {
-		color: var(--color-button-1, #4A97D2) !important;
-	}
-</style>
-
 <nav
-	class="fixed left-0 right-0 z-50 transition-all duration-300 {bannerVisible ? 'top-[45px]' : 'top-0'} {scrolled ? 'shadow-md' : ''} {theme ? 'navbar--themed' : ''}"
-	style="background-color: var(--color-navbar-bg, #FFFFFF);"
+	class="fixed left-0 right-0 z-50 transition-all duration-300 {overHero ? 'bg-transparent' : darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm'} {scrolled ? 'shadow-lg' : ''} {bannerVisible ? 'top-[45px]' : 'top-0'}"
+	style={overHero || darkNav ? undefined : '--color-navbar-bg: #FFFFFF;'}
 >
-	<div class="container mx-auto px-4">
-		<div class="flex items-center justify-between transition-all duration-300" class:py-3={bannerVisible} class:py-4={!bannerVisible}>
-			<!-- Logo: colour on public (no theme), white/invert on themed/Hub banner -->
-			<a href="/" class="flex items-center z-10">
+	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+		<div class="flex items-center justify-between h-16">
+			<a href="/" class="flex items-center z-10" aria-label="OnNuma home">
 				<img
-					src={theme?.logoPath?.trim() || '/images/OnNuma-Icon.png'}
-					alt="Eltham Green Community Church"
-					class="h-12 w-auto {theme ? 'brightness-0 invert' : ''}"
+					src={theme?.logoPath?.trim() || '/images/onnuma-logo.png'}
+					alt="OnNuma"
+					class="h-8 w-auto {overHero || darkNav ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]' : ''}"
 				/>
 			</a>
 
-			<!-- Desktop menu: hover = blue/theme-button-1 (or navbar colour), no white bg -->
+			<!-- Desktop: nav links + CTA -->
 			<div class="hidden md:flex items-center gap-8">
-				<ul class="flex items-center gap-6">
-					{#each navigationPages as page}
+				<ul class="flex items-center gap-8">
+					{#each navLinks as link}
 						<li>
-							<a
-								href={getPageRoute(page.id)}
-								on:click={() => (menuOpen = false)}
-								class="nav-link transition-colors rounded px-1 py-0.5 hover:bg-transparent focus:bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 {theme ? 'text-white focus-visible:outline-theme-button-1' : 'text-gray-800 hover:text-primary focus-visible:outline-primary'}"
+							<button
+								type="button"
+								on:click={(e) => scrollTo(e, link.id)}
+								class="font-medium transition-colors text-[15px] {overHero || darkNav ? 'text-white hover:text-white/90' : 'text-slate-600 hover:text-slate-900'}"
 							>
-								{getNavigationLabel(page)}
-							</a>
+								{link.label}
+							</button>
 						</li>
 					{/each}
 				</ul>
+				<a
+					href={ctaDemo}
+					class="ml-4 px-5 py-2.5 rounded-lg font-semibold transition-colors text-sm {overHero ? 'bg-white text-brand-blue hover:bg-white/95' : 'bg-brand-blue text-white hover:bg-brand-blue/90'}"
+				>
+					Request a demo
+				</a>
 			</div>
 
 			<!-- Mobile menu button -->
@@ -121,41 +80,31 @@
 				on:click={() => (menuOpen = !menuOpen)}
 				aria-label="Toggle menu"
 			>
-				<span
-					class="block w-6 h-0.5 transition-all duration-300 {theme ? 'bg-white' : 'bg-gray-800'}"
-					class:rotate-45={menuOpen}
-					class:translate-y-2={menuOpen}
-				></span>
-				<span
-					class="block w-6 h-0.5 transition-all duration-300 {theme ? 'bg-white' : 'bg-gray-800'}"
-					class:opacity-0={menuOpen}
-				></span>
-				<span
-					class="block w-6 h-0.5 transition-all duration-300 {theme ? 'bg-white' : 'bg-gray-800'}"
-					class:-rotate-45={menuOpen}
-					class:-translate-y-2={menuOpen}
-				></span>
+				<span class="block w-6 h-0.5 transition-all duration-300 {overHero || darkNav ? 'bg-white' : 'bg-slate-700'}" class:rotate-45={menuOpen} class:translate-y-2={menuOpen}></span>
+				<span class="block w-6 h-0.5 transition-all duration-300 {overHero || darkNav ? 'bg-white' : 'bg-slate-700'}" class:opacity-0={menuOpen}></span>
+				<span class="block w-6 h-0.5 transition-all duration-300 {overHero || darkNav ? 'bg-white' : 'bg-slate-700'}" class:-rotate-45={menuOpen} class:-translate-y-2={menuOpen}></span>
 			</button>
 		</div>
 
-		<!-- Mobile menu -->
 		{#if menuOpen}
-			<div class="md:hidden pb-4 -mx-4 px-4 pt-4" style="background-color: var(--color-navbar-bg, #FFFFFF);">
-				<ul class="flex flex-col gap-4">
-					{#each navigationPages as page}
+			<div class="md:hidden pb-5 pt-2 border-t {overHero || darkNav ? 'border-white/30' : 'border-slate-200'}">
+				<ul class="flex flex-col gap-1">
+					{#each navLinks as link}
 						<li>
-							<a
-								href={getPageRoute(page.id)}
-								on:click={() => (menuOpen = false)}
-								class="nav-link block transition-colors rounded py-1 hover:bg-transparent focus:bg-transparent {theme ? 'text-white' : 'text-gray-800 hover:text-primary'}"
+							<button
+								type="button"
+								on:click={(e) => scrollTo(e, link.id)}
+								class="block w-full text-left py-3 font-medium {overHero || darkNav ? 'text-white hover:text-white/90' : 'text-slate-700 hover:text-slate-900'}"
 							>
-								{getNavigationLabel(page)}
-							</a>
+								{link.label}
+							</button>
 						</li>
 					{/each}
+					<li class="pt-3 mt-2 border-t {overHero || darkNav ? 'border-white/30' : 'border-slate-200'}">
+						<a href={ctaDemo} class="block py-3 text-center font-semibold bg-brand-blue text-white rounded-lg">Request a demo</a>
+					</li>
 				</ul>
 			</div>
 		{/if}
 	</div>
 </nav>
-
