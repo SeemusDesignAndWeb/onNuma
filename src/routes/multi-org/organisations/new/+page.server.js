@@ -1,10 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { create, readCollection } from '$lib/crm/server/fileStore.js';
 import { invalidateHubDomainCache, getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
-import { getOrganisationHubAreas } from '$lib/crm/server/permissions.js';
+import { getOrganisationHubAreas, getAreaPermissionsForPlan, getHubPlanTiers } from '$lib/crm/server/permissions.js';
 import { isValidHubDomain, normaliseHost } from '$lib/crm/server/hubDomain.js';
 
-const VALID_AREAS = new Set(getOrganisationHubAreas().map((a) => a.value));
+const VALID_PLANS = new Set(['free', 'professional', 'enterprise']);
 
 function validateOrganisation(data, excludeOrgId = null) {
 	const errors = {};
@@ -18,12 +18,9 @@ function validateOrganisation(data, excludeOrgId = null) {
 	if (hubDomain && !isValidHubDomain(hubDomain)) {
 		errors.hubDomain = 'Enter a valid hostname (e.g. hub.yourchurch.org)';
 	}
-	const perms = Array.isArray(data.areaPermissions) ? data.areaPermissions : [];
-	for (const p of perms) {
-		if (!VALID_AREAS.has(p)) {
-			errors.areaPermissions = 'Invalid area selected';
-			break;
-		}
+	const plan = data.plan ? String(data.plan).toLowerCase().trim() : 'free';
+	if (!VALID_PLANS.has(plan)) {
+		errors.plan = 'Please select a plan (Free, Professional or Enterprise)';
 	}
 	return Object.keys(errors).length ? errors : null;
 }
@@ -44,7 +41,7 @@ export async function load({ locals }) {
 	}
 	return {
 		multiOrgAdmin: locals.multiOrgAdmin,
-		hubAreas: getOrganisationHubAreas()
+		hubPlanTiers: getHubPlanTiers()
 	};
 }
 
@@ -60,19 +57,20 @@ export const actions = {
 		const email = form.get('email')?.toString()?.trim() || '';
 		const contactName = form.get('contactName')?.toString()?.trim() || '';
 		const hubDomain = form.get('hubDomain')?.toString()?.trim() || '';
-		const areaPermissions = form.getAll('areaPermissions').filter((p) => VALID_AREAS.has(p));
+		const plan = (form.get('plan')?.toString() || 'free').toLowerCase().trim();
+		const areaPermissions = VALID_PLANS.has(plan) ? getAreaPermissionsForPlan(plan) : getAreaPermissionsForPlan('free');
 
-		const errors = validateOrganisation({ name, email, hubDomain, areaPermissions });
+		const errors = validateOrganisation({ name, email, hubDomain, plan });
 		if (errors) {
 			return fail(400, {
 				errors,
-				values: { name, address, telephone, email, contactName, hubDomain, areaPermissions }
+				values: { name, address, telephone, email, contactName, hubDomain, plan: plan || 'free' }
 			});
 		}
 		if (hubDomain && (await isHubDomainTaken(normaliseHost(hubDomain), null))) {
 			return fail(400, {
 				errors: { hubDomain: 'This hub domain is already used by another organisation' },
-				values: { name, address, telephone, email, contactName, hubDomain, areaPermissions }
+				values: { name, address, telephone, email, contactName, hubDomain, plan }
 			});
 		}
 

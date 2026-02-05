@@ -78,12 +78,7 @@ export const actions = {
 			// Rotas are always for the entire event (occurrenceId = null) to match all event occurrences
 			// Individual assignees specify their occurrenceId
 			const settings = await getSettings();
-			const rotaRoles = settings.meetingPlannerRotas || [
-				{ role: 'Meeting Leader', capacity: 1 },
-				{ role: 'Speaker', capacity: 1 },
-				{ role: 'Worship Team', capacity: 1 },
-				{ role: 'Call to Worship', capacity: 1 }
-			];
+			const rotaRoles = settings.meetingPlannerRotas || [];
 
 			// Load existing rotas to check for duplicates (scoped to current org)
 			const existingRotas = filterByOrganisation(await readCollection('rotas'), organisationId);

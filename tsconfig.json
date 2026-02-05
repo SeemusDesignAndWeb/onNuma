@@ -1,19 +1,9 @@
 {
-  "compilerOptions": {
-    "allowJs": true,
-    "checkJs": false,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "moduleResolution": "bundler",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "paths": {
-      "$lib": ["src/lib"],
-      "$lib/*": ["src/lib/*"]
-    }
-  },
-  "include": ["src/**/*.js", "src/**/*.svelte"],
-  "exclude": ["node_modules/**", ".svelte-kit/**"]
+	"extends": "./.svelte-kit/tsconfig.json",
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": false
+	},
+	"include": ["src/**/*.js", "src/**/*.svelte"],
+	"exclude": ["node_modules/**", ".svelte-kit/**"]
 }

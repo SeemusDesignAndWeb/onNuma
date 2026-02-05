@@ -6,7 +6,7 @@
 	export let data;
 	$: base = data?.multiOrgBasePath ?? '/multi-org';
 	$: form = $page.form;
-	$: hubAreas = data?.hubAreas || [];
+	$: hubPlanTiers = data?.hubPlanTiers || [];
 	$: values = form?.values || {};
 	$: errors = form?.errors || {};
 </script>
@@ -17,7 +17,7 @@
 
 <div class="max-w-2xl">
 	<h1 class="text-2xl font-bold text-slate-800 mb-2">New organisation</h1>
-	<p class="text-slate-500 mb-8">Add an organisation and choose which Hub areas they can access.</p>
+	<p class="text-slate-500 mb-8">Add an organisation and select their plan (Free, Professional or Enterprise).</p>
 
 	<form method="POST" action="?/create" use:enhance={() => {
 		return async ({ result }) => {
@@ -102,24 +102,27 @@
 					<p class="mt-1.5 text-sm text-red-600">{errors.hubDomain}</p>
 				{/if}
 			</div>
-			<div>
-				<label class="block text-sm font-medium text-slate-700 mb-3">Areas of the site this organisation can access</label>
-				<div class="space-y-2.5">
-					{#each hubAreas as area}
-						<label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
+			<div role="group" aria-labelledby="plan-heading">
+				<span id="plan-heading" class="block text-sm font-medium text-slate-700 mb-3">Plan</span>
+				<div class="space-y-3">
+					{#each hubPlanTiers as tier}
+						<label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer {values.plan === tier.value ? 'border-[#EB9486] bg-[#EB9486]/5' : ''}">
 							<input
-								type="checkbox"
-								name="areaPermissions"
-								value={area.value}
-								checked={values.areaPermissions && values.areaPermissions.includes(area.value)}
-								class="rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+								type="radio"
+								name="plan"
+								value={tier.value}
+								checked={values.plan === tier.value || (!values.plan && tier.value === 'free')}
+								class="mt-1 rounded-full border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
 							/>
-							<span class="text-sm text-slate-700">{area.label}</span>
+							<div>
+								<span class="font-medium text-slate-800">{tier.label}</span>
+								<p class="text-sm text-slate-500 mt-0.5">{tier.description}</p>
+							</div>
 						</label>
 					{/each}
 				</div>
-				{#if errors.areaPermissions}
-					<p class="mt-1.5 text-sm text-red-600">{errors.areaPermissions}</p>
+				{#if errors.plan}
+					<p class="mt-1.5 text-sm text-red-600">{errors.plan}</p>
 				{/if}
 			</div>
 		</div>

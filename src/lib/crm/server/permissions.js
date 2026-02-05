@@ -18,5 +18,8 @@ export {
 	canAccessNewsletters,
 	getAvailableHubAreas,
 	getOrganisationHubAreas,
-	canCreateAdmin
+	canCreateAdmin,
+	getAreaPermissionsForPlan,
+	getPlanFromAreaPermissions,
+	getHubPlanTiers
 } from '$lib/crm/permissions.js';

@@ -30,9 +30,15 @@ export async function load({ cookies }) {
 	const rotasForOrg = currentOrganisationId ? filterByOrganisation(rotas, currentOrganisationId) : rotas;
 	const uniqueRoles = [...new Set(rotasForOrg.map((r) => r.role))].sort();
 
+	// Only include meeting planner rotas whose role exists in this org (avoid showing "rotas that do not exist")
+	const roleSet = new Set(uniqueRoles);
+	const meetingPlannerRotasFiltered = Array.isArray(settings.meetingPlannerRotas)
+		? settings.meetingPlannerRotas.filter((r) => roleSet.has((r.role || '').trim()))
+		: [];
+
 	return {
 		admin,
-		settings,
+		settings: { ...settings, meetingPlannerRotas: meetingPlannerRotasFiltered },
 		availableRoles: uniqueRoles,
 		storeMode,
 		currentOrganisationId,

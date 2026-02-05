@@ -4,9 +4,21 @@ This document explains how the EGCC website uses Railway's persistent volume sto
 
 ## Overview
 
-The website uses a JSON file-based database that is stored in different locations depending on the environment:
-- **Local Development**: `./data/database.json` (relative path in project directory)
-- **Production (Railway)**: `/data/database.json` (absolute path on Railway volume)
+The app has **two data stores**:
+
+| Store | What it holds | Controlled by |
+|-------|----------------|----------------|
+| **CRM (Hub)** | Organisations, admins, sessions, contacts, rotas, etc. | `DATA_STORE=database` → Postgres (`DATABASE_URL`). Otherwise file-based ndjson. |
+| **Main site content** | Pages, team, hero, settings, contact info (public site) | Always a **JSON file**. Path: `DATABASE_PATH` (default `./data/database.json`). |
+
+When you use Postgres for the CRM, you still need the main site JSON database for the public website content. On Railway:
+
+- **Main site DB**: Set `DATABASE_PATH=/data/database.json` and mount a volume at `/data` so this file persists. If you don’t, it defaults to `/app/data/database.json` (ephemeral), so every deploy can re-initialize it and you’ll see init messages in the logs.
+- **CRM**: Uses Postgres when `DATA_STORE=database` and `DATABASE_URL` is set; no JSON DB is used for CRM in that case.
+
+Summary:
+- **Local**: `./data/database.json` (or set `DATABASE_PATH`)
+- **Production (Railway)**: `DATABASE_PATH=/data/database.json` with a volume at `/data`
 
 The Railway volume mounted at `/data` provides persistent storage that survives deployments, container restarts, and code updates.
 

@@ -36,12 +36,7 @@ function getDefaultCalendarColours() {
 }
 
 function getDefaultMeetingPlannerRotas() {
-	return [
-		{ role: 'Meeting Leader', capacity: 1 },
-		{ role: 'Worship Leader and Team', capacity: 8 },
-		{ role: 'Speaker', capacity: 1 },
-		{ role: 'Call to Worship', capacity: 1 }
-	];
+	return [];
 }
 
 function getDefaultTheme() {

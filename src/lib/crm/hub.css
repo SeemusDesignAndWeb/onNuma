@@ -5,12 +5,16 @@
 
 /* Hub navbar: active page clearly distinct (darker); links white; hover slightly lighter than bar */
 .hub-main-nav a.hub-nav-selected,
-.hub-main-nav button.hub-nav-selected {
+.hub-main-nav button.hub-nav-selected,
+header a.hub-nav-selected,
+header button.hub-nav-selected {
 	background-color: color-mix(in srgb, var(--color-navbar-bg, #4A97D2) 75%, black) !important;
 	color: white !important;
 }
 .hub-main-nav a.hub-nav-link,
-.hub-main-nav button.hub-nav-link {
+.hub-main-nav button.hub-nav-link,
+header a.hub-nav-link,
+header button.hub-nav-link {
 	color: rgba(255, 255, 255, 0.9);
 }
 .hub-main-nav a.hub-nav-link:hover,
@@ -18,7 +22,13 @@
 .hub-main-nav a.hub-nav-link:active,
 .hub-main-nav button.hub-nav-link:hover,
 .hub-main-nav button.hub-nav-link:focus,
-.hub-main-nav button.hub-nav-link:active {
+.hub-main-nav button.hub-nav-link:active,
+header a.hub-nav-link:hover,
+header a.hub-nav-link:focus,
+header a.hub-nav-link:active,
+header button.hub-nav-link:hover,
+header button.hub-nav-link:focus,
+header button.hub-nav-link:active {
 	background-color: color-mix(in srgb, var(--color-navbar-bg, #4A97D2) 88%, black) !important;
 	color: white !important;
 }

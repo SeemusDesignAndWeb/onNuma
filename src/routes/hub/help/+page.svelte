@@ -2,8 +2,6 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import LoomVideo from '$lib/components/LoomVideo.svelte';
-	import { isSuperAdmin } from '$lib/crm/permissions.js';
-
 	let docs = [];
 	let selectedDoc = null;
 	let content = '';
@@ -15,7 +13,6 @@
 	
 	$: videos = $page.data?.videos || [];
 	$: admin = $page.data?.admin || null;
-	$: isSuperAdminUser = admin && isSuperAdmin(admin);
 	
 	// Create tabs based on video titles
 	$: videoTabs = videos.map(video => ({
@@ -288,12 +285,6 @@ ${scriptContent}
 				</div>
 				
 				<a href="/hub/privacy" class="px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors font-semibold">Privacy Policy</a>
-				{#if isSuperAdminUser}
-					<a href="/docs/ADMIN_GUIDE.md" on:click|preventDefault={() => { showDocs(); loadDoc('ADMIN_GUIDE.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Admin Guide</a>
-					<a href="/docs/TECHNICAL.md" on:click|preventDefault={() => { showDocs(); loadDoc('TECHNICAL.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Technical</a>
-					<a href="/docs/SECURITY.md" on:click|preventDefault={() => { showDocs(); loadDoc('SECURITY.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Security Guide</a>
-					<a href="/docs/SECURITY_AUDIT.md" on:click|preventDefault={() => { showDocs(); loadDoc('SECURITY_AUDIT.md'); }} class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">Security Audit</a>
-				{/if}
 			</div>
 		</nav>
 	{/if}

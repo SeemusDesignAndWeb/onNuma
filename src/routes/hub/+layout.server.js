@@ -2,6 +2,7 @@ import { getCsrfToken } from '$lib/crm/server/auth.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { readCollection } from '$lib/crm/server/fileStore.js';
+import { getPlanFromAreaPermissions, getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 
 export async function load({ cookies, locals }) {
 	const csrfToken = getCsrfToken(cookies);
@@ -18,8 +19,9 @@ export async function load({ cookies, locals }) {
 	if (organisationId && locals.admin && org) {
 		showOnboarding = !org.onboardingDismissedAt;
 	}
-	// MultiOrg: org's allowed areas (null = no restriction, [] = none)
-	const organisationAreaPermissions = org && Array.isArray(org.areaPermissions) ? org.areaPermissions : null;
+	// Hub navbar and access run off the organisation's plan (Free / Professional / Enterprise)
+	const plan = org && Array.isArray(org.areaPermissions) ? getPlanFromAreaPermissions(org.areaPermissions) : null;
+	const organisationAreaPermissions = plan ? getAreaPermissionsForPlan(plan) : (org && Array.isArray(org.areaPermissions) ? org.areaPermissions : null);
 	return {
 		csrfToken,
 		admin: locals.admin || null,

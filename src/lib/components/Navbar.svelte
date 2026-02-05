@@ -25,7 +25,10 @@
 	}
 
 	onMount(() => {
-		const handleScroll = () => { scrolled = window.scrollY > 50; };
+		const handleScroll = () => {
+			scrolled = window.scrollY > 50;
+			if (menuOpen) menuOpen = false;
+		};
 		window.addEventListener('scroll', handleScroll);
 		return () => window.removeEventListener('scroll', handleScroll);
 	});
@@ -49,8 +52,8 @@
 </script>
 
 <nav
-	class="fixed left-0 right-0 z-50 transition-all duration-300 {overHero ? 'bg-transparent' : darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm'} {scrolled ? 'shadow-lg' : ''} {bannerVisible ? 'top-[45px]' : 'top-0'} {className}"
-	style={overHero || darkNav ? undefined : '--color-navbar-bg: #FFFFFF;'}
+	class="fixed left-0 right-0 z-50 transition-all duration-300 {menuOpen ? (overHero || darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm') : overHero ? 'bg-transparent' : darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm'} {scrolled ? 'shadow-lg' : ''} {bannerVisible ? 'top-[45px]' : 'top-0'} {className}"
+	style={overHero || darkNav || menuOpen ? undefined : '--color-navbar-bg: #FFFFFF;'}
 >
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex items-center justify-between h-16">
@@ -92,7 +95,7 @@
 		</div>
 
 		{#if menuOpen}
-			<div class="md:hidden pb-5 pt-2 border-t {overHero ? 'bg-slate-800/95 border-white/30' : darkNav ? 'bg-slate-800 border-white/30' : 'bg-white border-slate-200'}">
+			<div class="md:hidden w-screen max-w-none relative left-1/2 -translate-x-1/2 pb-5 pt-2 border-t px-4 sm:px-6 {overHero ? 'border-white/30' : darkNav ? 'border-white/30' : 'border-slate-200'}">
 				<ul class="flex flex-col gap-1">
 					{#each navLinks as link}
 						<li>

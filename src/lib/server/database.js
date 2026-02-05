@@ -86,20 +86,19 @@ export function readDatabase() {
 		const data = readFileSync(dbPath, 'utf-8');
 		return JSON.parse(data);
 	} catch (error) {
-		// Database file doesn't exist - try to auto-initialize
-		console.warn('[DB] Database file does not exist, initializing with default structure...');
-		console.warn('[DB] Database file path:', dbPath);
-		
+		// Main site content DB (pages, team, settings) - separate from CRM Postgres. Auto-init if missing.
+		console.warn('[DB] Main site content database not found, initializing default structure.');
+		console.warn('[DB] Path:', dbPath);
+		if (!process.env.DATABASE_PATH && process.env.NODE_ENV === 'production') {
+			console.warn('[DB] Set DATABASE_PATH=/data/database.json and mount a volume at /data so content persists across deploys.');
+		}
 		try {
 			writeDatabase(defaultDatabase);
-			console.log('[DB] Successfully initialized database with default structure');
-			console.log('[DB] NOTE: This is a fresh database. You may want to restore from backup or use /api/init-database endpoint.');
+			console.log('[DB] Initialized. Restore from backup or use /api/init-database if you need existing content.');
 		} catch (writeError) {
-			console.error('[DB] CRITICAL: Could not write to persistent location:', writeError.message);
-			console.error('[DB] This may indicate the volume is not mounted or there are permission issues.');
-			console.log('[DB] Returning default structure in memory (changes will not persist)');
+			console.error('[DB] Could not write:', writeError.message);
+			console.log('[DB] Using default content in memory (changes will not persist).');
 		}
-
 		return defaultDatabase;
 	}
 }

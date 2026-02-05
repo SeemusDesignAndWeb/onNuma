@@ -247,6 +247,52 @@ export function getOrganisationHubAreas() {
 	];
 }
 
+// Pricing plan tiers – map to area permissions (aligned with marketing pricing page)
+const FREE_AREAS = [
+	HUB_AREAS.CONTACTS,
+	HUB_AREAS.LISTS,
+	HUB_AREAS.ROTAS,
+	HUB_AREAS.EVENTS,
+	HUB_AREAS.MEETING_PLANNERS
+];
+const PROFESSIONAL_AREAS = [...FREE_AREAS, HUB_AREAS.NEWSLETTERS, HUB_AREAS.FORMS, HUB_AREAS.MEMBERS];
+const ENTERPRISE_AREAS = [...PROFESSIONAL_AREAS, HUB_AREAS.SAFEGUARDING_FORMS];
+
+const PLAN_AREAS = {
+	free: FREE_AREAS,
+	professional: PROFESSIONAL_AREAS,
+	enterprise: ENTERPRISE_AREAS
+};
+
+const VALID_PLANS = new Set(Object.keys(PLAN_AREAS));
+
+/** Area permissions for a given plan (free | professional | enterprise). */
+export function getAreaPermissionsForPlan(plan) {
+	if (!plan || !VALID_PLANS.has(plan)) return FREE_AREAS;
+	return [...PLAN_AREAS[plan]];
+}
+
+/** Derive plan from organisation area permissions; returns 'free' | 'professional' | 'enterprise' | null (null = custom). */
+export function getPlanFromAreaPermissions(areaPermissions) {
+	if (!Array.isArray(areaPermissions)) return 'free';
+	const sorted = (arr) => [...arr].sort();
+	const key = (arr) => sorted(arr).join(',');
+	const permsKey = key(areaPermissions);
+	for (const [plan, areas] of Object.entries(PLAN_AREAS)) {
+		if (key(areas) === permsKey) return plan;
+	}
+	return null;
+}
+
+/** Plan options for multi-org admin (select Free, Professional or Enterprise). */
+export function getHubPlanTiers() {
+	return [
+		{ value: 'free', label: 'Free', description: 'Contacts, Lists, Events, Rotas, Meeting Planners, Email reminders. No forms or email campaigns.' },
+		{ value: 'professional', label: 'Professional', description: 'Everything in Free plus Forms, Email templates and campaigns, Members, your branding.' },
+		{ value: 'enterprise', label: 'Enterprise', description: 'Everything in Professional plus Safeguarding forms. Custom solutions for larger needs.' }
+	];
+}
+
 export function canCreateAdmin(admin, superAdminEmail = null) {
 	if (!admin) return false;
 	return isSuperAdmin(admin, superAdminEmail);

@@ -6,37 +6,51 @@
 	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 	
 	export let data;
-	
+	/** @type {Record<string, string>} - Route params from SvelteKit (accepted to avoid unknown-prop warning) */
+	export const params = {};
+
 	$: admin = data?.admin || null;
 	let settings = data?.settings || { emailRateLimitDelay: 500, calendarColours: [], meetingPlannerRotas: [], theme: {} };
 	let availableRoles = data?.availableRoles || [];
 	
-	let emailRateLimitDelay = settings?.emailRateLimitDelay || 500;
-	let calendarColours = JSON.parse(JSON.stringify(settings?.calendarColours || []));
-	let meetingPlannerRotas = JSON.parse(JSON.stringify(settings?.meetingPlannerRotas || []));
 	const defaultButtonColors = ['#4A97D2', '#4BB170', '#3B79A8', '#3C8E5A', '#E6A324'];
 	const defaultPanelHeadColors = ['#4A97D2', '#3B79A8', '#2C5B7E'];
+	function toHex(val, fallback) {
+		return (typeof val === 'string' && val.trim() && /^#[0-9A-Fa-f]{6}$/.test(val.trim())) ? val.trim() : fallback;
+	}
+	function normalizeCalendarColour(c) {
+		return { value: toHex(c?.value, '#9333ea'), label: (c?.label != null && typeof c.label === 'string') ? c.label : '' };
+	}
+
+	let emailRateLimitDelay = settings?.emailRateLimitDelay || 500;
+	let calendarColours = (JSON.parse(JSON.stringify(settings?.calendarColours || []))).map(normalizeCalendarColour);
+	// meetingPlannerRotas is already filtered server-side to only roles that exist in this org
+	let meetingPlannerRotas = JSON.parse(JSON.stringify(settings?.meetingPlannerRotas || []));
+
 	let themeLogoPath = settings?.theme?.logoPath ?? '';
 	let themeLoginLogoPath = settings?.theme?.loginLogoPath ?? '';
-	let themePrimaryColor = settings?.theme?.primaryColor ?? '#4BB170';
-	let themeBrandColor = settings?.theme?.brandColor ?? '#4A97D2';
-	let themeNavbarBackgroundColor = settings?.theme?.navbarBackgroundColor ?? '#4A97D2';
+	let themePrimaryColor = toHex(settings?.theme?.primaryColor, '#4BB170');
+	let themeBrandColor = toHex(settings?.theme?.brandColor, '#4A97D2');
+	let themeNavbarBackgroundColor = toHex(settings?.theme?.navbarBackgroundColor, '#4A97D2');
 	let themeButtonColors = JSON.parse(JSON.stringify(settings?.theme?.buttonColors ?? defaultButtonColors));
 	let themePanelHeadColors = JSON.parse(JSON.stringify(settings?.theme?.panelHeadColors ?? defaultPanelHeadColors));
-	let themePanelBackgroundColor = settings?.theme?.panelBackgroundColor ?? '#E8F2F9';
+	let themePanelBackgroundColor = toHex(settings?.theme?.panelBackgroundColor, '#E8F2F9');
 	let themeExternalPagesLayout = settings?.theme?.externalPagesLayout ?? 'integrated';
 	let themePublicPagesBranding = settings?.theme?.publicPagesBranding ?? 'hub';
-	// Ensure arrays have correct length
+	// Ensure arrays have correct length and no empty/invalid hex (type="color" requires #rrggbb)
 	if (themeButtonColors.length < 5) themeButtonColors = [...themeButtonColors, ...defaultButtonColors.slice(themeButtonColors.length)];
 	if (themePanelHeadColors.length < 3) themePanelHeadColors = [...themePanelHeadColors, ...defaultPanelHeadColors.slice(themePanelHeadColors.length)];
-	themeButtonColors = themeButtonColors.slice(0, 5);
-	themePanelHeadColors = themePanelHeadColors.slice(0, 3);
+	themeButtonColors = themeButtonColors.slice(0, 5).map((c, i) => toHex(c, defaultButtonColors[i]));
+	themePanelHeadColors = themePanelHeadColors.slice(0, 3).map((c, i) => toHex(c, defaultPanelHeadColors[i]));
 	let saving = false;
 	let editingColourIndex = null;
 	let originalColour = null; // Store original colour when editing starts
 	let newColour = { value: '#9333ea', label: '' };
 	let showAddColour = false;
+	// Set to true to show Email Rate Limiting and Data store tabs (code kept for later use)
+	const SHOW_EMAIL_AND_DATA_STORE_TABS = false;
 	let activeTab = 'theme'; // 'theme', 'colours', 'meeting-planner', 'email', 'data-store', or 'advanced'
+	$: if (!SHOW_EMAIL_AND_DATA_STORE_TABS && (activeTab === 'email' || activeTab === 'data-store')) activeTab = 'theme';
 	// Optimistic update: set when we switch so "Current mode" updates before refetch
 	let storeModeOverride = null;
 	$: storeMode = storeModeOverride ?? data?.storeMode ?? 'file';
@@ -126,23 +140,23 @@
 		lastSyncedSettings = data.settings;
 		settings = data.settings;
 		emailRateLimitDelay = settings.emailRateLimitDelay;
-		calendarColours = JSON.parse(JSON.stringify(settings.calendarColours || []));
+		calendarColours = (JSON.parse(JSON.stringify(settings.calendarColours || []))).map(normalizeCalendarColour);
 		meetingPlannerRotas = JSON.parse(JSON.stringify(settings.meetingPlannerRotas || []));
 		if (settings.theme) {
 			themeLogoPath = settings.theme.logoPath ?? '';
 			themeLoginLogoPath = settings.theme.loginLogoPath ?? '';
-			themePrimaryColor = settings.theme.primaryColor ?? '#4BB170';
-			themeBrandColor = settings.theme.brandColor ?? '#4A97D2';
-			themeNavbarBackgroundColor = settings.theme.navbarBackgroundColor ?? '#4A97D2';
+			themePrimaryColor = toHex(settings.theme.primaryColor, '#4BB170');
+			themeBrandColor = toHex(settings.theme.brandColor, '#4A97D2');
+			themeNavbarBackgroundColor = toHex(settings.theme.navbarBackgroundColor, '#4A97D2');
 			themeButtonColors = JSON.parse(JSON.stringify(settings.theme.buttonColors ?? defaultButtonColors));
 			themePanelHeadColors = JSON.parse(JSON.stringify(settings.theme.panelHeadColors ?? defaultPanelHeadColors));
-			themePanelBackgroundColor = settings.theme.panelBackgroundColor ?? '#E8F2F9';
-			themeExternalPagesLayout = settings.theme.externalPagesLayout ?? 'integrated';
-			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'hub';
 			if (themeButtonColors.length < 5) themeButtonColors = [...themeButtonColors, ...defaultButtonColors.slice(themeButtonColors.length)];
 			if (themePanelHeadColors.length < 3) themePanelHeadColors = [...themePanelHeadColors, ...defaultPanelHeadColors.slice(themePanelHeadColors.length)];
-			themeButtonColors = themeButtonColors.slice(0, 5);
-			themePanelHeadColors = themePanelHeadColors.slice(0, 3);
+			themeButtonColors = themeButtonColors.slice(0, 5).map((c, i) => toHex(c, defaultButtonColors[i]));
+			themePanelHeadColors = themePanelHeadColors.slice(0, 3).map((c, i) => toHex(c, defaultPanelHeadColors[i]));
+			themePanelBackgroundColor = toHex(settings.theme.panelBackgroundColor, '#E8F2F9');
+			themeExternalPagesLayout = settings.theme.externalPagesLayout ?? 'integrated';
+			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'hub';
 		}
 	}
 	
@@ -374,7 +388,11 @@
 	}
 	
 	function updateColour(index, field, value) {
-		calendarColours[index] = { ...calendarColours[index], [field]: value };
+		const next = { ...calendarColours[index], [field]: value };
+		if (field === 'value' && (!value || !/^#[0-9A-Fa-f]{6}$/.test(String(value).trim()))) {
+			next.value = toHex(next.value, '#9333ea');
+		}
+		calendarColours[index] = next;
 	}
 	
 	async function saveColourEdit() {
@@ -620,6 +638,7 @@
 				>
 					Meeting Planner
 				</button>
+				{#if SHOW_EMAIL_AND_DATA_STORE_TABS}
 				<button
 					on:click={() => activeTab = 'email'}
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'email' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
@@ -632,6 +651,7 @@
 				>
 					Data store
 				</button>
+				{/if}
 				<button
 					on:click={() => activeTab = 'advanced'}
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'advanced' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
@@ -646,7 +666,7 @@
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Theme</h2>
 			<p class="text-sm text-gray-600 mb-4">
-				Set colours and logo used on the website and external pages (e.g. signup, sundays). Leave logo blank to use the default.
+				Set colours and logo used on the public pages (e.g. signup). Leave logo blank to use the default.
 			</p>
 			<div class="space-y-4 max-w-xl">
 				<div>
@@ -803,7 +823,7 @@
 											<div class="flex gap-2">
 												<input
 													type="color"
-													value={colour.value}
+													value={colour.value && /^#[0-9A-Fa-f]{6}$/.test(colour.value) ? colour.value : '#9333ea'}
 													on:input={(e) => updateColour(index, 'value', e.target.value)}
 													class="h-9 w-20 border border-gray-300 rounded-md cursor-pointer"
 												/>
@@ -941,7 +961,7 @@
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Meeting Planner Rotas</h2>
 			<p class="text-sm text-gray-600 mb-4">
-				Manage the default rotas that are automatically created and attached to new meeting planners.
+				Manage the default rotas that are attached to new meeting planners. Only rotas that exist in this organisation are shown; create rotas from Meeting Planners or Rotas first if the list is empty.
 			</p>
 			
 			<div class="space-y-4">
@@ -1069,8 +1089,8 @@
 		{/if}
 		
 		
-		<!-- Email Rate Limiting Settings -->
-		{#if activeTab === 'email'}
+		<!-- Email Rate Limiting Settings (hidden when SHOW_EMAIL_AND_DATA_STORE_TABS is false) -->
+		{#if SHOW_EMAIL_AND_DATA_STORE_TABS && activeTab === 'email'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Email Rate Limiting</h2>
 			<p class="text-sm text-gray-600 mb-4">
@@ -1130,8 +1150,8 @@
 		</div>
 		{/if}
 
-		<!-- Data store -->
-		{#if activeTab === 'data-store'}
+		<!-- Data store (hidden when SHOW_EMAIL_AND_DATA_STORE_TABS is false) -->
+		{#if SHOW_EMAIL_AND_DATA_STORE_TABS && activeTab === 'data-store'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Data store</h2>
 			<p class="text-sm text-gray-600 mb-4">

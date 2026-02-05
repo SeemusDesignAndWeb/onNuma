@@ -10,7 +10,7 @@
 	const tagline = landing.tagline || 'Organisation management that people actually use';
 
 	// Pricing: scale by contacts (30–700), Professional max £50/month; Free up to 50
-	let contacts = 200;
+	let contacts = 30;
 	const minContacts = 1;
 	const maxContacts = 700;
 	const freeMaxContacts = 50;
@@ -85,11 +85,11 @@
 	</div>
 </section>
 
-<!-- About – Why OnNuma -->
+<!-- About – How we arrived OnNuma -->
 <section id="about" class="py-16 md:py-24 bg-white">
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
 		<h2 class="text-3xl md:text-4xl font-bold text-brand-blue mb-6">
-			Why OnNuma
+			How we arrived OnNuma
 		</h2>
 		<p class="text-slate-700 text-lg leading-relaxed mb-4">
 			We created OnNuma because organising volunteers had become harder than it should be. Rotas were complicated, systems felt technical, and the very people needed to keep things running were often the ones struggling to use the tools.
@@ -125,7 +125,7 @@
 	</div>
 </section>
 
-<!-- Why OnNuma – short stats / proof with people background -->
+<!-- Why is it best OnNuma? – short stats / proof with people background -->
 <section class="relative py-16 md:py-24 overflow-hidden">
 	<div class="absolute inset-0">
 		<img
@@ -138,7 +138,7 @@
 	<div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl text-center">
 		<p class="text-xs font-semibold tracking-widest text-brand-green/90 uppercase mb-2">Why?</p>
 		<h2 class="text-3xl md:text-4xl font-bold text-white mb-12 drop-shadow-sm">
-			Why OnNuma?
+			Why is it best OnNuma?
 		</h2>
 		<div class="grid sm:grid-cols-3 gap-8">
 			<div>
@@ -161,7 +161,7 @@
 <section id="features" class="py-16 md:py-24 bg-white">
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
 		<div class="text-center mb-12">
-			<p class="text-xs font-semibold tracking-widest text-brand-blue uppercase mb-2">Keeping volunteering simple and affective</p>
+			<p class="text-xs font-semibold tracking-widest text-brand-blue uppercase mb-2">Keeping volunteering simple and effective</p>
 			<h2 class="text-3xl md:text-4xl font-bold text-brand-blue mb-4">
 				Everything in one clear place
 			</h2>
@@ -169,31 +169,30 @@
 				OnNuma brings contacts, events, rotas and communication together so volunteers and admins stay on the same page.
 			</p>
 		</div>
-		<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
-				<h3 class="text-lg font-bold text-brand-blue mb-2">Contacts</h3>
-				<p class="text-slate-600 text-sm">A simple, organised record of volunteers and staff. No spreadsheets, no duplication.</p>
+		<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-10">
+			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all text-center">
+				<h3 class="text-lg font-bold text-brand-blue mb-2">Contacts and lists</h3>
+				<p class="text-slate-600 text-sm">Keep volunteers and teams organised. Build lists and communicate with the right people.</p>
 			</div>
-			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
-				<h3 class="text-lg font-bold text-brand-blue mb-2">Organise Lists</h3>
-				<p class="text-slate-600 text-sm">Teams, ministries or activities. Communicate with the right people at the right time.</p>
+			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all text-center">
+				<h3 class="text-lg font-bold text-brand-blue mb-2">Events and signups</h3>
+				<p class="text-slate-600 text-sm">Calendar, occurrences and simple sign-up so people can join without the hassle.</p>
 			</div>
-			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
-				<h3 class="text-lg font-bold text-brand-blue mb-2">Events calendar</h3>
-				<p class="text-slate-600 text-sm">See what’s happening across weeks and months. Repeating events stay clear and manageable.</p>
-			</div>
-			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
+			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all text-center">
 				<h3 class="text-lg font-bold text-brand-blue mb-2">Rotas that work</h3>
 				<p class="text-slate-600 text-sm">Self sign-up or assign. Confirmations and reminders go out automatically.</p>
 			</div>
-			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
-				<h3 class="text-lg font-bold text-brand-blue mb-2">Forms & emails</h3>
-				<p class="text-slate-600 text-sm">Collect information and communicate clearly without manual follow-up.</p>
+			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all text-center">
+				<h3 class="text-lg font-bold text-brand-blue mb-2">Personalised emails</h3>
+				<p class="text-slate-600 text-sm">Templates and campaigns that look like you. Send clear, on-brand communication.</p>
 			</div>
-			<div class="p-6 rounded-xl border border-slate-200 bg-white hover:border-brand-blue/30 hover:shadow-md transition-all">
-				<h3 class="text-lg font-bold text-brand-blue mb-2">Your branding</h3>
-				<p class="text-slate-600 text-sm">Volunteers see your organisation’s look and feel, not a generic tool.</p>
-			</div>
+		</div>
+		<!-- Wide card: brand with your logo and colours -->
+		<div class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-8 md:p-10 text-center">
+			<h3 class="text-xl font-bold text-brand-blue mb-3">Brand with your logo and colours</h3>
+			<p class="text-slate-600 max-w-2xl mx-auto">
+				Volunteers and sign-up pages see your organisation’s look and feel—your logo, your colours—not a generic tool. OnNuma stays in the background; your brand stays front and centre.
+			</p>
 		</div>
 	</div>
 </section>
@@ -209,7 +208,6 @@
 		<h2 class="text-3xl md:text-4xl font-bold text-white mb-8">
 			Unlock all these benefits
 		</h2>
-		<p class="text-white/90 mb-8">What’s included:</p>
 		<ul class="space-y-3 text-white/95">
 			<li class="flex items-start gap-3"><span class="text-brand-green mt-0.5">✓</span> Easy for non-technical volunteers – no accounts to manage</li>
 			<li class="flex items-start gap-3"><span class="text-brand-green mt-0.5">✓</span> Clear overview of events and rotas in one place</li>

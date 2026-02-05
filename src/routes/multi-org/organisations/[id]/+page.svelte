@@ -7,7 +7,8 @@
 	$: base = data?.multiOrgBasePath ?? '/multi-org';
 	$: form = $page.form;
 	$: organisation = data?.organisation;
-	$: hubAreas = data?.hubAreas || [];
+	$: hubPlanTiers = data?.hubPlanTiers || [];
+	$: currentPlan = data?.currentPlan ?? 'free';
 	$: values = form?.values ?? (organisation ? {
 		name: organisation.name,
 		address: organisation.address ?? '',
@@ -16,7 +17,7 @@
 		contactName: organisation.contactName ?? '',
 		hubDomain: organisation.hubDomain ?? '',
 		isHubOrganisation: organisation.isHubOrganisation ?? false,
-		areaPermissions: organisation.areaPermissions ?? []
+		plan: currentPlan
 	} : {});
 	$: errors = form?.errors || {};
 	$: multiOrgAdmin = data?.multiOrgAdmin || null;
@@ -152,25 +153,28 @@
 			{/if}
 		</div>
 
-		<!-- Panel 3: Areas of the site -->
-		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
-			<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Areas of the site this organisation can access</h2>
-			<div class="space-y-2.5">
-				{#each hubAreas as area}
-					<label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
+		<!-- Panel 3: Plan (Free, Professional, Enterprise) -->
+		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm" role="group" aria-labelledby="plan-panel-heading">
+			<h2 id="plan-panel-heading" class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Plan</h2>
+			<div class="space-y-3">
+				{#each hubPlanTiers as tier}
+					<label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer {(values.plan || currentPlan) === tier.value ? 'border-[#EB9486] bg-[#EB9486]/5' : ''}">
 						<input
-							type="checkbox"
-							name="areaPermissions"
-							value={area.value}
-							checked={values.areaPermissions && values.areaPermissions.includes(area.value)}
-							class="rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+							type="radio"
+							name="plan"
+							value={tier.value}
+							checked={(values.plan ?? currentPlan) === tier.value}
+							class="mt-1 rounded-full border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
 						/>
-						<span class="text-sm text-slate-700">{area.label}</span>
+						<div>
+							<span class="font-medium text-slate-800">{tier.label}</span>
+							<p class="text-sm text-slate-500 mt-0.5">{tier.description}</p>
+						</div>
 					</label>
 				{/each}
 			</div>
-			{#if errors.areaPermissions}
-				<p class="mt-1.5 text-sm text-red-600">{errors.areaPermissions}</p>
+			{#if errors.plan}
+				<p class="mt-1.5 text-sm text-red-600">{errors.plan}</p>
 			{/if}
 		</div>
 		</div>

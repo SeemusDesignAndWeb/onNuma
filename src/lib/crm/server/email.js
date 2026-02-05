@@ -3,6 +3,7 @@ import { env } from '$env/dynamic/private';
 import { readCollection, findById, update, findMany } from './fileStore.js';
 import { ensureUnsubscribeToken, ensureEventToken } from './tokens.js';
 import { rateLimitedSend } from './emailRateLimiter.js';
+import { getSettings } from './settings.js';
 
 const resend = new Resend(env.RESEND_API_KEY);
 
@@ -16,18 +17,40 @@ function getBaseUrl(event) {
 }
 
 /**
- * Generate email branding HTML with logo and site link
+ * Resolve logo URL for emails: use Hub theme logo if set, otherwise OnNuma logo.
  * @param {object} event - SvelteKit event object (for base URL)
- * @returns {string} Branding HTML
+ * @returns {Promise<{ logoUrl: string, alt: string }>}
  */
-function getEmailBranding(event) {
+async function getEmailLogo(event) {
 	const baseUrl = getBaseUrl(event);
-	const logoUrl = `${baseUrl}/images/egcc-color.png`;
-	
+	const settings = await getSettings();
+	const theme = settings?.theme || {};
+	const logoPath = typeof theme.logoPath === 'string' ? theme.logoPath.trim() : '';
+	if (logoPath && logoPath.startsWith('http')) {
+		return { logoUrl: logoPath, alt: 'Logo' };
+	}
+	if (logoPath && logoPath.startsWith('/')) {
+		return { logoUrl: `${baseUrl}${logoPath}`, alt: 'Logo' };
+	}
+	if (logoPath) {
+		return { logoUrl: `${baseUrl}/${logoPath.replace(/^\//, '')}`, alt: 'Logo' };
+	}
+	return { logoUrl: `${baseUrl}/images/onnuma-logo.png`, alt: 'OnNuma' };
+}
+
+/**
+ * Generate email branding HTML with logo and site link.
+ * Uses Hub theme logo if set; otherwise OnNuma logo.
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<string>} Branding HTML
+ */
+async function getEmailBranding(event) {
+	const baseUrl = getBaseUrl(event);
+	const { logoUrl, alt } = await getEmailLogo(event);
 	return `
 		<div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
 			<a href="${baseUrl}" style="display: inline-block; text-decoration: none;">
-				<img src="${logoUrl}" alt="Eltham Green Community Church" style="max-width: 200px; height: auto; display: block; margin: 0 auto;" />
+				<img src="${logoUrl}" alt="${alt}" style="max-width: 200px; height: auto; display: block; margin: 0 auto;" />
 			</a>
 		</div>
 	`;
@@ -632,7 +655,7 @@ export async function prepareNewsletterEmail({ newsletterId, to, name, contact }
 	const unsubscribeText = `\n\n---\nYou are receiving this email because you are subscribed to our newsletter.\nUnsubscribe: ${unsubscribeLink}`;
 
 	// Wrap content in proper email template with branding
-	const branding = getEmailBranding(event);
+	const branding = await getEmailBranding(event);
 	const fullHtml = `
 		<!DOCTYPE html>
 		<html>
@@ -885,7 +908,7 @@ export async function sendRotaInvite({ to, name, token }, rotaData, contact, eve
 		upcomingRotasHtml += '</div>';
 	}
 
-	const branding = getEmailBranding(event);
+	const branding = await getEmailBranding(event);
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -1095,7 +1118,7 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 				upcomingRotasHtml += '</div>';
 			}
 
-			const branding = getEmailBranding(event);
+			const branding = await getEmailBranding(event);
 			const html = `
 				<!DOCTYPE html>
 				<html>
@@ -1326,7 +1349,7 @@ export async function sendAdminWelcomeEmail({ to, name, email, verificationToken
 	const verificationLink = `${baseUrl}/hub/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
 	const hubLoginLink = `${baseUrl}/hub/auth/login`;
 
-	const branding = getEmailBranding(event);
+	const branding = await getEmailBranding(event);
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -1487,7 +1510,7 @@ export async function sendPasswordResetEmail({ to, name, resetToken }, event) {
 		fullLink: resetLink
 	});
 
-	const branding = getEmailBranding(event);
+	const branding = await getEmailBranding(event);
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -1676,7 +1699,7 @@ export async function sendEventSignupConfirmation({ to, name, event, occurrence,
 	// Get location from occurrence first, fallback to event location
 	const location = occurrence.location || event.location || '';
 
-	const branding = getEmailBranding(svelteEvent);
+	const branding = await getEmailBranding(svelteEvent);
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -1965,7 +1988,7 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 		assigneesText = '\n\nNo assignees yet.';
 	}
 
-	const branding = getEmailBranding(event);
+	const branding = await getEmailBranding(event);
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -2103,7 +2126,7 @@ export async function sendUpcomingRotaReminder({ to, name }, rotaData, event) {
 		}
 	}
 
-	const branding = getEmailBranding(event);
+	const branding = await getEmailBranding(event);
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -2199,7 +2222,7 @@ Note: If you are unable to fulfill this assignment, please contact the rota coor
 export async function sendMemberSignupConfirmationEmail({ to, name }, event) {
 	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 	const baseUrl = getBaseUrl(event);
-	const branding = getEmailBranding();
+	const branding = await getEmailBranding(event);
 	const contactName = name || to;
 
 	const html = `
@@ -2280,7 +2303,7 @@ Eltham Green Community Church
 export async function sendMemberSignupAdminNotification({ to, contact }, event) {
 	const fromEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 	const baseUrl = getBaseUrl(event);
-	const branding = getEmailBranding();
+	const branding = await getEmailBranding(event);
 	const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email;
 	const isUpdate = contact.updatedAt && contact.createdAt !== contact.updatedAt;
 

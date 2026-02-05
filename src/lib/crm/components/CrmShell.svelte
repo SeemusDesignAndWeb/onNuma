@@ -331,20 +331,16 @@
 		<footer class="bg-white border-t border-gray-200 mt-12 flex-shrink-0">
 			<div class="max-w-7xl mx-auto px-4 py-6">
 				<div class="flex flex-col md:flex-row justify-center md:justify-between items-center space-y-4 md:space-y-0">
-					<div class="flex flex-col md:flex-row items-center md:items-center space-y-2 md:space-y-0 md:space-x-3">
+					<a href="/" class="flex items-center" aria-label="OnNuma home">
 						<img
-							src="/images/egcc-logo.png"
-							alt="Eltham Green Community Church"
+							src="/images/onnuma-logo.png"
+							alt="OnNuma"
 							class="h-8 w-auto"
 						/>
-						<div class="text-sm text-gray-600 text-center">
-							<div class="font-semibold text-gray-900">Eltham Green Community Church</div>
-							<div class="text-xs">542 Westhorne Avenue, Eltham, London, SE9 6DH</div>
-						</div>
-					</div>
+					</a>
 					<div class="text-sm text-gray-500 text-center md:text-right flex flex-col md:flex-row gap-2 md:gap-4">
 						<a href="/hub/privacy" class="text-gray-600 hover:text-theme-button-1 transition-colors">Privacy Policy</a>
-						<a href="/" class="text-brand-blue hover:text-brand-blue/80 transition-colors">Visit Website</a>
+						<a href="https://www.onnuma.com" class="text-brand-blue hover:text-brand-blue/80 transition-colors" target="_blank" rel="noopener noreferrer">Visit Website</a>
 					</div>
 				</div>
 			</div>
