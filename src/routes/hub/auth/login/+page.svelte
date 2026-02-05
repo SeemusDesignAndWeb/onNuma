@@ -8,6 +8,7 @@
 	let showPrivacyModal = false;
 	let privacyPolicyHtml = '';
 	let isLoadingPrivacy = false;
+	let submitting = false;
 	
 	$: if ($page.form?.error) {
 		if ($page.form.error === 'EMAIL_NOT_VERIFIED') {
@@ -84,7 +85,17 @@
 				{organisationName}
 			</p>
 		</div>
-		<form method="POST" action="?/login" use:enhance>
+		<form
+			method="POST"
+			action="?/login"
+			use:enhance={() => {
+				submitting = true;
+				return async ({ update }) => {
+					await update();
+					submitting = false;
+				};
+			}}
+		>
 			<input type="hidden" name="_csrf" value={$page.data?.csrfToken || ''} />
 			<div class="rounded-md shadow-sm -space-y-px">
 				<div>
@@ -143,10 +154,20 @@
 				By signing in you agree to abide by the <button type="button" on:click={openPrivacyModal} class="text-hub-blue-600 hover:text-hub-blue-600/80 underline break-words bg-transparent border-0 p-0 cursor-pointer">privacy policy</button>.
 			</div>
 
+			{#if submitting}
+				<div class="mt-4 p-3 rounded-md text-sm bg-hub-green-50 text-hub-green-800 border border-hub-green-200 flex items-center justify-center gap-2">
+					<svg class="animate-spin h-4 w-4 text-hub-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+					</svg>
+					<span>Logging in securely…</span>
+				</div>
+			{/if}
 			<div class="mt-6">
 				<button
 					type="submit"
-					class="group relative w-full flex justify-center py-2.5 sm:py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-hub-green-600 hover:bg-hub-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-button-2"
+					disabled={submitting}
+					class="group relative w-full flex justify-center py-2.5 sm:py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-hub-green-600 hover:bg-hub-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-button-2 disabled:opacity-70 disabled:cursor-not-allowed"
 				>
 					Sign in
 				</button>
