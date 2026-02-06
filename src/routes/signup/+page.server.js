@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { create, readCollection, findById, update, updatePartial } from '$lib/crm/server/fileStore.js';
-import { createAdmin, getAdminByEmail } from '$lib/crm/server/auth.js';
+import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerificationToken } from '$lib/crm/server/auth.js';
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { isValidHubDomain, normaliseHost } from '$lib/crm/server/hubDomain.js';
@@ -62,6 +62,18 @@ async function isHubDomainTaken(normalisedDomain, excludeOrgId = null) {
 	);
 }
 
+/** True if this email is already the owner (contact/super admin) of an organisation. */
+async function isEmailOrgOwner(email) {
+	if (!email || !String(email).trim()) return false;
+	const normalised = String(email).toLowerCase().trim();
+	const orgs = await readCollection('organisations');
+	return orgs.some(
+		(o) =>
+			(o.email && String(o.email).toLowerCase().trim() === normalised) ||
+			(o.hubSuperAdminEmail && String(o.hubSuperAdminEmail).toLowerCase().trim() === normalised)
+	);
+}
+
 export async function load({ url }) {
 	return {
 		success: url.searchParams.get('success') === '1'
@@ -96,9 +108,8 @@ export const actions = {
 			});
 		}
 
-		// Only one signup per email address
-		const existingAdmin = await getAdminByEmail(email);
-		if (existingAdmin) {
+		// Only one signup per email as organisation owner (block if they already own an org)
+		if (await isEmailOrgOwner(email)) {
 			return fail(400, {
 				errors: { email: 'This email address is already registered. Use a different email or log in.' },
 				values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
@@ -133,7 +144,7 @@ export const actions = {
 			});
 			invalidateHubDomainCache();
 
-			// Create Hub admin with full permissions (super admin for this org)
+			// Create Hub admin with full permissions (super admin for this org), or get existing if email already in admins
 			admin = await createAdmin({
 				email,
 				password,
@@ -141,13 +152,21 @@ export const actions = {
 				permissions: FULL_PERMISSIONS
 			});
 
-			// Record marketing consent on admin too so we can query admins for marketing (who we can market to)
+			// Ensure admin has the password they just set (required when reusing an existing admin who had no org)
+			await updateAdminPassword(admin.id, password);
+
+			// Ensure verification token exists for welcome email (existing admins don't get one from createAdmin)
 			const adminRecord = await findById('admins', admin.id);
 			if (adminRecord) {
+				const now = new Date();
+				const token = adminRecord.emailVerificationToken || generateVerificationToken();
+				const expires = adminRecord.emailVerificationTokenExpires || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 				await update('admins', admin.id, {
 					...adminRecord,
+					emailVerificationToken: token,
+					emailVerificationTokenExpires: expires,
 					marketingConsent: !!marketingConsent,
-					updatedAt: new Date().toISOString()
+					updatedAt: now.toISOString()
 				});
 			}
 

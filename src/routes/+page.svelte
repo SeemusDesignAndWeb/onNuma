@@ -289,7 +289,7 @@
 					<span class="text-4xl font-bold text-slate-900">£{professionalPrice}</span>
 					<span class="text-slate-500">/month</span>
 				</div>
-				<p class="text-slate-600 text-sm mb-4">Up to <strong>{users}</strong> users</p>
+				<p class="text-slate-600 text-sm mb-4">Up to <strong>500</strong> users</p>
 				<ul class="space-y-3 text-slate-700 text-sm flex-1 mb-8">
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Everything in Free</li>
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Forms</li>
