@@ -21,5 +21,7 @@ export {
 	canCreateAdmin,
 	getAreaPermissionsForPlan,
 	getPlanFromAreaPermissions,
-	getHubPlanTiers
+	getHubPlanTiers,
+	PLAN_MAX_USERS,
+	getPlanMaxUsers
 } from '$lib/crm/permissions.js';

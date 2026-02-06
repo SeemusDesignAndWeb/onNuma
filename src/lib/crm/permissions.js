@@ -266,6 +266,19 @@ const PLAN_AREAS = {
 
 const VALID_PLANS = new Set(Object.keys(PLAN_AREAS));
 
+/** Maximum number of users (admins) per plan. */
+export const PLAN_MAX_USERS = {
+	free: 30,
+	professional: 500,
+	enterprise: 5000
+};
+
+/** Maximum users allowed for a plan (free | professional | enterprise). Defaults to free limit if unknown. */
+export function getPlanMaxUsers(plan) {
+	if (!plan || !VALID_PLANS.has(plan)) return PLAN_MAX_USERS.free;
+	return PLAN_MAX_USERS[plan] ?? PLAN_MAX_USERS.free;
+}
+
 /** Area permissions for a given plan (free | professional | enterprise). */
 export function getAreaPermissionsForPlan(plan) {
 	if (!plan || !VALID_PLANS.has(plan)) return FREE_AREAS;

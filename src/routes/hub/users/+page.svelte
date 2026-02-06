@@ -24,6 +24,11 @@
 	$: currentPage = data.currentPage || 1;
 	$: totalPages = data.totalPages || 1;
 	$: search = data.search || '';
+	$: adminCount = data.adminCount ?? 0;
+	$: maxUsers = data.maxUsers ?? 30;
+	$: atUserLimit = maxUsers != null && adminCount >= maxUsers;
+	$: planLabel = (data.plan || 'free').charAt(0).toUpperCase() + (data.plan || 'free').slice(1);
+	$: showLimitMessage = $page.url.searchParams.get('limit') === '1';
 
 	let searchInput = search;
 
@@ -100,12 +105,25 @@
 	];
 </script>
 
+{#if showLimitMessage}
+	<div class="mb-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+		User limit reached ({adminCount} / {maxUsers} for {planLabel} plan). Upgrade your plan to add more admins.
+	</div>
+{/if}
+
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Admins</h2>
-	<div class="flex flex-wrap gap-2">
-		<a href="/hub/users/new" class="btn-theme-2 px-2.5 py-1.5 rounded-md text-xs">
-			Add Admin
-		</a>
+	<div class="flex flex-wrap gap-2 items-center">
+		<span class="text-sm text-gray-600">{planLabel} plan: {adminCount} / {maxUsers} users</span>
+		{#if atUserLimit}
+			<span class="btn-theme-2 px-2.5 py-1.5 rounded-md text-xs opacity-60 cursor-not-allowed" title="User limit reached. Upgrade your plan to add more admins.">
+				Add Admin
+			</span>
+		{:else}
+			<a href="/hub/users/new" class="btn-theme-2 px-2.5 py-1.5 rounded-md text-xs">
+				Add Admin
+			</a>
+		{/if}
 	</div>
 </div>
 

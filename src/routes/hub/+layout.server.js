@@ -31,7 +31,8 @@ export async function load({ cookies, locals }) {
 		currentOrganisation: org || null,
 		showOnboarding: !!showOnboarding,
 		organisationId: organisationId || null,
-		organisationAreaPermissions
+		organisationAreaPermissions,
+		plan: plan || 'free'
 	};
 }
 

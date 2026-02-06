@@ -2,11 +2,13 @@ import { redirect } from '@sveltejs/kit';
 import { createAdmin, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
-import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail } from '$lib/crm/server/permissions.js';
-import { getEffectiveSuperAdminEmail } from '$lib/crm/server/settings.js';
+import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail, getPlanMaxUsers, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import { getEffectiveSuperAdminEmail, getSettings } from '$lib/crm/server/settings.js';
+import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
+import { readCollection } from '$lib/crm/server/fileStore.js';
 
-export async function load({ cookies }) {
+export async function load({ cookies, parent }) {
 	const admin = await getAdminFromCookies(cookies);
 	if (!admin) {
 		throw redirect(302, '/hub/auth/login');
@@ -18,9 +20,18 @@ export async function load({ cookies }) {
 		throw redirect(302, '/hub/users');
 	}
 	
+	const parentData = await parent();
+	const plan = parentData.plan || 'free';
+	const maxUsers = getPlanMaxUsers(plan);
+	const admins = await readCollection('admins');
+	const adminCount = admins.length;
+	if (adminCount >= maxUsers) {
+		throw redirect(302, '/hub/users?limit=1');
+	}
+	
 	const csrfToken = getCsrfToken(cookies) || '';
 	const availableAreas = getAvailableHubAreas(admin, superAdminEmail);
-	return { csrfToken, availableAreas, superAdminEmail };
+	return { csrfToken, availableAreas, superAdminEmail, adminCount, maxUsers };
 }
 
 export const actions = {
@@ -51,6 +62,21 @@ export const actions = {
 		const effectiveSuperAdminEmail = await getEffectiveSuperAdminEmail();
 		if (!canCreateAdmin(currentAdmin, effectiveSuperAdminEmail)) {
 			return { error: 'You do not have permission to create admins' };
+		}
+
+		// Enforce plan user limit (free: 30, professional: 500, etc.)
+		const organisations = await readCollection('organisations');
+		const settings = await getSettings();
+		const requestOrgId = getRequestOrganisationId();
+		const organisationId = requestOrgId ?? settings?.currentOrganisationId ?? organisations?.[0]?.id ?? null;
+		const org = organisationId ? organisations.find((o) => o.id === organisationId) : null;
+		const plan = org && Array.isArray(org.areaPermissions)
+			? getPlanFromAreaPermissions(org.areaPermissions) || 'free'
+			: 'free';
+		const maxUsers = getPlanMaxUsers(plan);
+		const admins = await readCollection('admins');
+		if (admins.length >= maxUsers) {
+			return { error: `User limit reached (${maxUsers} for ${plan} plan). Upgrade your plan to add more admins.` };
 		}
 
 		// Check if email matches super admin email - always super admin (no permissions needed)
