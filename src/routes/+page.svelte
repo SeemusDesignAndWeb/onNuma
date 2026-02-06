@@ -6,7 +6,7 @@
 	export let params = {};
 	const landing = data?.landing || {};
 	const ctaDemo = landing.ctaRequestDemoUrl || '/multi-org';
-	const ctaStart = landing.ctaStartOrganisationUrl || '/multi-org/organisations/new';
+	const ctaStart = landing.ctaStartOrganisationUrl || '/signup';
 	const tagline = landing.tagline || 'Organisation management that people actually use';
 
 	// Pricing: scale by contacts (30–700), Professional max £50/month; Free up to 50
@@ -50,14 +50,22 @@
 		<p class="text-xl text-white/95 max-w-2xl mx-auto mb-8">
 			{tagline}
 		</p>
-		<a
-			href="#about"
-			on:click|preventDefault={() => scrollTo('about')}
-			class="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-brand-blue text-white hover:bg-brand-blue/90 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg transition-colors"
-		>
-			Read more
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-		</a>
+		<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+			<a
+				href="/signup"
+				class="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg font-semibold bg-white text-brand-blue hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg transition-colors"
+			>
+				Start now for free!
+			</a>
+			<a
+				href="#about"
+				on:click|preventDefault={() => scrollTo('about')}
+				class="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-brand-blue text-white hover:bg-brand-blue/90 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg transition-colors"
+			>
+				Read more
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+			</a>
+		</div>
 	</div>
 </section>
 

@@ -26,8 +26,9 @@
 	// On admin subdomain path is /auth/* or /organisations, so we also hide website UI via data from server
 	$: multiOrgAdminDomain = data?.multiOrgAdminDomain ?? false;
 	$: hideWebsiteElements = isAdminArea || isHubArea || isMultiOrgArea || multiOrgAdminDomain;
-	// External = public hub pages: signup, event token, forms, unsubscribe, view-rotas (theme applies only here when Hub branding is on)
-	$: isExternalPage = $page.url.pathname.startsWith('/signup') || $page.url.pathname.startsWith('/event/') || $page.url.pathname.startsWith('/forms') || $page.url.pathname.startsWith('/unsubscribe') || $page.url.pathname.startsWith('/view-rotas');
+	// External = public hub pages: signup sub-routes (rota/event/member), event token, forms, unsubscribe, view-rotas (theme applies only here when Hub branding is on).
+	// Root /signup (free-trial) is part of the frontend marketing site and uses full navbar (not /signup/ so not external).
+	$: isExternalPage = $page.url.pathname.startsWith('/signup/') || $page.url.pathname.startsWith('/event/') || $page.url.pathname.startsWith('/forms') || $page.url.pathname.startsWith('/unsubscribe') || $page.url.pathname.startsWith('/view-rotas');
 
 	// Theme from Hub settings. Only applied in Hub/admin and on public hub pages. Main website (/, /church, /events, etc.) never uses Hub theme.
 	$: theme = data?.theme || null;
@@ -70,9 +71,9 @@
 	let showHighlightBanner = false;
 
 	// Don't show navbar, banner, or preloader in admin or HUB areas
-	// But DO show navbar for public signup pages (rota, event, and member signups)
+	// But DO show navbar for public signup pages (free-trial, rota, event, and member signups)
 	// Don't show banner on signup pages or sundays page
-	$: isSignupPage = $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
+	$: isSignupPage = $page.url.pathname === '/signup' || $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
 	// External pages (signup, forms, etc.) always use minimal header with theme branding, no hub nav items
 	$: useStandaloneHeader = isExternalPage;
 	$: isMarketingHome = $page.url.pathname === '/';
@@ -100,7 +101,17 @@
 		bannerVisibleStore.set(showHighlightBanner);
 	}
 
+	function maybeOpenContactPopup() {
+		if (typeof window !== 'undefined' && window.location.pathname === '/' && window.location.hash === '#contact') {
+			contactPopupOpen.set(true);
+		}
+	}
+
 	onMount(() => {
+		// Open contact popup when landing on /#contact (e.g. from nav link on another page)
+		maybeOpenContactPopup();
+		window.addEventListener('hashchange', maybeOpenContactPopup);
+
 		// Don't show preloader or banner in admin or CRM areas; skip preloader on marketing home
 		if (hideWebsiteElements || isMarketingHome) {
 			showPreloader = false;
@@ -119,6 +130,8 @@
 				showHighlightBanner = true;
 			}, 300);
 		}
+
+		return () => window.removeEventListener('hashchange', maybeOpenContactPopup);
 	});
 </script>
 
@@ -142,7 +155,7 @@
 {/if}
 <!-- Website Navbar - full site nav when not standalone external page -->
 {#if showFullNavbar}
-	<Navbar theme={effectiveTheme} bannerVisible={showHighlightBanner && !isSignupPage} landing={data?.landing} transparentOverHero={isMarketingHome} className="gallery-hide-when-fullscreen" />
+	<Navbar theme={effectiveTheme} bannerVisible={showHighlightBanner && !isSignupPage} landing={data?.landing} transparentOverHero={isMarketingHome} lightText={isSignupPage} hideCta={isSignupPage} className="gallery-hide-when-fullscreen" />
 {/if}
 
 <!-- Page Content with dynamic padding to account for fixed navbar and banner -->

@@ -9,6 +9,10 @@
 	export let landing = null;
 	/** When true (marketing home), navbar is transparent over hero until scrolled */
 	export let transparentOverHero = false;
+	/** When true (e.g. signup page with dark bg), use white nav items and no solid background */
+	export let lightText = false;
+	/** When true, hide the "Get started free" CTA button (e.g. on signup page) */
+	export let hideCta = false;
 	/** Optional class(es) for the root nav element */
 	export let className = '';
 	let menuOpen = false;
@@ -16,13 +20,7 @@
 	$: overHero = transparentOverHero && !scrolled;
 	/** Dark navbar (scrolled on home): dark bg + white nav items */
 	$: darkNav = transparentOverHero && scrolled;
-
-	function scrollTo(e, targetId) {
-		e?.preventDefault();
-		menuOpen = false;
-		const el = document.getElementById(targetId);
-		if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
+	$: useLightNav = overHero || darkNav || lightText;
 
 	onMount(() => {
 		const handleScroll = () => {
@@ -34,26 +32,24 @@
 	});
 
 	const navLinks = [
-		{ id: 'about', label: 'About' },
-		{ id: 'features', label: 'Features' },
-		{ id: 'pricing', label: 'Pricing' },
-		{ id: 'contact', label: 'Contact', openPopup: true }
+		{ id: 'about', label: 'About', href: '/#about' },
+		{ id: 'features', label: 'Features', href: '/#features' },
+		{ id: 'pricing', label: 'Pricing', href: '/#pricing' },
+		{ id: 'contact', label: 'Contact', href: '/#contact', openPopup: true }
 	];
 
 	function handleNavClick(e, link) {
-		if (link.openPopup && link.id === 'contact') {
+		menuOpen = false;
+		if (link.openPopup && link.id === 'contact' && typeof window !== 'undefined' && window.location.pathname === '/') {
 			e?.preventDefault();
-			menuOpen = false;
 			contactPopupOpen.set(true);
-		} else {
-			scrollTo(e, link.id);
 		}
 	}
 </script>
 
 <nav
-	class="fixed left-0 right-0 z-50 transition-all duration-300 {menuOpen ? (overHero || darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm') : overHero ? 'bg-transparent' : darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm'} {scrolled ? 'shadow-lg' : ''} {bannerVisible ? 'top-[45px]' : 'top-0'} {className}"
-	style={overHero || darkNav || menuOpen ? undefined : '--color-navbar-bg: #FFFFFF;'}
+	class="fixed left-0 right-0 z-50 transition-all duration-300 {menuOpen ? (useLightNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm') : (overHero || lightText) ? 'bg-transparent' : darkNav ? 'bg-slate-800/95 backdrop-blur-sm' : 'bg-white/98 backdrop-blur-sm'} {scrolled && !lightText ? 'shadow-lg' : ''} {bannerVisible ? 'top-[45px]' : 'top-0'} {className}"
+	style={!useLightNav ? '--color-navbar-bg: #FFFFFF;' : undefined}
 >
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex items-center justify-between h-16">
@@ -61,7 +57,7 @@
 				<img
 					src={theme?.logoPath?.trim() || '/images/onnuma-logo.png'}
 					alt="OnNuma"
-					class="h-8 w-auto {overHero || darkNav ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]' : ''}"
+					class="h-8 w-auto {useLightNav ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]' : ''}"
 				/>
 			</a>
 
@@ -70,16 +66,24 @@
 				<ul class="flex items-center gap-8">
 					{#each navLinks as link}
 						<li>
-							<button
-								type="button"
+							<a
+								href={link.href}
 								on:click={(e) => handleNavClick(e, link)}
-								class="font-medium transition-colors text-[15px] {overHero || darkNav ? 'text-white hover:text-white/90' : 'text-slate-600 hover:text-slate-900'}"
+								class="font-medium transition-colors text-[15px] {useLightNav ? 'text-white hover:text-white/90' : 'text-slate-600 hover:text-slate-900'}"
 							>
 								{link.label}
-							</button>
+							</a>
 						</li>
 					{/each}
 				</ul>
+				{#if !hideCta}
+					<a
+						href="/signup"
+						class="font-semibold text-[15px] px-4 py-2 rounded-lg transition-colors {useLightNav ? 'bg-white text-slate-800 hover:bg-white/90' : 'bg-brand-blue text-white hover:bg-brand-blue/90'}"
+					>
+						Get started free
+					</a>
+				{/if}
 			</div>
 
 			<!-- Mobile menu button -->
@@ -88,26 +92,37 @@
 				on:click={() => (menuOpen = !menuOpen)}
 				aria-label="Toggle menu"
 			>
-				<span class="block w-6 h-0.5 transition-all duration-300 {overHero || darkNav ? 'bg-white' : 'bg-slate-700'}" class:rotate-45={menuOpen} class:translate-y-2={menuOpen}></span>
-				<span class="block w-6 h-0.5 transition-all duration-300 {overHero || darkNav ? 'bg-white' : 'bg-slate-700'}" class:opacity-0={menuOpen}></span>
-				<span class="block w-6 h-0.5 transition-all duration-300 {overHero || darkNav ? 'bg-white' : 'bg-slate-700'}" class:-rotate-45={menuOpen} class:-translate-y-2={menuOpen}></span>
+				<span class="block w-6 h-0.5 transition-all duration-300 {useLightNav ? 'bg-white' : 'bg-slate-700'}" class:rotate-45={menuOpen} class:translate-y-2={menuOpen}></span>
+				<span class="block w-6 h-0.5 transition-all duration-300 {useLightNav ? 'bg-white' : 'bg-slate-700'}" class:opacity-0={menuOpen}></span>
+				<span class="block w-6 h-0.5 transition-all duration-300 {useLightNav ? 'bg-white' : 'bg-slate-700'}" class:-rotate-45={menuOpen} class:-translate-y-2={menuOpen}></span>
 			</button>
 		</div>
 
 		{#if menuOpen}
-			<div class="md:hidden w-screen max-w-none relative left-1/2 -translate-x-1/2 pb-5 pt-2 border-t px-4 sm:px-6 {overHero ? 'border-white/30' : darkNav ? 'border-white/30' : 'border-slate-200'}">
+			<div class="md:hidden w-screen max-w-none relative left-1/2 -translate-x-1/2 pb-5 pt-2 border-t px-4 sm:px-6 {useLightNav ? 'border-white/30' : 'border-slate-200'}">
 				<ul class="flex flex-col gap-1">
 					{#each navLinks as link}
 						<li>
-							<button
-								type="button"
-								on:click={(e) => handleNavClick(e, link)}
-								class="block w-full text-left py-3 font-medium {overHero || darkNav ? 'text-white hover:text-white/90' : 'text-slate-700 hover:text-slate-900'}"
+							<a
+								href={link.href}
+								on:click={() => (menuOpen = false)}
+								class="block w-full text-left py-3 font-medium {useLightNav ? 'text-white hover:text-white/90' : 'text-slate-700 hover:text-slate-900'}"
 							>
 								{link.label}
-							</button>
+							</a>
 						</li>
 					{/each}
+					{#if !hideCta}
+						<li class="pt-2 mt-2 border-t {useLightNav ? 'border-white/30' : 'border-slate-200'}">
+							<a
+								href="/signup"
+								class="block w-full py-3 font-semibold text-center rounded-lg {useLightNav ? 'bg-white text-slate-800' : 'bg-brand-blue text-white'}"
+								on:click={() => (menuOpen = false)}
+							>
+								Get started free
+							</a>
+						</li>
+					{/if}
 				</ul>
 			</div>
 		{/if}
