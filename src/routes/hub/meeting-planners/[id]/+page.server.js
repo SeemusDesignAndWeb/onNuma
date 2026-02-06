@@ -4,9 +4,9 @@ import { validateMeetingPlanner, validateRota } from '$lib/crm/server/validators
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
 import { getSettings } from '$lib/crm/server/settings.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, cookies, url }) {
+export async function load({ params, cookies, url, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const meetingPlanner = await findById('meeting_planners', params.id);
 	if (!meetingPlanner) {
@@ -16,6 +16,7 @@ export async function load({ params, cookies, url }) {
 		throw redirect(302, '/hub/meeting-planners');
 	}
 
+	const { plan } = await parent();
 	const event = await findById('events', meetingPlanner.eventId);
 	if (event && event.organisationId != null && event.organisationId !== organisationId) {
 		throw redirect(302, '/hub/meeting-planners');
@@ -53,21 +54,9 @@ export async function load({ params, cookies, url }) {
 		};
 	});
 
-	// Load contacts for assignee selection (scoped to current org)
-	const contactsRaw = filterByOrganisation(await readCollection('contacts'), organisationId);
-	
-	// Sort contacts alphabetically by first name, then last name
-	const contacts = contactsRaw.sort((a, b) => {
-		const aFirstName = (a.firstName || '').toLowerCase();
-		const bFirstName = (b.firstName || '').toLowerCase();
-		const aLastName = (a.lastName || '').toLowerCase();
-		const bLastName = (b.lastName || '').toLowerCase();
-		
-		if (aFirstName !== bFirstName) {
-			return aFirstName.localeCompare(bFirstName);
-		}
-		return aLastName.localeCompare(bLastName);
-	});
+	// Load contacts for assignee selection (plan-limited)
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 	
 	// Load all lists for filtering contacts (scoped to current org)
 	const lists = filterByOrganisation(await readCollection('lists'), organisationId);

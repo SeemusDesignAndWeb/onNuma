@@ -1,14 +1,16 @@
 # Rota Reminder Notifications Setup Guide
 
-This guide explains how to set up automated email reminders for upcoming rota assignments. The system sends email notifications to contacts 3 days before their assigned rota occurrences.
+This guide explains how to set up automated email reminders for upcoming rota assignments. The system sends email notifications to contacts a set number of days before their assigned rota occurrences.
 
 ## What It Does
 
 The rota reminder system:
-- Automatically finds all rota assignments for occurrences starting in 3 days (configurable)
+- Automatically finds all rota assignments for occurrences starting on the configured “days ahead” date
 - Sends personalized email reminders to each assigned contact
 - Includes event details, date/time, location, and a link to view the rota
 - Runs as a background job via a secure API endpoint
+
+**Configuring “days before event”:** In the Hub go to **Settings → Advanced → Rota reminder emails**. Set “Days before event to send reminder” (0–90). The cron job uses this value when you call the endpoint without a `daysAhead` query parameter.
 
 ## Prerequisites
 
@@ -40,9 +42,11 @@ Copy the output and use it as your `ROTA_REMINDER_CRON_SECRET` value.
 ### Optional Environment Variable
 
 ```env
-# Days ahead to send reminders (defaults to 3 if not set)
+# Days ahead to send reminders (fallback if not set in Hub Settings → Advanced)
 ROTA_REMINDER_DAYS_AHEAD=3
 ```
+
+The **Hub setting** (Settings → Advanced → Rota reminder emails) overrides this when the cron is called without a `daysAhead` parameter.
 
 ## Step 2: Set Up the Cron Job
 

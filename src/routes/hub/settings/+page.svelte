@@ -23,6 +23,7 @@
 	}
 
 	let emailRateLimitDelay = settings?.emailRateLimitDelay || 500;
+	let rotaReminderDaysAhead = settings?.rotaReminderDaysAhead ?? 3;
 	let calendarColours = (JSON.parse(JSON.stringify(settings?.calendarColours || []))).map(normalizeCalendarColour);
 	// meetingPlannerRotas is already filtered server-side to only roles that exist in this org
 	let meetingPlannerRotas = JSON.parse(JSON.stringify(settings?.meetingPlannerRotas || []));
@@ -140,6 +141,7 @@
 		lastSyncedSettings = data.settings;
 		settings = data.settings;
 		emailRateLimitDelay = settings.emailRateLimitDelay;
+		rotaReminderDaysAhead = settings.rotaReminderDaysAhead ?? 3;
 		calendarColours = (JSON.parse(JSON.stringify(settings.calendarColours || []))).map(normalizeCalendarColour);
 		meetingPlannerRotas = JSON.parse(JSON.stringify(settings.meetingPlannerRotas || []));
 		if (settings.theme) {
@@ -437,6 +439,33 @@
 		originalRota = null;
 		
 		await saveMeetingPlannerRotas();
+	}
+
+	async function saveRotaReminderSettings() {
+		saving = true;
+		try {
+			const n = Math.min(90, Math.max(0, parseInt(String(rotaReminderDaysAhead), 10)));
+			if (isNaN(n)) {
+				notifications.error('Please enter a number between 0 and 90');
+				return;
+			}
+			const response = await fetch('/hub/settings', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ rotaReminderDaysAhead: n })
+			});
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({ message: 'Failed to save' }));
+				throw new Error(errorData.message || 'Failed to save');
+			}
+			rotaReminderDaysAhead = n;
+			notifications.success('Rota reminder setting saved.');
+			await invalidateAll();
+		} catch (err) {
+			notifications.error(err.message || 'Failed to save rota reminder setting');
+		} finally {
+			saving = false;
+		}
 	}
 
 	async function addRota() {
@@ -1209,6 +1238,37 @@
 		{#if activeTab === 'advanced'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Advanced</h2>
+
+			<!-- Rota reminder emails -->
+			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200 mb-4">
+				<h3 class="text-sm font-semibold text-gray-700 mb-2">Rota reminder emails</h3>
+				<p class="text-sm text-gray-600 mb-3">
+					Contacts on the rota receive an email reminder a set number of days before the event. Run the reminder job automatically (e.g. daily) on Railway using a cron job that calls <code class="bg-white px-1 rounded text-xs">/api/cron/rota-reminders?secret=YOUR_SECRET</code>.
+				</p>
+				<div class="flex flex-wrap items-end gap-3">
+					<div>
+						<label for="rota-reminder-days" class="block text-xs font-medium text-gray-700 mb-1">Days before event to send reminder</label>
+						<input
+							id="rota-reminder-days"
+							type="number"
+							min="0"
+							max="90"
+							bind:value={rotaReminderDaysAhead}
+							class="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
+						/>
+					</div>
+					<button
+						type="button"
+						on:click={saveRotaReminderSettings}
+						disabled={saving}
+						class="px-3 py-1.5 text-sm btn-theme-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{saving ? 'Saving...' : 'Save'}
+					</button>
+				</div>
+				<p class="mt-2 text-xs text-gray-500">0 = day of event; 1 = one day before; 3 = three days before (default).</p>
+			</div>
+
 			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
 				<h3 class="text-sm font-semibold text-gray-700 mb-2">Current organisation (Hub context)</h3>
 				{#if currentOrganisationId}

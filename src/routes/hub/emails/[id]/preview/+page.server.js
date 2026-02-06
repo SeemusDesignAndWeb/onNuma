@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import { findById, readCollection } from '$lib/crm/server/fileStore.js';
 import { personalizeContent, getUpcomingEvents, getUpcomingRotas, hasAnyRotas } from '$lib/crm/server/email.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, url, event }) {
+export async function load({ params, url, event, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const newsletter = await findById('emails', params.id);
 	if (!newsletter) {
@@ -13,20 +13,9 @@ export async function load({ params, url, event }) {
 		throw redirect(302, '/hub/emails');
 	}
 
-	// Get all contacts for the user selector (scoped to current org)
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
-	// Sort contacts alphabetically by last name, then first name
-	const sortedContacts = contacts.sort((a, b) => {
-		const aLastName = (a.lastName || '').toLowerCase();
-		const bLastName = (b.lastName || '').toLowerCase();
-		const aFirstName = (a.firstName || '').toLowerCase();
-		const bFirstName = (b.firstName || '').toLowerCase();
-		
-		if (aLastName !== bLastName) {
-			return aLastName.localeCompare(bLastName);
-		}
-		return aFirstName.localeCompare(bFirstName);
-	});
+	const { plan } = await parent();
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const sortedContacts = contactsWithinPlanLimit(orgContacts, plan);
 
 	// Check if a contactId is provided in query params
 	const contactId = url.searchParams.get('contactId');

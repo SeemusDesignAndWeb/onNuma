@@ -24,6 +24,10 @@
 	$: canAccessEvents = admin && hasRouteAccess(admin, '/hub/events', superAdminEmail, organisationAreaPermissions);
 	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/rotas', superAdminEmail, organisationAreaPermissions);
 	$: canAccessForms = admin && hasRouteAccess(admin, '/hub/forms', superAdminEmail, organisationAreaPermissions);
+
+	// Count visible modules so the grid can use full width (columns = number of modules)
+	$: moduleCount = [canAccessContacts, canAccessLists, canAccessNewsletters, canAccessEvents, canAccessRotas, canAccessForms].filter(Boolean).length;
+	$: recentPanelsCount = [canAccessNewsletters, canAccessRotas, canAccessEvents].filter(Boolean).length;
 	
 	onMount(() => {
 		// Clear error from URL after showing message
@@ -63,7 +67,10 @@
 			<p class="text-sm text-gray-600"><strong>Emails sent today:</strong> {stats.emailsSentToday || 0}</p>
 		{/if}
 	</div>
-	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6 mb-8">
+	<div
+		class="hub-dashboard-cards grid gap-4 mb-8 w-full"
+		style="--hub-module-count: {moduleCount || 1};"
+	>
 		<!-- Contacts -->
 		{#if canAccessContacts}
 			<div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-hub-blue-500">
@@ -251,8 +258,11 @@
 		{/if}
 	</div>
 
-	<!-- Recent Items -->
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+	<!-- Recent Items: columns match number of panels so full width is used -->
+	<div
+		class="hub-recent-panels grid gap-6 w-full"
+		style="--hub-recent-count: {recentPanelsCount || 1};"
+	>
 		<!-- Latest Emails -->
 		{#if canAccessNewsletters}
 			<div class="bg-white shadow rounded-lg p-6 border-t-4 border-hub-green-500">
@@ -391,3 +401,25 @@
 	{/if}
 </div>
 {/if}
+
+<style>
+	/* Dashboard cards: 1 column on small screens, then N columns (N = module count) to use full width */
+	.hub-dashboard-cards {
+		grid-template-columns: 1fr;
+	}
+	@media (min-width: 640px) {
+		.hub-dashboard-cards {
+			grid-template-columns: repeat(var(--hub-module-count), minmax(min(180px, 100%), 1fr));
+		}
+	}
+
+	/* Recent panels: 1 column on small screens, then N columns to use full width */
+	.hub-recent-panels {
+		grid-template-columns: 1fr;
+	}
+	@media (min-width: 1024px) {
+		.hub-recent-panels {
+			grid-template-columns: repeat(var(--hub-recent-count), minmax(min(260px, 100%), 1fr));
+		}
+	}
+</style>

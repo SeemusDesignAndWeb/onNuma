@@ -13,6 +13,9 @@
 	$: search = data.search || '';
 	$: csrfToken = data.csrfToken || '';
 	$: isSuperAdmin = data.isSuperAdmin || false;
+	$: planLimit = data.planLimit ?? 0;
+	$: totalInOrg = data.totalInOrg ?? 0;
+	$: overPlanLimit = planLimit > 0 && totalInOrg > planLimit;
 
 	let searchInput = search;
 	let showBulkUpdateDialog = false;
@@ -161,6 +164,12 @@
 		</button>
 	</form>
 </div>
+
+{#if overPlanLimit}
+	<p class="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+		Your plan includes access to the first {planLimit} contacts (sorted by name). You have {totalInOrg} in total; the rest are not shown but are kept. Upgrade your plan to see and manage all contacts.
+	</p>
+{/if}
 
 {#if bulkUpdateResult}
 	<div class="mb-4 p-4 rounded-md {bulkUpdateResult.error ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}">

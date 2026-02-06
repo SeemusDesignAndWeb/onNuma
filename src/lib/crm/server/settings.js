@@ -66,10 +66,11 @@ function ensureColorArray(arr, defaults) {
 function getDefaultSettings() {
 	return {
 		emailRateLimitDelay: 500,
-		emailProvider: 'resend', // 'resend' | 'mailgun'
+		emailProvider: 'mailgun',
 		calendarColours: getDefaultCalendarColours(),
 		meetingPlannerRotas: getDefaultMeetingPlannerRotas(),
-		theme: getDefaultTheme()
+		theme: getDefaultTheme(),
+		rotaReminderDaysAhead: 3
 	};
 }
 
@@ -96,7 +97,12 @@ function mergeWithDefaults(record) {
 		externalPagesLayout: layout,
 		publicPagesBranding: publicBranding
 	};
-	const emailProvider = record.emailProvider === 'mailgun' ? 'mailgun' : 'resend';
+	const emailProvider = record.emailProvider === 'resend' ? 'resend' : 'mailgun';
+	const rotaReminderDays = record.rotaReminderDaysAhead;
+	const rotaReminderDaysAhead =
+		typeof rotaReminderDays === 'number' && rotaReminderDays >= 0 && rotaReminderDays <= 90
+			? rotaReminderDays
+			: defaultSettings.rotaReminderDaysAhead;
 	return {
 		emailRateLimitDelay: record.emailRateLimitDelay ?? defaultSettings.emailRateLimitDelay,
 		emailProvider,
@@ -105,6 +111,7 @@ function mergeWithDefaults(record) {
 			? record.meetingPlannerRotas
 			: defaultSettings.meetingPlannerRotas,
 		theme,
+		rotaReminderDaysAhead,
 		hubSuperAdminEmail: record.hubSuperAdminEmail ?? null,
 		currentOrganisationId: record.currentOrganisationId ?? null
 	};
@@ -181,10 +188,11 @@ export async function writeSettings(settings) {
 	const record = {
 		id: DEFAULT_RECORD_ID,
 		emailRateLimitDelay: settings.emailRateLimitDelay,
-		emailProvider: settings.emailProvider === 'mailgun' ? 'mailgun' : 'resend',
+		emailProvider: settings.emailProvider === 'resend' ? 'resend' : 'mailgun',
 		calendarColours: settings.calendarColours,
 		meetingPlannerRotas: settings.meetingPlannerRotas,
 		theme: settings.theme,
+		rotaReminderDaysAhead: settings.rotaReminderDaysAhead,
 		hubSuperAdminEmail: existing?.hubSuperAdminEmail ?? settings.hubSuperAdminEmail ?? null,
 		currentOrganisationId: existing?.currentOrganisationId ?? settings.currentOrganisationId ?? null,
 		createdAt: existing?.createdAt ?? now,

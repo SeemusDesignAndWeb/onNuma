@@ -2,7 +2,8 @@ import { json, error } from '@sveltejs/kit';
 import { findById, readCollection, update } from '$lib/crm/server/fileStore.js';
 import { prepareNewsletterEmail, sendNewsletterBatch } from '$lib/crm/server/email.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
+import { getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
 
 export async function POST({ request, cookies, params, url }) {
 	const data = await request.json();
@@ -21,10 +22,13 @@ export async function POST({ request, cookies, params, url }) {
 		throw error(404, 'Email not found');
 	}
 
+	const orgs = await readCollection('organisations');
+	const plan = getPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions) || 'free';
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const allContacts = contactsWithinPlanLimit(orgContacts, plan);
+
 	const listId = data.listId;
 	const contactIds = Array.isArray(data.contactIds) ? data.contactIds : [];
-
-	const allContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
 
 	let listContacts;
 	if (contactIds.length > 0) {

@@ -3,13 +3,15 @@ import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { validateRota } from '$lib/crm/server/validators.js';
 import { fail } from '@sveltejs/kit';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ cookies }) {
+export async function load({ cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
+	const { plan } = await parent();
 	const events = filterByOrganisation(await readCollection('events'), organisationId);
 	const rotas = filterByOrganisation(await readCollection('rotas'), organisationId);
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 	const lists = filterByOrganisation(await readCollection('lists'), organisationId);
 
 	// Sort contacts alphabetically

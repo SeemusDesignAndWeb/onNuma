@@ -273,10 +273,23 @@ export const PLAN_MAX_USERS = {
 	enterprise: 5000
 };
 
+/** Maximum contacts accessible per plan (over-the-limit contacts are not shown or deleted). */
+export const PLAN_MAX_CONTACTS = {
+	free: 30,
+	professional: 500,
+	enterprise: 5000
+};
+
 /** Maximum users allowed for a plan (free | professional | enterprise). Defaults to free limit if unknown. */
 export function getPlanMaxUsers(plan) {
 	if (!plan || !VALID_PLANS.has(plan)) return PLAN_MAX_USERS.free;
 	return PLAN_MAX_USERS[plan] ?? PLAN_MAX_USERS.free;
+}
+
+/** Maximum contacts allowed for a plan. Excess contacts are not shown but are not deleted. */
+export function getPlanMaxContacts(plan) {
+	if (!plan || !VALID_PLANS.has(plan)) return PLAN_MAX_CONTACTS.free;
+	return PLAN_MAX_CONTACTS[plan] ?? PLAN_MAX_CONTACTS.free;
 }
 
 /** Area permissions for a given plan (free | professional | enterprise). */

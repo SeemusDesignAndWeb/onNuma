@@ -22,6 +22,20 @@
 	$: errors = form?.errors || {};
 	$: multiOrgAdmin = data?.multiOrgAdmin || null;
 	$: canSetSuperAdmin = multiOrgAdmin?.role === 'super_admin';
+	$: anonymisedCreated = data?.anonymisedCreated ?? null;
+	$: anonymisedError = form?.anonymisedError ?? null;
+	$: anonymisedCount = form?.anonymisedCount ?? '';
+
+	function handleCreateAnonymisedContactsClick(e) {
+		const formEl = e.currentTarget.form;
+		if (!formEl) return;
+		const countInput = formEl.querySelector('input[name="count"]');
+		const count = countInput?.value?.trim() || '?';
+		const message = `This will permanently remove all existing contacts for this organisation and create ${count} anonymised contacts. Assignments will be removed from rotas. This cannot be undone.\n\nContinue?`;
+		if (confirm(message)) {
+			formEl.requestSubmit();
+		}
+	}
 </script>
 
 <svelte:head>
@@ -29,8 +43,26 @@
 </svelte:head>
 
 <div class="max-w-5xl">
-	<div class="mb-6">
+	<div class="mb-6 flex flex-wrap items-center gap-3">
 		<h1 class="text-2xl font-bold text-slate-800">{organisation?.name ?? 'Organisation'}</h1>
+		{#if organisation?.archivedAt}
+			<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">Archived</span>
+		{/if}
+		<div class="ml-auto flex gap-2">
+			{#if organisation?.archivedAt}
+				<form method="POST" action="?/unarchive" class="inline-block">
+					<button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors">
+						Unarchive
+					</button>
+				</form>
+			{:else}
+				<form method="POST" action="?/archive" class="inline-block">
+					<button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors">
+						Archive
+					</button>
+				</form>
+			{/if}
+		</div>
 	</div>
 
 	<form method="POST" action="?/save" use:enhance={() => {
@@ -179,4 +211,46 @@
 		</div>
 		</div>
 	</form>
+
+	<!-- Settings: Create anonymised contacts -->
+	<div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
+			<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Settings</h2>
+			<p class="text-sm text-slate-600">Replace all contacts for this organisation with anonymised demo contacts (e.g. for testing or demos).</p>
+			{#if anonymisedCreated !== null && anonymisedCreated > 0}
+				<p class="text-sm font-medium text-green-700">Created {anonymisedCreated} anonymised contact{anonymisedCreated === 1 ? '' : 's'}.</p>
+			{/if}
+			{#if anonymisedError}
+				<p class="text-sm text-red-600">{anonymisedError}</p>
+			{/if}
+			<form
+				id="anonymised-contacts-form-org"
+				method="POST"
+				action="?/createAnonymisedContacts"
+				class="flex flex-wrap items-end gap-3"
+			>
+				<div>
+					<label for="anonymised-count" class="block text-sm font-medium text-slate-700 mb-1">Number of contacts</label>
+					<input
+						id="anonymised-count"
+						name="count"
+						type="number"
+						min="1"
+						max="1000"
+						value={anonymisedCount || (anonymisedCreated ?? '')}
+						placeholder="e.g. 30"
+						class="block w-32 rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+				</div>
+				<button
+					type="button"
+					class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all"
+					on:click={handleCreateAnonymisedContactsClick}
+				>
+					Create anonymised contacts
+				</button>
+			</form>
+			<p class="text-xs text-slate-500">This removes all existing contacts for this organisation and creates the given number of contacts with anonymised names, emails, phone numbers, addresses and other details.</p>
+		</div>
+	</div>
 </div>

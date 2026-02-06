@@ -1,6 +1,6 @@
 /**
- * Email provider abstraction: Resend or Mailgun.
- * Priority: env EMAIL_PROVIDER (if set) overrides; else hub_settings.emailProvider (multi-org Settings); else 'resend'.
+ * Email provider abstraction: Mailgun by default.
+ * Set EMAIL_PROVIDER in .env to override (e.g. 'mailgun' or 'resend').
  *
  * Both providers expose the same interface:
  *   provider.emails.send({ from, to, subject, html, text?, replyTo? }) -> { data?: { id }, error? }
@@ -10,26 +10,16 @@
 import { env } from '$env/dynamic/private';
 import { Resend } from 'resend';
 import * as mailgunAdapter from './mailgun.js';
-import { getSettings } from '$lib/crm/server/settings.js';
-
 let cachedResend = null;
 
 /**
- * Resolve provider name: env EMAIL_PROVIDER (if set) overrides; else hub_settings.emailProvider; else 'resend'.
- * So: set EMAIL_PROVIDER in .env to override the multi-org Settings choice (e.g. per environment).
+ * Resolve provider name: env EMAIL_PROVIDER (if set); else 'mailgun'.
  * @returns {Promise<'resend'|'mailgun'>}
  */
 export async function resolveProviderName() {
 	const fromEnv = (env.EMAIL_PROVIDER || '').toLowerCase().trim();
 	if (fromEnv === 'mailgun' || fromEnv === 'resend') return fromEnv;
-	try {
-		const settings = await getSettings();
-		const fromSettings = settings?.emailProvider;
-		if (fromSettings === 'mailgun' || fromSettings === 'resend') return fromSettings;
-	} catch (_) {
-		// ignore
-	}
-	return 'resend';
+	return 'mailgun';
 }
 
 /**

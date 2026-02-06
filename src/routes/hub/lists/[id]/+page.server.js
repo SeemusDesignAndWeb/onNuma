@@ -3,9 +3,9 @@ import { findById, update, remove, readCollection } from '$lib/crm/server/fileSt
 import { validateList } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, cookies, url }) {
+export async function load({ params, cookies, url, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const list = await findById('lists', params.id);
 	if (!list) {
@@ -15,38 +15,21 @@ export async function load({ params, cookies, url }) {
 		throw redirect(302, '/hub/lists');
 	}
 
-	// Get contact IDs in this list (contacts scoped to org)
+	const { plan } = await parent();
 	const allContacts = await readCollection('contacts');
-	const contacts = filterByOrganisation(allContacts, organisationId);
-	
-	// Sort contacts alphabetically by first name, then last name
-	const sortContacts = (contacts) => {
-		return contacts.sort((a, b) => {
-			const aFirstName = (a.firstName || '').toLowerCase();
-			const bFirstName = (b.firstName || '').toLowerCase();
-			const aLastName = (a.lastName || '').toLowerCase();
-			const bLastName = (b.lastName || '').toLowerCase();
-			
-			if (aFirstName !== bFirstName) {
-				return aFirstName.localeCompare(bFirstName);
-			}
-			return aLastName.localeCompare(bLastName);
-		});
-	};
-	
-	const listContacts = sortContacts(contacts.filter(c => list.contactIds?.includes(c.id)));
-	
-	// Get all contacts for the add contacts search (excluding those already in list)
-	const availableContacts = sortContacts(contacts.filter(c => !list.contactIds?.includes(c.id)));
-	
-	// Search filter if provided
+	const orgContacts = filterByOrganisation(allContacts, organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
+
+	const listContacts = contacts.filter(c => list.contactIds?.includes(c.id));
+	const availableContacts = contacts.filter(c => !list.contactIds?.includes(c.id));
+
 	const search = url.searchParams.get('search') || '';
-	const filteredContacts = search 
-		? sortContacts(availableContacts.filter(c => 
+	const filteredContacts = search
+		? availableContacts.filter(c =>
 			(c.firstName || '').toLowerCase().includes(search.toLowerCase()) ||
 			(c.lastName || '').toLowerCase().includes(search.toLowerCase())
-		))
-		: availableContacts; // Show all available contacts (already sorted)
+		)
+		: availableContacts;
 
 	const csrfToken = getCsrfToken(cookies) || '';
 	return { list, contacts: listContacts, availableContacts: filteredContacts, csrfToken };

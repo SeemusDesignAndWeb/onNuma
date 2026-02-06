@@ -16,7 +16,7 @@ function getAdminDomain() {
 }
 
 /**
- * Reroute: when request is for admin subdomain and path is / or /auth/* or /organisations/* or /settings,
+ * Reroute: when request is for admin subdomain and path is / or /auth/* or /organisations/* or /hub-super-admins,
  * return the /multi-org/* path so SvelteKit matches the multi-org route (fixes 404).
  */
 export function reroute({ url }) {
@@ -31,7 +31,7 @@ export function reroute({ url }) {
 		pathname === '/' ||
 		pathname.startsWith('/auth') ||
 		pathname.startsWith('/organisations') ||
-		pathname.startsWith('/settings');
+		pathname.startsWith('/hub-super-admins');
 	if (!rewrite) return undefined;
 
 	return pathname === '/' ? '/multi-org' : '/multi-org' + pathname;

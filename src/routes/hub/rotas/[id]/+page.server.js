@@ -7,9 +7,9 @@ import { ensureRotaToken } from '$lib/crm/server/tokens.js';
 import { env } from '$env/dynamic/private';
 import { logDataChange } from '$lib/crm/server/audit.js';
 import { filterUpcomingOccurrences } from '$lib/crm/utils/occurrenceFilters.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, cookies, url }) {
+export async function load({ params, cookies, url, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const rota = await findById('rotas', params.id);
 	if (!rota) {
@@ -19,6 +19,7 @@ export async function load({ params, cookies, url }) {
 		throw redirect(302, '/hub/rotas');
 	}
 
+	const { plan } = await parent();
 	const event = await findById('events', rota.eventId);
 	const occurrence = rota.occurrenceId ? await findById('occurrences', rota.occurrenceId) : null;
 	
@@ -38,9 +39,9 @@ export async function load({ params, cookies, url }) {
 		}
 	}
 
-	// Load contact details for assignees
-	// New structure: assignees are objects with { contactId, occurrenceId }
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	// Load contact details for assignees (plan-limited)
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 	
 	// Process assignees - handle both old format (backward compatibility) and new format
 	const processedAssignees = (rota.assignees || []).map(assignee => {

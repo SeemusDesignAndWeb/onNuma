@@ -1,10 +1,13 @@
 // API endpoint for sending rota reminder notifications
 // Access: GET or POST /api/cron/rota-reminders?secret=ROTA_REMINDER_CRON_SECRET
+// Optional: ?daysAhead=N to override Hub setting (Settings → Advanced → Rota reminder emails)
 // Protected by ROTA_REMINDER_CRON_SECRET environment variable
-// This endpoint is designed to be called by Railway cron or external cron services
+// Designed to be called by Railway cron or external cron (e.g. cron-job.org) daily.
+// See docs/ROTA_REMINDER_SETUP.md for setup.
 
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { getSettings } from '$lib/crm/server/settings.js';
 import { sendRotaReminders } from '$lib/crm/server/rotaReminders.js';
 
 export async function GET({ url, request }) {
@@ -16,8 +19,10 @@ export async function POST({ url, request }) {
 }
 
 async function handleRequest(url, request) {
-	// Validate secret token
-	const secret = url.searchParams.get('secret') || (await request.json().catch(() => ({}))).secret;
+	// Parse body once for POST (so we can use it for secret and daysAhead); GET has no body
+	const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
+	// Validate secret token (query param or JSON body)
+	const secret = url.searchParams.get('secret') || body.secret;
 	const expectedSecret = env.ROTA_REMINDER_CRON_SECRET;
 
 	if (!expectedSecret) {
@@ -37,11 +42,16 @@ async function handleRequest(url, request) {
 	}
 
 	try {
-		// Get days ahead from query param or env var (default: 3)
+		// Get days ahead: query/body override > Hub settings (rotaReminderDaysAhead) > env ROTA_REMINDER_DAYS_AHEAD > 3
 		const daysAheadParam = url.searchParams.get('daysAhead');
-		const daysAhead = daysAheadParam 
-			? parseInt(daysAheadParam, 10) 
-			: (parseInt(env.ROTA_REMINDER_DAYS_AHEAD, 10) || 3);
+		let daysAhead = daysAheadParam ? parseInt(daysAheadParam, 10) : null;
+		if (daysAhead == null || isNaN(daysAhead)) {
+			daysAhead = body.daysAhead != null ? parseInt(String(body.daysAhead), 10) : null;
+		}
+		if (daysAhead == null || isNaN(daysAhead)) {
+			const settings = await getSettings();
+			daysAhead = settings.rotaReminderDaysAhead ?? parseInt(env.ROTA_REMINDER_DAYS_AHEAD, 10) || 3;
+		}
 
 		if (isNaN(daysAhead) || daysAhead < 0) {
 			return json({ 

@@ -3,27 +3,17 @@ import { create, update, readCollection } from '$lib/crm/server/fileStore.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ cookies }) {
+export async function load({ cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
+	const { plan } = await parent();
 	const allContacts = await readCollection('contacts');
-	const contacts = filterByOrganisation(allContacts, organisationId);
-	// Sort contacts alphabetically by last name, then first name
-	const sortedContacts = contacts.sort((a, b) => {
-		const aLastName = (a.lastName || '').toLowerCase();
-		const bLastName = (b.lastName || '').toLowerCase();
-		const aFirstName = (a.firstName || '').toLowerCase();
-		const bFirstName = (b.firstName || '').toLowerCase();
-		
-		if (aLastName !== bLastName) {
-			return aLastName.localeCompare(bLastName);
-		}
-		return aFirstName.localeCompare(bFirstName);
-	});
+	const orgContacts = filterByOrganisation(allContacts, organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { contacts: sortedContacts, csrfToken };
+	return { contacts, csrfToken };
 }
 
 export const actions = {

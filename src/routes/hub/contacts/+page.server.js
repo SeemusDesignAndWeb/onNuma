@@ -1,39 +1,29 @@
 import { readCollection, writeCollection } from '$lib/crm/server/fileStore.js';
 import { verifyCsrfToken, getCsrfToken } from '$lib/crm/server/auth.js';
-import { isSuperAdmin } from '$lib/crm/server/permissions.js';
+import { isSuperAdmin, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
 import { fail } from '@sveltejs/kit';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getPlanMaxContacts } from '$lib/crm/server/permissions.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
 const ITEMS_PER_PAGE = 20;
 
-export async function load({ url, cookies, locals }) {
+export async function load({ url, cookies, locals, parent }) {
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
 	const search = url.searchParams.get('search') || '';
 	const organisationId = await getCurrentOrganisationId();
+	const { plan } = await parent();
 
 	const allContacts = await readCollection('contacts');
-	const contacts = filterByOrganisation(allContacts, organisationId);
+	const orgContacts = filterByOrganisation(allContacts, organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
+	const planLimit = getPlanMaxContacts(plan);
+	const totalInOrg = orgContacts.length;
 	
-	// Sort contacts alphabetically by first name, then last name
-	const sorted = contacts.sort((a, b) => {
-		const aFirstName = (a.firstName || '').toLowerCase();
-		const bFirstName = (b.firstName || '').toLowerCase();
-		const aLastName = (a.lastName || '').toLowerCase();
-		const bLastName = (b.lastName || '').toLowerCase();
-		
-		// First sort by first name
-		if (aFirstName !== bFirstName) {
-			return aFirstName.localeCompare(bFirstName);
-		}
-		// If first names are the same, sort by last name
-		return aLastName.localeCompare(bLastName);
-	});
-	
-	let filtered = sorted;
+	let filtered = contacts;
 	if (search) {
 		const searchLower = search.toLowerCase();
-		filtered = sorted.filter(c => 
+		filtered = contacts.filter(c =>
 			c.firstName?.toLowerCase().includes(searchLower) ||
 			c.lastName?.toLowerCase().includes(searchLower)
 		);
@@ -55,7 +45,9 @@ export async function load({ url, cookies, locals }) {
 		total,
 		search,
 		csrfToken,
-		isSuperAdmin: isSuperAdminUser
+		isSuperAdmin: isSuperAdminUser,
+		planLimit,
+		totalInOrg
 	};
 }
 
@@ -83,10 +75,13 @@ export const actions = {
 				return fail(400, { error: 'Update field and value are required' });
 			}
 
-			// Read all contacts for current organisation
+			// Read all contacts for current organisation (plan-limited: only first N are updatable)
 			const organisationId = await getCurrentOrganisationId();
 			const allContacts = await readCollection('contacts');
-			const contacts = filterByOrganisation(allContacts, organisationId);
+			const orgContacts = filterByOrganisation(allContacts, organisationId);
+			const orgs = await readCollection('organisations');
+			const plan = getPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions) || 'free';
+			const contacts = contactsWithinPlanLimit(orgContacts, plan);
 
 			// Filter contacts based on condition
 			let contactsToUpdate;

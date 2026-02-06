@@ -1,10 +1,11 @@
 import { env } from '$env/dynamic/private';
 import { readCollection } from '$lib/crm/server/fileStore.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ locals }) {
+export async function load({ locals, parent }) {
 	const emailModuleEnabled = !!env.RESEND_API_KEY;
 	const organisationId = await getCurrentOrganisationId();
+	const { plan } = await parent();
 
 	const [contactsRaw, listsRaw, emailsRaw, eventsRaw, rotasRaw, formsRaw, emailStatsRaw] = await Promise.all([
 		readCollection('contacts'),
@@ -16,7 +17,8 @@ export async function load({ locals }) {
 		readCollection('email_stats')
 	]);
 
-	const contacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
+	const orgContacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
+	const contacts = organisationId ? contactsWithinPlanLimit(orgContacts, plan) : orgContacts;
 	const lists = organisationId ? filterByOrganisation(listsRaw, organisationId) : listsRaw;
 	const emails = organisationId ? filterByOrganisation(emailsRaw, organisationId) : emailsRaw;
 	const events = organisationId ? filterByOrganisation(eventsRaw, organisationId) : eventsRaw;

@@ -23,5 +23,7 @@ export {
 	getPlanFromAreaPermissions,
 	getHubPlanTiers,
 	PLAN_MAX_USERS,
-	getPlanMaxUsers
+	getPlanMaxUsers,
+	PLAN_MAX_CONTACTS,
+	getPlanMaxContacts
 } from '$lib/crm/permissions.js';

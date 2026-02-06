@@ -5,9 +5,9 @@ import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { isUpcomingOccurrence } from '$lib/crm/utils/occurrenceFilters.js';
 import { ensureOccurrenceToken } from '$lib/crm/server/tokens.js';
 import { env } from '$env/dynamic/private';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, cookies, url }) {
+export async function load({ params, cookies, url, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const event = await findById('events', params.id);
 	if (!event) {
@@ -17,6 +17,7 @@ export async function load({ params, cookies, url }) {
 		throw redirect(302, '/hub/events');
 	}
 
+	const { plan } = await parent();
 	const occurrence = await findById('occurrences', params.occurrenceId);
 	if (!occurrence || occurrence.eventId !== params.id) {
 		throw redirect(302, `/hub/events/${params.id}`);
@@ -42,8 +43,9 @@ export async function load({ params, cookies, url }) {
 		return !rota.occurrenceId || rota.occurrenceId === params.occurrenceId;
 	});
 
-	// Load contacts to enrich assignees (scoped to current org)
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	// Load contacts to enrich assignees (plan-limited)
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 
 	// Process rotas with assignees for this occurrence
 	const rotasWithAssignees = applicableRotas.map(rota => {

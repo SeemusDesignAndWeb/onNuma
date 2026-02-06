@@ -1,16 +1,18 @@
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { getCsrfToken } from '$lib/crm/server/auth.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
 const ITEMS_PER_PAGE = 20;
 
-export async function load({ url, cookies }) {
+export async function load({ url, cookies, parent }) {
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
 	const search = url.searchParams.get('search') || '';
 
 	const organisationId = await getCurrentOrganisationId();
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
-	
+	const { plan } = await parent();
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
+
 	// Filter to only members (handle null, undefined, and empty strings)
 	const members = contacts.filter(c => c && c.membershipStatus && c.membershipStatus.toLowerCase().trim() === 'member');
 	

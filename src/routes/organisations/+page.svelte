@@ -58,7 +58,8 @@
 				<tr class="bg-slate-50/80">
 					<th class="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
 					<th class="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
-					<th class="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+					<th class="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
+					<th class="px-5 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Contacts</th>
 					<th class="px-5 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
 				</tr>
 			</thead>
@@ -76,7 +77,8 @@
 							</span>
 						</td>
 						<td class="px-5 py-4 text-sm text-slate-600">{org.contactName || '—'}</td>
-						<td class="px-5 py-4 text-sm text-slate-600">{org.email || '—'}</td>
+						<td class="px-5 py-4 text-sm text-slate-600">{org.plan ? org.plan.charAt(0).toUpperCase() + org.plan.slice(1) : '—'}</td>
+						<td class="px-5 py-4 text-right text-sm text-slate-600">{org.contactCount ?? 0}</td>
 						<td class="px-5 py-4 text-right text-sm">
 							<div class="inline-flex items-center gap-1">
 								<form method="POST" action="?/setAsHub" class="inline-block">

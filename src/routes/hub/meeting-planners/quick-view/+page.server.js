@@ -1,14 +1,16 @@
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { getSettings } from '$lib/crm/server/settings.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load() {
+export async function load({ parent }) {
 	const organisationId = await getCurrentOrganisationId();
+	const { plan } = await parent();
 	const meetingPlanners = filterByOrganisation(await readCollection('meeting_planners'), organisationId);
 	const events = filterByOrganisation(await readCollection('events'), organisationId);
 	const occurrences = filterByOrganisation(await readCollection('occurrences'), organisationId);
 	const rotas = filterByOrganisation(await readCollection('rotas'), organisationId);
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 	const settings = await getSettings();
 	const meetingPlannerSettingsRotas = settings.meetingPlannerRotas || [];
 	const meetingPlannerRoles = meetingPlannerSettingsRotas.map(r => (r.role || '').trim());

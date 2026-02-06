@@ -4,9 +4,9 @@ import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange, getAdminIdFromEvent } from '$lib/crm/server/audit.js';
 import { getSettings } from '$lib/crm/server/settings.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, cookies }) {
+export async function load({ params, cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const contact = await findById('contacts', params.id);
 	if (!contact) {
@@ -23,22 +23,12 @@ export async function load({ params, cookies }) {
 		spouse = await findById('contacts', contact.spouseId);
 	}
 
-	// Load all contacts for spouse selection dropdown (excluding current contact), scoped to org
+	// Load contacts for spouse dropdown (plan-limited, excluding current contact)
+	const { plan } = await parent();
 	const allContacts = await readCollection('contacts');
 	const orgContacts = filterByOrganisation(allContacts, organisationId);
-	const contacts = orgContacts
-		.filter(c => c.id !== params.id) // Exclude current contact
-		.sort((a, b) => {
-			const aFirstName = (a.firstName || '').toLowerCase();
-			const bFirstName = (b.firstName || '').toLowerCase();
-			const aLastName = (a.lastName || '').toLowerCase();
-			const bLastName = (b.lastName || '').toLowerCase();
-			
-			if (aFirstName !== bFirstName) {
-				return aFirstName.localeCompare(bFirstName);
-			}
-			return aLastName.localeCompare(bLastName);
-		});
+	const capped = contactsWithinPlanLimit(orgContacts, plan);
+	const contacts = capped.filter(c => c.id !== params.id);
 
 	const csrfToken = getCsrfToken(cookies) || '';
 	const settings = await getSettings();

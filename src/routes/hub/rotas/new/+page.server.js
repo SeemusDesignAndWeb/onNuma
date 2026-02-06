@@ -4,15 +4,17 @@ import { validateRota } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ url, cookies }) {
+export async function load({ url, cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
+	const { plan } = await parent();
 	const eventId = url.searchParams.get('eventId') || '';
 	const events = filterByOrganisation(await readCollection('events'), organisationId);
 	const occurrences = filterByOrganisation(await readCollection('occurrences'), organisationId);
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
-	
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
+
 	const csrfToken = getCsrfToken(cookies) || '';
 	return { events, occurrences, eventId, contacts, csrfToken };
 }

@@ -36,7 +36,8 @@ async function getOrganisationsWithHubDomain() {
 	if (orgsCache && (now - orgsCacheTime) < CACHE_TTL_MS) {
 		return orgsCache;
 	}
-	const orgs = await readCollection('organisations');
+	const raw = await readCollection('organisations');
+	const orgs = (Array.isArray(raw) ? raw : []).filter((o) => o && !o.archivedAt);
 	orgsCache = orgs;
 	orgsCacheTime = now;
 	return orgs;

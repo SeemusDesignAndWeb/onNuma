@@ -1,19 +1,78 @@
 <script>
-	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
-	import { notifications } from '$lib/crm/stores/notifications.js';
+	import { dialog } from '$lib/crm/stores/notifications.js';
 
 	export let data;
 	$: base = data?.multiOrgBasePath ?? '/multi-org';
-	$: emailProvider = data?.emailProvider ?? 'resend';
-	$: multiOrgAdmin = data?.multiOrgAdmin || null;
+	$: organisations = data?.organisations ?? [];
+	$: form = $page.form;
+	$: anonymisedCreated = data?.anonymisedCreated ?? null;
+	$: demoEventsCreated = data?.demoEventsCreated ?? null;
+	$: error = form?.error ?? null;
+	$: organisationId = form?.organisationId ?? '';
+	// Restore from form after validation error
+	let contactCountValue = '30';
+	let createContactsChecked = false;
+	let createEventsChecked = false;
+	$: if (form?.contactCount !== undefined) contactCountValue = String(form.contactCount);
+	$: if (form && typeof form.createContacts !== 'undefined') {
+		createContactsChecked = form.createContacts === true || form.createContacts === 'on';
+	}
+	$: if (form && typeof form.createEvents !== 'undefined') {
+		createEventsChecked = form.createEvents === true || form.createEvents === 'on';
+	}
 
-	onMount(() => {
-		if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('saved') === '1') {
-			notifications.success('Settings saved. Email provider updated.');
+	// Confirm modal state (organisation name input is on the popup)
+	let showConfirmModal = false;
+	let confirmOrgName = '';
+	let confirmMessage = '';
+	let confirmTypedName = '';
+
+	function openConfirmModal(e) {
+		const formEl = e.currentTarget.form;
+		if (!formEl) return;
+		const orgSelect = formEl.querySelector('select[name="organisationId"]');
+		const orgName = (orgSelect?.selectedOptions?.[0]?.text ?? '').trim();
+		if (!orgName) {
+			dialog.alert('Please select an organisation first.', 'Select an organisation');
+			return;
 		}
-	});
+		const contactsChecked = formEl.querySelector('input[name="createContacts"]')?.checked === true;
+		const eventsChecked = formEl.querySelector('input[name="createEvents"]')?.checked === true;
+		if (!contactsChecked && !eventsChecked) {
+			dialog.alert('Please select at least one option: anonymised contacts and/or demo events.', 'Select an option');
+			return;
+		}
+		const parts = [];
+		if (contactsChecked) {
+			const count = formEl.querySelector('input[name="contactCount"]')?.value?.trim() || '?';
+			parts.push(`${count} anonymised contacts`);
+		}
+		if (eventsChecked) {
+			parts.push('5 demo events (2 occurrences each, a week apart)');
+		}
+		confirmOrgName = orgName;
+		confirmMessage = `This will permanently remove existing data for ${orgName} and create ${parts.join(' and ')}. Rotas and signups may be affected. This cannot be undone.`;
+		confirmTypedName = '';
+		showConfirmModal = true;
+	}
+
+	function closeConfirmModal() {
+		showConfirmModal = false;
+		confirmTypedName = '';
+	}
+
+	async function handleConfirmContinue() {
+		if ((confirmTypedName || '').trim() !== confirmOrgName) {
+			await dialog.alert('The organisation name you entered does not match. Type the exact name of the selected organisation to confirm.', 'Name does not match');
+			return;
+		}
+		const formEl = document.getElementById('demo-data-form');
+		if (formEl) {
+			formEl.requestSubmit();
+			closeConfirmModal();
+		}
+	}
 </script>
 
 <svelte:head>
@@ -21,57 +80,148 @@
 </svelte:head>
 
 <div class="max-w-2xl">
-	<h1 class="text-2xl font-bold text-slate-800 mb-2">Settings</h1>
-	<p class="text-sm text-slate-500 mb-8">Platform-wide options for OnNuma.</p>
+	<h1 class="text-2xl font-bold text-slate-800 mb-6">Settings</h1>
 
-	<form method="POST" action="?/save" use:enhance={() => {
-		return async ({ result }) => {
-			if (result.type === 'failure' && result.data?.error) {
-				notifications.error(result.data.error);
-			}
-		};
-	}}>
-		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
-			<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Email provider</h2>
-			<p class="text-sm text-slate-600">
-				Choose which service sends emails (contact forms, newsletters, rota invites, password resets, etc.). Configure API keys and domain in your server environment (.env or hosting dashboard).
+	<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
+		<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Create demo data</h2>
+		<p class="text-sm text-slate-600">
+			Choose an organisation and what to create. Existing data of the selected type will be removed and replaced.
+		</p>
+		{#if (anonymisedCreated !== null && anonymisedCreated > 0) || (demoEventsCreated !== null && demoEventsCreated > 0)}
+			<p class="text-sm font-medium text-green-700">
+				{#if anonymisedCreated > 0 && demoEventsCreated > 0}
+					Created {anonymisedCreated} anonymised contact{anonymisedCreated === 1 ? '' : 's'} and {demoEventsCreated} demo event{demoEventsCreated === 1 ? '' : 's'}.
+				{:else if anonymisedCreated > 0}
+					Created {anonymisedCreated} anonymised contact{anonymisedCreated === 1 ? '' : 's'}.
+				{:else}
+					Created {demoEventsCreated} demo event{demoEventsCreated === 1 ? '' : 's'}.
+				{/if}
 			</p>
-			<div class="space-y-3">
-				<label class="block text-sm font-medium text-slate-700">Provider</label>
-				<div class="flex gap-6">
-					<label class="flex items-center gap-2 cursor-pointer">
-						<input
-							type="radio"
-							name="emailProvider"
-							value="resend"
-							checked={emailProvider === 'resend'}
-							class="rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
-						/>
-						<span>Resend</span>
-					</label>
-					<label class="flex items-center gap-2 cursor-pointer">
-						<input
-							type="radio"
-							name="emailProvider"
-							value="mailgun"
-							checked={emailProvider === 'mailgun'}
-							class="rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
-						/>
-						<span>Mailgun</span>
-					</label>
-				</div>
-				<p class="text-xs text-slate-500">
-					Resend: set <code class="bg-slate-100 px-1 rounded">RESEND_API_KEY</code> and <code class="bg-slate-100 px-1 rounded">RESEND_FROM_EMAIL</code>. Mailgun: set <code class="bg-slate-100 px-1 rounded">MAILGUN_API_KEY</code> and <code class="bg-slate-100 px-1 rounded">MAILGUN_DOMAIN</code>.
-				</p>
-			</div>
-			<div class="pt-2">
-				<button
-					type="submit"
-					class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all"
+		{/if}
+		{#if error}
+			<p class="text-sm text-red-600">{error}</p>
+		{/if}
+		<form
+			id="demo-data-form"
+			method="POST"
+			action="?/create"
+			class="space-y-5"
+		>
+			<div>
+				<label for="settings-org" class="block text-sm font-medium text-slate-700 mb-1">Organisation</label>
+				<select
+					id="settings-org"
+					name="organisationId"
+					required
+					class="block w-full max-w-md rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
 				>
-					Save settings
-				</button>
+					<option value="">Select an organisation</option>
+					{#each organisations as org}
+						<option value={org.id} selected={organisationId === org.id}>
+							{org.name}
+						</option>
+					{/each}
+				</select>
 			</div>
-		</div>
-	</form>
+
+			<!-- Hidden so modal input value is submitted with form -->
+			<input type="hidden" name="organisationNameConfirm" value={confirmTypedName} />
+
+			<div class="space-y-3">
+				<label class="flex items-start gap-3 cursor-pointer">
+					<input
+						type="checkbox"
+						name="createContacts"
+						value="on"
+						bind:checked={createContactsChecked}
+						class="mt-1 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+					/>
+					<span class="text-sm font-medium text-slate-700">Create anonymised contacts</span>
+				</label>
+				<div class="ml-6 flex items-center gap-2">
+					<label for="contact-count" class="text-sm text-slate-600">Number:</label>
+					<input
+						id="contact-count"
+						name="contactCount"
+						type="number"
+						min="1"
+						max="1000"
+						bind:value={contactCountValue}
+						placeholder="30"
+						class="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-slate-900 focus:border-[#EB9486] focus:ring-1 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+				</div>
+				<p class="ml-6 text-xs text-slate-500">Replaces all contacts with anonymised names, emails, phone numbers and addresses.</p>
+			</div>
+
+			<div>
+				<label class="flex items-start gap-3 cursor-pointer">
+					<input
+						type="checkbox"
+						name="createEvents"
+						value="on"
+						bind:checked={createEventsChecked}
+						class="mt-1 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+					/>
+					<span class="text-sm font-medium text-slate-700">Create demo events</span>
+				</label>
+				<p class="ml-6 mt-1 text-xs text-slate-500">Replaces all events with 5 demo events, each with 2 occurrences a week apart.</p>
+			</div>
+
+			<button
+				type="button"
+				class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all"
+				on:click={openConfirmModal}
+			>
+				Create
+			</button>
+		</form>
+
+		<!-- Confirm popup: message + type org name + Cancel / Continue -->
+		{#if showConfirmModal}
+			<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions a11y-no-noninteractive-element-interactions -->
+			<div
+				class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="confirm-title"
+				tabindex="-1"
+				on:click={(e) => e.target === e.currentTarget && closeConfirmModal()}
+				on:keydown={(e) => e.key === 'Escape' && closeConfirmModal()}
+			>
+				<div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+					<h3 id="confirm-title" class="text-lg font-semibold text-slate-800 mb-2">Create demo data?</h3>
+					<p class="text-sm text-slate-600 mb-4 whitespace-pre-line">{confirmMessage}</p>
+					<div class="mb-5">
+						<label for="confirm-org-name" class="block text-sm font-medium text-slate-700 mb-1">Type the organisation name to confirm</label>
+						<input
+							id="confirm-org-name"
+							type="text"
+							bind:value={confirmTypedName}
+							placeholder="Enter the exact organisation name"
+							class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+							autocomplete="off"
+							on:keydown={(e) => e.key === 'Enter' && handleConfirmContinue()}
+						/>
+					</div>
+					<div class="flex gap-2 justify-end">
+						<button
+							type="button"
+							on:click={closeConfirmModal}
+							class="px-4 py-2 rounded-xl font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+						>
+							Cancel
+						</button>
+						<button
+							type="button"
+							on:click={handleConfirmContinue}
+							class="px-4 py-2 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-colors"
+						>
+							Continue
+						</button>
+					</div>
+				</div>
+			</div>
+		{/if}
+	</div>
 </div>

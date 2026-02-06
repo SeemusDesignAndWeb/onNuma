@@ -15,10 +15,21 @@ export async function POST({ request, cookies }) {
 	}
 	
 	const data = await request.json();
-	const { emailRateLimitDelay, calendarColours, calendarColors, meetingPlannerRotas, theme: themeUpdate } = data; // Support both for backward compatibility
+	const { emailRateLimitDelay, calendarColours, calendarColors, meetingPlannerRotas, theme: themeUpdate, rotaReminderDaysAhead: rotaReminderDaysAheadUpdate } = data; // Support both for backward compatibility
 	
 	const settings = await getSettings();
 	
+	// Update rota reminder days ahead if provided
+	if (rotaReminderDaysAheadUpdate !== undefined) {
+		const n = typeof rotaReminderDaysAheadUpdate === 'number'
+			? rotaReminderDaysAheadUpdate
+			: parseInt(String(rotaReminderDaysAheadUpdate), 10);
+		if (isNaN(n) || n < 0 || n > 90) {
+			throw error(400, 'rotaReminderDaysAhead must be a number between 0 and 90');
+		}
+		settings.rotaReminderDaysAhead = n;
+	}
+
 	// Update email rate limit delay if provided
 	if (emailRateLimitDelay !== undefined) {
 		// Validate delay (must be between 100ms and 10000ms)

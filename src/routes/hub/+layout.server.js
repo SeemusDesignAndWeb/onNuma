@@ -7,13 +7,17 @@ import { getPlanFromAreaPermissions, getAreaPermissionsForPlan } from '$lib/crm/
 export async function load({ cookies, locals }) {
 	const csrfToken = getCsrfToken(cookies);
 	// Fetch settings and organisations in parallel to avoid sequential store/DB round-trips
-	const [settings, orgs] = await Promise.all([
+	const [settings, orgsRaw] = await Promise.all([
 		getSettings(),
 		readCollection('organisations')
 	]);
+	const orgs = (Array.isArray(orgsRaw) ? orgsRaw : []).filter((o) => o && !o.archivedAt);
 	const requestOrgId = getRequestOrganisationId();
-	const organisationId =
-		requestOrgId ?? settings?.currentOrganisationId ?? orgs?.[0]?.id ?? null;
+	let organisationId = requestOrgId ?? settings?.currentOrganisationId ?? orgs?.[0]?.id ?? null;
+	const orgById = organisationId ? orgs.find((o) => o.id === organisationId) : null;
+	if (organisationId && !orgById) {
+		organisationId = orgs?.[0]?.id ?? null;
+	}
 	const org = organisationId ? (orgs.find((o) => o.id === organisationId) || null) : null;
 	let showOnboarding = false;
 	if (organisationId && locals.admin && org) {

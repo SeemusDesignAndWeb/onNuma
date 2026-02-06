@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import { findById, readCollection } from '$lib/crm/server/fileStore.js';
 import { getCsrfToken } from '$lib/crm/server/auth.js';
-import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, cookies }) {
+export async function load({ params, cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const newsletter = await findById('emails', params.id);
 	if (!newsletter) {
@@ -13,8 +13,10 @@ export async function load({ params, cookies }) {
 		throw redirect(302, '/hub/emails');
 	}
 
+	const { plan } = await parent();
 	const lists = filterByOrganisation(await readCollection('lists'), organisationId);
-	const allContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const allContacts = contactsWithinPlanLimit(orgContacts, plan);
 	const contacts = allContacts
 		.filter(c => c.subscribed !== false && c.email)
 		.map(c => ({ id: c.id, email: c.email, name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email }));
