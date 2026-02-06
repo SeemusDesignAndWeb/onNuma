@@ -6,20 +6,43 @@
 
 	$: newsletter = $page.data?.newsletter;
 	$: lists = $page.data?.lists || [];
+	$: contacts = $page.data?.contacts || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 
 	let selectedListId = '';
+	let selectedContactIds = [];
+	let sendMode = 'list'; // 'list' | 'contacts'
 	let sending = false;
 	let results = null;
+	let contactSearch = '';
+
+	$: filteredContacts = contactSearch.trim()
+		? contacts.filter(
+				c =>
+					(c.email || '').toLowerCase().includes(contactSearch.toLowerCase()) ||
+					(c.name || '').toLowerCase().includes(contactSearch.toLowerCase())
+		  )
+		: contacts;
 
 	async function sendNewsletter() {
-		if (!selectedListId) {
-			await dialog.alert('Please select a contact list to send the email to', 'No List Selected');
+		const useList = sendMode === 'list' && selectedListId;
+		const useContacts = sendMode === 'contacts' && selectedContactIds.length > 0;
+
+		if (!useList && !useContacts) {
+			await dialog.alert(
+				sendMode === 'list'
+					? 'Please select a contact list to send the email to'
+					: 'Please select at least one contact',
+				'No Recipients'
+			);
 			return;
 		}
 
+		const recipientCount = useList
+			? (lists.find((l) => l.id === selectedListId)?.contactCount ?? 0)
+			: selectedContactIds.length;
 		const confirmed = await dialog.confirm(
-			`Are you sure you want to send this email to the selected list? This action cannot be undone.`,
+			`Are you sure you want to send this email to ${recipientCount} ${recipientCount === 1 ? 'recipient' : 'recipients'}? This action cannot be undone.`,
 			'Confirm Send Email'
 		);
 
@@ -31,32 +54,36 @@
 		results = null;
 
 		try {
+			const body = {
+				_csrf: csrfToken,
+				...(useList ? { listId: selectedListId } : { contactIds: selectedContactIds })
+			};
 			const response = await fetch(`/hub/emails/${newsletter.id}/send`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					_csrf: csrfToken,
-					listId: selectedListId
-				})
+				body: JSON.stringify(body)
 			});
 
 			const data = await response.json();
-			
+
 			if (response.ok && data.success) {
-				const sentCount = data.results?.filter(r => r.status === 'sent').length || 0;
-				const errorCount = data.results?.filter(r => r.status === 'error').length || 0;
-				
+				const sentCount = data.results?.filter((r) => r.status === 'sent').length || 0;
+				const errorCount = data.results?.filter((r) => r.status === 'error').length || 0;
+
 				if (errorCount === 0) {
-					notifications.success(`Email sent successfully to ${sentCount} ${sentCount === 1 ? 'recipient' : 'recipients'}!`);
+					notifications.success(
+						`Email sent successfully to ${sentCount} ${sentCount === 1 ? 'recipient' : 'recipients'}!`
+					);
 				} else {
-					notifications.warning(`Email sent to ${sentCount} recipients, but ${errorCount} ${errorCount === 1 ? 'error' : 'errors'} occurred.`);
+					notifications.warning(
+						`Email sent to ${sentCount} recipients, but ${errorCount} ${errorCount === 1 ? 'error' : 'errors'} occurred.`
+					);
 				}
-				
+
 				results = data;
-				// Redirect back to newsletter detail page after a short delay
 				setTimeout(() => {
 					goto(`/hub/emails/${newsletter.id}`);
-				}, 2000);
+				}, 3000);
 			} else {
 				throw new Error(data.error || 'Failed to send email');
 			}
@@ -68,6 +95,23 @@
 			sending = false;
 		}
 	}
+
+	function toggleContact(contactId) {
+		if (selectedContactIds.includes(contactId)) {
+			selectedContactIds = selectedContactIds.filter((id) => id !== contactId);
+		} else {
+			selectedContactIds = [...selectedContactIds, contactId];
+		}
+	}
+
+	function selectAllFiltered() {
+		const ids = filteredContacts.map((c) => c.id);
+		selectedContactIds = [...new Set([...selectedContactIds, ...ids])];
+	}
+
+	function clearContactSelection() {
+		selectedContactIds = [];
+	}
 </script>
 
 {#if newsletter}
@@ -77,10 +121,10 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<h1 class="text-3xl font-bold mb-2 text-white">Send Email</h1>
-					<p class="text-hub-blue-100">Send "{newsletter.subject || 'Untitled Email'}" to a contact list</p>
+					<p class="text-hub-blue-100">Send "{newsletter.subject || 'Untitled Email'}" to a contact list or specific contacts</p>
 				</div>
-				<a 
-					href="/hub/emails/{newsletter.id}" 
+				<a
+					href="/hub/emails/{newsletter.id}"
 					class="bg-white/20 hover:bg-white/30 text-white px-[18px] py-2.5 rounded-md transition-colors font-medium border border-white/30 flex items-center gap-2"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,33 +147,94 @@
 					{/if}
 				</div>
 
-				<!-- List Selection -->
+				<!-- Send mode: List vs Manual contacts -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
-						Select Contact List <span class="text-hub-red-500">*</span>
-					</label>
-					{#if lists.length === 0}
-						<div class="bg-hub-yellow-50 border border-hub-yellow-200 rounded-lg p-4">
-							<p class="text-hub-yellow-800 text-sm">
-								No contact lists available. <a href="/hub/lists/new" class="underline font-medium">Create a list</a> first.
+					<span class="block text-sm font-medium text-gray-700 mb-2">Send to</span>
+					<div class="flex gap-4 mb-3">
+						<label class="inline-flex items-center gap-2 cursor-pointer">
+							<input type="radio" name="sendMode" bind:group={sendMode} value="list" class="rounded border-gray-500 text-theme-button-2 focus:ring-theme-button-2" />
+							<span class="text-sm">Contact list</span>
+						</label>
+						<label class="inline-flex items-center gap-2 cursor-pointer">
+							<input type="radio" name="sendMode" bind:group={sendMode} value="contacts" class="rounded border-gray-500 text-theme-button-2 focus:ring-theme-button-2" />
+							<span class="text-sm">Specific contacts</span>
+						</label>
+					</div>
+
+					{#if sendMode === 'list'}
+						{#if lists.length === 0}
+							<div class="bg-hub-yellow-50 border border-hub-yellow-200 rounded-lg p-4">
+								<p class="text-hub-yellow-800 text-sm">
+									No contact lists available. <a href="/hub/lists/new" class="underline font-medium">Create a list</a> first.
+								</p>
+							</div>
+						{:else}
+							<select
+								bind:value={selectedListId}
+								class="w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-3 px-4"
+								disabled={sending}
+							>
+								<option value="">-- Select a contact list --</option>
+								{#each lists as list}
+									<option value={list.id}>
+										{list.name} ({list.contactCount || 0} {list.contactCount === 1 ? 'contact' : 'contacts'})
+									</option>
+								{/each}
+							</select>
+							<p class="mt-1 text-xs text-gray-500">
+								All contacts in the selected list will receive the email.
 							</p>
-						</div>
+						{/if}
 					{:else}
-						<select 
-							bind:value={selectedListId} 
-							class="w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-3 px-4"
-							disabled={sending}
-						>
-							<option value="">-- Select a contact list --</option>
-							{#each lists as list}
-								<option value={list.id}>
-									{list.name} ({list.contactCount || 0} {list.contactCount === 1 ? 'contact' : 'contacts'})
-								</option>
-							{/each}
-						</select>
-						<p class="mt-1 text-xs text-gray-500">
-							Select the contact list you want to send this email to. All contacts in the selected list will receive the email.
-						</p>
+						<div>
+							{#if contacts.length === 0}
+								<div class="bg-hub-yellow-50 border border-hub-yellow-200 rounded-lg p-4">
+									<p class="text-hub-yellow-800 text-sm">No contacts with email and subscription. Add contacts first.</p>
+								</div>
+							{:else}
+								<div class="mb-2">
+									<input
+										type="text"
+										bind:value={contactSearch}
+										placeholder="Search contacts by name or email..."
+										class="w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-3 text-sm"
+									/>
+								</div>
+								<div class="flex gap-2 mb-2">
+									<button
+										type="button"
+										on:click={selectAllFiltered}
+										class="text-sm text-theme-button-2 hover:underline"
+									>
+										Select all (filtered)
+									</button>
+									<button
+										type="button"
+										on:click={clearContactSelection}
+										class="text-sm text-gray-600 hover:underline"
+									>
+										Clear selection
+									</button>
+								</div>
+								<div class="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+									{#each filteredContacts as contact}
+										<label class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 cursor-pointer">
+											<input
+												type="checkbox"
+												checked={selectedContactIds.includes(contact.id)}
+												on:change={() => toggleContact(contact.id)}
+												class="rounded border-gray-500 text-theme-button-2 focus:ring-theme-button-2"
+											/>
+											<span class="text-sm text-gray-900">{contact.name || contact.email}</span>
+											<span class="text-xs text-gray-500 truncate">{contact.email}</span>
+										</label>
+									{/each}
+								</div>
+								<p class="mt-1 text-xs text-gray-500">
+									{selectedContactIds.length} {selectedContactIds.length === 1 ? 'contact' : 'contacts'} selected.
+								</p>
+							{/if}
+						</div>
 					{/if}
 				</div>
 
@@ -137,7 +242,7 @@
 				<div class="flex gap-3">
 					<button
 						on:click={sendNewsletter}
-						disabled={sending || !selectedListId || lists.length === 0}
+						disabled={sending || (sendMode === 'list' ? !selectedListId || lists.length === 0 : selectedContactIds.length === 0)}
 						class="btn-theme-2 px-[18px] py-2.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors"
 					>
 						{#if sending}
@@ -153,37 +258,64 @@
 							Send Email
 						{/if}
 					</button>
-					<a 
-						href="/hub/emails/{newsletter.id}" 
+					<a
+						href="/hub/emails/{newsletter.id}"
 						class="btn-theme-3 px-[18px] py-2.5 rounded-md font-medium inline-flex items-center gap-2 transition-colors"
 					>
 						Cancel
 					</a>
 				</div>
 
-				<!-- Results -->
+				<!-- Detailed Results -->
 				{#if results}
-					<div class="mt-6 p-4 bg-gray-50 rounded-md border border-gray-200">
+					<div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
 						<h3 class="font-bold text-gray-900 mb-3">Send Results</h3>
-						{#if results.error}
+						{#if results.error && !results.results}
 							<p class="text-hub-red-600">{results.error}</p>
-						{:else if results.results}
-							<div class="space-y-2">
+						{:else if results.results && results.results.length > 0}
+							<div class="space-y-2 mb-3">
 								<p class="text-hub-green-600 font-medium">
-									✓ Sent to {results.results.filter(r => r.status === 'sent').length} {results.results.filter(r => r.status === 'sent').length === 1 ? 'recipient' : 'recipients'}
+									✓ Sent: {results.results.filter((r) => r.status === 'sent').length}
 								</p>
-								{#if results.results.some(r => r.status === 'error')}
+								{#if results.results.some((r) => r.status === 'error')}
 									<p class="text-hub-red-600 font-medium">
-										✕ {results.results.filter(r => r.status === 'error').length} {results.results.filter(r => r.status === 'error').length === 1 ? 'error' : 'errors'} occurred
+										✕ Errors: {results.results.filter((r) => r.status === 'error').length}
 									</p>
-									<div class="mt-3 max-h-40 overflow-y-auto">
-										{#each results.results.filter(r => r.status === 'error') as result}
-											<div class="text-sm text-hub-red-700 py-1">
-												{result.email}: {result.error || 'Unknown error'}
-											</div>
-										{/each}
-									</div>
 								{/if}
+							</div>
+							<div class="max-h-60 overflow-y-auto border border-gray-200 rounded-md bg-white">
+								<table class="w-full text-sm">
+									<thead class="bg-gray-100 sticky top-0">
+										<tr>
+											<th class="text-left py-2 px-3">Email</th>
+											<th class="text-left py-2 px-3">Status</th>
+											<th class="text-left py-2 px-3">Details</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each results.results as result}
+											<tr class="border-t border-gray-100">
+												<td class="py-2 px-3 text-gray-900">{result.email}</td>
+												<td class="py-2 px-3">
+													{#if result.status === 'sent'}
+														<span class="text-hub-green-600 font-medium">Sent</span>
+													{:else}
+														<span class="text-hub-red-600 font-medium">Error</span>
+													{/if}
+												</td>
+												<td class="py-2 px-3 text-gray-600">
+													{#if result.status === 'sent' && result.messageId}
+														<span class="text-xs">ID: {result.messageId}</span>
+													{:else if result.status === 'error' && result.error}
+														<span class="text-hub-red-700 text-xs">{result.error}</span>
+													{:else}
+														—
+													{/if}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
 							</div>
 						{/if}
 					</div>
@@ -192,4 +324,3 @@
 		</div>
 	</div>
 {/if}
-

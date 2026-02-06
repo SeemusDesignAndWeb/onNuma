@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { findById, update, remove, readCollection, findMany } from '$lib/crm/server/fileStore.js';
+import { findById, update, remove, readCollection, findMany, create } from '$lib/crm/server/fileStore.js';
+import { ulid } from 'ulid';
 import { validateEvent, getEventColors } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
@@ -237,6 +238,57 @@ export const actions = {
 		} catch (error) {
 			console.error('Error deleting signup:', error);
 			return fail(400, { error: error.message || 'Failed to delete signup' });
+		}
+	},
+
+	createEventEmail: async ({ params, request, cookies, locals }) => {
+		const data = await request.formData();
+		const csrfToken = data.get('_csrf');
+
+		if (!verifyCsrfToken(cookies, csrfToken)) {
+			return fail(403, { error: 'CSRF token validation failed' });
+		}
+
+		try {
+			const eventId = params.id;
+			const event = await findById('events', eventId);
+			if (!event) throw new Error('Event not found');
+
+			// Create a new email based on the event
+			const emailId = ulid();
+			const organisationId = await getCurrentOrganisationId();
+
+			// Build email content
+			const emailSubject = event.title;
+			const emailHtml = `
+				<h1 style="color: #333; font-size: 24px; font-weight: bold; margin-bottom: 16px;">${event.title}</h1>
+				${event.image ? `<img src="${event.image}" alt="${event.title}" style="max-width: 100%; border-radius: 8px; margin-bottom: 16px;" />` : ''}
+				<div style="font-size: 16px; color: #555; margin-bottom: 24px;">
+					${event.description || ''}
+				</div>
+				<div style="background-color: #f5f5f5; padding: 16px; border-radius: 8px;">
+					<p style="margin: 0 0 8px 0;"><strong>When:</strong> {{eventDate}}</p>
+					<p style="margin: 0;"><strong>Where:</strong> ${event.location || 'TBA'}</p>
+				</div>
+			`;
+
+			const newEmail = {
+				id: emailId,
+				organisationId,
+				subject: emailSubject,
+				htmlContent: emailHtml,
+				status: 'draft',
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+				createdBy: locals.user?.id || 'system'
+			};
+
+			await create('emails', newEmail);
+
+			return { emailId };
+		} catch (error) {
+			console.error('Error creating email from event:', error);
+			return fail(500, { error: 'Failed to create email' });
 		}
 	}
 };

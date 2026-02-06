@@ -1,6 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import HtmlEditor from '$lib/crm/components/HtmlEditor.svelte';
 	import { dialog } from '$lib/crm/stores/notifications.js';
@@ -9,6 +11,16 @@
 	$: templates = $page.data?.templates || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+
+	onMount(() => {
+		if (browser) {
+			const params = new URLSearchParams(window.location.search);
+			const subject = params.get('subject');
+			if (subject) {
+				formData.subject = decodeURIComponent(subject);
+			}
+		}
+	});
 	
 	// Handle errors - success notification is shown on detail page via URL parameter
 	function handleEnhance() {

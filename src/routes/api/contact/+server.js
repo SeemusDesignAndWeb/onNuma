@@ -147,25 +147,17 @@ export const POST = async (event) => {
 		const contactInfo = getContactInfo();
 		const recipientEmail = contactInfo.email || 'enquiries@egcc.co.uk';
 
-		// Get sender email from environment or use default Resend domain
-		// IMPORTANT: If using a custom domain email, the domain must be verified in Resend
-		// For testing/development, use 'onboarding@resend.dev' which works without verification
-		// For production, verify your domain in Resend Dashboard first
-		let senderEmail = env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-		
-		// If using a custom domain that might not be verified, fall back to onboarding@resend.dev
-		// This ensures emails can still be sent during development/testing
-		if (senderEmail !== 'onboarding@resend.dev' && !senderEmail.includes('resend.dev')) {
-			console.warn(`Using custom sender email: ${senderEmail}. Make sure this domain is verified in Resend.`);
-			console.warn('If emails fail, the domain may not be verified. Consider using onboarding@resend.dev for testing.');
+		// Get sender email from environment (Mailgun – must be from your verified sending domain)
+		let senderEmail = env.MAILGUN_FROM_EMAIL || env.RESEND_FROM_EMAIL || '';
+		if (!senderEmail) {
+			console.warn('MAILGUN_FROM_EMAIL (or RESEND_FROM_EMAIL) not set. Set it to a verified sender address for your Mailgun domain.');
 		}
-		
+
 		// Log email configuration (without sensitive data)
 		console.log('Email configuration:', {
 			recipientEmail,
 			senderEmail,
-			hasApiKey: !!env.RESEND_API_KEY,
-			apiKeyLength: env.RESEND_API_KEY ? env.RESEND_API_KEY.length : 0
+			hasMailgun: !!(env.MAILGUN_API_KEY && env.MAILGUN_DOMAIN)
 		});
 
 		// Send email to church

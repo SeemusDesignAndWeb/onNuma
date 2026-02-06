@@ -30,6 +30,16 @@ export const actions = {
 			const notes = data.get('notes') || '';
 			const sanitized = await sanitizeHtml(notes);
 
+			let helpFiles = [];
+			const helpFilesJson = data.get('helpFiles');
+			if (helpFilesJson) {
+				try {
+					helpFiles = JSON.parse(helpFilesJson);
+				} catch (e) {
+					console.error('Error parsing helpFiles:', e);
+				}
+			}
+
 			const rotaData = {
 				eventId: data.get('eventId'),
 				occurrenceId: data.get('occurrenceId') || null,
@@ -38,7 +48,8 @@ export const actions = {
 				assignees: [],
 				notes: sanitized,
 				ownerId: data.get('ownerId') || null,
-				visibility: data.get('visibility') || 'public' // Default to public for rotas created via events
+				visibility: data.get('visibility') || 'public', // Default to public for rotas created via events
+				helpFiles: helpFiles
 			};
 
 			const validated = validateRota(rotaData);

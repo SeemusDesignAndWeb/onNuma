@@ -14,12 +14,15 @@ export async function load({ params, cookies }) {
 	}
 
 	const lists = filterByOrganisation(await readCollection('lists'), organisationId);
-	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
-	
+	const allContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const contacts = allContacts
+		.filter(c => c.subscribed !== false && c.email)
+		.map(c => ({ id: c.id, email: c.email, name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email }));
+
 	// Enrich lists with actual contact counts (only count contacts that exist and are subscribed)
 	const listsWithCounts = lists.map(list => {
-		const validContacts = contacts.filter(c => 
-			list.contactIds?.includes(c.id) && 
+		const validContacts = allContacts.filter(c =>
+			list.contactIds?.includes(c.id) &&
 			c.subscribed !== false
 		);
 		return {
@@ -27,9 +30,9 @@ export async function load({ params, cookies }) {
 			contactCount: validContacts.length
 		};
 	});
-	
+
 	const csrfToken = getCsrfToken(cookies) || '';
 
-	return { newsletter, lists: listsWithCounts, csrfToken };
+	return { newsletter, lists: listsWithCounts, contacts, csrfToken };
 }
 

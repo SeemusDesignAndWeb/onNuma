@@ -1,100 +1,113 @@
 /**
- * Mailgun email client with a Resend-compatible interface (emails.send, batch.send).
- * Use EMAIL_PROVIDER=mailgun and set MAILGUN_API_KEY, MAILGUN_DOMAIN.
+ * Mailgun email client – single send helper used by contact form and CRM.
+ * Replaces Resend. Requires MAILGUN_API_KEY, MAILGUN_DOMAIN, and optionally MAILGUN_FROM_EMAIL.
  */
-
+import FormData from 'form-data';
 import Mailgun from 'mailgun.js';
 import { env } from '$env/dynamic/private';
 
-// mailgun.js requires FormData. Node 18+ provides global FormData.
-const FormData = globalThis.FormData;
-if (!FormData) {
-	throw new Error('Mailgun adapter requires FormData (Node 18+ or form-data polyfill).');
-}
-const mailgun = new Mailgun(FormData);
+let mgClient = null;
 
 function getClient() {
+	if (mgClient) return mgClient;
 	const key = env.MAILGUN_API_KEY;
-	if (!key) {
-		throw new Error('MAILGUN_API_KEY is not set. Set it in .env when using EMAIL_PROVIDER=mailgun.');
-	}
-	const opts = { username: 'api', key };
-	if (env.MAILGUN_EU === 'true' || env.MAILGUN_EU === '1') {
-		opts.url = 'https://api.eu.mailgun.net';
-	}
-	return mailgun.client(opts);
-}
-
-function getDomain() {
 	const domain = env.MAILGUN_DOMAIN;
-	if (!domain) {
-		throw new Error('MAILGUN_DOMAIN is not set (e.g. mg.yourdomain.com or sandboxXXX.mailgun.org).');
+	if (!key || !domain) {
+		throw new Error('Mailgun is not configured: set MAILGUN_API_KEY and MAILGUN_DOMAIN in your environment.');
 	}
-	return domain;
-}
-
-/**
- * Normalize Resend-style payload to Mailgun format.
- * Resend: to is string[]; Mailgun: to can be string or string[].
- * @param {object} p - { from, to, subject, html, text?, replyTo? }
- * @returns {object} Mailgun message params
- */
-function toMailgunPayload(p) {
-	const to = Array.isArray(p.to) ? p.to : [p.to];
-	const params = {
-		from: p.from,
-		to,
-		subject: p.subject,
-		html: p.html ?? '',
-		text: p.text ?? (p.html ? undefined : '')
+	const mailgun = new Mailgun(FormData);
+	const options = {
+		username: 'api',
+		key
 	};
-	if (p.replyTo) {
-		params['h:Reply-To'] = p.replyTo;
+	if (env.MAILGUN_EU === 'true' || env.MAILGUN_EU === '1') {
+		options.url = 'https://api.eu.mailgun.net';
 	}
-	return params;
+	mgClient = mailgun.client(options);
+	return mgClient;
 }
 
 /**
- * Resend-compatible single send. Returns { data: { id } } or { error: { message } }.
+ * Send a single email via Mailgun. Returns a Resend-compatible shape { data: { id } } for callers that expect it.
+ * @param {object} opts
+ * @param {string} opts.from - Sender (e.g. "Name <email@domain>" or "email@domain")
+ * @param {string|string[]} opts.to - Recipient(s)
+ * @param {string} opts.subject
+ * @param {string} [opts.html]
+ * @param {string} [opts.text]
+ * @param {string} [opts.replyTo]
+ * @returns {Promise<{ data: { id: string } }>}
  */
+export async function sendEmail({ from, to, subject, html, text, replyTo }) {
+	const domain = env.MAILGUN_DOMAIN;
+	if (!domain) throw new Error('MAILGUN_DOMAIN is not set.');
+	const client = getClient();
+	const toArr = Array.isArray(to) ? to : [to];
+	const payload = {
+		from,
+		to: toArr,
+		subject,
+		...(text && { text }),
+		...(html && { html }),
+		...(replyTo && { 'h:Reply-To': replyTo })
+	};
+	try {
+		const response = await client.messages.create(domain, payload);
+		return { data: { id: response?.id ?? response?.message ?? null } };
+	} catch (err) {
+		const detail = {
+			message: err?.message,
+			status: err?.status ?? err?.statusCode,
+			details: err?.details ?? err?.body ?? err?.response ?? (typeof err?.details === 'string' ? err.details : undefined)
+		};
+		console.error('[Mailgun] send failed:', JSON.stringify(detail, null, 2));
+		if (err?.stack) console.error('[Mailgun] stack:', err.stack);
+		throw err;
+	}
+}
+
+export { getClient };
+
+// Resend-compatible adapter for emailProvider.js
 export const emails = {
 	async send(payload) {
-		const mg = getClient();
-		const domain = getDomain();
-		const params = toMailgunPayload(payload);
 		try {
-			const result = await mg.messages.create(domain, params);
-			const id = result?.id ?? null;
-			return { data: id ? { id } : null, error: null };
+			const result = await sendEmail({
+				from: payload.from,
+				to: payload.to,
+				subject: payload.subject,
+				html: payload.html,
+				text: payload.text,
+				replyTo: payload.replyTo
+			});
+			return { data: result?.data ?? null, error: null };
 		} catch (err) {
-			const message = err?.message ?? err?.toString?.() ?? 'Mailgun send failed';
-			return { data: null, error: { message } };
+			return { data: null, error: { message: err?.message ?? 'Mailgun send failed' } };
 		}
 	}
 };
 
-/**
- * Resend-compatible batch send. Mailgun has no native batch API, so we send in sequence.
- * Returns { data: Array<{ id }>, error?: { message } }.
- */
 export const batch = {
 	async send(payloads) {
 		if (!Array.isArray(payloads) || payloads.length === 0) {
 			return { data: [], error: null };
 		}
-		const mg = getClient();
-		const domain = getDomain();
-		const ids = [];
-		try {
-			for (const p of payloads) {
-				const params = toMailgunPayload(p);
-				const result = await mg.messages.create(domain, params);
-				ids.push({ id: result?.id ?? null });
+		const data = [];
+		for (const p of payloads) {
+			try {
+				const result = await sendEmail({
+					from: p.from,
+					to: p.to,
+					subject: p.subject,
+					html: p.html,
+					text: p.text,
+					replyTo: p.replyTo
+				});
+				data.push({ id: result?.data?.id ?? null });
+			} catch (err) {
+				return { data, error: { message: err?.message ?? 'Mailgun batch send failed' } };
 			}
-			return { data: ids, error: null };
-		} catch (err) {
-			const message = err?.message ?? err?.toString?.() ?? 'Mailgun batch send failed';
-			return { data: ids, error: { message } };
 		}
+		return { data, error: null };
 	}
 };
