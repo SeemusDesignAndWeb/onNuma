@@ -200,6 +200,13 @@ export async function writeSettings(settings) {
 	};
 	await writeCollection(HUB_SETTINGS_COLLECTION, [record]);
 	invalidateSettingsCache();
+	// When updating existing settings (theme etc.), invalidate caches and force re-login so users see changes
+	if (existing) {
+		const { invalidateOrganisationsCache } = await import('./organisationsCache.js');
+		const { invalidateAllSessions } = await import('./auth.js');
+		invalidateOrganisationsCache();
+		await invalidateAllSessions();
+	}
 }
 
 /**

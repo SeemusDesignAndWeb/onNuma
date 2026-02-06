@@ -339,6 +339,17 @@ export async function invalidateAdminSessions(adminId) {
 }
 
 /**
+ * Invalidate all Hub sessions (e.g., after theme or plan update so users must re-login to see changes).
+ * @returns {Promise<number>} Number of sessions invalidated
+ */
+export async function invalidateAllSessions() {
+	const sessions = await readCollection('sessions');
+	if (sessions.length === 0) return 0;
+	await writeCollection('sessions', []);
+	return sessions.length;
+}
+
+/**
  * Update admin password
  * @param {string} adminId - Admin user ID
  * @param {string} newPassword - New password

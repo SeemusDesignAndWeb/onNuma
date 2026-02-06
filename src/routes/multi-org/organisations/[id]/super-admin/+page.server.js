@@ -1,9 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { findById } from '$lib/crm/server/fileStore.js';
+import { findById, update } from '$lib/crm/server/fileStore.js';
 import { getAdminByEmail, createAdmin, updateAdminPassword } from '$lib/crm/server/auth.js';
-import { update } from '$lib/crm/server/fileStore.js';
 import { setHubSuperAdminEmail, getHubSuperAdminEmail } from '$lib/crm/server/settings.js';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
+import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
 
 /** All Hub area permissions for super admin (same as permissions.js HUB_AREAS minus SUPER_ADMIN) */
 const FULL_PERMISSIONS = [
@@ -105,6 +105,7 @@ export const actions = {
 			hubSuperAdminEmail: email,
 			updatedAt: new Date().toISOString()
 		});
+		invalidateOrganisationsCache();
 
 		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?super_admin=set', !!locals.multiOrgAdminDomain));
 	}

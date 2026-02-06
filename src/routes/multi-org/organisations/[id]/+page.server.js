@@ -5,6 +5,8 @@ import { isValidHubDomain, normaliseHost, invalidateHubDomainCache, getMultiOrgP
 import { getCurrentOrganisationId, setCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
 import { validateContact } from '$lib/crm/server/validators.js';
+import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
+import { invalidateAllSessions } from '$lib/crm/server/auth.js';
 
 const VALID_PLANS = new Set(['free', 'professional', 'enterprise']);
 
@@ -104,6 +106,8 @@ export const actions = {
 			archivedAt: org.archivedAt ?? null
 		});
 		invalidateHubDomainCache();
+		invalidateOrganisationsCache();
+		await invalidateAllSessions(); // Force re-login so Hub users see plan/org changes
 
 		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id, !!locals.multiOrgAdminDomain));
 	},
@@ -117,6 +121,7 @@ export const actions = {
 		}
 		await updatePartial('organisations', params.id, { archivedAt: new Date().toISOString() });
 		invalidateHubDomainCache();
+		invalidateOrganisationsCache();
 		const currentHubId = await getCurrentOrganisationId();
 		if (currentHubId === params.id) {
 			const all = await readCollection('organisations');
@@ -135,6 +140,7 @@ export const actions = {
 		}
 		await updatePartial('organisations', params.id, { archivedAt: null });
 		invalidateHubDomainCache();
+		invalidateOrganisationsCache();
 		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id, !!locals.multiOrgAdminDomain));
 	},
 

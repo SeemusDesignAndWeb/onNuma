@@ -20,8 +20,14 @@ export async function logAuditEvent(adminId, action, details = {}, event = null)
 		timestamp: new Date().toISOString()
 	};
 
-	await create('audit_logs', auditLog);
-	return auditLog;
+	try {
+		await create('audit_logs', auditLog);
+		return auditLog;
+	} catch (err) {
+		// Never let audit logging break the main flow (e.g. login redirect)
+		console.error('[audit] Failed to write audit_logs:', err?.message || err);
+		return auditLog;
+	}
 }
 
 /**

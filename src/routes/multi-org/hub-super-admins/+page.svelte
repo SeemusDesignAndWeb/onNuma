@@ -1,9 +1,14 @@
 <script>
+	import { page } from '$app/stores';
+	import { enhance } from '$app/forms';
+
 	export let data;
 	$: base = data?.multiOrgBasePath ?? '/multi-org';
 	$: orgsWithSuperAdmin = data?.orgsWithSuperAdmin ?? [];
 	$: adminStatusList = data?.adminStatusList ?? [];
 	$: orphanedAdmins = data?.orphanedAdmins ?? [];
+	$: formSuccess = $page.form?.deleted;
+	$: formError = $page.form?.error || '';
 
 	function formatDate(iso) {
 		if (!iso) return '—';
@@ -73,6 +78,16 @@
 
 <!-- Section 2: Hub admins not shown above (not the super admin of any org) -->
 <section>
+	{#if formSuccess}
+		<div class="mb-4 p-4 rounded-xl text-sm bg-green-50 border border-green-200 text-green-800">
+			Hub admin removed.
+		</div>
+	{/if}
+	{#if formError}
+		<div class="mb-4 p-4 rounded-xl text-sm bg-red-50 border border-red-200 text-red-800">
+			{formError}
+		</div>
+	{/if}
 	<h2 class="text-lg font-semibold text-slate-700 mb-4">Hub admins not listed above</h2>
 	<p class="text-sm text-slate-500 mb-4">
 		These Hub admins are not the super admin of any organisation (they did not appear in the table above). They may be extra users on a hub or erroneous logins to review.
@@ -85,6 +100,7 @@
 					<th class="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
 					<th class="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Created</th>
 					<th class="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+					<th class="px-5 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-slate-100">
@@ -95,6 +111,24 @@
 						<td class="px-5 py-4 text-sm text-slate-600">{formatDate(admin.createdAt)}</td>
 						<td class="px-5 py-4">
 							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Not attached to any organisation</span>
+						</td>
+						<td class="px-5 py-4 text-right">
+							<form
+								method="POST"
+								action="?/deleteOrphanedAdmin"
+								class="inline"
+								on:submit={(e) => {
+									if (!confirm(`Remove Hub admin "${admin.email || admin.name}"? They will no longer be able to log in to the Hub.`)) {
+										e.preventDefault();
+									}
+								}}
+								use:enhance
+							>
+								<input type="hidden" name="adminId" value={admin.id} />
+								<button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800 hover:underline">
+									Delete
+								</button>
+							</form>
 						</td>
 					</tr>
 				{/each}

@@ -1,17 +1,22 @@
 import { getCsrfToken } from '$lib/crm/server/auth.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
-import { readCollection } from '$lib/crm/server/fileStore.js';
+import { getCachedOrganisations } from '$lib/crm/server/organisationsCache.js';
 import { getPlanFromAreaPermissions, getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 
 export async function load({ cookies, locals }) {
 	const csrfToken = getCsrfToken(cookies);
-	// Fetch settings and organisations in parallel to avoid sequential store/DB round-trips
-	const [settings, orgsRaw] = await Promise.all([
-		getSettings(),
-		readCollection('organisations')
-	]);
-	const orgs = (Array.isArray(orgsRaw) ? orgsRaw : []).filter((o) => o && !o.archivedAt);
+	let settings = {};
+	let orgs = [];
+	try {
+		[settings, orgs] = await Promise.all([
+			getSettings(),
+			getCachedOrganisations()
+		]);
+	} catch (err) {
+		// Don't break login page or other hub pages if DB/store is slow or fails (e.g. prod timeout)
+		console.error('[hub layout] load failed:', err?.message || err);
+	}
 	const requestOrgId = getRequestOrganisationId();
 	let organisationId = requestOrgId ?? settings?.currentOrganisationId ?? orgs?.[0]?.id ?? null;
 	const orgById = organisationId ? orgs.find((o) => o.id === organisationId) : null;

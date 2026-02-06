@@ -130,11 +130,19 @@ export const actions = {
 		// Successful login - reset attempts
 		loginAttempts.delete(clientIp);
 
-		const session = await createSession(admin.id);
+		let session;
+		try {
+			session = await createSession(admin.id);
+		} catch (err) {
+			console.error('[login] createSession failed:', err?.message || err);
+			return fail(500, { error: 'Could not create session. Please try again.' });
+		}
 		setSessionCookie(cookies, session.id, process.env.NODE_ENV === 'production');
 
-		// Log successful login
-		await logAuditEvent(admin.id, 'login', { success: true }, { getClientAddress: () => clientIp, request });
+		// Log successful login (best-effort; never block redirect)
+		logAuditEvent(admin.id, 'login', { success: true }, { getClientAddress: () => clientIp, request }).catch((err) => {
+			console.error('[login] audit log failed:', err?.message || err);
+		});
 
 		throw redirect(302, '/hub');
 	}
