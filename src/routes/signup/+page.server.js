@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { create, readCollection, findById, update } from '$lib/crm/server/fileStore.js';
+import { create, readCollection, findById, update, updatePartial } from '$lib/crm/server/fileStore.js';
 import { createAdmin, getAdminByEmail } from '$lib/crm/server/auth.js';
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
@@ -151,12 +151,18 @@ export const actions = {
 				});
 			}
 
-			// Link this org's super admin to the new user
-			await update('organisations', org.id, {
-				...org,
-				hubSuperAdminEmail: email,
-				updatedAt: new Date().toISOString()
-			});
+			// Link this org's super admin to the new user (use updatePartial to avoid full read-modify-write race)
+			await updatePartial('organisations', org.id, { hubSuperAdminEmail: email });
+
+			// Verify org is visible in the store (so multi-org list will show it)
+			const verifyOrg = await findById('organisations', org.id);
+			if (!verifyOrg) {
+				console.error('[signup] Organisation not found after create:', org.id);
+				return fail(500, {
+					errors: { _form: 'Organisation was created but could not be verified. Please contact support or check the organisations list.' },
+					values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
+				});
+			}
 		} catch (err) {
 			console.error('[signup] create failed:', err);
 			const message = err?.message || 'Something went wrong. Please try again.';

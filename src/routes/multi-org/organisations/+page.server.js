@@ -3,7 +3,10 @@ import { readCollection } from '$lib/crm/server/fileStore.js';
 import { setCurrentOrganisationId, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 
-export async function load({ locals }) {
+export async function load({ locals, depends }) {
+	// Invalidate with invalidate('app:organisations') to refetch after new signups etc.
+	depends('app:organisations');
+
 	const multiOrgAdmin = locals.multiOrgAdmin;
 	if (!multiOrgAdmin) {
 		return { organisations: [], multiOrgAdmin: null, currentHubOrganisationId: null };

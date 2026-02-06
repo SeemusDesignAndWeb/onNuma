@@ -1,12 +1,18 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { invalidate } from '$app/navigation';
+	import { onMount } from 'svelte';
 
 	export let data;
 	$: form = $page.form;
 	$: values = form?.values || {};
-	$: errors = form?.errors || {};
 	$: success = data.success ?? false;
+
+	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
+	onMount(() => {
+		if (data.success) invalidate('app:organisations');
+	});
 </script>
 
 <svelte:head>
