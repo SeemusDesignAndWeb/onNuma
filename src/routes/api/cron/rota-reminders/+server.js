@@ -50,7 +50,7 @@ async function handleRequest(url, request) {
 		}
 		if (daysAhead == null || isNaN(daysAhead)) {
 			const settings = await getSettings();
-			daysAhead = settings.rotaReminderDaysAhead ?? parseInt(env.ROTA_REMINDER_DAYS_AHEAD, 10) || 3;
+			daysAhead = settings.rotaReminderDaysAhead ?? (parseInt(env.ROTA_REMINDER_DAYS_AHEAD, 10) || 3);
 		}
 
 		if (isNaN(daysAhead) || daysAhead < 0) {
