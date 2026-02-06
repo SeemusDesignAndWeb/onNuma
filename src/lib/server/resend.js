@@ -1,9 +1,6 @@
-import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 import { rateLimitedSend } from '../crm/server/emailRateLimiter.js';
-
-// Initialize Resend with API key from environment or fallback
-const resend = new Resend(env.RESEND_API_KEY || 're_C88Tpi9d_5uF8M4U2R8r4NbyTwjHBVZ6A');
+import { getEmailProvider } from './emailProvider.js';
 
 /**
  * Get base URL for absolute links in emails
@@ -54,7 +51,8 @@ export async function sendContactEmail({
 	try {
 		console.log('Sending contact email:', { to, from, replyTo: replyTo || email, name });
 		const branding = getEmailBranding();
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const provider = await getEmailProvider();
+		const result = await rateLimitedSend(() => provider.emails.send({
 			from: from,
 			to: [to],
 			replyTo: replyTo || email,
@@ -162,7 +160,7 @@ Reply to: ${email}
 export async function sendConfirmationEmail({ to, from = 'onboarding@resend.dev', name }) {
 	try {
 		const branding = getEmailBranding();
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: from,
 			to: [to],
 			subject: 'Thank you for contacting Eltham Green Community Church',

@@ -1,17 +1,20 @@
-# Resend Email Setup Guide
+# Resend Email Setup Guide (default provider)
 
-This project uses [Resend](https://resend.com) for sending emails from the contact form.
+This project can use either **Resend** or **Mailgun** for sending emails. Resend is the default. To use Mailgun, see [MAILGUN_SETUP.md](./MAILGUN_SETUP.md).
 
-## Environment Variables
+## Environment Variables (Resend)
 
-Add the following to your `.env` file:
+Add the following to your `.env` file when using Resend (default):
 
 ```env
-RESEND_API_KEY=re_C88Tpi9d_5uF8M4U2R8r4NbyTwjHBVZ6A
+# Optional: explicitly set provider (default is resend)
+EMAIL_PROVIDER=resend
+
+RESEND_API_KEY=re_your_key_here
 RESEND_FROM_EMAIL=onboarding@resend.dev
 ```
 
-**Note:** The API key is already configured in the code as a fallback, but it's recommended to use environment variables for security.
+**Note:** Use environment variables for the API key in production; avoid hardcoding.
 
 ## Domain Verification
 

@@ -66,6 +66,7 @@ function ensureColorArray(arr, defaults) {
 function getDefaultSettings() {
 	return {
 		emailRateLimitDelay: 500,
+		emailProvider: 'resend', // 'resend' | 'mailgun'
 		calendarColours: getDefaultCalendarColours(),
 		meetingPlannerRotas: getDefaultMeetingPlannerRotas(),
 		theme: getDefaultTheme()
@@ -95,8 +96,10 @@ function mergeWithDefaults(record) {
 		externalPagesLayout: layout,
 		publicPagesBranding: publicBranding
 	};
+	const emailProvider = record.emailProvider === 'mailgun' ? 'mailgun' : 'resend';
 	return {
 		emailRateLimitDelay: record.emailRateLimitDelay ?? defaultSettings.emailRateLimitDelay,
+		emailProvider,
 		calendarColours: Array.isArray(colours) && colours.length > 0 ? colours : defaultSettings.calendarColours,
 		meetingPlannerRotas: Array.isArray(record.meetingPlannerRotas)
 			? record.meetingPlannerRotas
@@ -178,6 +181,7 @@ export async function writeSettings(settings) {
 	const record = {
 		id: DEFAULT_RECORD_ID,
 		emailRateLimitDelay: settings.emailRateLimitDelay,
+		emailProvider: settings.emailProvider === 'mailgun' ? 'mailgun' : 'resend',
 		calendarColours: settings.calendarColours,
 		meetingPlannerRotas: settings.meetingPlannerRotas,
 		theme: settings.theme,

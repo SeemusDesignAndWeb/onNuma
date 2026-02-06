@@ -1,11 +1,9 @@
-import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 import { readCollection, findById, update, findMany } from './fileStore.js';
 import { ensureUnsubscribeToken, ensureEventToken } from './tokens.js';
 import { rateLimitedSend } from './emailRateLimiter.js';
 import { getSettings } from './settings.js';
-
-const resend = new Resend(env.RESEND_API_KEY);
+import { getEmailProvider } from '$lib/server/emailProvider.js';
 
 /**
  * Get base URL for absolute links in emails
@@ -704,7 +702,7 @@ export async function sendNewsletterEmail({ newsletterId, to, name, contact }, e
 	const email = await findById('emails', newsletterId);
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: emailData.from,
 			to: emailData.to,
 			subject: emailData.subject,
@@ -774,7 +772,7 @@ export async function sendNewsletterBatch(emailDataArray, newsletterId) {
 
 		try {
 			// Send batch with rate limiting (pass batch size for tracking)
-			const result = await rateLimitedSend(() => resend.batch.send(batchPayload), batch.length);
+			const result = await rateLimitedSend(async () => (await getEmailProvider()).batch.send(batchPayload), batch.length);
 
 			// Check for errors in response
 			if (result.error) {
@@ -997,7 +995,7 @@ ${upcomingRotasText}
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Can you help with volunteering? - sign up for these rotas`,
@@ -1263,7 +1261,7 @@ async function sendRotaInviteBatch(emailDataArray) {
 
 		try {
 			// Send batch with rate limiting (pass batch size for tracking)
-			const result = await rateLimitedSend(() => resend.batch.send(batchPayload), batch.length);
+			const result = await rateLimitedSend(async () => (await getEmailProvider()).batch.send(batchPayload), batch.length);
 
 			// Check for errors in response
 			if (result.error) {
@@ -1467,7 +1465,7 @@ Visit our website: ${baseUrl}
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: 'Welcome to TheHUB - Your Admin Account',
@@ -1584,7 +1582,7 @@ Visit our website: ${baseUrl}
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: 'Reset Your Password - TheHUB',
@@ -1644,7 +1642,7 @@ export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, e
 	const text = `Reset Your Password - OnNuma\n\nHello ${name},\n\nWe received a request to reset your OnNuma admin password.\n\nOpen this link to set a new password (expires in 24 hours):\n${resetLink}\n\nIf you didn't request this, ignore this email.\n`;
 
 	try {
-		return await rateLimitedSend(() => resend.emails.send({
+		return await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: 'Reset your OnNuma password',
@@ -1794,7 +1792,7 @@ Eltham Green Community Church
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Event Signup Confirmed: ${event.title}`,
@@ -2046,7 +2044,7 @@ View the rota: ${hubUrl}
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Rota Updated: ${role} - ${eventTitle}`,
@@ -2196,7 +2194,7 @@ Note: If you are unable to fulfill this assignment, please contact the rota coor
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: `Reminder: ${role} - ${eventTitle} in 3 days`,
@@ -2277,7 +2275,7 @@ Eltham Green Community Church
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: [to],
 			subject: 'Welcome to Eltham Green Community Church',
@@ -2401,7 +2399,7 @@ This email was sent from the member signup form on Eltham Green Community Church
 	`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => resend.emails.send({
+		const result = await rateLimitedSend(async () => (await getEmailProvider()).emails.send({
 			from: fromEmail,
 			to: to,
 			subject: `${isUpdate ? 'Member Information Updated' : 'New Member Signup'}: ${contactName}`,
