@@ -7,6 +7,7 @@
 	export let data;
 	$: form = $page.form;
 	$: values = form?.values || {};
+	$: errors = form?.errors || {};
 	$: success = data.success ?? false;
 
 	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
