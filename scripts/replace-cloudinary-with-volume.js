@@ -2,7 +2,8 @@
 /**
  * Replace all Cloudinary image URLs with volume/local paths (/images/uploads/...).
  * - Downloads each Cloudinary image and saves to static/images/uploads (local) or IMAGES_PATH/uploads (volume).
- * - Updates database.json, data/hub_settings.ndjson (and hub_settings.json), data/hub_images.ndjson, data/images.ndjson.
+ * - Updates: database.json (main site); file store ndjson when present; when DATABASE_URL is set, all
+ *   crm_records rows that contain Cloudinary URLs (hub_settings, hub_images, organisations, etc.).
  *
  * Usage:
  *   node scripts/replace-cloudinary-with-volume.js
@@ -12,6 +13,7 @@
  *   DATABASE_PATH - main site database (default ./data/database.json)
  *   IMAGES_PATH   - base dir for images (default: static/images; use /data/images for volume)
  *   CRM_DATA_DIR  - CRM data dir for ndjson (default data)
+ *   DATABASE_URL  - when set (e.g. DATA_STORE=database), also read/update Cloudinary URLs in Postgres crm_records
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
@@ -19,6 +21,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
+import pg from 'pg';
+import { TABLE_NAME } from '../src/lib/crm/server/dbSchema.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -95,6 +99,26 @@ function getExtFromUrl(url) {
 	} catch {
 		return 'jpg';
 	}
+}
+
+/** Get Postgres pool when DATABASE_URL is set (database store). */
+function getDbPool() {
+	const url = process.env.DATABASE_URL?.trim();
+	if (!url) return null;
+	try {
+		const parsed = new URL(url.replace(/^postgres(ql)?:\/\//, 'https://'));
+		if (parsed.hostname === 'base') return null;
+	} catch {
+		return null;
+	}
+	const isInternal = url.includes('railway.internal');
+	const isLocalhost = /localhost|127\.0\.0\.1/.test(url);
+	const useSsl = !isInternal && !isLocalhost;
+	return new pg.Pool({
+		connectionString: url,
+		max: 2,
+		...(useSsl ? { ssl: { rejectUnauthorized: false } } : {})
+	});
 }
 
 /** Download image from URL and save to uploads dir. Returns /images/uploads/filename. */
@@ -179,8 +203,36 @@ async function main() {
 		}
 	}
 
+	// 4) When using database store: collect from all crm_records (hub_settings, hub_images, organisations, etc.)
+	const recordsWithCloudinary = [];
+	const pool = getDbPool();
+	if (pool) {
+		try {
+			const res = await pool.query(
+				`SELECT collection, id, body FROM ${TABLE_NAME}`
+			);
+			for (const row of res.rows || []) {
+				const body = row.body && typeof row.body === 'object' ? row.body : {};
+				const set = new Set();
+				collectCloudinaryUrls(body, set);
+				if (set.size > 0) {
+					for (const u of set) urlsToProcess.add(u);
+					recordsWithCloudinary.push({ collection: row.collection, id: row.id, body });
+				}
+			}
+			if (recordsWithCloudinary.length > 0) {
+				console.log('Database store: found', recordsWithCloudinary.length, 'record(s) with Cloudinary URLs');
+			}
+		} catch (err) {
+			console.error('Database read failed:', err.message);
+		} finally {
+			// keep pool for later update
+		}
+	}
+
 	if (urlsToProcess.size === 0) {
 		console.log('\nNo Cloudinary URLs found. Nothing to do.');
+		if (pool) await pool.end();
 		process.exit(0);
 	}
 
@@ -199,6 +251,7 @@ async function main() {
 	const replacePairs = [...urlToPath.entries()];
 	if (replacePairs.length === 0) {
 		console.log('\nNo images could be downloaded. Exiting without changing data.');
+		if (pool) await pool.end();
 		process.exit(1);
 	}
 
@@ -257,8 +310,21 @@ async function main() {
 		}
 	}
 
-	console.log('\nDone. Cloudinary URLs in data have been replaced with /images/uploads/... paths.');
-	console.log('If you use Postgres for CRM (hub_images or hub_settings), update those records in the app or run a DB migration.');
+	// 8) Replace in Postgres crm_records when using database store
+	if (pool && replacePairs.length > 0 && recordsWithCloudinary.length > 0) {
+		const now = new Date().toISOString();
+		for (const rec of recordsWithCloudinary) {
+			replaceCloudinaryUrls(rec.body, replacePairs);
+			await pool.query(
+				`UPDATE ${TABLE_NAME} SET body = $1::jsonb, updated_at = $2 WHERE collection = $3 AND id = $4`,
+				[JSON.stringify(rec.body), now, rec.collection, rec.id]
+			);
+		}
+		console.log('Updated', recordsWithCloudinary.length, 'record(s) in database (crm_records)');
+	}
+	if (pool) await pool.end();
+
+	console.log('\nDone. Cloudinary URLs have been replaced with /images/uploads/... paths (files and/or database).');
 }
 
 main().catch((err) => {
