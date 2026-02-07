@@ -1,9 +1,10 @@
 /**
  * Serve uploaded images from volume (production) or static/images (local).
- * Local: baseDir = static/images. Production: baseDir = IMAGES_PATH or /images.
+ * Local: baseDir = static/images. Production: baseDir = IMAGES_PATH (e.g. /data/images).
+ * Base dir must match where replace-cloudinary-with-volume.js writes (same IMAGES_PATH / process.cwd()).
  */
 
-import { readImageFile, resolveImagePath } from '$lib/server/volumeImageStore.js';
+import { readImageFile, resolveImagePath, getImagesBaseDir } from '$lib/server/volumeImageStore.js';
 import { existsSync } from 'fs';
 
 const MIME_TYPES = {
@@ -16,7 +17,9 @@ const MIME_TYPES = {
 };
 
 export async function GET({ params }) {
-	const path = params.path;
+	// [...path] can be string "uploads/file.png" or in some setups an array
+	const pathParam = params.path;
+	const path = Array.isArray(pathParam) ? pathParam.join('/') : (pathParam ?? '');
 	if (!path || path.includes('..')) {
 		return new Response('Not Found', { status: 404 });
 	}
@@ -24,7 +27,13 @@ export async function GET({ params }) {
 	const storedPath = `/images/${path}`;
 	const filePath = resolveImagePath(storedPath);
 	if (!filePath || !existsSync(filePath)) {
-		return new Response('Not Found', { status: 404 });
+		const headers = new Headers();
+		// Dev only: show where we looked when image is missing
+		if (import.meta.env.DEV && filePath) {
+			headers.set('X-Image-Resolved-Path', filePath);
+			headers.set('X-Images-Base-Dir', getImagesBaseDir());
+		}
+		return new Response('Not Found', { status: 404, headers });
 	}
 
 	const buffer = await readImageFile(storedPath);

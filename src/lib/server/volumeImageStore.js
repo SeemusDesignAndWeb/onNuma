@@ -11,6 +11,11 @@ import { env } from '$env/dynamic/private';
 
 const UPLOADS_SUBDIR = 'uploads';
 
+/** Path we return for img src (must match how the GET /images/[...path] route resolves). */
+export function getUploadPath(filename) {
+	return `/images/${UPLOADS_SUBDIR}/${filename}`;
+}
+
 /**
  * Base directory for uploaded images.
  * - Local (no IMAGES_PATH): static/images → uploads go to static/images/uploads, served at /images/uploads/...
@@ -63,7 +68,15 @@ export async function saveUploadedImage(buffer, originalName, mimeType = 'image/
 	const filename = safeFilename(originalName);
 	const filePath = join(dir, filename);
 	await writeFile(filePath, buffer);
-	const path = `/images/${UPLOADS_SUBDIR}/${filename}`;
+
+	const path = getUploadPath(filename);
+	// Verify the same path the GET handler will use actually exists (same base dir)
+	const resolved = resolveImagePath(path);
+	if (!resolved || !existsSync(resolved)) {
+		throw new Error(
+			`Upload wrote to ${filePath} but cannot be resolved for serving (base: ${getImagesBaseDir()}). Check IMAGES_PATH.`
+		);
+	}
 	return { path, filename };
 }
 

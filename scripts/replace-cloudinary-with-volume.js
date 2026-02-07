@@ -32,12 +32,13 @@ dotenv.config({ path: join(projectRoot, '.env') });
 
 const CLOUDINARY_REGEX = /https?:\/\/(?:res\.)?cloudinary\.com\/[^\s"']+/gi;
 
+/** Must match volumeImageStore.getImagesBaseDir() so app serves the same dir we write to. */
 function getImagesBaseDir() {
 	const path = process.env.IMAGES_PATH?.trim();
 	if (path) {
-		return path.startsWith('/') ? path : join(projectRoot, path);
+		return path.startsWith('/') ? path : join(process.cwd(), path);
 	}
-	return join(projectRoot, 'static', 'images');
+	return join(process.cwd(), 'static', 'images');
 }
 
 function getUploadsDir() {
@@ -137,6 +138,10 @@ async function downloadAndSave(url) {
 	}
 	const buffer = Buffer.from(await res.arrayBuffer());
 	writeFileSync(filePath, buffer);
+	// Verify so we don't write DB paths that the app can't serve
+	if (!existsSync(filePath)) {
+		throw new Error(`Failed to verify written file: ${filePath}`);
+	}
 
 	return `/images/uploads/${filename}`;
 }
@@ -151,9 +156,15 @@ async function main() {
 		: join(projectRoot, 'data');
 
 	console.log('Replace Cloudinary links with volume/local\n');
-	console.log('Images base dir:', getImagesBaseDir());
+	const imagesBase = getImagesBaseDir();
+	const uploadsDir = getUploadsDir();
+	console.log('Images base dir:', imagesBase);
+	console.log('Uploads dir (files written here):', uploadsDir);
 	console.log('Main DB:', resolvedDbPath);
 	console.log('CRM data dir:', crmDataDir);
+	if (process.env.IMAGES_PATH) {
+		console.log('(Production: ensure this path is a persistent volume so images survive deploys.)');
+	}
 
 	const urlToPath = new Map();
 	const urlsToProcess = new Set();
