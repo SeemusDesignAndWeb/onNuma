@@ -43,18 +43,6 @@
 		goto(`/hub/contacts?${params.toString()}`);
 	}
 
-	function handleMakeAdmin(contactId, event) {
-		event.stopPropagation();
-		const contact = contacts.find(c => c.id === contactId);
-		if (!contact) return;
-		
-		const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ') || contact.email || '';
-		const params = new URLSearchParams();
-		params.set('name', name);
-		params.set('email', contact.email || '');
-		goto(`/hub/users/new?${params.toString()}`);
-	}
-
 	$: columns = [
 		{ key: 'firstName', label: 'First Name', render: (val) => val || '-' },
 		{ key: 'lastName', label: 'Last Name', render: (val) => val || '-' },
@@ -74,26 +62,7 @@
 			key: 'createdAt', 
 			label: 'Created',
 			render: (val) => val ? formatDateUK(val) : ''
-		},
-		...(isSuperAdmin ? [{
-			key: 'actions',
-			label: '',
-			render: (val, row) => {
-				return `<button 
-					data-contact-id="${row.id}"
-					class="make-admin-btn bg-theme-button-1 text-white p-2 rounded hover:opacity-90 inline-flex items-center justify-center relative"
-					title="Make Hub Admin"
-					aria-label="Make Hub Admin"
-				>
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-					</svg>
-					<svg class="w-3 h-3 absolute -top-0.5 -right-0.5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-						<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-					</svg>
-				</button>`;
-			}
-		}] : [])
+		}
 	];
 
 	$: formResult = $page.form;
@@ -181,29 +150,7 @@
 	</div>
 {/if}
 
-<div 
-	on:click={(e) => {
-		if (e.target.classList.contains('make-admin-btn') || e.target.closest('.make-admin-btn')) {
-			const btn = e.target.classList.contains('make-admin-btn') ? e.target : e.target.closest('.make-admin-btn');
-			const contactId = btn.getAttribute('data-contact-id');
-			if (contactId) {
-				handleMakeAdmin(contactId, e);
-			}
-		}
-	}}
-	on:keydown={(e) => {
-		if ((e.key === 'Enter' || e.key === ' ') && (e.target.classList.contains('make-admin-btn') || e.target.closest('.make-admin-btn'))) {
-			e.preventDefault();
-			const btn = e.target.classList.contains('make-admin-btn') ? e.target : e.target.closest('.make-admin-btn');
-			const contactId = btn.getAttribute('data-contact-id');
-			if (contactId) {
-				handleMakeAdmin(contactId, e);
-			}
-		}
-	}}
-	role="region"
-	aria-label="Contacts table"
->
+<div role="region" aria-label="Contacts table">
 	<Table {columns} rows={contacts} emptyMessage="No contacts yet. Add your first contact above." onRowClick={(row) => goto(`/hub/contacts/${row.id}`)} />
 </div>
 

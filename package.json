@@ -7,6 +7,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"start": "node -r dotenv/config build/index.js",
+		"start:railway": "(node scripts/replace-cloudinary-with-volume.js || true) && node -r dotenv/config build/index.js",
 		"import-podcasts": "node scripts/import-podcasts.js",
 		"migrate-images": "echo 'Images now use volume/static; Cloudinary migration disabled'",
 		"sync-cloudinary-images": "echo 'Images now use volume/static; Cloudinary sync disabled'",

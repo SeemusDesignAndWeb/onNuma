@@ -2,7 +2,7 @@
 /**
  * Replace all Cloudinary image URLs with volume/local paths (/images/uploads/...).
  * - Downloads each Cloudinary image and saves to static/images/uploads (local) or IMAGES_PATH/uploads (volume).
- * - Updates database.json and data/hub_images.ndjson (and data/images.ndjson if present).
+ * - Updates database.json, data/hub_settings.ndjson (and hub_settings.json), data/hub_images.ndjson, data/images.ndjson.
  *
  * Usage:
  *   node scripts/replace-cloudinary-with-volume.js
@@ -140,7 +140,30 @@ async function main() {
 		collectCloudinaryUrls(db, urlsToProcess);
 	}
 
-	// 2) Collect from hub_images.ndjson and images.ndjson
+	// 2) Collect from hub_settings.ndjson and hub_settings.json (theme.logoPath, theme.loginLogoPath)
+	const hubSettingsNdjson = join(crmDataDir, 'hub_settings.ndjson');
+	if (existsSync(hubSettingsNdjson)) {
+		const content = readFileSync(hubSettingsNdjson, 'utf-8');
+		for (const line of content.trim().split('\n').filter(Boolean)) {
+			try {
+				const rec = JSON.parse(line);
+				collectCloudinaryUrls(rec, urlsToProcess);
+			} catch (e) {
+				// skip bad lines
+			}
+		}
+	}
+	const hubSettingsJson = join(crmDataDir, 'hub_settings.json');
+	if (existsSync(hubSettingsJson)) {
+		try {
+			const data = JSON.parse(readFileSync(hubSettingsJson, 'utf-8'));
+			collectCloudinaryUrls(data, urlsToProcess);
+		} catch (e) {
+			// skip
+		}
+	}
+
+	// 3) Collect from hub_images.ndjson and images.ndjson
 	for (const coll of ['hub_images', 'images']) {
 		const ndjsonPath = join(crmDataDir, `${coll}.ndjson`);
 		if (existsSync(ndjsonPath)) {
@@ -179,7 +202,7 @@ async function main() {
 		process.exit(1);
 	}
 
-	// 3) Replace in database.json
+	// 5) Replace in database.json
 	if (existsSync(resolvedDbPath)) {
 		const db = JSON.parse(readFileSync(resolvedDbPath, 'utf-8'));
 		replaceCloudinaryUrls(db, replacePairs);
@@ -187,7 +210,32 @@ async function main() {
 		console.log('\nUpdated', resolvedDbPath);
 	}
 
-	// 4) Replace in ndjson files
+	// 6) Replace in hub_settings.ndjson and hub_settings.json
+	if (existsSync(hubSettingsNdjson)) {
+		const lines = readFileSync(hubSettingsNdjson, 'utf-8')
+			.trim()
+			.split('\n')
+			.filter(Boolean)
+			.map((line) => {
+				try {
+					const rec = JSON.parse(line);
+					replaceCloudinaryUrls(rec, replacePairs);
+					return JSON.stringify(rec);
+				} catch {
+					return line;
+				}
+			});
+		writeFileSync(hubSettingsNdjson, lines.join('\n') + '\n', 'utf-8');
+		console.log('Updated', hubSettingsNdjson);
+	}
+	if (existsSync(hubSettingsJson)) {
+		const data = JSON.parse(readFileSync(hubSettingsJson, 'utf-8'));
+		replaceCloudinaryUrls(data, replacePairs);
+		writeFileSync(hubSettingsJson, JSON.stringify(data, null, 2), 'utf-8');
+		console.log('Updated', hubSettingsJson);
+	}
+
+	// 7) Replace in ndjson files
 	for (const coll of ['hub_images', 'images']) {
 		const ndjsonPath = join(crmDataDir, `${coll}.ndjson`);
 		if (existsSync(ndjsonPath)) {
@@ -210,7 +258,7 @@ async function main() {
 	}
 
 	console.log('\nDone. Cloudinary URLs in data have been replaced with /images/uploads/... paths.');
-	console.log('If you use Postgres for CRM (hub_images), run a separate migration or update records via the app.');
+	console.log('If you use Postgres for CRM (hub_images or hub_settings), update those records in the app or run a DB migration.');
 }
 
 main().catch((err) => {

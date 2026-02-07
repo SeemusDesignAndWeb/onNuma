@@ -4,6 +4,16 @@ import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { getCachedOrganisations } from '$lib/crm/server/organisationsCache.js';
 import { getPlanFromAreaPermissions, getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 
+/** Strip Cloudinary logo URLs so Hub shows default logo until settings are updated. */
+function sanitizeThemeLogoUrls(theme) {
+	if (!theme || typeof theme !== 'object') return theme;
+	const isCloudinary = (u) => typeof u === 'string' && u.includes('cloudinary.com');
+	const t = { ...theme };
+	if (isCloudinary(t.logoPath)) t.logoPath = '';
+	if (isCloudinary(t.loginLogoPath)) t.loginLogoPath = '';
+	return t;
+}
+
 export async function load({ cookies, locals }) {
 	const csrfToken = getCsrfToken(cookies);
 	let settings = {};
@@ -31,10 +41,11 @@ export async function load({ cookies, locals }) {
 	// Hub navbar and access run off the organisation's plan (Free / Professional / Enterprise)
 	const plan = org && Array.isArray(org.areaPermissions) ? getPlanFromAreaPermissions(org.areaPermissions) : null;
 	const organisationAreaPermissions = plan ? getAreaPermissionsForPlan(plan) : (org && Array.isArray(org.areaPermissions) ? org.areaPermissions : null);
+	const theme = sanitizeThemeLogoUrls(settings?.theme || null);
 	return {
 		csrfToken,
 		admin: locals.admin || null,
-		theme: settings?.theme || null,
+		theme,
 		superAdminEmail: locals.superAdminEmail || null,
 		hubOrganisationFromDomain: locals.hubOrganisationFromDomain || null,
 		currentOrganisation: org || null,
