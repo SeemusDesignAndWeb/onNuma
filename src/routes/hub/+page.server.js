@@ -1,14 +1,16 @@
 import { env } from '$env/dynamic/private';
-import { readCollection } from '$lib/crm/server/fileStore.js';
-import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
+import { readCollection, readCollectionCount } from '$lib/crm/server/fileStore.js';
+import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getPlanMaxContacts } from '$lib/crm/server/permissions.js';
 
 export async function load({ locals, parent }) {
 	const emailModuleEnabled = !!env.RESEND_API_KEY;
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
 
-	const [contactsRaw, listsRaw, emailsRaw, eventsRaw, rotasRaw, formsRaw, emailStatsRaw] = await Promise.all([
-		readCollection('contacts', { organisationId }),
+	// Use count-only for contacts so we don't load full list (improves Hub LCP when using database)
+	const [contactsCount, listsRaw, emailsRaw, eventsRaw, rotasRaw, formsRaw, emailStatsRaw] = await Promise.all([
+		readCollectionCount('contacts', { organisationId }),
 		readCollection('lists'),
 		readCollection('emails'),
 		readCollection('events', { organisationId }),
@@ -17,14 +19,14 @@ export async function load({ locals, parent }) {
 		readCollection('email_stats')
 	]);
 
-	const orgContacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
-	const contacts = organisationId ? contactsWithinPlanLimit(orgContacts, plan) : orgContacts;
+	const planLimit = getPlanMaxContacts(plan || 'free');
 	const lists = organisationId ? filterByOrganisation(listsRaw, organisationId) : listsRaw;
 	const emails = organisationId ? filterByOrganisation(emailsRaw, organisationId) : emailsRaw;
 	const events = organisationId ? filterByOrganisation(eventsRaw, organisationId) : eventsRaw;
 	const rotas = organisationId ? filterByOrganisation(rotasRaw, organisationId) : rotasRaw;
 	const forms = organisationId ? filterByOrganisation(formsRaw, organisationId) : formsRaw;
 	const emailStats = organisationId ? filterByOrganisation(emailStatsRaw, organisationId) : emailStatsRaw;
+	const contactsDisplayCount = Math.min(contactsCount, planLimit);
 
 	// Filter out any null/undefined entries from collections (e.g. malformed data on Railway)
 	const validEmails = emails.filter(Boolean);
@@ -74,7 +76,7 @@ export async function load({ locals, parent }) {
 		admin: locals.admin || null,
 		emailModuleEnabled,
 		stats: {
-			contacts: contacts.length,
+			contacts: contactsDisplayCount,
 			lists: lists.length,
 			newsletters: emails.length,
 			events: events.length,

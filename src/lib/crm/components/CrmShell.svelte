@@ -93,8 +93,12 @@
 						<a href="/hub" class="flex items-center gap-2">
 							<img
 								src={theme?.logoPath?.trim() || '/images/OnNuma-Icon.png'}
-								alt="EGCC"
+								alt="Hub home"
 								class="h-8 w-auto"
+								fetchpriority="high"
+								width="32"
+								height="32"
+								decoding="async"
 							/>
 							<span class="text-xl font-bold text-white">TheHUB</span>
 						</a>

@@ -90,6 +90,15 @@ export async function readCollection(collection, _options = {}) {
 	}
 }
 
+/** Return count of records (for dashboard stats). File store: read, filter by org if given, return length. */
+export async function readCollectionCount(collection, options = {}) {
+	const records = await readCollection(collection, options);
+	if (options.organisationId != null) {
+		return records.filter((r) => r && r.organisationId === options.organisationId).length;
+	}
+	return records.length;
+}
+
 export async function writeCollection(collection, records) {
 	await ensureDirs();
 	const filePath = getCollectionPath(collection);

@@ -18,8 +18,11 @@ export const load = async ({ locals, url }) => {
 		try {
 			settings = getSettings();
 			const allEvents = getEvents();
-			const hubSettings = await getHubSettings();
-			theme = hubSettings?.theme || null;
+			// Skip Hub settings on marketing home (/) – theme not used there, saves a round trip and improves LCP/TTFB
+			if (pathname !== '/') {
+				const hubSettings = await getHubSettings();
+				theme = hubSettings?.theme || null;
+			}
 			const highlighted = (allEvents || []).filter((e) => e.highlighted && e.published);
 			highlightedEvent = highlighted.sort((a, b) =>
 				new Date(a.date || '9999-12-31').getTime() - new Date(b.date || '9999-12-31').getTime()

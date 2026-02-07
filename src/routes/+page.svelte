@@ -26,16 +26,22 @@
 <svelte:head>
 	<title>OnNuma – Organisation management that people actually use</title>
 	<meta name="description" content="OnNuma is organisation management software designed around real volunteers. Simple to join. Clear to manage. Easy to communicate." />
+	<!-- Preload LCP image so it starts loading before layout/paint -->
+	<link rel="preload" as="image" href="/images/hero-people.png" fetchpriority="high" />
 </svelte:head>
 
 <!-- Hero – full-screen background with overlay -->
 <section class="relative min-h-[100vh] flex items-center justify-center overflow-hidden">
-	<!-- Full-screen background image -->
+	<!-- Full-screen background image (LCP element: preloaded in head, high priority) -->
 	<div class="absolute inset-0">
 		<img
 			src="/images/hero-people.png"
 			alt="People collaborating around a table"
 			class="w-full h-full object-cover"
+			fetchpriority="high"
+			width="1920"
+			height="1080"
+			decoding="async"
 		/>
 		<div class="absolute inset-0 bg-slate-900/55" aria-hidden="true"></div>
 	</div>
@@ -115,6 +121,7 @@
 					src="/images/esme-portrait.png"
 					alt="A volunteer smiling – designed for real people like Esme"
 					class="w-full h-full object-cover"
+					loading="lazy"
 				/>
 			</div>
 			<div class="min-w-0">
@@ -140,6 +147,7 @@
 			src="/images/volunteers-outdoor.png"
 			alt="Volunteers together outdoors"
 			class="w-full h-full object-cover"
+			loading="lazy"
 		/>
 		<div class="absolute inset-0 bg-slate-900/50" aria-hidden="true"></div>
 	</div>
@@ -208,7 +216,7 @@
 <!-- Benefits – “What’s included” list -->
 <section class="relative py-16 md:py-24 overflow-hidden">
 	<div class="absolute inset-0">
-		<img src="/images/community-vibrant.png" alt="Community gathering" class="w-full h-full object-cover" />
+		<img src="/images/community-vibrant.png" alt="Community gathering" class="w-full h-full object-cover" loading="lazy" />
 		<div class="absolute inset-0 bg-slate-900/65" aria-hidden="true"></div>
 	</div>
 	<div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl text-white">
@@ -328,7 +336,7 @@
 <!-- Contact – CTA like MPP “Get in touch” -->
 <section id="contact" class="relative py-20 md:py-28 overflow-hidden">
 	<div class="absolute inset-0">
-		<img src="/images/volunteering-activity.png" alt="People volunteering together" class="w-full h-full object-cover" />
+		<img src="/images/volunteering-activity.png" alt="People volunteering together" class="w-full h-full object-cover" loading="lazy" />
 		<div class="absolute inset-0 bg-slate-900/70" aria-hidden="true"></div>
 		<div class="absolute inset-0 bg-brand-blue/75" aria-hidden="true"></div>
 	</div>

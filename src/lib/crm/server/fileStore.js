@@ -79,6 +79,12 @@ export async function writeCollection(collection, records) {
 	return backend.writeCollection(collection, records);
 }
 
+/** Return count of records without loading rows (faster for dashboard stats / LCP). */
+export async function readCollectionCount(collection, options = {}) {
+	const backend = await getBackend(collection);
+	return backend.readCollectionCount(collection, options);
+}
+
 export async function findById(collection, id) {
 	const backend = await getBackend(collection);
 	return backend.findById(collection, id);

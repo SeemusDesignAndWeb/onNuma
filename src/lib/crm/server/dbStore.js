@@ -173,6 +173,31 @@ async function readCollectionRecordTable(collection, options = {}) {
 	return res.rows.map((row) => tableRowToRecord(collection, row));
 }
 
+/**
+ * Return count of records for a collection (no rows loaded). Use for dashboard stats to improve LCP.
+ * For record tables uses SELECT COUNT(*); for others loads collection and returns length.
+ */
+export async function readCollectionCount(collection, options = {}) {
+	await ensureTable();
+	if (isRecordCollection(collection)) {
+		const table = getTableName(collection);
+		if (options.organisationId != null) {
+			const res = await getPool().query(
+				`SELECT COUNT(*)::int AS n FROM ${table} WHERE organisation_id = $1`,
+				[options.organisationId]
+			);
+			return res.rows[0]?.n ?? 0;
+		}
+		const res = await getPool().query(`SELECT COUNT(*)::int AS n FROM ${table}`);
+		return res.rows[0]?.n ?? 0;
+	}
+	const res = await getPool().query(
+		`SELECT id FROM ${TABLE_NAME} WHERE collection = $1`,
+		[collection]
+	);
+	return res.rows.length;
+}
+
 export async function readCollection(collection, options = {}) {
 	await ensureTable();
 	if (isRecordCollection(collection)) {
