@@ -10,6 +10,7 @@
 		"import-podcasts": "node scripts/import-podcasts.js",
 		"migrate-images": "echo 'Images now use volume/static; Cloudinary migration disabled'",
 		"sync-cloudinary-images": "echo 'Images now use volume/static; Cloudinary sync disabled'",
+		"replace-cloudinary-with-volume": "node scripts/replace-cloudinary-with-volume.js",
 		"recover-database": "node scripts/recover-database.js",
 		"restore-to-railway": "node scripts/restore-to-railway.js"
 	},
