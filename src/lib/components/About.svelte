@@ -29,7 +29,7 @@
 					<div class="relative w-full max-w-lg">
 						<div class="absolute -inset-4 bg-primary/20 rounded-2xl transform rotate-3"></div>
 						<img
-							src={home?.aboutImage || 'https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066390/egcc/egcc/img-church-bg.jpg'}
+							src={home?.aboutImage || '/images/church-bg.jpg'}
 							alt="About us"
 							class="relative rounded-2xl shadow-2xl w-full h-auto"
 						/>

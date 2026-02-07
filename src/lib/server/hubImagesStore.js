@@ -20,7 +20,7 @@ function usePostgres() {
 }
 
 /**
- * @returns {Promise<Array<{ id: string, filename: string, originalName: string, path: string, cloudinaryPublicId?: string, size: number, mimeType: string, width?: number, height?: number, uploadedAt: string }>>}
+ * @returns {Promise<Array<{ id: string, filename: string, originalName: string, path: string, size: number, mimeType: string, width?: number, height?: number, uploadedAt: string }>>}
  */
 export async function getHubImages() {
 	if (usePostgres()) {
@@ -31,7 +31,7 @@ export async function getHubImages() {
 
 /**
  * @param {string} id
- * @returns {Promise<{ id: string, filename: string, path: string, cloudinaryPublicId?: string, ... } | null>}
+ * @returns {Promise<{ id: string, filename: string, path: string, ... } | null>}
  */
 export async function getHubImage(id) {
 	if (usePostgres()) {
@@ -41,7 +41,7 @@ export async function getHubImage(id) {
 }
 
 /**
- * @param {{ id: string, filename: string, originalName: string, path: string, cloudinaryPublicId?: string, size: number, mimeType: string, width?: number, height?: number, uploadedAt: string }} image
+ * @param {{ id: string, filename: string, originalName: string, path: string, size: number, mimeType: string, width?: number, height?: number, uploadedAt: string }} image
  */
 export async function saveHubImage(image) {
 	if (usePostgres()) {

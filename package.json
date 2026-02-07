@@ -8,8 +8,8 @@
 		"preview": "vite preview",
 		"start": "node -r dotenv/config build/index.js",
 		"import-podcasts": "node scripts/import-podcasts.js",
-		"migrate-images": "node scripts/migrate-to-cloudinary.js",
-		"sync-cloudinary-images": "node scripts/sync-cloudinary-images.js",
+		"migrate-images": "echo 'Images now use volume/static; Cloudinary migration disabled'",
+		"sync-cloudinary-images": "echo 'Images now use volume/static; Cloudinary sync disabled'",
 		"recover-database": "node scripts/recover-database.js",
 		"restore-to-railway": "node scripts/restore-to-railway.js"
 	},
@@ -31,7 +31,6 @@
 	},
 	"dependencies": {
 		"bcryptjs": "^3.0.3",
-		"cloudinary": "^2.8.0",
 		"dompurify": "^3.3.1",
 		"dotenv": "^17.2.3",
 		"form-data": "^4.0.5",

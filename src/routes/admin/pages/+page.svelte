@@ -47,7 +47,7 @@
 					heroTitle: settings.teamHeroTitle || 'Developing leaders of tomorrow',
 					heroSubtitle: settings.teamHeroSubtitle || '',
 					heroButtons: settings.teamHeroButtons || [],
-					heroImage: settings.teamHeroImage || 'https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763066390/egcc/egcc/img-church-bg.jpg',
+					heroImage: settings.teamHeroImage || '/images/church-bg.jpg',
 					heroOverlay: 40,
 					teamDescription: settings.teamDescription || '',
 					sections: [],
@@ -1310,7 +1310,7 @@
 										if (!editing.sections) editing.sections = [];
 										editing.sections = [...editing.sections, { 
 											type: 'mlg', 
-											logo: 'https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763397479/egcc/d79861b6-c071-4bb9-9665-299a4a7d20bf.svg',
+											logo: '/images/egcc-logo.png',
 											label: 'Partnership',
 											title: 'Part of the MissionLifeGrace Network',
 											content: '<p>Our aim is to see the Kingdom of God come, where broken lives are restored, the lost are found and communities transformed. We believe every church exists to be part of God\'s mission to show the world Christ and that we are better equipped to do this in partnership with other churches.</p><p>As a network our focus is to encourage each other through sharing our hearts, ideas and lessons learned along the way, to challenge one another to stay true to the course and to invest in helping people fulfil their God given calling. We believe that by journeying together we can see God do great things in our nation and around the world.</p>',
@@ -1462,7 +1462,7 @@
 										if (!editing.sections) editing.sections = [];
 										editing.sections = [...editing.sections, { 
 											type: 'mlg', 
-											logo: 'https://res.cloudinary.com/dl8kjhwjs/image/upload/v1763397479/egcc/d79861b6-c071-4bb9-9665-299a4a7d20bf.svg',
+											logo: '/images/egcc-logo.png',
 											label: 'Partnership',
 											title: 'Part of the MissionLifeGrace Network',
 											content: '<p>Our aim is to see the Kingdom of God come, where broken lives are restored, the lost are found and communities transformed. We believe every church exists to be part of God\'s mission to show the world Christ and that we are better equipped to do this in partnership with other churches.</p><p>As a network our focus is to encourage each other through sharing our hearts, ideas and lessons learned along the way, to challenge one another to stay true to the course and to invest in helping people fulfil their God given calling. We believe that by journeying together we can see God do great things in our nation and around the world.</p>',

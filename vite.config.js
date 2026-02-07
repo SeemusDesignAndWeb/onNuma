@@ -43,7 +43,6 @@ export default defineConfig({
 					if (id.includes('node_modules')) {
 						if (id.includes('svelte')) return 'svelte';
 						// Don't put quill in its own chunk - it has circular deps that cause "Cannot access before initialization"
-						if (id.includes('cloudinary')) return 'cloudinary';
 						return 'vendor';
 					}
 					// CRM UI chunk: lazy-loaded on Hub so initial parse is smaller (reduces ~150ms parse bottleneck)
