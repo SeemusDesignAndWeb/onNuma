@@ -6,7 +6,7 @@ import { logDataChange } from '$lib/crm/server/audit.js';
 import { getPlanMaxContacts } from '$lib/crm/server/permissions.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 export async function load({ url, cookies, locals, parent }) {
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
@@ -14,7 +14,7 @@ export async function load({ url, cookies, locals, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
 
-	const allContacts = await readCollection('contacts');
+	const allContacts = await readCollection('contacts', { organisationId });
 	const orgContacts = filterByOrganisation(allContacts, organisationId);
 	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 	const planLimit = getPlanMaxContacts(plan);
@@ -77,7 +77,7 @@ export const actions = {
 
 			// Read all contacts for current organisation (plan-limited: only first N are updatable)
 			const organisationId = await getCurrentOrganisationId();
-			const allContacts = await readCollection('contacts');
+			const allContacts = await readCollection('contacts', { organisationId });
 			const orgContacts = filterByOrganisation(allContacts, organisationId);
 			const orgs = await readCollection('organisations');
 			const plan = getPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions) || 'free';

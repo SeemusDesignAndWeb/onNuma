@@ -10,7 +10,13 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
-import { getCreateTableSql, TABLE_NAME } from '../src/lib/crm/server/dbSchema.js';
+import {
+	getCreateTableSql,
+	getCreateContactsTableSql,
+	getCreateEventsTableSql,
+	getCreateRotasTableSql,
+	TABLE_NAME
+} from '../src/lib/crm/server/dbSchema.js';
 import { COLLECTIONS_FOR_DB } from '../src/lib/crm/server/collections.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -114,6 +120,10 @@ async function main() {
 			console.log('[ensure-db-on-deploy] Creating table', TABLE_NAME, '...');
 			await client.query(getCreateTableSql());
 		}
+		// Ensure record tables for contacts, events, rotas (indexed columns for fast search/filter)
+		await client.query(getCreateContactsTableSql());
+		await client.query(getCreateEventsTableSql());
+		await client.query(getCreateRotasTableSql());
 
 		const count = await tableRowCount(client);
 		if (count > 0) {

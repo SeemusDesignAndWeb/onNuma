@@ -70,7 +70,7 @@ async function queuedWrite(filePath, writeFn) {
 	return newQueue;
 }
 
-export async function readCollection(collection) {
+export async function readCollection(collection, _options = {}) {
 	await ensureDirs();
 	const filePath = getCollectionPath(collection);
 	if (!existsSync(filePath)) {

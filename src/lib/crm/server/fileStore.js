@@ -65,9 +65,13 @@ export async function getUploadsDir() {
 	return fileStoreImpl.getUploadsDir();
 }
 
-export async function readCollection(collection) {
+/**
+ * @param {string} collection - Collection name (e.g. 'contacts', 'events', 'rotas')
+ * @param {{ organisationId?: string, search?: string, limit?: number, offset?: number }} [options] - Optional query options for database store (organisation filter, search, pagination). Ignored by file store.
+ */
+export async function readCollection(collection, options = {}) {
 	const backend = await getBackend(collection);
-	return backend.readCollection(collection);
+	return backend.readCollection(collection, options);
 }
 
 export async function writeCollection(collection, records) {
