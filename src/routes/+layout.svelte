@@ -5,9 +5,8 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import StandaloneHeader from '$lib/components/StandaloneHeader.svelte';
 	import ContactFormPopup from '$lib/components/ContactFormPopup.svelte';
-	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
-	import ConfirmDialog from '$lib/crm/components/ConfirmDialog.svelte';
 	import { contactPopupOpen } from '$lib/stores/contactPopup.js';
+	import { browser } from '$app/environment';
 	import { onMount, setContext } from 'svelte';
 	import { writable } from 'svelte/store';
 	import { page } from '$app/stores';
@@ -96,6 +95,23 @@
 	// Share banner visibility with child components via store
 	const bannerVisibleStore = writable(false);
 	setContext('bannerVisible', bannerVisibleStore);
+
+	// Lazy-load CRM popup/dialog only when in Hub/admin/multi-org to shrink initial bundle and reduce parse cost
+	let NotificationPopupComponent = null;
+	let ConfirmDialogComponent = null;
+	let crmComponentsLoaded = false;
+	function loadCrmComponents() {
+		if (crmComponentsLoaded) return;
+		crmComponentsLoaded = true;
+		Promise.all([
+			import('$lib/crm/components/NotificationPopup.svelte'),
+			import('$lib/crm/components/ConfirmDialog.svelte')
+		]).then(([m1, m2]) => {
+			NotificationPopupComponent = m1.default;
+			ConfirmDialogComponent = m2.default;
+		});
+	}
+	$: if (browser && hideWebsiteElements) loadCrmComponents();
 	
 	$: if (!hideWebsiteElements) {
 		bannerVisibleStore.set(showHighlightBanner);
@@ -163,14 +179,18 @@
 	<slot />
 </div>
 
-<!-- Global Notification Popups (MultiOrg uses OnNuma theme colours) -->
-<NotificationPopup useMultiOrgTheme={isMultiOrgArea} />
+<!-- Global Notification Popups (lazy-loaded in Hub/admin to reduce initial JS parse) -->
+{#if NotificationPopupComponent}
+	<svelte:component this={NotificationPopupComponent} useMultiOrgTheme={isMultiOrgArea} />
+{/if}
 
 <!-- Contact form popup (website only) -->
 {#if !hideWebsiteElements}
 	<ContactFormPopup open={$contactPopupOpen} on:close={() => contactPopupOpen.set(false)} />
 {/if}
 
-<!-- Global Dialog/Confirm -->
-<ConfirmDialog />
+<!-- Global Dialog/Confirm (lazy-loaded in Hub/admin) -->
+{#if ConfirmDialogComponent}
+	<svelte:component this={ConfirmDialogComponent} />
+{/if}
 

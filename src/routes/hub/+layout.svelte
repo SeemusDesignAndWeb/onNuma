@@ -1,8 +1,8 @@
 <script>
 	import '$lib/crm/hub.css';
 	import CrmShell from '$lib/crm/components/CrmShell.svelte';
-	import Onboarding from '$lib/crm/components/Onboarding.svelte';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import { invalidateAll, goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 
@@ -14,6 +14,16 @@
 	$: superAdminEmail = data?.superAdminEmail ?? null;
 	$: showOnboarding = data?.showOnboarding ?? false;
 	$: organisationAreaPermissions = data?.organisationAreaPermissions ?? null;
+
+	// Lazy-load Onboarding only when needed to reduce initial Hub chunk parse time
+	let OnboardingComponent = null;
+	let onboardingLoaded = false;
+	$: if (browser && showOnboarding && !onboardingLoaded) {
+		onboardingLoaded = true;
+		import('$lib/crm/components/Onboarding.svelte').then((m) => {
+			OnboardingComponent = m.default;
+		});
+	}
 
 	// When user switches back to this tab (e.g. after changing org in MultiOrg), refetch so Hub shows current org's data
 	onMount(() => {
@@ -75,6 +85,12 @@
 <CrmShell {admin} {theme} superAdminEmail={superAdminEmail} organisationAreaPermissions={organisationAreaPermissions}>
 	<slot />
 </CrmShell>
-{#if !$page.url.pathname.startsWith('/hub/auth/') && admin && showOnboarding}
-	<Onboarding {showOnboarding} {admin} {superAdminEmail} organisationAreaPermissions={organisationAreaPermissions} />
+{#if !$page.url.pathname.startsWith('/hub/auth/') && admin && showOnboarding && OnboardingComponent}
+	<svelte:component
+		this={OnboardingComponent}
+		{showOnboarding}
+		{admin}
+		{superAdminEmail}
+		{organisationAreaPermissions}
+	/>
 {/if}

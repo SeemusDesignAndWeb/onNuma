@@ -46,6 +46,10 @@ export default defineConfig({
 						if (id.includes('cloudinary')) return 'cloudinary';
 						return 'vendor';
 					}
+					// CRM UI chunk: lazy-loaded on Hub so initial parse is smaller (reduces ~150ms parse bottleneck)
+					if (id.includes('$lib/crm/components/') && (id.includes('NotificationPopup') || id.includes('ConfirmDialog') || id.includes('Onboarding'))) {
+						return 'crm-ui';
+					}
 				}
 			}
 		}
