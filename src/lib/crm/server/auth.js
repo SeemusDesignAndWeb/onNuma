@@ -5,7 +5,7 @@ import { generateId } from './ids.js';
 
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour of inactivity
-const SESSION_COOKIE = 'crm_session';
+export const SESSION_COOKIE = 'crm_session';
 const CSRF_COOKIE = 'crm_csrf';
 const PASSWORD_EXPIRATION_DAYS = 90; // Password expires after 90 days
 const ACCOUNT_LOCKOUT_ATTEMPTS = 5; // Lock account after 5 failed attempts

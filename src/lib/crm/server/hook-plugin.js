@@ -1,5 +1,5 @@
 import { redirect, isRedirect } from '@sveltejs/kit';
-import { getAdminFromCookies, generateCsrfToken, setCsrfToken, getCsrfToken } from './auth.js';
+import { getAdminFromCookies, generateCsrfToken, setCsrfToken, getCsrfToken, SESSION_COOKIE } from './auth.js';
 import { hasRouteAccess } from './permissions.js';
 import {
 	getMultiOrgAdminFromCookies,
@@ -93,6 +93,16 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		pathname.startsWith('/forms') ||
 		pathname.startsWith('/unsubscribe/') ||
 		pathname.startsWith('/view-rotas');
+
+	// Protected hub paths require auth; avoid slow resolveOrganisationFromHost when there is no session cookie.
+	const isProtectedHubPath =
+		pathname.startsWith('/hub') &&
+		!pathname.startsWith('/hub/auth/') &&
+		pathname !== '/hub/privacy' &&
+		!pathname.startsWith('/hub/privacy/');
+	if (isProtectedHubPath && !cookies.get(SESSION_COOKIE)) {
+		throw redirect(302, '/hub/auth/login');
+	}
 
 	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages) to hub login.
 	const host = url.host || request.headers.get('host') || '';
