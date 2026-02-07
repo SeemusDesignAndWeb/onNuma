@@ -1,6 +1,5 @@
 <script>
 	import '../app.css';
-	import Preloader from '$lib/components/Preloader.svelte';
 	import EventHighlightBanner from '$lib/components/EventHighlightBanner.svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import StandaloneHeader from '$lib/components/StandaloneHeader.svelte';
@@ -12,7 +11,6 @@
 	import { page } from '$app/stores';
 
 	export let data;
-	export let params = {};
 
 	function getColor(val, fallback) {
 		return typeof val === 'string' && val.trim() && /^#[0-9A-Fa-f]{6}$/.test(val.trim()) ? val.trim() : fallback;
@@ -66,20 +64,16 @@
 		}
 	}
 
-	let showPreloader = true;
-	let showHighlightBanner = false;
-
-	// Don't show navbar, banner, or preloader in admin or HUB areas
-	// But DO show navbar for public signup pages (free-trial, rota, event, and member signups)
-	// Don't show banner on signup pages or sundays page
+	let bannerDismissed = false;
 	$: isSignupPage = $page.url.pathname === '/signup' || $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
-	// External pages (signup, forms, etc.) always use minimal header with theme branding, no hub nav items
 	$: useStandaloneHeader = isExternalPage;
 	$: isMarketingHome = $page.url.pathname === '/';
 	$: showWebsiteNavbar = !hideWebsiteElements || isSignupPage;
 	$: showStandaloneHeader = showWebsiteNavbar && useStandaloneHeader;
 	$: showFullNavbar = showWebsiteNavbar && !useStandaloneHeader;
-	$: showWebsiteBanner = !hideWebsiteElements && !isSignupPage && !isMarketingHome && showHighlightBanner;
+	$: showBannerArea = !hideWebsiteElements && !isSignupPage && !isMarketingHome && data?.highlightedEvent && !data.settings?.showLatestMessagePopup;
+	$: showBannerOpen = showBannerArea && !bannerDismissed;
+	$: showWebsiteBanner = showBannerArea;
 
 	// Single padding class for content (avoid multiple padding classes). Marketing home: no top padding so hero extends behind navbar.
 	$: contentPaddingClass = showStandaloneHeader
@@ -88,7 +82,7 @@
 			? 'pt-0'
 			: isMarketingHome
 				? 'pt-0'
-				: showHighlightBanner
+				: showBannerOpen
 					? 'pt-[110px]'
 					: 'pt-[80px]';
 
@@ -113,9 +107,7 @@
 	}
 	$: if (browser && hideWebsiteElements) loadCrmComponents();
 	
-	$: if (!hideWebsiteElements) {
-		bannerVisibleStore.set(showHighlightBanner);
-	}
+	$: if (!hideWebsiteElements) bannerVisibleStore.set(showBannerOpen);
 
 	function maybeOpenContactPopup() {
 		if (typeof window !== 'undefined' && window.location.pathname === '/' && window.location.hash === '#contact') {
@@ -124,43 +116,17 @@
 	}
 
 	onMount(() => {
-		// Open contact popup when landing on /#contact (e.g. from nav link on another page)
 		maybeOpenContactPopup();
 		window.addEventListener('hashchange', maybeOpenContactPopup);
-
-		// Don't show preloader or banner in admin or CRM areas; skip preloader on marketing home
-		if (hideWebsiteElements || isMarketingHome) {
-			showPreloader = false;
-			if (hideWebsiteElements) return;
-		}
-
-		if (!isMarketingHome) {
-			setTimeout(() => {
-				showPreloader = false;
-			}, 1000);
-		}
-
-		// Check if banner should be shown (not on marketing home)
-		if (!isMarketingHome && data?.highlightedEvent && !data.settings?.showLatestMessagePopup) {
-			setTimeout(() => {
-				showHighlightBanner = true;
-			}, 300);
-		}
-
 		return () => window.removeEventListener('hashchange', maybeOpenContactPopup);
 	});
 </script>
 
-{#if showPreloader && !hideWebsiteElements}
-	<Preloader />
-{/if}
-
-<!-- Event Highlight Banner - shows on all pages except admin -->
 {#if showWebsiteBanner}
 	<EventHighlightBanner 
 		event={data.highlightedEvent} 
-		open={showHighlightBanner} 
-		on:close={() => showHighlightBanner = false} 
+		open={showBannerOpen} 
+		on:close={() => bannerDismissed = true} 
 		class="gallery-hide-when-fullscreen"
 	/>
 {/if}
@@ -171,7 +137,7 @@
 {/if}
 <!-- Website Navbar - full site nav when not standalone external page -->
 {#if showFullNavbar}
-	<Navbar theme={effectiveTheme} bannerVisible={showHighlightBanner && !isSignupPage} landing={data?.landing} transparentOverHero={isMarketingHome} lightText={isSignupPage} hideCta={isSignupPage} className="gallery-hide-when-fullscreen" />
+	<Navbar theme={effectiveTheme} bannerVisible={showBannerOpen} landing={data?.landing} transparentOverHero={isMarketingHome} lightText={isSignupPage} hideCta={isSignupPage} className="gallery-hide-when-fullscreen" />
 {/if}
 
 <!-- Page Content with dynamic padding to account for fixed navbar and banner -->
