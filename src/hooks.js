@@ -32,6 +32,8 @@ export function reroute({ url }) {
 		pathname.startsWith('/auth') ||
 		pathname.startsWith('/organisations') ||
 		pathname.startsWith('/hub-super-admins') ||
+		pathname.startsWith('/plans') ||
+		pathname.startsWith('/billing') ||
 		pathname.startsWith('/settings');
 	if (!rewrite) return undefined;
 

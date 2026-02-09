@@ -8,7 +8,7 @@
 	$: admin = $page.data?.admin;
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
-	
+
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
 

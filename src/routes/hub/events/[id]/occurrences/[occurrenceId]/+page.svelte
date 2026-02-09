@@ -67,7 +67,8 @@
 		}
 	}
 
-	let editing = false;
+	// Always open in edit mode (server redirects here with ?edit=true; no separate detail view)
+	$: editing = $page.url.searchParams.get('edit') === 'true';
 	let formData = {
 		startsAt: '',
 		endsAt: '',
@@ -121,21 +122,23 @@
 		formData.endsAt = `${formData.occurrenceDate}T23:59`;
 	}
 
-	// Initialize form data when occurrence is loaded (avoid hydration issues)
-	$: if (occurrence && !editing) {
+	// Initialize form data when occurrence is loaded (or when navigating to a different occurrence)
+	let lastSyncedOccurrenceId = '';
+	$: if (occurrence && lastSyncedOccurrenceId !== occurrence.id) {
+		lastSyncedOccurrenceId = occurrence.id;
 		// Check if this is an all-day event (starts at 00:00 and ends at 23:59 on same day)
 		const startDate = occurrence.startsAt ? new Date(occurrence.startsAt) : null;
 		const endDate = occurrence.endsAt ? new Date(occurrence.endsAt) : null;
-		const isAllDay = occurrence.allDay || (startDate && endDate && 
+		const isAllDay = occurrence.allDay || (startDate && endDate &&
 			startDate.getHours() === 0 && startDate.getMinutes() === 0 &&
 			endDate.getHours() === 23 && endDate.getMinutes() === 59 &&
 			startDate.toDateString() === endDate.toDateString());
-		
+
 		// Convert ISO dates to datetime-local format or date format
 		const startDateStr = startDate ? startDate.toISOString().slice(0, 16) : '';
 		const endDateStr = endDate ? endDate.toISOString().slice(0, 16) : '';
 		const dateStr = startDate ? startDate.toISOString().slice(0, 10) : '';
-		
+
 		// Use occurrence maxSpaces if set, otherwise leave empty to show it's using event default
 		formData = {
 			startsAt: startDateStr,
@@ -286,13 +289,12 @@
 					>
 						Save Changes
 					</button>
-					<button
-						type="button"
-						on:click={() => editing = false}
-						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+					<a
+						href="/hub/events/{event.id}"
+						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs inline-block"
 					>
 						Back
-					</button>
+					</a>
 				{:else}
 					<a
 						href="/hub/events/{event.id}"

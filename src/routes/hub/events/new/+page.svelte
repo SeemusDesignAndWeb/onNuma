@@ -337,9 +337,9 @@
 					</div>
 				</div>
 
-				<!-- Display & Sharing -->
+				<!-- Display -->
 				<div class="bg-gray-50 rounded-lg p-3">
-					<h3 class="text-xs font-semibold text-gray-900 mb-3">Display & Sharing</h3>
+					<h3 class="text-xs font-semibold text-gray-900 mb-3">Display</h3>
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
 						<div>
 							<label class="block text-xs font-medium text-gray-700 mb-1">Image</label>
@@ -392,7 +392,7 @@
 						</div>
 						<div>
 							<MultiSelect
-								label="Email lists"
+								label="Lists to email"
 								name="listIds"
 								options={lists.map(list => ({ id: list.id, name: list.name }))}
 								bind:selected={selectedListIds}

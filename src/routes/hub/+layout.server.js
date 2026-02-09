@@ -2,7 +2,8 @@ import { getCsrfToken } from '$lib/crm/server/auth.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { getCachedOrganisations } from '$lib/crm/server/organisationsCache.js';
-import { getPlanFromAreaPermissions, getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
+import { getPlanFromAreaPermissions, getAreaPermissionsForPlan, isSuperAdmin } from '$lib/crm/server/permissions.js';
+import { env } from '$env/dynamic/private';
 
 /** Strip Cloudinary logo URLs so Hub shows default logo until settings are updated. */
 function sanitizeThemeLogoUrls(theme) {
@@ -42,6 +43,13 @@ export async function load({ cookies, locals }) {
 	const plan = org && Array.isArray(org.areaPermissions) ? getPlanFromAreaPermissions(org.areaPermissions) : null;
 	const organisationAreaPermissions = plan ? getAreaPermissionsForPlan(plan) : (org && Array.isArray(org.areaPermissions) ? org.areaPermissions : null);
 	const theme = sanitizeThemeLogoUrls(settings?.theme || null);
+	const sundayPlannersLabel =
+		typeof settings?.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== ''
+			? settings.sundayPlannersLabel.trim()
+			: 'Sunday Planners';
+	const showBilling =
+		!!(env.PADDLE_API_KEY && (env.PADDLE_PRICE_ID_PROFESSIONAL || env.PADDLE_PRICE_ID_ENTERPRISE));
+	const showBillingPortal = !!(env.BOATHOUSE_PORTAL_ID && env.BOATHOUSE_SECRET);
 	return {
 		csrfToken,
 		admin: locals.admin || null,
@@ -52,7 +60,11 @@ export async function load({ cookies, locals }) {
 		showOnboarding: !!showOnboarding,
 		organisationId: organisationId || null,
 		organisationAreaPermissions,
-		plan: plan || 'free'
+		plan: plan || 'free',
+		sundayPlannersLabel,
+		showBilling: !!showBilling,
+		showBillingPortal: !!showBillingPortal,
+		isSuperAdmin: locals.admin ? isSuperAdmin(locals.admin) : false
 	};
 }
 

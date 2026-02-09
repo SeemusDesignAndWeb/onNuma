@@ -8,6 +8,8 @@
 	// Active state: support both /multi-org/* (main host) and /* (admin subdomain) so navbar highlights correctly on client-side nav
 	$: isOrganisations = pathname === base + '/organisations' || pathname.startsWith(base + '/organisations/');
 	$: isHubSuperAdmins = pathname === base + '/hub-super-admins' || pathname.startsWith(base + '/hub-super-admins/');
+	$: isPlans = pathname === base + '/plans' || pathname.startsWith(base + '/plans/');
+	$: isBilling = pathname === base + '/billing' || pathname.startsWith(base + '/billing/');
 	$: isSettings = pathname.startsWith(base + '/settings');
 </script>
 
@@ -34,6 +36,20 @@
 							>
 								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
 								Hub super admins
+							</a>
+							<a
+								href="{base}/plans"
+								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isPlans ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							>
+								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+								Plans
+							</a>
+							<a
+								href="{base}/billing"
+								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isBilling ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							>
+								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+								Billing
 							</a>
 							<a
 								href="{base}/settings"

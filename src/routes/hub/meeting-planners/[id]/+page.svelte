@@ -23,7 +23,9 @@
 	$: speakerSeries = $page.data?.speakerSeries || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
-	
+	$: sundayPlannersLabel = $page.data?.sundayPlannersLabel ?? 'Sunday Planners';
+	$: singularLabel = sundayPlannersLabel.endsWith('s') ? sundayPlannersLabel.slice(0, -1) : sundayPlannersLabel;
+
 	// Debug: Log when data changes
 	$: if (browser) {
 		console.log('[CLIENT] Data updated:', {
@@ -170,7 +172,7 @@
 	}
 
 	async function handleDelete() {
-		const confirmed = await dialog.confirm('Are you sure you want to delete this meeting planner?', 'Delete Meeting Planner');
+		const confirmed = await dialog.confirm(`Are you sure you want to delete this ${singularLabel.toLowerCase()}?`, `Delete ${singularLabel}`);
 		if (confirmed) {
 			const form = document.createElement('form');
 			form.method = 'POST';
@@ -642,7 +644,7 @@
 	<div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
 			<div class="flex-1 min-w-0">
-				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Meeting Planner</h2>
+				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">{singularLabel}</h2>
 				<div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3 text-base sm:text-xl text-gray-600">
 					<div>
 						<a href="/hub/events/{event.id}" class="text-hub-blue-600 hover:text-hub-blue-700 underline font-bold break-words">
@@ -658,30 +660,30 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-wrap gap-2 w-full sm:w-auto">
-				<a
-					href="/hub/meeting-planners"
-					class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-none justify-center"
-				>
-					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-					</svg>
-					Back
-				</a>
+			<div class="flex flex-col sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
 				<button
 					type="submit"
 					form="meeting-planner-edit-form"
-					class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-none"
+					class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex-1 sm:flex-none"
 				>
 					<span class="hidden sm:inline">Save Changes</span>
 					<span class="sm:hidden">Save</span>
 				</button>
 				<button
 					on:click={handleDelete}
-					class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs sm:text-sm flex-1 sm:flex-none"
+					class="bg-hub-red-600 hover:bg-hub-red-700 text-white px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex-1 sm:flex-none"
 				>
 					Delete
 				</button>
+				<a
+					href="/hub/meeting-planners"
+					class="bg-white border-2 border-hub-blue-500 text-hub-blue-600 hover:bg-hub-blue-50 px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-none justify-center"
+				>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+					</svg>
+					Back
+				</a>
 			</div>
 		</div>
 	</div>

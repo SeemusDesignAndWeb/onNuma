@@ -22,6 +22,7 @@
 	$: canAccessLists = admin && hasRouteAccess(admin, '/hub/lists', superAdminEmail, organisationAreaPermissions);
 	$: canAccessNewsletters = admin && hasRouteAccess(admin, '/hub/emails', superAdminEmail, organisationAreaPermissions);
 	$: canAccessEvents = admin && hasRouteAccess(admin, '/hub/events', superAdminEmail, organisationAreaPermissions);
+	$: canAccessMeetingPlanners = admin && hasRouteAccess(admin, '/hub/meeting-planners', superAdminEmail, organisationAreaPermissions);
 	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/rotas', superAdminEmail, organisationAreaPermissions);
 	$: canAccessForms = admin && hasRouteAccess(admin, '/hub/forms', superAdminEmail, organisationAreaPermissions);
 
@@ -61,11 +62,31 @@
 
 <!-- Dashboard Cards with Quick Actions -->
 {#if !accessDenied}
-	<div class="flex justify-between items-center mb-4">
+	<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
 		<h2 class="text-xl font-bold text-gray-900">Dashboard</h2>
-		{#if canAccessNewsletters && $page.data?.emailModuleEnabled}
-			<p class="text-sm text-gray-600"><strong>Emails sent today:</strong> {stats.emailsSentToday || 0}</p>
-		{/if}
+		<div class="flex flex-wrap items-center justify-end gap-2">
+			{#if canAccessRotas}
+				<a href="/view-rotas" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-sm font-medium transition-colors">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+					Rotas signup
+				</a>
+				<a href="/hub/rotas" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-sm font-medium transition-colors">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+					Your rotas
+				</a>
+			{/if}
+			{#if canAccessNewsletters && $page.data?.emailModuleEnabled}
+				<button
+					type="button"
+					disabled
+					aria-label="Emails sent today"
+					class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 text-sm font-medium cursor-default"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+					Emails sent today: {stats.emailsSentToday || 0}
+				</button>
+			{/if}
+		</div>
 	</div>
 	<div
 		class="hub-dashboard-cards grid gap-4 mb-8 w-full"
@@ -400,6 +421,7 @@
 		</div>
 	{/if}
 </div>
+
 {/if}
 
 <style>

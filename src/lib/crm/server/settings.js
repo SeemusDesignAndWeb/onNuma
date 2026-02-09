@@ -70,7 +70,10 @@ function getDefaultSettings() {
 		calendarColours: getDefaultCalendarColours(),
 		meetingPlannerRotas: getDefaultMeetingPlannerRotas(),
 		theme: getDefaultTheme(),
-		rotaReminderDaysAhead: 3
+		rotaReminderDaysAhead: 3,
+		sundayPlannerEventId: null,
+		sundayPlannersLabel: 'Sunday Planners',
+		planSetup: null
 	};
 }
 
@@ -113,7 +116,12 @@ function mergeWithDefaults(record) {
 		theme,
 		rotaReminderDaysAhead,
 		hubSuperAdminEmail: record.hubSuperAdminEmail ?? null,
-		currentOrganisationId: record.currentOrganisationId ?? null
+		currentOrganisationId: record.currentOrganisationId ?? null,
+		sundayPlannerEventId: record.sundayPlannerEventId ?? defaultSettings.sundayPlannerEventId,
+		sundayPlannersLabel: typeof record.sundayPlannersLabel === 'string' && record.sundayPlannersLabel.trim() !== ''
+			? record.sundayPlannersLabel.trim()
+			: defaultSettings.sundayPlannersLabel,
+		planSetup: record.planSetup && typeof record.planSetup === 'object' ? record.planSetup : null
 	};
 }
 
@@ -195,6 +203,9 @@ export async function writeSettings(settings) {
 		rotaReminderDaysAhead: settings.rotaReminderDaysAhead,
 		hubSuperAdminEmail: existing?.hubSuperAdminEmail ?? settings.hubSuperAdminEmail ?? null,
 		currentOrganisationId: existing?.currentOrganisationId ?? settings.currentOrganisationId ?? null,
+		sundayPlannerEventId: settings.sundayPlannerEventId ?? existing?.sundayPlannerEventId ?? null,
+		sundayPlannersLabel: settings.sundayPlannersLabel ?? existing?.sundayPlannersLabel ?? 'Sunday Planners',
+		planSetup: existing?.planSetup ?? settings.planSetup ?? null,
 		createdAt: existing?.createdAt ?? now,
 		updatedAt: now
 	};
@@ -329,4 +340,38 @@ export async function setCurrentOrganisationId(organisationId) {
 export function invalidateSettingsCache() {
 	settingsCache = null;
 	cacheTimestamp = 0;
+}
+
+/**
+ * Update plan setup overrides (multi-org admin). Deep-merges each plan so partial updates don't wipe other fields.
+ * @param {Record<string, { description?: string, maxContacts?: number, maxAdmins?: number, costPerContact?: number | null, costPerAdmin?: number | null, areaPermissions?: string[] }>} planSetup
+ */
+export async function updatePlanSetup(planSetup) {
+	if (!planSetup || typeof planSetup !== 'object') return;
+	const records = await readCollection(HUB_SETTINGS_COLLECTION);
+	const defaultRecord = records.find((r) => r.id === DEFAULT_RECORD_ID);
+	const merge = (existing) => {
+		const out = { ...(existing || {}) };
+		for (const [planKey, patch] of Object.entries(planSetup)) {
+			if (patch && typeof patch === 'object') {
+				out[planKey] = { ...(out[planKey] || {}), ...patch };
+			}
+		}
+		return out;
+	};
+	if (!defaultRecord) {
+		await getSettings();
+		const recs = await readCollection(HUB_SETTINGS_COLLECTION);
+		const def = recs.find((r) => r.id === DEFAULT_RECORD_ID);
+		if (def) {
+			def.planSetup = merge(def.planSetup);
+			def.updatedAt = new Date().toISOString();
+			await writeCollection(HUB_SETTINGS_COLLECTION, recs);
+		}
+	} else {
+		defaultRecord.planSetup = merge(defaultRecord.planSetup);
+		defaultRecord.updatedAt = new Date().toISOString();
+		await writeCollection(HUB_SETTINGS_COLLECTION, records);
+	}
+	invalidateSettingsCache();
 }

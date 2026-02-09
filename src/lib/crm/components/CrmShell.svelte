@@ -10,6 +10,11 @@
 	export let superAdminEmail = null;
 	/** Org's allowed areas from MultiOrg (null = no restriction). Restricts navbar and access per user. */
 	export let organisationAreaPermissions = null;
+	/** Configurable label for Sunday Planners section (e.g. "Sunday Planners"). Use singular for one item. */
+	export let sundayPlannersLabel = 'Sunday Planners';
+	/** Show Billing link in settings dropdown (when Paddle/Boathouse configured). Unused for visibility: Billing link is always shown below Profile. */
+	export let showBilling = false;
+	export let showBillingPortal = false;
 
 	$: isAuthPage = $page.url.pathname.startsWith('/hub/auth/');
 	$: accessDenied = $page.url.searchParams.get('error') === 'access_denied';
@@ -41,7 +46,7 @@
 	let eventsDropdownOpen = false;
 	let eventsDropdownElement;
 	
-	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/videos') || $page.url.pathname.startsWith('/hub/images') || $page.url.pathname.startsWith('/hub/audit-logs') || $page.url.pathname.startsWith('/hub/settings');
+	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/billing') || $page.url.pathname.startsWith('/hub/videos') || $page.url.pathname.startsWith('/hub/images') || $page.url.pathname.startsWith('/hub/audit-logs') || $page.url.pathname.startsWith('/hub/settings');
 	$: isHelpActive = $page.url.pathname.startsWith('/hub/help');
 	$: isVideoTutorialsActive = $page.url.pathname.startsWith('/hub/video-tutorials');
 	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/lists') || $page.url.pathname.startsWith('/hub/members');
@@ -161,7 +166,7 @@
 													<a href="/hub/events/calendar" on:click={() => eventsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/events') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">Events</a>
 												{/if}
 												{#if canAccessMeetingPlanners}
-													<a href="/hub/meeting-planners" on:click={() => eventsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/meeting-planners') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">Meeting Planners</a>
+													<a href="/hub/meeting-planners" on:click={() => eventsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/meeting-planners') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">{sundayPlannersLabel}</a>
 												{/if}
 											</div>
 										{/if}
@@ -215,6 +220,9 @@
 								<div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200" role="menu" tabindex="-1">
 									{#if admin}
 										<a href="/hub/profile" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/profile') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">Profile</a>
+									{/if}
+									{#if admin}
+										<a href="/hub/billing" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/billing') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">Billing</a>
 									{/if}
 									{#if canAccessUsers}
 										<a href="/hub/users" on:click={() => settingsDropdownOpen = false} class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {$page.url.pathname.startsWith('/hub/users') ? 'bg-gray-100 text-theme-button-1' : ''}" role="menuitem">Admins</a>
@@ -275,7 +283,7 @@
 								<a href="/hub/events/calendar" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/events') ? 'hub-nav-selected' : 'hub-nav-link'}">Events</a>
 							{/if}
 							{#if canAccessMeetingPlanners}
-								<a href="/hub/meeting-planners" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/meeting-planners') ? 'hub-nav-selected' : 'hub-nav-link'}">Meeting Planners</a>
+								<a href="/hub/meeting-planners" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/meeting-planners') ? 'hub-nav-selected' : 'hub-nav-link'}">{sundayPlannersLabel}</a>
 							{/if}
 							{#if canAccessRotas}
 								<a href="/hub/rotas" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/rotas') ? 'hub-nav-selected' : 'hub-nav-link'}">Rotas</a>
@@ -302,6 +310,9 @@
 							</a>
 							{#if admin}
 								<a href="/hub/profile" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/profile') ? 'hub-nav-selected' : 'hub-nav-link'}">Profile</a>
+							{/if}
+							{#if admin}
+								<a href="/hub/billing" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/billing') ? 'hub-nav-selected' : 'hub-nav-link'}">Billing</a>
 							{/if}
 							{#if canAccessUsers}
 								<a href="/hub/users" on:click={() => mobileMenuOpen = false} class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {$page.url.pathname.startsWith('/hub/users') ? 'hub-nav-selected' : 'hub-nav-link'}">Admins</a>

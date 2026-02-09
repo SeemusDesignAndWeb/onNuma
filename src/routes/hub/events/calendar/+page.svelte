@@ -974,7 +974,7 @@
 							{#each dayOccurrences as occ}
 								{@const colorStyles = getEventColorStyles(occ.event)}
 								<a
-									href="/hub/events/{occ.eventId}"
+									href="/hub/events/{occ.eventId}?occurrenceId={occ.id}"
 									class="block text-xs px-2.5 py-1.5.5 rounded hover:opacity-80 transition-colors"
 									style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 									on:click|stopPropagation
@@ -1028,7 +1028,7 @@
 							{#each dayOccurrences.slice(0, 3) as occ}
 								{@const colorStyles = getEventColorStyles(occ.event)}
 								<a
-									href="/hub/events/{occ.eventId}"
+									href="/hub/events/{occ.eventId}?occurrenceId={occ.id}"
 									class="block text-xs px-2.5 py-1.5 rounded truncate hover:opacity-80 transition-colors"
 									style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 									title="{occ.event?.title || 'Event'}"
@@ -1094,7 +1094,7 @@
 							{@const endTime = new Date(occ.endsAt)}
 							{@const colorStyles = getEventColorStyles(occ.event)}
 							<a
-								href="/hub/events/{occ.eventId}"
+								href="/hub/events/{occ.eventId}?occurrenceId={occ.id}"
 								class="block text-xs px-2.5 py-1.5.5 rounded hover:opacity-80 transition-colors"
 								style="background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 								on:click|stopPropagation
@@ -1156,7 +1156,7 @@
 						{@const duration = (endTime - startTime) / (1000 * 60 * 60)}
 						{@const colorStyles = getEventColorStyles(occ.event)}
 						<a
-							href="/hub/events/{occ.eventId}"
+							href="/hub/events/{occ.eventId}?occurrenceId={occ.id}"
 							class="absolute left-1 right-1 rounded px-2.5 py-1.5 text-xs block hover:opacity-80 transition-colors"
 							style="top: {startHour * 24}px; height: {Math.max(duration * 24, 20)}px; background-color: {colorStyles.backgroundColor}; color: {colorStyles.color}; border: 1px solid {colorStyles.borderColor};"
 							title="{occ.event?.title || 'Event'}"
@@ -1187,7 +1187,7 @@
 					{@const occDate = new Date(occ.startsAt)}
 					{@const occEnd = new Date(occ.endsAt)}
 					<a
-						href="/hub/events/{occ.eventId}"
+						href="/hub/events/{occ.eventId}?occurrenceId={occ.id}"
 						class="block p-3 sm:p-4 hover:bg-gray-50 transition-colors"
 					>
 						<div class="flex items-start gap-3 sm:gap-4">

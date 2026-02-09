@@ -69,19 +69,13 @@
 				<h3 class="text-white font-semibold mb-4">Quick Links</h3>
 				<div class="space-y-2 text-sm text-white">
 					<p>
-						<a href="/im-new" class="text-white hover:text-gray-300">I'm New</a>
+						<a href="/terms" class="text-white hover:text-gray-300">Terms &amp; Conditions</a>
 					</p>
 					<p>
-						<a href="/church" class="text-white hover:text-gray-300">About Us</a>
+						<a href="/privacy" class="text-white hover:text-gray-300">Privacy Policy</a>
 					</p>
 					<p>
-						<a href="/team" class="text-white hover:text-gray-300">Team</a>
-					</p>
-					<p>
-						<a href="/community-groups" class="text-white hover:text-gray-300">Community Groups</a>
-					</p>
-					<p>
-						<a href="/audio" class="text-white hover:text-gray-300">Audio</a>
+						<a href="/refund-policy" class="text-white hover:text-gray-300">Refund Policy</a>
 					</p>
 				</div>
 			</div>
@@ -91,8 +85,10 @@
 		<div class="border-t border-gray-800 pt-8 text-sm text-white">
 			<div class="flex flex-col md:flex-row justify-between items-center gap-4">
 				<p>&copy; {new Date().getFullYear()} Eltham Green Community Church. All rights reserved.</p>
-				<div class="flex gap-4">
-					<a href="/hub/privacy" class="text-white hover:text-gray-300">Hub Privacy Policy</a>
+				<div class="flex flex-wrap justify-center gap-4">
+					<a href="/terms" class="text-white hover:text-gray-300">Terms &amp; Conditions</a>
+					<a href="/privacy" class="text-white hover:text-gray-300">Privacy Policy</a>
+					<a href="/refund-policy" class="text-white hover:text-gray-300">Refund Policy</a>
 				</div>
 			</div>
 		</div>

@@ -4,13 +4,15 @@
 	export let onRowClick = null;
 	/** Optional message when there are no rows (e.g. "No contacts yet. Add your first contact above.") */
 	export let emptyMessage = 'No results';
+	/** Optional: (row, index) => string of extra class names for the row (e.g. highlight) */
+	export let getRowClass = null;
 </script>
 
 <!-- Mobile Card View -->
 <div class="block md:hidden space-y-3">
 	{#each rows as row, i}
 		<div 
-			class="bg-white shadow rounded-lg p-4 border border-gray-200 {onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}"
+			class="bg-white shadow rounded-lg p-4 border border-gray-200 {onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''} {getRowClass ? getRowClass(row, i) : ''}"
 			role={onRowClick ? 'button' : undefined}
 			tabindex={onRowClick ? '0' : undefined}
 			on:click={(e) => {
@@ -70,9 +72,9 @@
 			</tr>
 		</thead>
 		<tbody class="bg-white divide-y divide-gray-200">
-			{#each rows as row, i}
-				<tr 
-					class="hover:bg-gray-50 {onRowClick ? 'cursor-pointer' : ''}"
+		{#each rows as row, i}
+			<tr 
+				class="hover:bg-gray-50 {onRowClick ? 'cursor-pointer' : ''} {getRowClass ? getRowClass(row, i) : ''}"
 					on:click={(e) => {
 						// Don't trigger row click if clicking on a link or button
 						if (e.target.tagName !== 'A' && 

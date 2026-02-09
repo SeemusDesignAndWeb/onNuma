@@ -15,8 +15,17 @@ export async function POST({ request, cookies }) {
 	}
 	
 	const data = await request.json();
-	const { emailRateLimitDelay, calendarColours, calendarColors, meetingPlannerRotas, theme: themeUpdate, rotaReminderDaysAhead: rotaReminderDaysAheadUpdate } = data; // Support both for backward compatibility
-	
+	const {
+		emailRateLimitDelay,
+		calendarColours,
+		calendarColors,
+		meetingPlannerRotas,
+		theme: themeUpdate,
+		rotaReminderDaysAhead: rotaReminderDaysAheadUpdate,
+		sundayPlannerEventId: sundayPlannerEventIdUpdate,
+		sundayPlannersLabel: sundayPlannersLabelUpdate
+	} = data; // Support both for backward compatibility
+
 	const settings = await getSettings();
 	
 	// Update rota reminder days ahead if provided
@@ -162,7 +171,19 @@ export async function POST({ request, cookies }) {
 			settings.theme.publicPagesBranding = 'hub';
 		}
 	}
-	
+
+	// Sunday planner event (dropdown: which event to use as "Sunday planner")
+	if (sundayPlannerEventIdUpdate !== undefined) {
+		settings.sundayPlannerEventId =
+			sundayPlannerEventIdUpdate === null || sundayPlannerEventIdUpdate === ''
+				? null
+				: String(sundayPlannerEventIdUpdate).trim() || null;
+	}
+	if (sundayPlannersLabelUpdate !== undefined) {
+		const v = String(sundayPlannersLabelUpdate ?? '').trim();
+		settings.sundayPlannersLabel = v || 'Sunday Planners';
+	}
+
 	await writeSettings(settings);
 	
 	return json({ success: true, settings });

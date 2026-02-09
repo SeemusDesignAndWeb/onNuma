@@ -1,4 +1,4 @@
-import { redirect, fail } from '@sveltejs/kit';
+import { redirect, fail, error } from '@sveltejs/kit';
 import { findById, update, remove, readCollection, findMany, create } from '$lib/crm/server/fileStore.js';
 import { ulid } from 'ulid';
 import { validateEvent, getEventColors } from '$lib/crm/server/validators.js';
@@ -14,11 +14,12 @@ export async function load({ params, cookies, url }) {
 	const organisationId = await getCurrentOrganisationId();
 	const event = await findById('events', params.id);
 	if (!event) {
-		throw redirect(302, '/hub/events');
+		throw error(404, 'Event not found');
 	}
 	if (event.organisationId != null && event.organisationId !== organisationId) {
-		throw redirect(302, '/hub/events');
+		throw error(404, 'Event not found');
 	}
+	const occurrenceIdFromUrl = url.searchParams.get('occurrenceId') || null;
 
 	const eventOccurrences = await findMany('occurrences', o => o.eventId === params.id);
 	const occurrences = filterUpcomingOccurrences(eventOccurrences);
@@ -117,11 +118,29 @@ export async function load({ params, cookies, url }) {
 		// Continue without links if token generation fails
 	}
 
+	// When opened from calendar with ?occurrenceId=..., resolve that occurrence for the "Currently viewing" banner (use all occurrences so past ones still show context)
+	const viewingOccurrenceFromUrl = occurrenceIdFromUrl && eventOccurrences.length
+		? eventOccurrences.find(o => o.id === occurrenceIdFromUrl) || null
+		: null;
+
 	const csrfToken = getCsrfToken(cookies) || '';
 	const eventColors = await getEventColors();
 	const { filterByOrganisation } = await import('$lib/crm/server/orgContext.js');
 	const lists = filterByOrganisation(await readCollection('lists'), organisationId);
-	return { event, occurrences: occurrencesWithStats, rotas, meetingPlanners, rotaSignupLink, publicEventLink, occurrenceLinks, csrfToken, eventColors, lists };
+	return {
+		event,
+		occurrences: occurrencesWithStats,
+		rotas,
+		meetingPlanners,
+		rotaSignupLink,
+		publicEventLink,
+		occurrenceLinks,
+		csrfToken,
+		eventColors,
+		lists,
+		highlightOccurrenceId: occurrenceIdFromUrl,
+		viewingOccurrence: viewingOccurrenceFromUrl ? { id: viewingOccurrenceFromUrl.id, startsAt: viewingOccurrenceFromUrl.startsAt } : null
+	};
 }
 
 export const actions = {

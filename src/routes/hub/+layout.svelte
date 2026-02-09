@@ -87,7 +87,7 @@
 		</button>
 	</div>
 {/if}
-<CrmShell {admin} {theme} superAdminEmail={superAdminEmail} organisationAreaPermissions={organisationAreaPermissions}>
+<CrmShell {admin} {theme} superAdminEmail={superAdminEmail} organisationAreaPermissions={organisationAreaPermissions} sundayPlannersLabel={data?.sundayPlannersLabel ?? 'Sunday Planners'} showBilling={data?.showBilling ?? false} showBillingPortal={data?.showBillingPortal ?? false}>
 	<slot />
 </CrmShell>
 {#if !$page.url.pathname.startsWith('/hub/auth/') && admin && showOnboarding && OnboardingComponent}

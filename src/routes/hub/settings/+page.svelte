@@ -50,8 +50,28 @@
 	let showAddColour = false;
 	// Set to true to show Email Rate Limiting and Data store tabs (code kept for later use)
 	const SHOW_EMAIL_AND_DATA_STORE_TABS = false;
-	let activeTab = 'theme'; // 'theme', 'colours', 'meeting-planner', 'email', 'data-store', or 'advanced'
+	const validTabs = ['theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', 'advanced'];
+	let activeTab = 'theme'; // 'theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', or 'advanced'
+	// Deep link: open specific tab from URL (e.g. /hub/settings?tab=billing for plan confirmation link)
+	onMount(() => {
+		const params = typeof window !== 'undefined' && window.location?.search ? new URLSearchParams(window.location.search) : null;
+		const tab = params?.get('tab');
+		if (tab && validTabs.includes(tab)) activeTab = tab;
+		if (!SHOW_EMAIL_AND_DATA_STORE_TABS && (activeTab === 'email' || activeTab === 'data-store')) activeTab = 'theme';
+	});
 	$: if (!SHOW_EMAIL_AND_DATA_STORE_TABS && (activeTab === 'email' || activeTab === 'data-store')) activeTab = 'theme';
+	// Billing data from server
+	$: plan = data?.plan ?? 'free';
+	$: subscriptionStatus = data?.subscriptionStatus ?? null;
+	$: currentPeriodEnd = data?.currentPeriodEnd ?? null;
+	$: cancelAtPeriodEnd = !!data?.cancelAtPeriodEnd;
+	$: hasPaddleCustomer = !!data?.hasPaddleCustomer;
+	$: showBilling = !!data?.showBilling;
+	$: showBillingPortal = !!data?.showBillingPortal;
+	let billingCheckoutLoading = false;
+	let billingPortalLoading = false;
+	// When returning from Paddle with ?billing=success, show billing tab and success message
+	$: billingSuccess = typeof window !== 'undefined' && $page?.url?.searchParams?.get('billing') === 'success';
 	// Optimistic update: set when we switch so "Current mode" updates before refetch
 	let storeModeOverride = null;
 	$: storeMode = storeModeOverride ?? data?.storeMode ?? 'file';
@@ -63,6 +83,12 @@
 	let originalRota = null;
 	let showAddRota = false;
 	let newRota = { role: '' };
+
+	// Sunday planner–specific settings
+	$: events = data?.events || [];
+	let sundayPlannerEventId = data?.settings?.sundayPlannerEventId ?? null;
+	let sundayPlannersLabel = data?.settings?.sundayPlannersLabel ?? 'Sunday Planners';
+	let savingSundayPlanner = false;
 
 	// Theme logo image browser ('navbar' | 'login')
 	let logoPickerMode = 'navbar';
@@ -160,6 +186,8 @@
 			themeExternalPagesLayout = settings.theme.externalPagesLayout ?? 'integrated';
 			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'hub';
 		}
+		sundayPlannerEventId = settings.sundayPlannerEventId ?? null;
+		sundayPlannersLabel = (typeof settings.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== '') ? settings.sundayPlannersLabel.trim() : 'Sunday Planners';
 	}
 	
 	$: availableRoles = data?.availableRoles || [];
@@ -489,6 +517,30 @@
 		}
 	}
 
+	async function saveSundayPlannerSettings() {
+		savingSundayPlanner = true;
+		try {
+			const response = await fetch('/hub/settings', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					sundayPlannerEventId: sundayPlannerEventId || null,
+					sundayPlannersLabel: (typeof sundayPlannersLabel === 'string' && sundayPlannersLabel.trim() !== '') ? sundayPlannersLabel.trim() : 'Sunday Planners'
+				})
+			});
+			if (!response.ok) {
+				const err = await response.json().catch(() => ({}));
+				throw new Error(err.message || 'Failed to save');
+			}
+			notifications.success('Sunday planner settings saved.');
+			await invalidateAll();
+		} catch (err) {
+			notifications.error(err.message || 'Failed to save Sunday planner settings');
+		} finally {
+			savingSundayPlanner = false;
+		}
+	}
+
 	// Drag and Drop for Rotas
 	let draggedRotaIndex = null;
 	let dragOverRotaIndex = null;
@@ -520,6 +572,48 @@
 	function handleRotaDragEnd() {
 		draggedRotaIndex = null;
 		dragOverRotaIndex = null;
+	}
+
+	// Billing: checkout and portal
+	async function goToCheckout(planName) {
+		billingCheckoutLoading = true;
+		try {
+			const res = await fetch(`/hub/api/checkout?plan=${encodeURIComponent(planName)}`, { credentials: 'include' });
+			const json = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				notifications.error(json.error || 'Failed to start checkout');
+				return;
+			}
+			if (json.url) {
+				window.location.href = json.url;
+			} else {
+				notifications.error('No checkout URL returned');
+			}
+		} catch (err) {
+			notifications.error(err.message || 'Checkout failed');
+		} finally {
+			billingCheckoutLoading = false;
+		}
+	}
+	async function openBillingPortal() {
+		billingPortalLoading = true;
+		try {
+			const res = await fetch('/hub/api/billing-portal', { credentials: 'include' });
+			const json = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				notifications.error(json.error || 'Failed to open billing portal');
+				return;
+			}
+			if (json.url) {
+				window.open(json.url, '_blank', 'noopener,noreferrer');
+			} else {
+				notifications.error('No portal URL returned');
+			}
+		} catch (err) {
+			notifications.error(err.message || 'Failed to open portal');
+		} finally {
+			billingPortalLoading = false;
+		}
 	}
 	
 	function calculateRequestsPerSecond() {
@@ -679,6 +773,14 @@
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'data-store' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 				>
 					Data store
+				</button>
+				{/if}
+				{#if showBilling || showBillingPortal}
+				<button
+					on:click={() => activeTab = 'billing'}
+					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'billing' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+				>
+					Billing
 				</button>
 				{/if}
 				<button
@@ -987,6 +1089,48 @@
 
 		<!-- Meeting Planner Settings -->
 		{#if activeTab === 'meeting-planner'}
+		<!-- Sunday planner–specific settings -->
+		<div class="border-b border-gray-200 pb-6 mb-6">
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Sunday planner</h2>
+			<p class="text-sm text-gray-600 mb-4">
+				Choose which event to use as the &quot;Sunday planner&quot; event and the label shown in the Hub (e.g. &quot;Sunday Planners&quot;). Use singular form for one item (e.g. &quot;Sunday Planner&quot;).
+			</p>
+			<div class="space-y-4 max-w-xl mb-4">
+				<div>
+					<label for="sunday-planner-event" class="block text-sm font-medium text-gray-700 mb-1">Sunday planner event</label>
+					<select
+						id="sunday-planner-event"
+						bind:value={sundayPlannerEventId}
+						class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-theme-button-1 focus:border-theme-button-1 py-2 px-3 text-sm"
+					>
+						<option value="">None</option>
+						{#each events as ev}
+							<option value={ev.id}>{ev.title || 'Untitled'}</option>
+						{/each}
+					</select>
+					<p class="mt-1 text-xs text-gray-500">Event whose occurrences are used for the Sunday planner section. Leave as &quot;None&quot; to disable.</p>
+				</div>
+				<div>
+					<label for="sunday-planners-label" class="block text-sm font-medium text-gray-700 mb-1">Section name</label>
+					<input
+						id="sunday-planners-label"
+						type="text"
+						bind:value={sundayPlannersLabel}
+						placeholder="Sunday Planners"
+						class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-theme-button-1 focus:border-theme-button-1 py-2 px-3 text-sm"
+					/>
+					<p class="mt-1 text-xs text-gray-500">Label used in the Hub nav and headings (e.g. &quot;Sunday Planners&quot;). Use singular &quot;Sunday Planner&quot; for one item where needed.</p>
+				</div>
+				<button
+					type="button"
+					on:click={saveSundayPlannerSettings}
+					disabled={savingSundayPlanner}
+					class="px-4 py-2 text-sm font-medium bg-hub-green-600 hover:bg-hub-green-700 text-white rounded-md disabled:opacity-50"
+				>
+					{savingSundayPlanner ? 'Saving…' : 'Save'}
+				</button>
+			</div>
+		</div>
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Meeting Planner Rotas</h2>
 			<p class="text-sm text-gray-600 mb-4">
@@ -1112,6 +1256,78 @@
 					>
 						+ Add New Rota
 					</button>
+				{/if}
+			</div>
+		</div>
+		{/if}
+
+		<!-- Billing -->
+		{#if (showBilling || showBillingPortal) && activeTab === 'billing'}
+		<div class="border-b border-gray-200 pb-6 mb-6">
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Billing &amp; account</h2>
+			{#if billingSuccess}
+				<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-800">
+					Payment successful. Your plan will update shortly. If you don’t see the change, refresh the page.
+				</div>
+			{/if}
+			<p class="text-sm text-gray-600 mb-4">
+				You can view and manage your subscription (including cancellation) here in billing/account settings or via the link provided in your plan confirmation. Your plan determines which Hub areas and limits you have.
+			</p>
+			<div class="space-y-4">
+				<div class="p-4 bg-gray-50 border border-gray-200 rounded-md">
+					<p class="text-sm font-medium text-gray-700">Current plan</p>
+					<p class="text-lg font-semibold text-gray-900 capitalize">{plan}</p>
+					{#if subscriptionStatus === 'active' && currentPeriodEnd}
+						<p class="text-sm text-gray-500 mt-1">Next billing date: {new Date(currentPeriodEnd).toLocaleDateString()}</p>
+					{/if}
+					{#if cancelAtPeriodEnd}
+						<p class="text-sm text-amber-700 mt-1">Subscription will cancel at the end of the current period.</p>
+					{/if}
+				</div>
+				{#if showBilling}
+					<div>
+						<p class="text-sm font-medium text-gray-700 mb-2">Upgrade plan</p>
+						<div class="flex flex-wrap gap-2">
+							{#if plan !== 'professional'}
+								<button
+									type="button"
+									disabled={billingCheckoutLoading}
+									on:click={() => goToCheckout('professional')}
+									class="px-4 py-2 text-sm font-medium btn-theme-1 rounded-md disabled:opacity-50"
+								>
+									{billingCheckoutLoading ? 'Opening…' : 'Subscribe to Professional'}
+								</button>
+							{/if}
+							{#if plan !== 'enterprise'}
+								<button
+									type="button"
+									disabled={billingCheckoutLoading}
+									on:click={() => goToCheckout('enterprise')}
+									class="px-4 py-2 text-sm font-medium btn-theme-2 rounded-md disabled:opacity-50"
+								>
+									{billingCheckoutLoading ? 'Opening…' : 'Subscribe to Enterprise'}
+								</button>
+							{/if}
+						</div>
+					</div>
+				{/if}
+				{#if showBillingPortal}
+					<div>
+						<p class="text-sm font-medium text-gray-700 mb-2">Manage subscription &amp; billing</p>
+						<p class="text-xs text-gray-500 mb-2">Update payment method, view invoices, or cancel your subscription.</p>
+						<button
+							type="button"
+							disabled={billingPortalLoading || !hasPaddleCustomer}
+							on:click={openBillingPortal}
+							class="px-4 py-2 text-sm font-medium btn-theme-light-1 rounded-md disabled:opacity-50"
+							title={!hasPaddleCustomer ? 'Available after your first subscription' : 'Open billing portal (manage payment, cancel, etc.)'}
+						>
+							{billingPortalLoading ? 'Opening…' : 'Manage subscription'}
+						</button>
+						{#if !hasPaddleCustomer}
+							<p class="text-xs text-gray-500 mt-1">Manage subscription is available after you subscribe.</p>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		</div>

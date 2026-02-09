@@ -366,6 +366,11 @@
 <!-- Footer -->
 <footer class="py-8 bg-slate-800 text-slate-300 text-center text-sm">
 	<div class="container mx-auto px-4">
-		<p>© {new Date().getFullYear()} OnNuma. Organisation management that people actually use.</p>
+		<p class="mb-4">© {new Date().getFullYear()} OnNuma. Organisation management that people actually use.</p>
+		<nav class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+			<a href="/terms" class="text-white hover:text-slate-200 transition-colors">Terms &amp; Conditions</a>
+			<a href="/privacy" class="text-white hover:text-slate-200 transition-colors">Privacy Policy</a>
+			<a href="/refund-policy" class="text-white hover:text-slate-200 transition-colors">Refund Policy</a>
+		</nav>
 	</div>
 </footer>

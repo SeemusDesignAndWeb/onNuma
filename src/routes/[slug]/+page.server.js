@@ -15,6 +15,9 @@ const reservedRoutes = [
 	'team',
 	'new-at-egcc',
 	'policy',
+	'terms',
+	'privacy',
+	'refund-policy',
 	'the-church',
 	'the-team',
 	'organisations' // multi-org admin subdomain uses /organisations; main site redirects to /multi-org

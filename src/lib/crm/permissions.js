@@ -172,7 +172,7 @@ export function hasRouteAccess(admin, pathname, superAdminEmail = null, organisa
 		return true;
 	}
 
-	if (pathname === '/hub' || pathname === '/hub/profile' || pathname === '/hub/help' || pathname === '/hub/video-tutorials') {
+	if (pathname === '/hub' || pathname === '/hub/profile' || pathname === '/hub/billing' || pathname === '/hub/help' || pathname === '/hub/video-tutorials') {
 		return true;
 	}
 	if (pathname.startsWith('/hub/settings') || pathname.startsWith('/hub/users') || pathname.startsWith('/hub/audit-logs')) {
@@ -310,6 +310,19 @@ export function getPlanFromAreaPermissions(areaPermissions) {
 	return null;
 }
 
+/** Module (Hub area) options that can be assigned to a plan. Excludes USERS and SUPER_ADMIN. */
+export const PLAN_MODULE_OPTIONS = [
+	{ value: HUB_AREAS.CONTACTS, label: 'Contacts' },
+	{ value: HUB_AREAS.LISTS, label: 'Lists' },
+	{ value: HUB_AREAS.ROTAS, label: 'Rotas' },
+	{ value: HUB_AREAS.EVENTS, label: 'Events' },
+	{ value: HUB_AREAS.MEETING_PLANNERS, label: 'Meeting Planners' },
+	{ value: HUB_AREAS.NEWSLETTERS, label: 'Emails' },
+	{ value: HUB_AREAS.FORMS, label: 'Forms' },
+	{ value: HUB_AREAS.MEMBERS, label: 'Members' },
+	{ value: HUB_AREAS.SAFEGUARDING_FORMS, label: 'Safeguarding Forms' }
+];
+
 /** Plan options for multi-org admin (select Free, Professional or Enterprise). */
 export function getHubPlanTiers() {
 	return [
@@ -317,6 +330,33 @@ export function getHubPlanTiers() {
 		{ value: 'professional', label: 'Professional', description: 'Everything in Free plus Forms, Email templates and campaigns, Members, your branding.' },
 		{ value: 'enterprise', label: 'Enterprise', description: 'Everything in Professional plus Safeguarding forms. Custom solutions for larger needs.' }
 	];
+}
+
+/** Optional pricing per plan (cost per contact / per admin). null = not set, managed in Paddle. */
+export const PLAN_PRICING = {
+	free: { costPerContact: 0, costPerAdmin: 0 },
+	professional: { costPerContact: null, costPerAdmin: null },
+	enterprise: { costPerContact: null, costPerAdmin: null }
+};
+
+/**
+ * Full plan setup detail for multi-org admin: description, limits, and pricing.
+ * Pricing may be null (display as "Managed in Paddle").
+ */
+export function getPlanSetupDetails() {
+	const tiers = getHubPlanTiers();
+	return tiers.map((t) => {
+		const value = t.value;
+		const pricing = PLAN_PRICING[value] || {};
+		return {
+			...t,
+			maxContacts: getPlanMaxContacts(value),
+			maxAdmins: getPlanMaxUsers(value),
+			costPerContact: pricing.costPerContact ?? null,
+			costPerAdmin: pricing.costPerAdmin ?? null,
+			areaPermissions: getAreaPermissionsForPlan(value)
+		};
+	});
 }
 
 export function canCreateAdmin(admin, superAdminEmail = null) {

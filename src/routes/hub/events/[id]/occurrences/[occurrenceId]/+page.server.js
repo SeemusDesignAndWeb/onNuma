@@ -31,6 +31,11 @@ export async function load({ params, cookies, url, parent }) {
 		throw redirect(302, `/hub/events/${params.id}`);
 	}
 
+	// Always open in edit mode (no separate detail view)
+	if (url.searchParams.get('edit') !== 'true') {
+		throw redirect(302, `/hub/events/${params.id}/occurrences/${params.occurrenceId}?edit=true`);
+	}
+
 	// Get all rotas for this event (scoped to current org)
 	const allRotasRaw = filterByOrganisation(await readCollection('rotas'), organisationId);
 	const allRotas = allRotasRaw.filter(r => r.eventId === params.id);

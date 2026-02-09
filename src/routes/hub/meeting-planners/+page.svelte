@@ -10,6 +10,8 @@
 	$: currentPage = data.currentPage || 1;
 	$: totalPages = data.totalPages || 1;
 	$: search = data.search || '';
+	$: sundayPlannersLabel = data.sundayPlannersLabel ?? 'Sunday Planners';
+	$: singularLabel = sundayPlannersLabel.endsWith('s') ? sundayPlannersLabel.slice(0, -1) : sundayPlannersLabel;
 
 	let searchInput = search;
 
@@ -47,20 +49,20 @@
 </script>
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Meeting Planners</h2>
+	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{sundayPlannersLabel}</h2>
 	<div class="flex flex-wrap gap-2">
-		<a href="/hub/meeting-planners/export-next-4-pdf" target="_blank" class="bg-theme-button-1 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs flex items-center gap-2">
+		<a href="/hub/meeting-planners/export-next-4-pdf" target="_blank" class="bg-hub-blue-600 hover:bg-hub-blue-700 text-white px-2.5 py-1.5 rounded-md text-xs flex items-center gap-2">
 			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 			</svg>
 			Export PDF
 		</a>
-		<a href="/hub/meeting-planners/quick-view" class="bg-theme-button-1 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
+		<a href="/hub/meeting-planners/quick-view" class="bg-white border-2 border-hub-blue-500 text-hub-blue-600 hover:bg-hub-blue-50 px-2.5 py-1.5 rounded-md text-xs">
 			Quick View
 		</a>
-		<a href="/hub/meeting-planners/new" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
-			<span class="hidden sm:inline">New Meeting Planner</span>
-			<span class="sm:hidden">New Planner</span>
+		<a href="/hub/meeting-planners/new" class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5 rounded-md text-xs">
+			<span class="hidden sm:inline">New {singularLabel}</span>
+			<span class="sm:hidden">New {singularLabel}</span>
 		</a>
 	</div>
 </div>
@@ -73,7 +75,7 @@
 			placeholder="Search meeting planners..."
 			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 px-[18px] py-2.5"
 		/>
-		<button type="submit" class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
+		<button type="submit" class="bg-hub-blue-600 hover:bg-hub-blue-700 text-white px-2.5 py-1.5 rounded-md text-xs">
 			Search
 		</button>
 	</form>

@@ -11,6 +11,8 @@
 	$: eventId = $page.data?.eventId || '';
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+	$: sundayPlannersLabel = $page.data?.sundayPlannersLabel ?? 'Sunday Planners';
+	$: singularLabel = sundayPlannersLabel.endsWith('s') ? sundayPlannersLabel.slice(0, -1) : sundayPlannersLabel;
 	
 	// Show notifications from form results
 	$: if (formResult?.error) {
@@ -48,13 +50,13 @@
 	<!-- Header with Action Buttons -->
 	<div class="bg-white shadow rounded-lg p-4 mb-4">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-			<h2 class="text-lg sm:text-xl font-bold text-gray-900">New Meeting Planner</h2>
+			<h2 class="text-lg sm:text-xl font-bold text-gray-900">New {singularLabel}</h2>
 			<div class="flex flex-wrap gap-2">
-				<a href="/hub/meeting-planners" class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-sm">
+				<a href="/hub/meeting-planners" class="bg-white border-2 border-hub-blue-500 text-hub-blue-600 hover:bg-hub-blue-50 px-2.5 py-1.5 rounded-md text-sm">
 					Cancel
 				</a>
-				<button type="submit" form="meeting-planner-form" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-sm">
-					<span class="hidden sm:inline">Create Meeting Planner</span>
+				<button type="submit" form="meeting-planner-form" class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5 rounded-md text-sm">
+					<span class="hidden sm:inline">Create {singularLabel}</span>
 					<span class="sm:hidden">Create</span>
 				</button>
 			</div>
