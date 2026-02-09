@@ -225,6 +225,8 @@ export async function hasAnyRotas(contactId) {
  */
 export async function getUpcomingRotas(contactId, event) {
 	const now = new Date();
+	const startOfToday = new Date(now);
+	startOfToday.setHours(0, 0, 0, 0);
 	const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
 	const rotas = await readCollection('rotas');
@@ -313,10 +315,10 @@ export async function getUpcomingRotas(contactId, event) {
 			}
 		}
 
-		// Filter to upcoming occurrences (within 14 days) where contact is assigned
+		// Filter to upcoming occurrences (from start of today, within 14 days) where contact is assigned
 		for (const occurrence of rotaOccurrences) {
 			const startDate = new Date(occurrence.startsAt);
-			if (startDate >= now && startDate <= fourteenDaysFromNow) {
+			if (startDate >= startOfToday && startDate <= fourteenDaysFromNow) {
 				// Double-check: if not assigned to 'all', verify this specific occurrence
 				if (!assignedOccurrenceIds.has('all') && !assignedOccurrenceIds.has(occurrence.id)) {
 					continue;
@@ -1860,12 +1862,21 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 		allAssigneesList.push(assigneeInfo);
 	});
 
+	// Only show occurrences from start of today (not past dates)
+	const startOfToday = new Date();
+	startOfToday.setHours(0, 0, 0, 0);
+
 	// Build assignees HTML section
 	let assigneesHtml = '';
 	if (allAssigneesList.length > 0) {
 		// Always group by occurrence to avoid duplicates and show clear structure
 		assigneesHtml = '<div style="margin-top: 15px;"><h3 style="color: #2d7a32; margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">Assignees by Occurrence:</h3>';
 		for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
+			// Skip past occurrences: only show dates from today onwards
+			if (occKey !== 'all' && occKey) {
+				const occ = eventOccurrences.find(o => o.id === occKey);
+				if (occ && new Date(occ.startsAt) < startOfToday) continue;
+			}
 			// Deduplicate assignees within the same occurrence (by email or name)
 			const uniqueAssignees = [];
 			const seenAssignees = new Set();
@@ -1907,6 +1918,11 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 	if (allAssigneesList.length > 0) {
 		assigneesText = '\n\nAssignees by Occurrence:\n';
 		for (const [occKey, assignees] of Object.entries(assigneesByOcc)) {
+			// Skip past occurrences: only show dates from today onwards
+			if (occKey !== 'all' && occKey) {
+				const occ = eventOccurrences.find(o => o.id === occKey);
+				if (occ && new Date(occ.startsAt) < startOfToday) continue;
+			}
 			// Deduplicate assignees within the same occurrence (by email or name)
 			const uniqueAssignees = [];
 			const seenAssignees = new Set();
