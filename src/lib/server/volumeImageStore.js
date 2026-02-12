@@ -42,19 +42,27 @@ function safeFilename(originalName) {
 export async function saveUpload(buffer, originalName) {
 	const dir = getImagesDir();
 	
+	console.log(`[upload] Starting: originalName=${originalName}, dir=${dir}`);
+	
 	if (!existsSync(dir)) {
+		console.log(`[upload] Creating directory: ${dir}`);
 		await mkdir(dir, { recursive: true });
 	}
 	
 	const filename = safeFilename(originalName);
 	const filePath = join(dir, filename);
 	
+	console.log(`[upload] Writing: ${filePath}, size=${buffer.length} bytes`);
 	await writeFile(filePath, buffer);
 	
-	if (!existsSync(filePath)) {
+	const exists = existsSync(filePath);
+	console.log(`[upload] Verify: ${filePath} exists=${exists}`);
+	
+	if (!exists) {
 		throw new Error(`Failed to write file: ${filePath}`);
 	}
 	
+	console.log(`[upload] Success: /images/${filename}`);
 	return { 
 		path: `/images/${filename}`,
 		filename 
@@ -83,14 +91,26 @@ export async function deleteUpload(urlPath) {
  * @param {string} filename - Just the filename, not the full path
  */
 export async function readUpload(filename) {
-	if (!filename || filename.includes('..') || filename.includes('/')) return null;
+	const dir = getImagesDir();
+	console.log(`[images] Read request: filename=${filename}, dir=${dir}`);
 	
-	const filePath = join(getImagesDir(), filename);
-	if (!existsSync(filePath)) return null;
+	if (!filename || filename.includes('..') || filename.includes('/')) {
+		console.log(`[images] Rejected: invalid filename`);
+		return null;
+	}
+	
+	const filePath = join(dir, filename);
+	const exists = existsSync(filePath);
+	console.log(`[images] Check: ${filePath} exists=${exists}`);
+	
+	if (!exists) return null;
 	
 	try {
-		return await readFile(filePath);
-	} catch {
+		const buffer = await readFile(filePath);
+		console.log(`[images] Success: ${filePath} size=${buffer.length}`);
+		return buffer;
+	} catch (err) {
+		console.log(`[images] Error reading: ${err.message}`);
 		return null;
 	}
 }
