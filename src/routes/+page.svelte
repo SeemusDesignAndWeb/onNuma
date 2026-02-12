@@ -1,5 +1,6 @@
 <script>
 	import { contactPopupOpen } from '$lib/stores/contactPopup.js';
+	import { getProfessionalPriceForContactCount, getProfessionalContactTierCap } from '$lib/crm/permissions.js';
 
 	export let data;
 	/** @type {Record<string, string>} */
@@ -9,28 +10,11 @@
 	const ctaStart = landing.ctaStartOrganisationUrl || '/signup?plan=free';
 	const tagline = landing.tagline || 'Organisation management that people actually use';
 
-	// Pricing config from database
-	const pricing = landing.pricing || {};
-	const basePrice = pricing.basePrice ?? 12;
-	const pricePerTenUsers = pricing.pricePerTenUsers ?? 1;
-	const pricePerTenUsersAbove = pricing.pricePerTenUsersAbove ?? 2;
-	const threshold = pricing.threshold ?? 300;
-	const minUsers = pricing.minUsers ?? 50;
-	const maxUsers = pricing.maxUsers ?? 500;
-	const defaultUsers = pricing.defaultUsers ?? 100;
-	const freeMaxUsers = 30;
-
-	// Pricing: scale by users
-	let users = defaultUsers;
-	$: freeAvailable = users <= freeMaxUsers;
-	$: professionalPrice = (() => {
-		if (users <= threshold) {
-			return basePrice + Math.floor((users - minUsers) / 10) * pricePerTenUsers;
-		} else {
-			const priceAtThreshold = basePrice + Math.floor((threshold - minUsers) / 10) * pricePerTenUsers;
-			return priceAtThreshold + Math.floor((users - threshold) / 10) * pricePerTenUsersAbove;
-		}
-	})();
+	// Fixed contact tiers: up to 30 = £0, 100 = £15, 250 = £25, 500 = £50
+	const freeMaxContacts = 30;
+	let contacts = 100;
+	$: freeAvailable = contacts <= freeMaxContacts;
+	$: professionalPrice = getProfessionalPriceForContactCount(contacts);
 
 	function scrollTo(id) {
 		const el = document.getElementById(id);
@@ -250,7 +234,7 @@
 	</div>
 </section>
 
-<!-- Pricing – Free and Professional, scaled by users -->
+<!-- Pricing – Free and Professional, fixed tiers by contacts -->
 <section id="pricing" class="py-16 md:py-24 bg-slate-50">
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
 		<div class="text-center mb-10">
@@ -259,30 +243,29 @@
 				Simple pricing for every organisation
 			</h2>
 			<p class="text-slate-600 max-w-2xl mx-auto mb-8">
-				Pricing is per number of users (admins). Choose your size below.
+				Pricing is by number of contacts. Choose your size below — fixed tiers, no per-contact maths.
 			</p>
-			<!-- User scale: max 500 for Professional -->
+			<!-- Contact scale: 1–500 for Professional -->
 			<div class="max-w-md mx-auto mb-2">
-				<label for="users-slider" class="block text-sm font-medium text-slate-700 mb-2">
-					Up to <strong>{users}</strong> users
+				<label for="contacts-slider" class="block text-sm font-medium text-slate-700 mb-2">
+					Up to <strong>{getProfessionalContactTierCap(contacts)}</strong> contacts
 				</label>
 				<input
-					id="users-slider"
+					id="contacts-slider"
 					type="range"
-					min={minUsers}
-					max={maxUsers}
-					step="10"
-					bind:value={users}
-					class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-brand-blue"
+					min="1"
+					max="500"
+					bind:value={contacts}
+					class="flex-1 min-w-0 h-3 cursor-pointer accent-brand-blue w-full"
 				/>
 				<div class="flex justify-between text-xs text-slate-500 mt-1">
-					<span>{minUsers}</span>
-					<span>{maxUsers}</span>
+					<span>1</span>
+					<span>500</span>
 				</div>
 			</div>
 		</div>
 		<div class="grid md:grid-cols-3 gap-6 lg:gap-8">
-			<!-- Free – up to 30 users -->
+			<!-- Free – up to 30 contacts -->
 			<div class="rounded-2xl border p-6 md:p-8 flex flex-col bg-white border-slate-200 shadow-sm">
 				<h3 class="text-xl font-bold text-brand-blue mb-1">Free</h3>
 				<p class="text-slate-500 text-sm mb-4">All modules except email and forms</p>
@@ -290,7 +273,7 @@
 					<span class="text-4xl font-bold text-slate-900">£0</span>
 					<span class="text-slate-500">/month</span>
 				</div>
-				<p class="text-slate-600 text-sm mb-4">Up to <strong>{freeMaxUsers}</strong> users</p>
+				<p class="text-slate-600 text-sm mb-4">Up to <strong>{freeMaxContacts}</strong> contacts</p>
 				<ul class="space-y-3 text-slate-700 text-sm flex-1 mb-8">
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Contact database</li>
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Custom Lists</li>
@@ -300,7 +283,7 @@
 				</ul>
 				<a href={ctaStart} class="block w-full py-3 px-4 rounded-lg font-semibold text-center border-2 border-brand-blue text-brand-blue hover:bg-brand-blue/10 transition-colors">Get started free</a>
 			</div>
-			<!-- Professional – up to 500 users -->
+			<!-- Professional – up to 500 contacts, fixed tiers -->
 			<div class="bg-white rounded-2xl border-2 border-brand-blue shadow-lg p-6 md:p-8 flex flex-col">
 				<h3 class="text-xl font-bold text-brand-blue mb-1">Professional</h3>
 				<p class="text-slate-500 text-sm mb-4">Everything included</p>
@@ -308,8 +291,6 @@
 					<span class="text-4xl font-bold text-slate-900">£{professionalPrice}</span>
 					<span class="text-slate-500">/month</span>
 				</div>
-				<p class="text-brand-blue text-sm font-medium mb-1">for {users} users</p>
-				<p class="text-slate-500 text-xs mb-4">(slide for more or less)</p>
 				<ul class="space-y-3 text-slate-700 text-sm flex-1 mb-8">
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Everything in Free</li>
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Forms</li>
@@ -326,7 +307,7 @@
 				<div class="mb-6">
 					<span class="text-2xl font-bold text-slate-900">Contact us</span>
 				</div>
-				<p class="text-slate-600 text-sm mb-4">500+ users or custom requirements</p>
+				<p class="text-slate-600 text-sm mb-4">500+ contacts or custom requirements</p>
 				<ul class="space-y-3 text-slate-700 text-sm flex-1 mb-8">
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Everything in Professional</li>
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Multiple organisations</li>

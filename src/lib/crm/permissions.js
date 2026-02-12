@@ -332,6 +332,31 @@ export function getHubPlanTiers() {
 	];
 }
 
+/**
+ * Professional contact tiers: fixed price per band. Minimum £15 (never below).
+ * Up to 100 = £15; up to 250 = £25; up to 500 = £50.
+ */
+export const PROFESSIONAL_CONTACT_TIERS = [
+	{ min: 1, max: 100, price: 15 },
+	{ min: 101, max: 250, price: 25 },
+	{ min: 251, max: 500, price: 50 }
+];
+
+/** Get Professional plan price (£) for a given contact count (fixed tier pricing, min £15). */
+export function getProfessionalPriceForContactCount(contactCount) {
+	const n = Math.max(0, Math.min(500, Math.floor(Number(contactCount) || 0)));
+	const tier = PROFESSIONAL_CONTACT_TIERS.find((t) => n >= t.min && n <= t.max);
+	return tier ? tier.price : 15;
+}
+
+/** Tier cap for display: returns 100, 250, or 500 so "Up to N" only shows the three tiers. */
+export function getProfessionalContactTierCap(contactCount) {
+	const n = Math.max(0, Math.min(500, Math.floor(Number(contactCount) || 0)));
+	if (n <= 100) return 100;
+	if (n <= 250) return 250;
+	return 500;
+}
+
 /** Optional pricing per plan (cost per contact / per admin). null = not set, managed in Paddle. */
 export const PLAN_PRICING = {
 	free: { costPerContact: 0, costPerAdmin: 0 },

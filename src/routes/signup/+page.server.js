@@ -139,7 +139,13 @@ export const actions = {
 		const signupPlanRaw = form.get('plan')?.toString()?.trim() || DEFAULT_PLAN;
 		const signupPlan = VALID_SIGNUP_PLANS.includes(signupPlanRaw) ? signupPlanRaw : DEFAULT_PLAN;
 
-		const errors = validateSignup({
+		// Number of contacts (Professional): 1–500, fixed tier pricing. Paddle checkout uses 1 seat for now.
+		const numberOfContactsRaw = form.get('numberOfContacts')?.toString()?.trim();
+		const contactsParsed = parseInt(numberOfContactsRaw || '30', 10);
+		const contactCount = Number.isNaN(contactsParsed) ? 30 : Math.min(500, Math.max(1, contactsParsed));
+		const seatCount = 1;
+
+		let errors = validateSignup({
 			name,
 			email,
 			contactName,
@@ -147,10 +153,27 @@ export const actions = {
 			telephone,
 			password
 		});
+		if (signupPlan === 'professional') {
+			if (!numberOfContactsRaw || contactsParsed < 1 || contactsParsed > 500) {
+				errors = errors || {};
+				errors.numberOfContacts = 'Choose between 1 and 500 contacts';
+			}
+		}
+		const valuesWithSeats = () => ({
+			name,
+			address,
+			telephone,
+			email,
+			contactName,
+			marketingConsent,
+			plan: signupPlan,
+			numberOfUsers: seatCount,
+			numberOfContacts: signupPlan === 'professional' ? contactCount : 30
+		});
 		if (errors) {
 			return fail(400, {
 				errors,
-				values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+				values: valuesWithSeats()
 			});
 		}
 
@@ -158,7 +181,7 @@ export const actions = {
 		if (await isEmailOrgOwner(email)) {
 			return fail(400, {
 				errors: { email: 'This email address is already registered. Use a different email or log in.' },
-				values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+				values: valuesWithSeats()
 			});
 		}
 
@@ -167,11 +190,11 @@ export const actions = {
 		// The org and admin are created by the webhook after payment succeeds.
 		if (signupPlan === 'professional') {
 			const apiKey = getPaddleApiKey();
-			const priceId = getPriceIdForPlan('professional', 1);
+			const priceId = getPriceIdForPlan('professional', seatCount);
 			if (!apiKey || !priceId) {
 				return fail(503, {
 					errors: { _form: 'Billing is not configured yet. Please try the Free plan or contact us.' },
-					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+					values: valuesWithSeats()
 				});
 			}
 
@@ -187,6 +210,7 @@ export const actions = {
 					password, // Stored temporarily; deleted after org creation
 					marketingConsent,
 					plan: signupPlan,
+					numberOfContacts: contactCount,
 					status: 'pending',
 					createdAt: new Date().toISOString()
 				});
@@ -194,7 +218,7 @@ export const actions = {
 				console.error('[signup] Failed to store pending signup:', err);
 				return fail(500, {
 					errors: { _form: 'Something went wrong. Please try again.' },
-					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+					values: valuesWithSeats()
 				});
 			}
 
@@ -202,7 +226,7 @@ export const actions = {
 			try {
 				const baseUrl = getPaddleBaseUrl();
 				const body = {
-					items: [{ price_id: priceId, quantity: 1 }],
+					items: [{ price_id: priceId, quantity: seatCount }],
 					custom_data: { pending_signup_id: pendingSignup.id },
 					collection_mode: 'automatic'
 				};
@@ -219,9 +243,23 @@ export const actions = {
 				if (!res.ok) {
 					const errText = await res.text();
 					console.error('[signup] Paddle checkout error:', res.status, errText);
+					let formMessage = 'Failed to start checkout. Please try again or choose the Free plan.';
+					try {
+						const errJson = JSON.parse(errText);
+						const code = errJson?.error?.code;
+						if (code === 'transaction_item_quantity_out_of_range') {
+							formMessage =
+								'Checkout failed: the Professional price in Paddle only allows 301+ seats. Use a price with quantity 1–300 for PADDLE_PRICE_ID_PROFESSIONAL (signup uses 1 seat). Keep the 301+ price for PADDLE_PRICE_ID_PROFESSIONAL_TIER2.';
+							console.error(
+								'[signup] Paddle price quantity range: PADDLE_PRICE_ID_PROFESSIONAL must be a price that allows quantity 1 (min 1, max 300). You may have the tier-2 price (301+) set for both; create a 1–300 price in Paddle and set it as PADDLE_PRICE_ID_PROFESSIONAL.'
+							);
+						}
+					} catch {
+						// keep default formMessage
+					}
 					return fail(502, {
-						errors: { _form: 'Failed to start checkout. Please try again or choose the Free plan.' },
-						values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+						errors: { _form: formMessage },
+						values: valuesWithSeats()
 					});
 				}
 
@@ -231,7 +269,7 @@ export const actions = {
 					console.error('[signup] No checkout URL in Paddle response:', data);
 					return fail(502, {
 						errors: { _form: 'Failed to start checkout. Please try again.' },
-						values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+						values: valuesWithSeats()
 					});
 				}
 
@@ -243,7 +281,7 @@ export const actions = {
 				console.error('[signup] Paddle checkout unexpected error:', err);
 				return fail(500, {
 					errors: { _form: 'Something went wrong starting checkout. Please try again.' },
-					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+					values: valuesWithSeats()
 				});
 			}
 		}
@@ -308,7 +346,7 @@ export const actions = {
 				console.error('[signup] Organisation not found after create:', org.id);
 				return fail(500, {
 					errors: { _form: 'Organisation was created but could not be verified. Please contact support.' },
-					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+					values: valuesWithSeats()
 				});
 			}
 		} catch (err) {
@@ -317,12 +355,12 @@ export const actions = {
 			if (message.includes('Password')) {
 				return fail(400, {
 					errors: { password: message },
-					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+					values: valuesWithSeats()
 				});
 			}
 			return fail(500, {
 				errors: { _form: message },
-				values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+				values: valuesWithSeats()
 			});
 		}
 

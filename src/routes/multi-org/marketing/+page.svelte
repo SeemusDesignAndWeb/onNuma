@@ -56,9 +56,14 @@
 
 	<!-- Seed result -->
 	{#if form?.seeded}
-		<div class="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm">
-			Onboarding content seeded successfully!
-			Created {form.counts.blocks} blocks, {form.counts.links} links, {form.counts.templates} templates, {form.counts.sequences} sequence{form.counts.sequences !== 1 ? 's' : ''} with {form.counts.steps} steps.
+		{@const total = (form.counts.blocks ?? 0) + (form.counts.links ?? 0) + (form.counts.templates ?? 0) + (form.counts.sequences ?? 0) + (form.counts.steps ?? 0)}
+		<div class="mb-6 p-4 rounded-xl {total > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-700 border-slate-200'} border text-sm">
+			{#if total > 0}
+				Onboarding content seeded successfully!
+				Created {form.counts.blocks} blocks, {form.counts.links} links, {form.counts.templates} templates, {form.counts.sequences} sequence{form.counts.sequences !== 1 ? 's' : ''} with {form.counts.steps} steps.
+			{:else}
+				No new content was created. You already have the full onboarding set (blocks, links, templates, and the Default Onboarding sequence). Nothing was duplicated.
+			{/if}
 		</div>
 	{/if}
 	{#if form?.error}
@@ -100,7 +105,7 @@
 				<h2 class="text-lg font-semibold text-slate-800">Seed Onboarding Content</h2>
 				<p class="mt-1 text-sm text-slate-500 leading-relaxed">
 					Generate a complete set of professional onboarding emails, reusable content blocks, links, and a 21-day sequence.
-					Covers contacts, events, rotas, emails, forms, meeting planners, settings, and tips. Existing content won't be duplicated.
+					Covers contacts, events, rotas, emails, forms, meeting planners, settings, and tips. Existing items (same name/key) are skipped — if you see "0 created", you already have the full set.
 				</p>
 				<form method="POST" action="?/seedContent" use:enhance={() => { seeding = true; return async ({ update }) => { seeding = false; update(); }; }} class="mt-4">
 					<button

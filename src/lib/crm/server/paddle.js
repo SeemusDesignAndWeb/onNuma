@@ -29,9 +29,20 @@ export function getPaddleBaseUrl() {
 	return envName === 'production' ? PADDLE_PROD : PADDLE_SANDBOX;
 }
 
-/** Paddle API key trimmed (avoids "authentication_malformed" from newlines/quotes in .env). */
+/**
+ * Paddle API key sanitized for Bearer header.
+ * Trims whitespace, strips surrounding quotes, and removes newlines so the header is valid.
+ * Avoids "authentication_malformed" from .env formatting (quotes, line breaks).
+ */
 export function getPaddleApiKey() {
-	return (env.PADDLE_API_KEY || '').trim();
+	let key = (env.PADDLE_API_KEY || '').trim();
+	// Remove newlines/carriage returns that can slip into .env (invalid in Authorization header)
+	key = key.replace(/[\r\n]+/g, '').trim();
+	// Strip surrounding quotes (e.g. PADDLE_API_KEY="pdl_..." in .env)
+	if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+		key = key.slice(1, -1).trim();
+	}
+	return key;
 }
 
 // ── Admin / seat counting ───────────────────────────────────────────────────
@@ -68,8 +79,11 @@ export function getAllPriceIdsForPlan(plan) {
 
 /**
  * Select the correct Paddle price ID for a plan based on the seat count.
- *   - 1–300 seats  → base price (PADDLE_PRICE_ID_PROFESSIONAL / _ENTERPRISE)
+ *   - 1–300 seats  → base price (PADDLE_PRICE_ID_PROFESSIONAL / _ENTERPRISE) — must allow quantity 1 in Paddle
  *   - 301+ seats   → tier 2 price (_TIER2), falls back to base if tier 2 not configured
+ *
+ * In Paddle: create two prices per plan if you use tiered pricing — one with quantity range 1–300
+ * (for signup and small orgs), one with 301+ for large orgs. Set them to _PROFESSIONAL and _TIER2.
  *
  * @param {'professional'|'enterprise'} plan
  * @param {number} seatCount

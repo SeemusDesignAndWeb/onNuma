@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { getProfessionalPriceForContactCount, getProfessionalContactTierCap } from '$lib/crm/permissions.js';
 
 	export let data;
 	$: form = $page.form;
@@ -10,8 +11,13 @@
 	$: errors = form?.errors || {};
 	$: success = data.success ?? false;
 
-	// Get plan from URL query parameter (free or professional)
-	$: plan = $page.url.searchParams.get('plan') || 'free';
+	// Plan: prefer URL so /signup?plan=professional always shows Professional (and slider). Use form values when URL has no plan (e.g. after submit error).
+	$: urlPlan = $page.url.searchParams.get('plan');
+	$: plan = (urlPlan === 'professional' || urlPlan === 'free')
+		? urlPlan
+		: (values.plan === 'professional' || values.plan === 'free')
+			? values.plan
+			: 'free';
 	$: planLabel = plan === 'professional' ? 'Professional' : 'Free';
 
 	// Upsell benefits - show next tier benefits
@@ -35,6 +41,17 @@
 	$: upsellDescription = plan === 'professional' 
 		? 'Need more? Enterprise includes everything in Professional, plus:'
 		: 'Unlock more with Professional:';
+
+	// Number of contacts (Professional): slider 1–500, fixed tier pricing (£0 / £15 / £25 / £50)
+	let contactsLocal = 30;
+	$: if (form?.errors && plan === 'professional' && values.numberOfContacts != null) {
+		const v = Math.min(500, Math.max(1, Number(values.numberOfContacts) || 30));
+		contactsLocal = v;
+	}
+	$: numberOfContacts = plan === 'professional' ? contactsLocal : 30;
+
+	$: displayCost =
+		plan === 'professional' ? getProfessionalPriceForContactCount(numberOfContacts) : null;
 
 	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
 	onMount(() => {
@@ -209,6 +226,30 @@
 								<p class="text-[11px] text-slate-500 mt-0.5">12+ chars, upper, lower, number, special.</p>
 							</div>
 						</div>
+
+						{#if plan === 'professional'}
+							<div class="sm:col-span-2 space-y-2">
+								<label for="numberOfContacts" class="block text-xs font-medium text-slate-700 mb-0.5">Number of contacts *</label>
+								<input type="hidden" name="numberOfContacts" value={numberOfContacts} />
+								<input type="hidden" name="numberOfUsers" value="1" />
+								<input
+									id="numberOfContacts"
+									type="range"
+									min="1"
+									max="500"
+									bind:value={contactsLocal}
+									class="w-full min-w-0 h-3 cursor-pointer accent-[#EB9486] block"
+									style="--track-h: 0.5rem;"
+								/>
+								<div class="flex items-baseline justify-between gap-2 mt-2">
+									<span class="text-sm font-semibold text-slate-800 tabular-nums">Up to {getProfessionalContactTierCap(numberOfContacts)}</span>
+									<p class="text-sm font-semibold text-slate-800">£{displayCost}<span class="text-slate-500 font-normal text-xs">/month</span></p>
+								</div>
+								{#if errors.numberOfContacts}
+									<p class="mt-1 text-xs text-red-600">{errors.numberOfContacts}</p>
+								{/if}
+							</div>
+						{/if}
 
 						<!-- Marketing consent and submit - spans both columns -->
 						<div class="sm:col-span-2 pt-3 border-t border-slate-200 mt-2">
