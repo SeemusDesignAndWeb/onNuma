@@ -25,7 +25,7 @@
 
 	const enterpriseBenefits = [
 		{ icon: '🏢', title: 'Multiple organisations', description: 'Manage multiple organisations from a single admin account' },
-		{ icon: '🛡️', title: 'Safeguarding forms', description: 'Secure forms for sensitive safeguarding data collection' },
+		{ icon: '🛠️', title: 'Custom developments', description: 'Build functionality around your requirements' },
 		{ icon: '🤝', title: 'Dedicated support', description: 'Personal account manager for your organisation' },
 		{ icon: '🎓', title: 'Custom onboarding', description: 'Tailored setup and training for your team' }
 	];

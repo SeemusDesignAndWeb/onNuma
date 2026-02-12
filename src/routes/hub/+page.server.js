@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { readCollection, readCollectionCount, readLatestFromCollection } from '$lib/crm/server/fileStore.js';
+import { readCollection, readCollectionCount, readLatestFromCollection, findById } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { getPlanMaxContacts } from '$lib/crm/server/permissions.js';
 
@@ -42,8 +42,11 @@ export async function load({ locals, parent }) {
 	const latestRotas = latestRotasRaw.filter(Boolean);
 	const latestEvents = latestEventsRaw.filter(Boolean);
 
-	// Enrich rotas with event titles - we already have latest events loaded
-	const eventsMap = new Map(latestEvents.map(e => [e.id, e]));
+	// Enrich rotas with event titles - look up the specific events the rotas need
+	// (latestEvents may not contain the events these rotas are linked to)
+	const rotaEventIds = [...new Set(latestRotas.map(r => r.eventId).filter(Boolean))];
+	const rotaEvents = await Promise.all(rotaEventIds.map(id => findById('events', id)));
+	const eventsMap = new Map(rotaEvents.filter(Boolean).map(e => [e.id, e]));
 	const enrichedRotas = latestRotas.map(rota => ({
 		...rota,
 		eventTitle: eventsMap.get(rota.eventId)?.title || 'Unknown Event'
