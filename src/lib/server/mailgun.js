@@ -39,7 +39,17 @@ function getClient() {
  * @returns {Promise<{ data: { id: string } }>}
  */
 export async function sendEmail({ from, to, subject, html, text, replyTo }) {
+	console.log('[Mailgun] sendEmail called:', { from, to, subject: subject?.substring(0, 50), hasHtml: !!html, hasText: !!text });
+	
 	const domain = env.MAILGUN_DOMAIN;
+	const apiKey = env.MAILGUN_API_KEY;
+	
+	console.log('[Mailgun] Environment check:', {
+		MAILGUN_DOMAIN: domain ? `set (${domain})` : 'NOT SET',
+		MAILGUN_API_KEY: apiKey ? `set (${apiKey.substring(0, 8)}...)` : 'NOT SET',
+		MAILGUN_EU: env.MAILGUN_EU || 'not set'
+	});
+	
 	if (!domain) throw new Error('MAILGUN_DOMAIN is not set.');
 	const client = getClient();
 	const toArr = Array.isArray(to) ? to : [to];
@@ -51,8 +61,12 @@ export async function sendEmail({ from, to, subject, html, text, replyTo }) {
 		...(html && { html }),
 		...(replyTo && { 'h:Reply-To': replyTo })
 	};
+	
+	console.log('[Mailgun] Sending to domain:', domain, 'recipients:', toArr);
+	
 	try {
 		const response = await client.messages.create(domain, payload);
+		console.log('[Mailgun] Send successful:', response?.id || response?.message);
 		return { data: { id: response?.id ?? response?.message ?? null } };
 	} catch (err) {
 		const detail = {

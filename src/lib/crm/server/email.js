@@ -1297,8 +1297,12 @@ export async function sendBulkRotaInvites(invites, event) {
  * @returns {Promise<object>} Resend API response
  */
 export async function sendAdminWelcomeEmail({ to, name, email, verificationToken, password }, event) {
+	console.log('[email] sendAdminWelcomeEmail called:', { to, name, email, hasToken: !!verificationToken, hasPassword: !!password });
+	
 	const baseUrl = getBaseUrl(event);
 	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	
+	console.log('[email] Config:', { baseUrl, fromEmail, MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN ? 'set' : 'NOT SET', MAILGUN_API_KEY: process.env.MAILGUN_API_KEY ? 'set' : 'NOT SET' });
 	
 	// Create verification link
 	const verificationLink = `${baseUrl}/hub/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
@@ -1421,6 +1425,7 @@ If you have any questions or need assistance, please contact the system administ
 Visit our website: ${baseUrl}
 	`.trim();
 
+	console.log('[email] Sending welcome email via rateLimitedSend...');
 	try {
 		const result = await rateLimitedSend(() => sendEmail({
 			from: fromEmail,
@@ -1430,9 +1435,11 @@ Visit our website: ${baseUrl}
 			text: text
 		}));
 
+		console.log('[email] Welcome email sent successfully:', JSON.stringify(result));
 		return result;
 	} catch (error) {
-		console.error('Failed to send admin welcome email:', error);
+		console.error('[email] Failed to send admin welcome email:', error?.message || error);
+		console.error('[email] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 		throw error;
 	}
 }

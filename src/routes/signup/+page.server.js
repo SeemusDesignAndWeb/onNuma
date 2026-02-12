@@ -253,19 +253,27 @@ export const actions = {
 		}
 
 		// Send welcome/verification email (app uses Resend/Mailgun; no org email settings)
+		console.log('[signup] Looking up admin for welcome email:', email);
 		const fullAdmin = await getAdminByEmail(email);
+		console.log('[signup] Admin found:', fullAdmin ? 'yes' : 'no', 'Has token:', !!fullAdmin?.emailVerificationToken);
+		
 		if (fullAdmin?.emailVerificationToken) {
+			console.log('[signup] Attempting to send welcome email to:', email);
 			try {
-				await sendAdminWelcomeEmail({
+				const emailResult = await sendAdminWelcomeEmail({
 					to: email,
 					name: contactName,
 					email,
 					verificationToken: fullAdmin.emailVerificationToken,
 					password
 				}, { url });
+				console.log('[signup] Welcome email sent successfully:', JSON.stringify(emailResult));
 			} catch (emailErr) {
-				console.error('[signup] welcome email failed:', emailErr);
+				console.error('[signup] Welcome email failed:', emailErr?.message || emailErr);
+				console.error('[signup] Full error:', JSON.stringify(emailErr, Object.getOwnPropertyNames(emailErr)));
 			}
+		} else {
+			console.warn('[signup] Skipping welcome email - no verification token found for admin:', email);
 		}
 
 		throw redirect(302, `/signup?success=1&plan=${signupPlan}`);
