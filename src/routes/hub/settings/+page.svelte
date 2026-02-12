@@ -801,44 +801,96 @@
 			</p>
 			<div class="space-y-4 max-w-xl">
 				<div>
-					<label for="theme-logo-path" class="block text-sm font-medium text-gray-700 mb-1">Navbar logo (path or URL)</label>
-					<div class="flex gap-2">
-						<input
-							id="theme-logo-path"
-							type="text"
-							bind:value={themeLogoPath}
-							placeholder="/assets/egcc-color.png"
-							class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
-						/>
-						<button
-							type="button"
-							on:click={() => openImageBrowser('navbar')}
-							class="px-3 py-2 text-sm font-medium btn-theme-light-1 rounded-md whitespace-nowrap"
-						>
-							Select from library
-						</button>
+					<span class="block text-sm font-medium text-gray-700 mb-2">Navbar logo</span>
+					<div class="flex items-center gap-4">
+						{#if themeLogoPath}
+							<div class="relative group flex-shrink-0">
+								<div class="w-24 h-16 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+									<img src={themeLogoPath} alt="Navbar logo" class="max-w-full max-h-full object-contain" />
+								</div>
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<button
+									type="button"
+									on:click={() => openImageBrowser('navbar')}
+									class="px-3 py-1.5 text-sm font-medium btn-theme-light-1 rounded-md whitespace-nowrap"
+								>
+									Change
+								</button>
+								<button
+									type="button"
+									on:click={() => themeLogoPath = ''}
+									class="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors whitespace-nowrap"
+								>
+									Remove
+								</button>
+							</div>
+						{:else}
+							<button
+								type="button"
+								on:click={() => openImageBrowser('navbar')}
+								class="w-24 h-16 rounded-lg border-2 border-dashed border-gray-300 hover:border-theme-button-1 flex items-center justify-center transition-colors cursor-pointer group"
+							>
+								<svg class="w-6 h-6 text-gray-400 group-hover:text-theme-button-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								</svg>
+							</button>
+							<button
+								type="button"
+								on:click={() => openImageBrowser('navbar')}
+								class="px-3 py-1.5 text-sm font-medium btn-theme-light-1 rounded-md whitespace-nowrap"
+							>
+								Select from library
+							</button>
+						{/if}
 					</div>
-					<p class="mt-1 text-xs text-gray-500">Logo shown in the Hub navbar and on external pages. Leave empty for default.</p>
+					<p class="mt-1.5 text-xs text-gray-500">Logo shown in the Hub navbar and on external pages. Leave empty for default.</p>
 				</div>
 				<div>
-					<label for="theme-login-logo-path" class="block text-sm font-medium text-gray-700 mb-1">Login screen logo (path or URL)</label>
-					<div class="flex gap-2">
-						<input
-							id="theme-login-logo-path"
-							type="text"
-							bind:value={themeLoginLogoPath}
-							placeholder="/assets/egcc-color.png"
-							class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
-						/>
-						<button
-							type="button"
-							on:click={() => openImageBrowser('login')}
-							class="px-3 py-2 text-sm font-medium btn-theme-light-1 rounded-md whitespace-nowrap"
-						>
-							Select from library
-						</button>
+					<span class="block text-sm font-medium text-gray-700 mb-2">Login screen logo</span>
+					<div class="flex items-center gap-4">
+						{#if themeLoginLogoPath}
+							<div class="relative group flex-shrink-0">
+								<div class="w-24 h-16 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+									<img src={themeLoginLogoPath} alt="Login logo" class="max-w-full max-h-full object-contain" />
+								</div>
+							</div>
+							<div class="flex flex-col gap-1.5">
+								<button
+									type="button"
+									on:click={() => openImageBrowser('login')}
+									class="px-3 py-1.5 text-sm font-medium btn-theme-light-1 rounded-md whitespace-nowrap"
+								>
+									Change
+								</button>
+								<button
+									type="button"
+									on:click={() => themeLoginLogoPath = ''}
+									class="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors whitespace-nowrap"
+								>
+									Remove
+								</button>
+							</div>
+						{:else}
+							<button
+								type="button"
+								on:click={() => openImageBrowser('login')}
+								class="w-24 h-16 rounded-lg border-2 border-dashed border-gray-300 hover:border-theme-button-1 flex items-center justify-center transition-colors cursor-pointer group"
+							>
+								<svg class="w-6 h-6 text-gray-400 group-hover:text-theme-button-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								</svg>
+							</button>
+							<button
+								type="button"
+								on:click={() => openImageBrowser('login')}
+								class="px-3 py-1.5 text-sm font-medium btn-theme-light-1 rounded-md whitespace-nowrap"
+							>
+								Select from library
+							</button>
+						{/if}
 					</div>
-					<p class="mt-1 text-xs text-gray-500">Logo shown on the Hub login screen only. Leave empty to use the navbar logo or default.</p>
+					<p class="mt-1.5 text-xs text-gray-500">Logo shown on the Hub login screen only. Leave empty to use the navbar logo or default.</p>
 				</div>
 				<div>
 					<label for="theme-navbar-bg" class="block text-sm font-medium text-gray-700 mb-1">Navbar background</label>
