@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { createAdmin, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
-import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail, getPlanMaxUsers, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail, getPlanMaxAdmins, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
 import { getEffectiveSuperAdminEmail, getSettings } from '$lib/crm/server/settings.js';
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
@@ -22,16 +22,16 @@ export async function load({ cookies, parent }) {
 	
 	const parentData = await parent();
 	const plan = parentData.plan || 'free';
-	const maxUsers = getPlanMaxUsers(plan);
+	const maxAdmins = getPlanMaxAdmins(plan);
 	const admins = await readCollection('admins');
 	const adminCount = admins.length;
-	if (adminCount >= maxUsers) {
+	if (adminCount >= maxAdmins) {
 		throw redirect(302, '/hub/users?limit=1');
 	}
 	
 	const csrfToken = getCsrfToken(cookies) || '';
 	const availableAreas = getAvailableHubAreas(admin, superAdminEmail);
-	return { csrfToken, availableAreas, superAdminEmail, adminCount, maxUsers };
+	return { csrfToken, availableAreas, superAdminEmail, adminCount, maxAdmins };
 }
 
 export const actions = {
@@ -73,10 +73,10 @@ export const actions = {
 		const plan = org && Array.isArray(org.areaPermissions)
 			? getPlanFromAreaPermissions(org.areaPermissions) || 'free'
 			: 'free';
-		const maxUsers = getPlanMaxUsers(plan);
+		const maxAdmins = getPlanMaxAdmins(plan);
 		const admins = await readCollection('admins');
-		if (admins.length >= maxUsers) {
-			return { error: `User limit reached (${maxUsers} for ${plan} plan). Upgrade your plan to add more admins.` };
+		if (admins.length >= maxAdmins) {
+			return { error: `Admin limit reached (${maxAdmins} for ${plan} plan). Upgrade your plan to add more admins.` };
 		}
 
 		// Check if email matches super admin email - always super admin (no permissions needed)

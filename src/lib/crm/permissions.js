@@ -266,11 +266,11 @@ const PLAN_AREAS = {
 
 const VALID_PLANS = new Set(Object.keys(PLAN_AREAS));
 
-/** Maximum number of users (admins) per plan. */
-export const PLAN_MAX_USERS = {
-	free: 30,
-	professional: 500,
-	enterprise: 5000
+/** Maximum number of admins per plan. */
+export const PLAN_MAX_ADMINS = {
+	free: 1,
+	professional: 5,
+	enterprise: 50
 };
 
 /** Maximum contacts accessible per plan (over-the-limit contacts are not shown or deleted). */
@@ -280,10 +280,10 @@ export const PLAN_MAX_CONTACTS = {
 	enterprise: 5000
 };
 
-/** Maximum users allowed for a plan (free | professional | enterprise). Defaults to free limit if unknown. */
-export function getPlanMaxUsers(plan) {
-	if (!plan || !VALID_PLANS.has(plan)) return PLAN_MAX_USERS.free;
-	return PLAN_MAX_USERS[plan] ?? PLAN_MAX_USERS.free;
+/** Maximum admins allowed for a plan (free | professional | enterprise). Defaults to free limit if unknown. */
+export function getPlanMaxAdmins(plan) {
+	if (!plan || !VALID_PLANS.has(plan)) return PLAN_MAX_ADMINS.free;
+	return PLAN_MAX_ADMINS[plan] ?? PLAN_MAX_ADMINS.free;
 }
 
 /** Maximum contacts allowed for a plan. Excess contacts are not shown but are not deleted. */
@@ -351,7 +351,7 @@ export function getPlanSetupDetails() {
 		return {
 			...t,
 			maxContacts: getPlanMaxContacts(value),
-			maxAdmins: getPlanMaxUsers(value),
+			maxAdmins: getPlanMaxAdmins(value),
 			costPerContact: pricing.costPerContact ?? null,
 			costPerAdmin: pricing.costPerAdmin ?? null,
 			areaPermissions: getAreaPermissionsForPlan(value)

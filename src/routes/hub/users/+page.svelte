@@ -25,8 +25,8 @@
 	$: totalPages = data.totalPages || 1;
 	$: search = data.search || '';
 	$: adminCount = data.adminCount ?? 0;
-	$: maxUsers = data.maxUsers ?? 30;
-	$: atUserLimit = maxUsers != null && adminCount >= maxUsers;
+	$: maxAdmins = data.maxAdmins ?? 1;
+	$: atAdminLimit = maxAdmins != null && adminCount >= maxAdmins;
 	$: planLabel = (data.plan || 'free').charAt(0).toUpperCase() + (data.plan || 'free').slice(1);
 	$: showLimitMessage = $page.url.searchParams.get('limit') === '1';
 
@@ -107,15 +107,15 @@
 
 {#if showLimitMessage}
 	<div class="mb-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-		User limit reached ({adminCount} / {maxUsers} for {planLabel} plan). Upgrade your plan to add more admins.
+		Admin limit reached ({adminCount} / {maxAdmins} for {planLabel} plan). Upgrade your plan to add more admins.
 	</div>
 {/if}
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Admins</h2>
 	<div class="flex flex-wrap gap-2 items-center">
-		<span class="text-sm text-gray-600">{planLabel} plan: {adminCount} / {maxUsers} users</span>
-		{#if atUserLimit}
+		<span class="text-sm text-gray-600">{planLabel} plan: {adminCount} / {maxAdmins} admins</span>
+		{#if atAdminLimit}
 			<span class="btn-theme-2 px-2.5 py-1.5 rounded-md text-xs opacity-60 cursor-not-allowed" title="User limit reached. Upgrade your plan to add more admins.">
 				Add Admin
 			</span>

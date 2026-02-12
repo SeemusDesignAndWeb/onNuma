@@ -24,10 +24,10 @@ export {
 	getHubPlanTiers,
 	getPlanSetupDetails,
 	PLAN_MODULE_OPTIONS,
-	PLAN_MAX_USERS,
+	PLAN_MAX_ADMINS,
 	PLAN_MAX_CONTACTS,
 	PLAN_PRICING,
-	getPlanMaxUsers,
+	getPlanMaxAdmins,
 	getPlanMaxContacts,
 	// Trial management
 	isTrialExpired,

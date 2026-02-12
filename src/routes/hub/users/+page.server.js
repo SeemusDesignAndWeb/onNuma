@@ -1,13 +1,13 @@
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { getCsrfToken } from '$lib/crm/server/auth.js';
-import { getAdminPermissions, isSuperAdmin, getPlanMaxUsers } from '$lib/crm/server/permissions.js';
+import { getAdminPermissions, isSuperAdmin, getPlanMaxAdmins } from '$lib/crm/server/permissions.js';
 
 const ITEMS_PER_PAGE = 20;
 
 export async function load({ url, cookies, parent }) {
 	const parentData = await parent();
 	const plan = parentData.plan || 'free';
-	const maxUsers = getPlanMaxUsers(plan);
+	const maxAdmins = getPlanMaxAdmins(plan);
 
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
 	const search = url.searchParams.get('search') || '';
@@ -59,7 +59,7 @@ export async function load({ url, cookies, parent }) {
 		search,
 		csrfToken,
 		adminCount,
-		maxUsers,
+		maxAdmins,
 		plan
 	};
 }
