@@ -285,4 +285,13 @@
 			</div>
 		{/if}
 	</div>
+	<!-- Legal footer -->
+	<footer class="relative z-10 py-4 text-center text-xs text-white/70">
+		<nav class="flex flex-wrap justify-center gap-x-5 gap-y-1">
+			<a href="/terms" class="hover:text-white transition-colors">Terms &amp; Conditions</a>
+			<a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
+			<a href="/refund-policy" class="hover:text-white transition-colors">Refund Policy</a>
+		</nav>
+		<p class="mt-2">&copy; {new Date().getFullYear()} Seemus Design &amp; Web, trading as OnNuma.</p>
+	</footer>
 </section>

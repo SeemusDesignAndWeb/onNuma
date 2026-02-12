@@ -1,11 +1,12 @@
 # Privacy Policy
 
 **OnNuma – Volunteer Organisation Platform**  
+**Operated by Seemus Design & Web, trading as OnNuma**  
 **Last updated:** February 2025
 
 ## 1. Introduction
 
-This Privacy Policy explains how OnNuma ("we", "us", "our") collects, uses, stores, and protects personal information when you use our volunteer organisation platform and related services (the "Service"). It applies to visitors to our websites, customers who subscribe to the Service, administrators and users of organisations using the Service, and individuals whose data is processed through the Service (e.g. members, volunteers, contacts).
+This Privacy Policy explains how Seemus Design & Web, trading as OnNuma ("we", "us", "our"), collects, uses, stores, and protects personal information when you use our volunteer organisation platform and related services (the "Service"). It applies to visitors to our websites, customers who subscribe to the Service, administrators and users of organisations using the Service, and individuals whose data is processed through the Service (e.g. members, volunteers, contacts).
 
 If your organisation uses OnNuma, it may have its own privacy notice for how it handles data within its instance (e.g. Hub Privacy Policy). This policy describes how we, as the operator of OnNuma, process personal data.
 

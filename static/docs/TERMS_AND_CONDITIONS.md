@@ -1,11 +1,12 @@
 # Terms and Conditions
 
 **OnNuma – Volunteer Organisation Platform**  
+**Operated by Seemus Design & Web, trading as OnNuma**  
 **Last updated:** February 2025
 
 ## 1. Agreement to terms
 
-By accessing or using OnNuma (the "Service"), you agree to be bound by these Terms and Conditions. If you are using the Service on behalf of an organisation, you represent that you have the authority to bind that organisation to these terms. If you do not agree, do not use the Service.
+By accessing or using OnNuma (the "Service"), provided by Seemus Design & Web ("we", "us", "our"), trading as OnNuma, you agree to be bound by these Terms and Conditions. If you are using the Service on behalf of an organisation, you represent that you have the authority to bind that organisation to these terms. If you do not agree, do not use the Service.
 
 ## 2. Description of the service
 

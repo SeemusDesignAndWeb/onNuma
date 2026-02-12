@@ -13,6 +13,15 @@
 		<div class="prose prose-lg max-w-none p-6 md:p-8 bg-white shadow rounded-lg overflow-hidden">
 			{@html htmlContent}
 		</div>
+		<footer class="policy-footer">
+			<nav>
+				<a href="/">Home</a>
+				<a href="/terms">Terms &amp; Conditions</a>
+				<a href="/privacy">Privacy Policy</a>
+				<a href="/refund-policy">Refund Policy</a>
+			</nav>
+			<p>&copy; {new Date().getFullYear()} Seemus Design &amp; Web, trading as OnNuma.</p>
+		</footer>
 	</div>
 </div>
 
@@ -131,5 +140,37 @@
 		border: none;
 		border-top: 1px solid #e5e7eb;
 		margin: 2em 0;
+	}
+
+	.policy-footer {
+		margin-top: 2rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid #e5e7eb;
+		text-align: center;
+		font-size: 0.8125rem;
+		color: #6b7280;
+	}
+
+	.policy-footer nav {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.25rem 1.25rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.policy-footer nav a {
+		color: #4b5563;
+		text-decoration: none;
+		transition: color 0.15s;
+	}
+
+	.policy-footer nav a:hover {
+		color: #1f2937;
+		text-decoration: underline;
+	}
+
+	.policy-footer p {
+		margin: 0;
 	}
 </style>

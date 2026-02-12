@@ -1,11 +1,12 @@
 # Refund Policy
 
 **OnNuma – Volunteer Organisation Platform**  
+**Operated by Seemus Design & Web, trading as OnNuma**  
 **Last updated:** February 2025
 
 ## 1. Overview
 
-This Refund Policy explains how refunds and cancellations work for paid subscriptions to OnNuma. Payments for OnNuma plans (e.g. Professional, Enterprise) are processed by our payment provider (Paddle). Your contract for the subscription is with us (OnNuma); Paddle facilitates payment and may appear on your bank or card statement.
+This Refund Policy explains how refunds and cancellations work for paid subscriptions to OnNuma. Payments for OnNuma plans (e.g. Professional, Enterprise) are processed by our payment provider (Paddle). Your contract for the subscription is with us (Seemus Design & Web, trading as OnNuma); Paddle facilitates payment and may appear on your bank or card statement.
 
 ## 2. Subscription billing
 
