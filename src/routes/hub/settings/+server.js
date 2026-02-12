@@ -4,11 +4,14 @@ import { isSuperAdmin } from '$lib/crm/server/permissions.js';
 import { getSettings, writeSettings } from '$lib/crm/server/settings.js';
 
 export async function POST({ request, cookies }) {
+	console.log('[settings POST] Checking auth...');
 	const admin = await getAdminFromCookies(cookies);
 	
 	if (!admin) {
+		console.log('[settings POST] No admin found, returning 401');
 		throw error(401, 'Unauthorized');
 	}
+	console.log('[settings POST] Admin:', admin.email);
 	
 	if (!isSuperAdmin(admin)) {
 		throw error(403, 'Forbidden: Superadmin access required');

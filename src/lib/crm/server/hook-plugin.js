@@ -101,6 +101,7 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		pathname !== '/hub/privacy' &&
 		!pathname.startsWith('/hub/privacy/');
 	if (isProtectedHubPath && !cookies.get(SESSION_COOKIE)) {
+		console.log(`[crmHandle] No session cookie for ${pathname}, redirecting to login`);
 		throw redirect(302, '/hub/auth/login');
 	}
 
