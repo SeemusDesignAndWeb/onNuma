@@ -78,7 +78,7 @@
 				</ul>
 				{#if !hideCta}
 					<a
-						href="/signup"
+						href="/signup?plan=free"
 						class="font-semibold text-[15px] px-4 py-2 rounded-lg transition-colors {useLightNav ? 'bg-white text-slate-800 hover:bg-white/90' : 'bg-brand-blue text-white hover:bg-brand-blue/90'}"
 					>
 						Get started free
@@ -115,7 +115,7 @@
 					{#if !hideCta}
 						<li class="pt-2 mt-2 border-t {useLightNav ? 'border-white/30' : 'border-slate-200'}">
 							<a
-								href="/signup"
+								href="/signup?plan=free"
 								class="block w-full py-3 font-semibold text-center rounded-lg {useLightNav ? 'bg-white text-slate-800' : 'bg-brand-blue text-white'}"
 								on:click={() => (menuOpen = false)}
 							>

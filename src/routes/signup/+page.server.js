@@ -3,11 +3,13 @@ import { create, readCollection, findById, update, updatePartial } from '$lib/cr
 import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerificationToken } from '$lib/crm/server/auth.js';
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
-import { isValidHubDomain, normaliseHost } from '$lib/crm/server/hubDomain.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
 
-/** Free plan only for trial signup */
-const PLAN = 'free';
+/** Valid signup plans */
+const VALID_SIGNUP_PLANS = ['free', 'professional'];
+
+/** Default plan for trial signup */
+const DEFAULT_PLAN = 'free';
 
 /** All Hub area permissions for super admin (same as super-admin page) */
 const FULL_PERMISSIONS = [
@@ -31,10 +33,6 @@ function validateSignup(data) {
 	if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.email).trim())) {
 		errors.email = 'Please enter a valid email address';
 	}
-	const hubDomain = data.hubDomain ? String(data.hubDomain).trim() : '';
-	if (hubDomain && !isValidHubDomain(hubDomain)) {
-		errors.hubDomain = 'Enter a valid hostname (e.g. hub.yourchurch.org)';
-	}
 	if (!data.contactName || !String(data.contactName).trim()) {
 		errors.contactName = 'Your name is required';
 	}
@@ -52,12 +50,59 @@ function validateSignup(data) {
 	return Object.keys(errors).length ? errors : null;
 }
 
-async function isHubDomainTaken(normalisedDomain, excludeOrgId = null) {
+/**
+ * Generate a subdomain from organisation name.
+ * - Converts to lowercase
+ * - Replaces spaces and special chars with hyphens
+ * - Removes consecutive hyphens
+ * - Trims hyphens from start/end
+ * - Limits to 10 chars
+ */
+function generateSubdomain(name) {
+	return String(name)
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+		.replace(/-+/g, '-')          // Remove consecutive hyphens
+		.replace(/^-|-$/g, '')        // Trim hyphens from start/end
+		.slice(0, 10)                 // Limit to 10 characters
+		.replace(/-$/g, '');          // Trim trailing hyphen after slice
+}
+
+/**
+ * Generate a unique hub domain from organisation name.
+ * Appends a number if the base subdomain is already taken.
+ */
+async function generateUniqueHubDomain(name) {
+	const baseSubdomain = generateSubdomain(name);
+	if (!baseSubdomain) {
+		// Fallback if name produces empty subdomain
+		return `org-${Date.now()}`;
+	}
+	
+	let subdomain = baseSubdomain;
+	let suffix = 1;
+	
+	// Check if subdomain is taken, append number if so
+	while (await isHubDomainTaken(subdomain, null)) {
+		subdomain = `${baseSubdomain}-${suffix}`;
+		suffix++;
+		// Safety limit to prevent infinite loop
+		if (suffix > 100) {
+			subdomain = `${baseSubdomain}-${Date.now()}`;
+			break;
+		}
+	}
+	
+	return subdomain;
+}
+
+async function isHubDomainTaken(subdomain, excludeOrgId = null) {
 	const orgs = await readCollection('organisations');
+	const normalised = subdomain.toLowerCase().trim();
 	return orgs.some(
 		(o) =>
 			o.hubDomain &&
-			normaliseHost(String(o.hubDomain).trim()) === normalisedDomain &&
+			String(o.hubDomain).toLowerCase().trim() === normalised &&
 			o.id !== excludeOrgId
 	);
 }
@@ -88,14 +133,14 @@ export const actions = {
 		const telephone = form.get('telephone')?.toString()?.trim() || '';
 		const email = form.get('email')?.toString()?.trim() || '';
 		const contactName = form.get('contactName')?.toString()?.trim() || '';
-		const hubDomain = form.get('hubDomain')?.toString()?.trim() || '';
 		const password = form.get('password')?.toString() || '';
 		const marketingConsent = form.get('marketingConsent') === 'on';
+		const signupPlanRaw = form.get('plan')?.toString()?.trim() || DEFAULT_PLAN;
+		const signupPlan = VALID_SIGNUP_PLANS.includes(signupPlanRaw) ? signupPlanRaw : DEFAULT_PLAN;
 
 		const errors = validateSignup({
 			name,
 			email,
-			hubDomain,
 			contactName,
 			address,
 			telephone,
@@ -104,7 +149,7 @@ export const actions = {
 		if (errors) {
 			return fail(400, {
 				errors,
-				values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
+				values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
 			});
 		}
 
@@ -112,24 +157,21 @@ export const actions = {
 		if (await isEmailOrgOwner(email)) {
 			return fail(400, {
 				errors: { email: 'This email address is already registered. Use a different email or log in.' },
-				values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
+				values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
 			});
 		}
 
-		// Only one signup per domain name
-		if (hubDomain && (await isHubDomainTaken(normaliseHost(hubDomain), null))) {
-			return fail(400, {
-				errors: { hubDomain: 'This hub domain is already in use. Choose a different domain.' },
-				values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
-			});
-		}
+		// Auto-generate hub domain from organisation name
+		const hubDomain = await generateUniqueHubDomain(name);
 
-		const areaPermissions = getAreaPermissionsForPlan(PLAN);
+		// Get area permissions based on the selected signup plan
+		const areaPermissions = getAreaPermissionsForPlan(signupPlan);
 
 		let org;
 		let admin;
 		try {
-			// Create organisation (free plan; no email/SMTP settings).
+			// Create organisation with selected plan permissions.
+			// signupPlan stored so we know what plan they signed up for (for billing/upgrade tracking).
 			// marketingConsent stored so we know who we can market to (query organisations where marketingConsent === true).
 			org = await create('organisations', {
 				name,
@@ -139,6 +181,7 @@ export const actions = {
 				contactName,
 				hubDomain: hubDomain || null,
 				areaPermissions,
+				signupPlan, // Track which plan button they clicked (free or professional)
 				isHubOrganisation: true,
 				marketingConsent: !!marketingConsent
 			});
@@ -179,7 +222,7 @@ export const actions = {
 				console.error('[signup] Organisation not found after create:', org.id);
 				return fail(500, {
 					errors: { _form: 'Organisation was created but could not be verified. Please contact support or check the organisations list.' },
-					values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
+					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
 				});
 			}
 		} catch (err) {
@@ -188,12 +231,12 @@ export const actions = {
 			if (message.includes('Password')) {
 				return fail(400, {
 					errors: { password: message },
-					values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
+					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
 				});
 			}
 			return fail(500, {
 				errors: { _form: message },
-				values: { name, address, telephone, email, contactName, hubDomain, marketingConsent }
+				values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
 			});
 		}
 
@@ -213,6 +256,6 @@ export const actions = {
 			}
 		}
 
-		throw redirect(302, '/signup?success=1');
+		throw redirect(302, `/signup?success=1&plan=${signupPlan}`);
 	}
 };

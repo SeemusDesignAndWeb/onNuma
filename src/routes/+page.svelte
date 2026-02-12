@@ -5,8 +5,8 @@
 	/** @type {Record<string, string>} */
 	export let params = {};
 	const landing = data?.landing || {};
-	const ctaDemo = landing.ctaRequestDemoUrl || '/multi-org';
-	const ctaStart = landing.ctaStartOrganisationUrl || '/signup';
+	const ctaDemo = landing.ctaRequestDemoUrl || '/signup?plan=professional';
+	const ctaStart = landing.ctaStartOrganisationUrl || '/signup?plan=free';
 	const tagline = landing.tagline || 'Organisation management that people actually use';
 
 	// Pricing: scale by users – Free up to 30, Professional up to 500; slider max 500
@@ -58,7 +58,7 @@
 		</p>
 		<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
 			<a
-				href="/signup"
+				href="/signup?plan=free"
 				class="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg font-semibold bg-white text-brand-blue hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg transition-colors"
 			>
 				Start now for free!
