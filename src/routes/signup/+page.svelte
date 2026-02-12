@@ -42,8 +42,14 @@
 		? 'Need more? Enterprise includes everything in Professional, plus:'
 		: 'Unlock more with Professional:';
 
-	// Number of contacts (Professional): slider 1–500, fixed tier pricing (£0 / £15 / £25 / £50)
+	// Number of contacts (Professional): slider 1–500, fixed tier pricing. Init from URL when coming from pricing page.
 	let contactsLocal = 30;
+	let initializedFromUrl = false;
+	$: urlContacts = $page.url.searchParams.get('contacts');
+	$: if (plan === 'professional' && urlContacts != null && !initializedFromUrl && !form?.errors) {
+		contactsLocal = Math.min(500, Math.max(1, parseInt(urlContacts, 10) || 30));
+		initializedFromUrl = true;
+	}
 	$: if (form?.errors && plan === 'professional' && values.numberOfContacts != null) {
 		const v = Math.min(500, Math.max(1, Number(values.numberOfContacts) || 30));
 		contactsLocal = v;

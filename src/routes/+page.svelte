@@ -298,7 +298,7 @@
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Your branding</li>
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Priority support</li>
 				</ul>
-				<a href={ctaDemo} class="block w-full py-3 px-4 rounded-lg font-semibold text-center bg-brand-blue text-white hover:bg-brand-blue/90 transition-colors">Get Professional</a>
+				<a href="{ctaDemo}{ctaDemo.includes('?') ? '&' : '?'}contacts={contacts}" class="block w-full py-3 px-4 rounded-lg font-semibold text-center bg-brand-blue text-white hover:bg-brand-blue/90 transition-colors">Get Professional</a>
 			</div>
 			<!-- Enterprise -->
 			<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8 flex flex-col">
