@@ -104,10 +104,11 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		throw redirect(302, '/hub/auth/login');
 	}
 
-	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages) to hub login.
+	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages and static assets) to hub login.
 	const host = url.host || request.headers.get('host') || '';
 	const orgFromHost = await resolveOrganisationFromHost(host);
-	if (orgFromHost && !pathname.startsWith('/hub') && !isPublicHubPath) {
+	const isPublicAsset = pathname.startsWith('/images/') || pathname.startsWith('/assets/');
+	if (orgFromHost && !pathname.startsWith('/hub') && !isPublicHubPath && !isPublicAsset) {
 		throw redirect(302, '/hub/auth/login');
 	}
 
