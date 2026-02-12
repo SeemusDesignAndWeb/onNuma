@@ -1,11 +1,11 @@
 import { json } from '@sveltejs/kit';
 import { requireAuth } from '$lib/server/auth';
 import { getImages, saveImage, deleteImage } from '$lib/server/database';
-import { saveUploadedImage, deleteUploadedImage } from '$lib/server/volumeImageStore.js';
+import { saveUpload, deleteUpload } from '$lib/server/volumeImageStore.js';
 import { randomUUID } from 'crypto';
 
 /**
- * Admin image library: uploads go to volume (production) or static/images/uploads (local).
+ * Admin image library.
  */
 export const GET = async ({ url, cookies }) => {
 	requireAuth({ cookies });
@@ -45,7 +45,7 @@ export const POST = async ({ request, cookies }) => {
 		const arrayBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
 
-		const { path, filename } = await saveUploadedImage(buffer, file.name, file.type);
+		const { path, filename } = await saveUpload(buffer, file.name);
 
 		const imageMetadata = {
 			id: randomUUID(),
@@ -83,8 +83,8 @@ export const DELETE = async ({ url, cookies }) => {
 			return json({ error: 'Image not found' }, { status: 404 });
 		}
 
-		if (image.path && !image.path.includes('cloudinary.com')) {
-			await deleteUploadedImage(image.path);
+		if (image.path) {
+			await deleteUpload(image.path);
 		}
 
 		deleteImage(id);

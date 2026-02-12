@@ -1,11 +1,10 @@
 import { json } from '@sveltejs/kit';
 import { getHubImages, getHubImage, saveHubImage, deleteHubImage } from '$lib/server/hubImagesStore.js';
-import { saveUploadedImage, deleteUploadedImage } from '$lib/server/volumeImageStore.js';
+import { saveUpload, deleteUpload } from '$lib/server/volumeImageStore.js';
 import { randomUUID } from 'crypto';
 
 /**
- * Hub image library: uploads go to volume (production) or static/images/uploads (local).
- * Auth is handled by The HUB hook.
+ * Hub image library. Auth is handled by the Hub hook.
  */
 export async function GET({ url }) {
 	try {
@@ -42,7 +41,7 @@ export async function POST({ request }) {
 		const arrayBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
 
-		const { path, filename } = await saveUploadedImage(buffer, file.name, file.type);
+		const { path, filename } = await saveUpload(buffer, file.name);
 
 		const imageMetadata = {
 			id: randomUUID(),
@@ -79,7 +78,7 @@ export async function DELETE({ url }) {
 		}
 
 		if (image.path) {
-			await deleteUploadedImage(image.path);
+			await deleteUpload(image.path);
 		}
 
 		await deleteHubImage(id);

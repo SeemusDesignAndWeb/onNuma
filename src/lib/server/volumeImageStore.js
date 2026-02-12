@@ -1,6 +1,8 @@
 /**
- * Image storage: local dev = static/images/uploads, production = volume at /images (or IMAGES_PATH).
- * Replaces Cloudinary for faster loads and simpler setup.
+ * Image uploads: files stored on disk, served via /uploads/[...path] route.
+ * 
+ * Local dev: static/uploads (Vite serves automatically)
+ * Production: UPLOADS_PATH env var (e.g., /data/uploads)
  */
 
 import { join } from 'path';
@@ -9,129 +11,110 @@ import { existsSync } from 'fs';
 import { randomUUID } from 'crypto';
 import { env } from '$env/dynamic/private';
 
-const UPLOADS_SUBDIR = 'uploads';
-
-/** Path we return for img src (must match how the GET /images/[...path] route resolves). */
-export function getUploadPath(filename) {
-	return `/images/${UPLOADS_SUBDIR}/${filename}`;
-}
-
 /**
- * Base directory for uploaded images.
- * - Local (no IMAGES_PATH): static/images → uploads go to static/images/uploads, served at /images/uploads/...
- * - Production (volume at /data): set IMAGES_PATH=/data/images so uploads go to /data/images/uploads/.
- *   GET /images/* is served by src/routes/images/[...path]/+server.js from this base dir.
+ * Base directory for uploads.
+ * - Local: static/uploads (served by Vite dev server)
+ * - Production: UPLOADS_PATH (e.g., /data/uploads), served by /uploads/[...path] route
  */
-export function getImagesBaseDir() {
-	const path = env.IMAGES_PATH?.trim();
+export function getUploadsDir() {
+	const path = env.UPLOADS_PATH?.trim();
 	if (path) {
 		return path.startsWith('/') ? path : join(process.cwd(), path);
 	}
-	return join(process.cwd(), 'static', 'images');
+	return join(process.cwd(), 'static', 'uploads');
 }
 
 /**
- * Whether we're using the volume (production). When true, /images/* must be served by a route.
+ * Whether we need the dynamic route to serve uploads (production with volume).
  */
 export function isVolumeMode() {
-	return !!env.IMAGES_PATH?.trim();
+	return !!env.UPLOADS_PATH?.trim();
 }
 
 /**
- * Subfolder for uploads (uploads). Full path = baseDir/uploads.
- */
-function getUploadsDir() {
-	return join(getImagesBaseDir(), UPLOADS_SUBDIR);
-}
-
-/**
- * Get safe filename: unique prefix + original name (sanitized).
+ * Generate safe filename with unique prefix.
  */
 function safeFilename(originalName) {
 	const ext = originalName.includes('.') ? originalName.split('.').pop().toLowerCase() : 'jpg';
-	const base = (originalName.replace(/\.[^.]+$/, '') || 'image').replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 80);
+	const base = (originalName.replace(/\.[^.]+$/, '') || 'image')
+		.replace(/[^a-zA-Z0-9-_]/g, '_')
+		.slice(0, 80);
 	return `${randomUUID().slice(0, 8)}_${base}.${ext}`;
 }
 
 /**
- * Save uploaded image to disk. Returns path for use in img src (e.g. /images/uploads/xyz.jpg).
- * @param {Buffer} buffer
- * @param {string} originalName
- * @param {string} [mimeType]
- * @returns {Promise<{ path: string, filename: string }>}
+ * Save uploaded file to disk.
+ * @returns {{ path: string, filename: string }} - path is the URL path for img src
  */
-export async function saveUploadedImage(buffer, originalName, mimeType = 'image/jpeg') {
+export async function saveUpload(buffer, originalName) {
 	const dir = getUploadsDir();
-	const baseDir = getImagesBaseDir();
-	
-	console.log(`[upload] Starting upload: originalName=${originalName}, baseDir=${baseDir}, uploadsDir=${dir}`);
 	
 	if (!existsSync(dir)) {
-		console.log(`[upload] Creating uploads directory: ${dir}`);
 		await mkdir(dir, { recursive: true });
 	}
 	
 	const filename = safeFilename(originalName);
 	const filePath = join(dir, filename);
 	
-	console.log(`[upload] Writing file: ${filePath}, size=${buffer.length} bytes`);
 	await writeFile(filePath, buffer);
-
-	const path = getUploadPath(filename);
-	// Verify the same path the GET handler will use actually exists (same base dir)
-	const resolved = resolveImagePath(path);
-	const fileExists = resolved ? existsSync(resolved) : false;
 	
-	console.log(`[upload] Verification: path=${path}, resolved=${resolved}, exists=${fileExists}`);
-	
-	if (!resolved || !fileExists) {
-		throw new Error(
-			`Upload wrote to ${filePath} but cannot be resolved for serving (base: ${baseDir}, resolved: ${resolved}). Check IMAGES_PATH.`
-		);
+	// Verify file was written
+	if (!existsSync(filePath)) {
+		throw new Error(`Failed to write file: ${filePath}`);
 	}
 	
-	console.log(`[upload] Success: ${path}`);
-	return { path, filename };
+	return { 
+		path: `/uploads/${filename}`,
+		filename 
+	};
 }
 
 /**
- * Delete image file by path (e.g. /images/uploads/xyz.jpg).
- * @param {string} path - Stored path like /images/uploads/xyz.jpg
- * @returns {Promise<boolean>}
+ * Delete uploaded file.
+ * @param {string} urlPath - URL path like /uploads/xyz.jpg
  */
-export async function deleteUploadedImage(path) {
-	if (!path || !path.startsWith(`/images/${UPLOADS_SUBDIR}/`)) return false;
-	const filename = path.replace(`/images/${UPLOADS_SUBDIR}/`, '').replace(/^\/+/, '');
-	if (!filename || filename.includes('..')) return false;
+export async function deleteUpload(urlPath) {
+	if (!urlPath?.startsWith('/uploads/')) return false;
+	
+	const filename = urlPath.replace('/uploads/', '').replace(/^\/+/, '');
+	if (!filename || filename.includes('..') || filename.includes('/')) return false;
+	
 	const filePath = join(getUploadsDir(), filename);
 	if (!existsSync(filePath)) return true;
+	
 	await unlink(filePath);
 	return true;
 }
 
 /**
- * Resolve full filesystem path from stored path (for serving from volume).
- * @param {string} path - Stored path like /images/uploads/xyz.jpg
- * @returns {string|null}
+ * Read uploaded file (for serving via route in production).
+ * @param {string} urlPath - URL path like /uploads/xyz.jpg
  */
-export function resolveImagePath(path) {
-	if (!path || !path.startsWith('/images/')) return null;
-	const relative = path.replace(/^\/images\/?/, '').replace(/^\/+/, '');
-	if (!relative || relative.includes('..')) return null;
-	return join(getImagesBaseDir(), relative);
-}
-
-/**
- * Read image file buffer (for serving from volume). Returns null if not found.
- * @param {string} path - Stored path like /images/uploads/xyz.jpg
- * @returns {Promise<Buffer|null>}
- */
-export async function readImageFile(path) {
-	const filePath = resolveImagePath(path);
-	if (!filePath || !existsSync(filePath)) return null;
+export async function readUpload(urlPath) {
+	if (!urlPath?.startsWith('/uploads/')) return null;
+	
+	const filename = urlPath.replace('/uploads/', '').replace(/^\/+/, '');
+	if (!filename || filename.includes('..') || filename.includes('/')) return null;
+	
+	const filePath = join(getUploadsDir(), filename);
+	if (!existsSync(filePath)) return null;
+	
 	try {
 		return await readFile(filePath);
 	} catch {
 		return null;
 	}
+}
+
+/**
+ * Resolve URL path to filesystem path (for checking existence).
+ * @param {string} urlPath - URL path like /uploads/xyz.jpg
+ */
+export function resolveUploadPath(urlPath) {
+	if (!urlPath?.startsWith('/uploads/')) return null;
+	
+	const filename = urlPath.replace('/uploads/', '').replace(/^\/+/, '');
+	if (!filename || filename.includes('..') || filename.includes('/')) return null;
+	
+	return join(getUploadsDir(), filename);
 }
