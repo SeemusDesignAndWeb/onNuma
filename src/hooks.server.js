@@ -19,14 +19,15 @@ async function multiOrgAdminDomainHandle({ event, resolve }) {
 
 // Base handle (if you have existing hooks, add them here)
 async function baseHandle({ event, resolve }) {
-	// Enforce HTTPS in production
+	// Enforce HTTPS in production (check x-forwarded-proto for proxied requests)
 	if (process.env.NODE_ENV === 'production') {
-		const url = event.url;
-		if (url.protocol !== 'https:') {
+		const proto = event.request.headers.get('x-forwarded-proto') || event.url.protocol.replace(':', '');
+		if (proto !== 'https') {
+			const host = event.request.headers.get('x-forwarded-host') || event.request.headers.get('host') || event.url.host;
 			return new Response('HTTPS required', {
 				status: 301,
 				headers: {
-					'Location': `https://${url.host}${url.pathname}${url.search}`
+					'Location': `https://${host}${event.url.pathname}${event.url.search}`
 				}
 			});
 		}
