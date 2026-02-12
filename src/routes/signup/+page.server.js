@@ -190,9 +190,17 @@ export const actions = {
 		if (signupPlan === 'professional') {
 			const apiKey = getPaddleApiKey();
 			const priceId = getPriceIdForProfessionalByTier(contactCount);
-			if (!apiKey || !priceId) {
+			if (!apiKey) {
+				console.error('[signup] PADDLE_API_KEY is missing or empty in .env');
 				return fail(503, {
-					errors: { _form: 'Billing is not configured yet. Please try the Free plan or contact us.' },
+					errors: { _form: 'Billing is not configured: PADDLE_API_KEY is missing. Add it to .env and restart the app.' },
+					values: valuesWithSeats()
+				});
+			}
+			if (!priceId) {
+				console.error('[signup] No Professional price ID for contact count', contactCount, '— set PADDLE_PRICE_ID_PROFESSIONAL_TIER1, _TIER2, _TIER3 in .env');
+				return fail(503, {
+					errors: { _form: 'Billing is not configured: add PADDLE_PRICE_ID_PROFESSIONAL_TIER1, _TIER2, and _TIER3 to .env, then restart the app.' },
 					values: valuesWithSeats()
 				});
 			}
@@ -248,9 +256,9 @@ export const actions = {
 						const code = errJson?.error?.code;
 						if (code === 'transaction_item_quantity_out_of_range') {
 							formMessage =
-								'Checkout failed: the Professional price in Paddle only allows 301+ seats. Use a price with quantity 1–300 for PADDLE_PRICE_ID_PROFESSIONAL (signup uses 1 seat). Keep the 301+ price for PADDLE_PRICE_ID_PROFESSIONAL_TIER2.';
+								'Checkout failed: this Professional price in Paddle only allows quantity 31–100. Each of your three prices (TIER1, TIER2, TIER3) must allow quantity 1 (set min 1, max 1 in Paddle for each fixed price).';
 							console.error(
-								'[signup] Paddle price quantity range: PADDLE_PRICE_ID_PROFESSIONAL must be a price that allows quantity 1 (min 1, max 300). You may have the tier-2 price (301+) set for both; create a 1–300 price in Paddle and set it as PADDLE_PRICE_ID_PROFESSIONAL.'
+								'[signup] Paddle price quantity range: the price used only allows 31–100. Set quantity to min 1, max 1 for all three Professional prices (TIER1, TIER2, TIER3) in Paddle.'
 							);
 						}
 					} catch {

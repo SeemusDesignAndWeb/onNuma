@@ -5,7 +5,7 @@ import { rateLimitedSend } from './emailRateLimiter.js';
 import { getSettings } from './settings.js';
 import { sendEmail } from '$lib/server/mailgun.js';
 
-const fromEmailDefault = () => env.MAILGUN_FROM_EMAIL || env.RESEND_FROM_EMAIL || '';
+const fromEmailDefault = () => env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : '');
 
 /**
  * Get base URL for absolute links in emails
@@ -615,7 +615,7 @@ export async function prepareNewsletterEmail({ newsletterId, to, name, contact }
 	}
 
 	const baseUrl = getBaseUrl(event);
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 
 	// Get upcoming events for personalisation (filtered by contact's list membership)
 	const upcomingEvents = await getUpcomingEvents(event, contact);
@@ -812,7 +812,7 @@ export async function sendRotaInvite({ to, name, token }, rotaData, contact, eve
 	const { rota, event: eventData, occurrence } = rotaData;
 	const baseUrl = getBaseUrl(event);
 	const signupUrl = `${baseUrl}/signup/rota/${token}`;
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 
 	const eventTitle = eventData?.title || 'Event';
 	const role = rota?.role || 'Volunteer';
@@ -983,7 +983,7 @@ ${upcomingRotasText}
 export async function sendCombinedRotaInvites(contactInvites, eventData, eventPageUrl, event, customMessage = '') {
 	const emailDataArray = [];
 	const baseUrl = getBaseUrl(event);
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 	
 	for (const contactInvite of contactInvites) {
 		const { contact, invites } = contactInvite;
@@ -1293,20 +1293,22 @@ export async function sendBulkRotaInvites(invites, event) {
  * @param {string} options.email - Admin email
  * @param {string} options.verificationToken - Email verification token
  * @param {string} options.password - Temporary password (optional, if provided)
+ * @param {string} [options.hubBaseUrl] - Base URL for this org's hub (custom login URL). When set, verification and login links use this so the user logs in at their org's URL.
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<object>} Resend API response
  */
-export async function sendAdminWelcomeEmail({ to, name, email, verificationToken, password }, event) {
-	console.log('[email] sendAdminWelcomeEmail called:', { to, name, email, hasToken: !!verificationToken, hasPassword: !!password });
+export async function sendAdminWelcomeEmail({ to, name, email, verificationToken, password, hubBaseUrl }, event) {
+	console.log('[email] sendAdminWelcomeEmail called:', { to, name, email, hasToken: !!verificationToken, hasPassword: !!password, hubBaseUrl: hubBaseUrl ?? 'none' });
 	
 	const baseUrl = getBaseUrl(event);
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const hubUrl = (hubBaseUrl && String(hubBaseUrl).trim()) ? String(hubBaseUrl).replace(/\/$/, '') : baseUrl;
+	const fromEmail = fromEmailDefault();
 	
-	console.log('[email] Config:', { baseUrl, fromEmail, MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN ? 'set' : 'NOT SET', MAILGUN_API_KEY: process.env.MAILGUN_API_KEY ? 'set' : 'NOT SET' });
+	console.log('[email] Config:', { baseUrl, hubUrl, fromEmail, MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN ? 'set' : 'NOT SET', MAILGUN_API_KEY: process.env.MAILGUN_API_KEY ? 'set' : 'NOT SET' });
 	
-	// Create verification link
-	const verificationLink = `${baseUrl}/hub/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
-	const hubLoginLink = `${baseUrl}/hub/auth/login`;
+	// Verification and login links: use org's custom hub URL when provided so they log in at their custom URL
+	const verificationLink = `${hubUrl}/hub/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
+	const hubLoginLink = `${hubUrl}/hub/auth/login`;
 
 	const branding = await getEmailBranding(event);
 	const html = `
@@ -1455,7 +1457,7 @@ Visit our website: ${baseUrl}
  */
 export async function sendPasswordResetEmail({ to, name, resetToken }, event) {
 	const baseUrl = getBaseUrl(event);
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 	
 	// Create reset link - token is base64url encoded so should be URL-safe, but encode it anyway to be safe
 	const encodedToken = encodeURIComponent(resetToken);
@@ -1567,9 +1569,9 @@ Visit our website: ${baseUrl}
  * @param {{ url: URL, adminSubdomain?: boolean }} event - url.origin and adminSubdomain (for reset link path)
  */
 export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, event) {
-	if (!env.RESEND_API_KEY || env.RESEND_API_KEY.trim() === '') {
-		console.error('[MultiOrg password reset email] RESEND_API_KEY is not set. Set it in your environment (e.g. Railway variables).');
-		throw new Error('Email is not configured: RESEND_API_KEY is missing.');
+	if (!env.MAILGUN_API_KEY || !env.MAILGUN_DOMAIN) {
+		console.error('[MultiOrg password reset email] Mailgun is not configured. Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your environment.');
+		throw new Error('Email is not configured: Mailgun (MAILGUN_API_KEY and MAILGUN_DOMAIN) is missing.');
 	}
 	const adminSubdomain = !!event?.adminSubdomain;
 	const baseUrl = adminSubdomain ? event.url?.origin : getBaseUrl(event);
@@ -1578,7 +1580,7 @@ export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, e
 	const encodedEmail = encodeURIComponent(to);
 	const resetLink = `${baseUrl}${path}?token=${encodedToken}&email=${encodedEmail}`;
 
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 	const logoUrl = `${baseUrl}/assets/onnuma-logo.png`;
 	const html = `
 		<!DOCTYPE html>
@@ -1631,7 +1633,7 @@ export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, e
  */
 export async function sendEventSignupConfirmation({ to, name, event, occurrence, guestCount = 0, dietaryRequirements }, svelteEvent) {
 	const baseUrl = getBaseUrl(svelteEvent);
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 
 	// Format date and time
 	const formatDate = (dateString) => {
@@ -1783,7 +1785,7 @@ Eltham Green Community Church
 export async function sendRotaUpdateNotification({ to, name }, rotaData, event) {
 	const { rota, event: eventData, occurrence } = rotaData;
 	const baseUrl = getBaseUrl(event);
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 	const hubUrl = `${baseUrl}/hub/rotas/${rota.id}`;
 
 	const eventTitle = eventData?.title || 'Event';
@@ -2049,7 +2051,7 @@ View the rota: ${hubUrl}
 export async function sendUpcomingRotaReminder({ to, name }, rotaData, event) {
 	const { rota, event: eventData, occurrence } = rotaData;
 	const baseUrl = getBaseUrl(event);
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 	
 	// Get signup link if token exists
 	let signupLink = '';
@@ -2196,7 +2198,7 @@ Note: If you are unable to fulfill this assignment, please contact the rota coor
  * @returns {Promise<object>} Resend API response
  */
 export async function sendMemberSignupConfirmationEmail({ to, name }, event) {
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 	const baseUrl = getBaseUrl(event);
 	const branding = await getEmailBranding(event);
 	const contactName = name || to;
@@ -2277,7 +2279,7 @@ Eltham Green Community Church
  * @returns {Promise<object>} Resend API response
  */
 export async function sendMemberSignupAdminNotification({ to, contact }, event) {
-	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
+	const fromEmail = fromEmailDefault();
 	const baseUrl = getBaseUrl(event);
 	const branding = await getEmailBranding(event);
 	const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email;

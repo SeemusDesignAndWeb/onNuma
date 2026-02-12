@@ -85,11 +85,17 @@ export function getAllPriceIdsForPlan(plan) {
  * @param {number} contactOrSeatCount – contact count (signup) or seat count (Hub), 1–500
  * @returns {string|null} Price ID for PADDLE_PRICE_ID_PROFESSIONAL_TIER1, _TIER2, or _TIER3
  */
+function trimPriceId(id) {
+	if (typeof id !== 'string') return null;
+	const s = id.trim().replace(/[\r\n]+/g, '');
+	return s || null;
+}
+
 export function getPriceIdForProfessionalByTier(contactOrSeatCount) {
 	const n = Math.max(0, Math.min(500, Math.floor(Number(contactOrSeatCount) || 0)));
-	if (n <= 100) return env.PADDLE_PRICE_ID_PROFESSIONAL_TIER1 || null;
-	if (n <= 250) return env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2 || null;
-	return env.PADDLE_PRICE_ID_PROFESSIONAL_TIER3 || null;
+	if (n <= 100) return trimPriceId(env.PADDLE_PRICE_ID_PROFESSIONAL_TIER1) || null;
+	if (n <= 250) return trimPriceId(env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2) || null;
+	return trimPriceId(env.PADDLE_PRICE_ID_PROFESSIONAL_TIER3) || null;
 }
 
 /**

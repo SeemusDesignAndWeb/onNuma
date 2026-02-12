@@ -4,7 +4,7 @@ import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/
 import { getPlanMaxContacts } from '$lib/crm/server/permissions.js';
 
 export async function load({ locals, parent }) {
-	const emailModuleEnabled = !!env.RESEND_API_KEY;
+	const emailModuleEnabled = !!(env.MAILGUN_API_KEY && env.MAILGUN_DOMAIN);
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
 

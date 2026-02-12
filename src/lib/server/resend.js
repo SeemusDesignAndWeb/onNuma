@@ -6,7 +6,7 @@ import { env } from '$env/dynamic/private';
 import { rateLimitedSend } from '$lib/crm/server/emailRateLimiter.js';
 import { sendEmail } from '$lib/server/mailgun.js';
 
-const defaultFrom = () => env.MAILGUN_FROM_EMAIL || env.RESEND_FROM_EMAIL || '';
+const defaultFrom = () => env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : '');
 
 /**
  * Get base URL for absolute links in emails

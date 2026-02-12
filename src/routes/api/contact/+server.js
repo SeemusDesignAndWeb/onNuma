@@ -148,9 +148,9 @@ export const POST = async (event) => {
 		const recipientEmail = contactInfo.email || 'enquiries@egcc.co.uk';
 
 		// Get sender email from environment (Mailgun – must be from your verified sending domain)
-		let senderEmail = env.MAILGUN_FROM_EMAIL || env.RESEND_FROM_EMAIL || '';
+		let senderEmail = env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : '');
 		if (!senderEmail) {
-			console.warn('MAILGUN_FROM_EMAIL (or RESEND_FROM_EMAIL) not set. Set it to a verified sender address for your Mailgun domain.');
+			console.warn('MAILGUN_FROM_EMAIL not set. Set it to a verified sender address for your Mailgun domain.');
 		}
 
 		// Log email configuration (without sensitive data)

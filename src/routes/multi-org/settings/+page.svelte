@@ -10,12 +10,9 @@
 	$: demoEventsCreated = data?.demoEventsCreated ?? null;
 	$: error = form?.error ?? null;
 	$: organisationId = form?.organisationId ?? '';
-	$: pricingSaved = data?.pricingSaved ?? false;
-	$: pricingError = form?.pricingError ?? null;
-	$: pricing = data?.pricing ?? {};
 
-	// Active section for sidebar navigation
-	let activeSection = 'pricing';
+	// Active section for sidebar navigation (only Demo Data now)
+	let activeSection = 'demo';
 
 	// Restore from form after validation error
 	let contactCountValue = '30';
@@ -88,11 +85,6 @@
 
 	const sections = [
 		{
-			id: 'pricing',
-			label: 'Professional Pricing',
-			icon: 'pricing'
-		},
-		{
 			id: 'demo',
 			label: 'Demo Data',
 			icon: 'demo'
@@ -130,11 +122,7 @@
 					on:click={() => activeSection = section.id}
 					class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all {activeSection === section.id ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60'}"
 				>
-					{#if section.icon === 'pricing'}
-						<svg class="w-4.5 h-4.5 flex-shrink-0 {activeSection === section.id ? 'text-[#EB9486]' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-					{:else if section.icon === 'demo'}
+					{#if section.icon === 'demo'}
 						<svg class="w-4.5 h-4.5 flex-shrink-0 {activeSection === section.id ? 'text-[#EB9486]' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
 						</svg>
@@ -147,187 +135,6 @@
 
 	<!-- Content area -->
 	<div class="flex-1 min-w-0 max-w-3xl">
-		<!-- Professional Pricing Section -->
-		{#if activeSection === 'pricing'}
-			<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-				<!-- Section header -->
-				<div class="px-6 sm:px-8 pt-6 sm:pt-8 pb-5 border-b border-slate-100">
-					<div class="flex items-start gap-3">
-						<div class="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-50">
-							<svg class="w-4.5 h-4.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-						</div>
-						<div>
-							<h2 class="text-lg font-semibold text-slate-800">Professional Pricing</h2>
-							<p class="text-sm text-slate-500 mt-0.5">Configure the pricing model and slider for the Professional plan on the landing page.</p>
-						</div>
-					</div>
-				</div>
-
-				<div class="px-6 sm:px-8 py-6 sm:py-8">
-					{#if pricingSaved}
-						<div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-100 mb-6">
-							<svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-							<p class="text-sm font-medium text-emerald-700">Pricing settings saved successfully.</p>
-						</div>
-					{/if}
-					{#if pricingError}
-						<div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-100 mb-6">
-							<svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-							<p class="text-sm text-red-600">{pricingError}</p>
-						</div>
-					{/if}
-
-					<form method="POST" action="?/savePricing" class="space-y-8">
-						<!-- Price calculation -->
-						<div>
-							<h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Price calculation</h3>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-								<div>
-									<label for="basePrice" class="block text-sm font-medium text-slate-700 mb-1.5">Base price</label>
-									<div class="relative">
-										<span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">£</span>
-										<input
-											id="basePrice"
-											name="basePrice"
-											type="number"
-											min="0"
-											max="1000"
-											value={pricing.basePrice ?? 12}
-											class="block w-full rounded-xl border border-slate-300 pl-8 pr-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
-										/>
-									</div>
-									<p class="text-xs text-slate-400 mt-1.5">Starting price at minimum users</p>
-								</div>
-								<div>
-									<label for="threshold" class="block text-sm font-medium text-slate-700 mb-1.5">Threshold</label>
-									<div class="relative">
-										<input
-											id="threshold"
-											name="threshold"
-											type="number"
-											min="10"
-											max="10000"
-											value={pricing.threshold ?? 300}
-											class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
-										/>
-										<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">users</span>
-									</div>
-									<p class="text-xs text-slate-400 mt-1.5">User count where pricing rate changes</p>
-								</div>
-								<div>
-									<label for="pricePerTenUsers" class="block text-sm font-medium text-slate-700 mb-1.5">Below threshold</label>
-									<div class="relative">
-										<span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">£</span>
-										<input
-											id="pricePerTenUsers"
-											name="pricePerTenUsers"
-											type="number"
-											min="0"
-											max="100"
-											value={pricing.pricePerTenUsers ?? 1}
-											class="block w-full rounded-xl border border-slate-300 pl-8 pr-20 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
-										/>
-										<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">per 10 users</span>
-									</div>
-									<p class="text-xs text-slate-400 mt-1.5">Rate added per 10 users below threshold</p>
-								</div>
-								<div>
-									<label for="pricePerTenUsersAbove" class="block text-sm font-medium text-slate-700 mb-1.5">Above threshold</label>
-									<div class="relative">
-										<span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">£</span>
-										<input
-											id="pricePerTenUsersAbove"
-											name="pricePerTenUsersAbove"
-											type="number"
-											min="0"
-											max="100"
-											value={pricing.pricePerTenUsersAbove ?? 2}
-											class="block w-full rounded-xl border border-slate-300 pl-8 pr-20 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
-										/>
-										<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">per 10 users</span>
-									</div>
-									<p class="text-xs text-slate-400 mt-1.5">Rate added per 10 users above threshold</p>
-								</div>
-							</div>
-						</div>
-
-						<!-- Divider -->
-						<div class="border-t border-slate-100"></div>
-
-						<!-- Slider settings -->
-						<div>
-							<h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Slider configuration</h3>
-							<div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5">
-								<div>
-									<label for="minUsers" class="block text-sm font-medium text-slate-700 mb-1.5">Minimum</label>
-									<div class="relative">
-										<input
-											id="minUsers"
-											name="minUsers"
-											type="number"
-											min="1"
-											max="1000"
-											value={pricing.minUsers ?? 50}
-											class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
-										/>
-										<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">users</span>
-									</div>
-								</div>
-								<div>
-									<label for="maxUsers" class="block text-sm font-medium text-slate-700 mb-1.5">Maximum</label>
-									<div class="relative">
-										<input
-											id="maxUsers"
-											name="maxUsers"
-											type="number"
-											min="1"
-											max="10000"
-											value={pricing.maxUsers ?? 500}
-											class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
-										/>
-										<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">users</span>
-									</div>
-								</div>
-								<div>
-									<label for="defaultUsers" class="block text-sm font-medium text-slate-700 mb-1.5">Default</label>
-									<div class="relative">
-										<input
-											id="defaultUsers"
-											name="defaultUsers"
-											type="number"
-											min="1"
-											max="10000"
-											value={pricing.defaultUsers ?? 100}
-											class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
-										/>
-										<span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">users</span>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<div class="flex items-center justify-end pt-2">
-							<button
-								type="submit"
-								class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] shadow-sm hover:shadow transition-all"
-							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-								</svg>
-								Save pricing
-							</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		{/if}
-
 		<!-- Demo Data Section -->
 		{#if activeSection === 'demo'}
 			<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">

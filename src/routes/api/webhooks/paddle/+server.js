@@ -16,7 +16,7 @@
 import { json } from '@sveltejs/kit';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { create, findById, updatePartial, update, remove } from '$lib/crm/server/fileStore.js';
-import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerificationToken } from '$lib/crm/server/auth.js';
+import { createAdmin, updateAdminPassword, generateVerificationToken } from '$lib/crm/server/auth.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
@@ -127,16 +127,18 @@ function generateSubdomain(name) {
 async function generateUniqueHubDomain(name) {
 	const baseSubdomain = generateSubdomain(name);
 	if (!baseSubdomain) return `org-${Date.now()}`;
-	let subdomain = baseSubdomain;
-	let suffix = 1;
+	const baseDomain = (env.HUB_BASE_DOMAIN || '').trim().toLowerCase().replace(/^\.+|\.+$/g, '');
 	const orgs = await readCollection('organisations');
 	const taken = new Set(orgs.map((o) => (o.hubDomain || '').toLowerCase().trim()));
-	while (taken.has(subdomain)) {
+	let subdomain = baseSubdomain;
+	let suffix = 1;
+	const toCandidate = (s) => (baseDomain ? `${s}.${baseDomain}` : s);
+	while (taken.has(toCandidate(subdomain))) {
 		subdomain = `${baseSubdomain}-${suffix}`;
 		suffix++;
 		if (suffix > 100) { subdomain = `${baseSubdomain}-${Date.now()}`; break; }
 	}
-	return subdomain;
+	return toCandidate(subdomain);
 }
 
 // ── Pending signup fulfilment ───────────────────────────────────────────────
@@ -176,15 +178,16 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 	});
 	await updateAdminPassword(admin.id, password);
 
-	// Set verification token for welcome email
+	// Set verification token for welcome email (use this token when sending — don't rely on read-after-write)
+	let verificationToken = null;
 	const adminRecord = await findById('admins', admin.id);
 	if (adminRecord) {
 		const now = new Date();
-		const token = adminRecord.emailVerificationToken || generateVerificationToken();
+		verificationToken = adminRecord.emailVerificationToken || generateVerificationToken();
 		const expires = adminRecord.emailVerificationTokenExpires || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 		await update('admins', admin.id, {
 			...adminRecord,
-			emailVerificationToken: token,
+			emailVerificationToken: verificationToken,
 			emailVerificationTokenExpires: expires,
 			marketingConsent: !!marketingConsent,
 			updatedAt: now.toISOString()
@@ -194,17 +197,27 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 	// Link super admin email
 	await updatePartial('organisations', org.id, { hubSuperAdminEmail: email });
 
-	// Send welcome email (fire-and-forget)
+	// Send welcome email with org's custom hub URL so they log in at their custom URL
 	try {
-		const fullAdmin = await getAdminByEmail(email);
-		if (fullAdmin?.emailVerificationToken) {
+		if (verificationToken) {
+			const appBase = env.APP_BASE_URL || 'http://localhost:5173';
+			const appOrigin = appBase.startsWith('http') ? appBase : `https://${appBase}`;
+			const protocol = new URL(appOrigin).protocol;
+			const hubBaseUrl = (org.hubDomain && org.hubDomain.includes('.'))
+				? `${protocol}//${org.hubDomain}`
+				: null;
+			console.log('[paddle webhook] Sending welcome email to:', email, hubBaseUrl ? `hub: ${hubBaseUrl}` : '');
 			await sendAdminWelcomeEmail({
 				to: email,
 				name: contactName,
 				email,
-				verificationToken: fullAdmin.emailVerificationToken,
-				password
-			}, { url: new URL(env.APP_BASE_URL || 'http://localhost:5173') });
+				verificationToken,
+				password,
+				hubBaseUrl: hubBaseUrl || undefined
+			}, { url: new URL(appOrigin) });
+			console.log('[paddle webhook] Welcome email sent to:', email);
+		} else {
+			console.warn('[paddle webhook] No verification token for admin — skipping welcome email for:', email);
 		}
 	} catch (emailErr) {
 		console.error('[paddle webhook] Welcome email failed:', emailErr?.message || emailErr);

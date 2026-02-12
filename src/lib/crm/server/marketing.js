@@ -602,7 +602,7 @@ export async function processSendQueue(baseUrl) {
 			const subject = renderTemplate(template.subject, data);
 			const previewText = renderTemplate(template.preview_text || '', data);
 
-			const fromEmail = branding.sender_email || env.MAILGUN_FROM_EMAIL || env.RESEND_FROM_EMAIL || 'noreply@onnuma.com';
+			const fromEmail = branding.sender_email || env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : 'noreply@onnuma.com');
 			const fromName = branding.sender_name || org.name || 'OnNuma';
 
 			// Send
@@ -819,7 +819,7 @@ export async function sendTestEmail(templateId, toEmail, organisationId, baseUrl
 	const subject = `[TEST] ${renderTemplate(template.subject, data)}`;
 	const previewText = renderTemplate(template.preview_text || '', data);
 
-	const fromEmail = branding.sender_email || env.MAILGUN_FROM_EMAIL || env.RESEND_FROM_EMAIL || 'noreply@onnuma.com';
+	const fromEmail = branding.sender_email || env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : 'noreply@onnuma.com');
 	const fromName = branding.sender_name || (org && org.name) || 'OnNuma';
 
 	const result = await rateLimitedSend(() =>
