@@ -2,7 +2,12 @@
  * Paddle Billing API utilities.
  * Provides helpers for per-seat subscription management:
  * – counting the current admin (seat) quantity for an organisation
+ * – selecting the correct tiered price based on seat count
  * – updating the subscription quantity in Paddle when admins are added / removed
+ *
+ * Pricing tiers (configured via two Paddle prices per plan):
+ *   Tier 1: 1–300 seats  → PADDLE_PRICE_ID_PROFESSIONAL / PADDLE_PRICE_ID_ENTERPRISE
+ *   Tier 2: 301+ seats   → PADDLE_PRICE_ID_PROFESSIONAL_TIER2 / PADDLE_PRICE_ID_ENTERPRISE_TIER2
  *
  * @see https://developer.paddle.com/api-reference/subscriptions/update-subscription
  */
@@ -15,6 +20,9 @@ import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache
 
 const PADDLE_SANDBOX = 'https://sandbox-api.paddle.com';
 const PADDLE_PROD = 'https://api.paddle.com';
+
+/** Seat threshold: above this number the higher-tier price kicks in. */
+export const SEAT_TIER_THRESHOLD = 300;
 
 export function getPaddleBaseUrl() {
 	const envName = (env.PADDLE_ENVIRONMENT || 'sandbox').toLowerCase();
@@ -33,11 +41,57 @@ export async function getAdminSeatCount() {
 	return Math.max(admins.length, 1);
 }
 
+// ── Price tier selection ────────────────────────────────────────────────────
+
+/**
+ * Get all known Paddle price IDs for a given plan (both tiers).
+ * Used by the webhook to recognise any of these as belonging to the plan.
+ * @param {'professional'|'enterprise'} plan
+ * @returns {string[]}
+ */
+export function getAllPriceIdsForPlan(plan) {
+	const ids = [];
+	if (plan === 'professional') {
+		if (env.PADDLE_PRICE_ID_PROFESSIONAL) ids.push(env.PADDLE_PRICE_ID_PROFESSIONAL);
+		if (env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2) ids.push(env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2);
+	} else if (plan === 'enterprise') {
+		if (env.PADDLE_PRICE_ID_ENTERPRISE) ids.push(env.PADDLE_PRICE_ID_ENTERPRISE);
+		if (env.PADDLE_PRICE_ID_ENTERPRISE_TIER2) ids.push(env.PADDLE_PRICE_ID_ENTERPRISE_TIER2);
+	}
+	return ids;
+}
+
+/**
+ * Select the correct Paddle price ID for a plan based on the seat count.
+ *   - 1–300 seats  → base price (PADDLE_PRICE_ID_PROFESSIONAL / _ENTERPRISE)
+ *   - 301+ seats   → tier 2 price (_TIER2), falls back to base if tier 2 not configured
+ *
+ * @param {'professional'|'enterprise'} plan
+ * @param {number} seatCount
+ * @returns {string|null} The price ID, or null if not configured.
+ */
+export function getPriceIdForPlan(plan, seatCount) {
+	if (plan === 'enterprise') {
+		const base = env.PADDLE_PRICE_ID_ENTERPRISE || null;
+		const tier2 = env.PADDLE_PRICE_ID_ENTERPRISE_TIER2 || null;
+		return (seatCount > SEAT_TIER_THRESHOLD && tier2) ? tier2 : base;
+	}
+	if (plan === 'professional') {
+		const base = env.PADDLE_PRICE_ID_PROFESSIONAL || null;
+		const tier2 = env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2 || null;
+		return (seatCount > SEAT_TIER_THRESHOLD && tier2) ? tier2 : base;
+	}
+	return null;
+}
+
 // ── Subscription quantity sync ──────────────────────────────────────────────
 
 /**
- * Update the subscription item quantity in Paddle to match the current admin
- * seat count for the given organisation.
+ * Update the subscription item quantity (and price tier) in Paddle to match
+ * the current admin seat count for the given organisation.
+ *
+ * If the seat count crosses the tier threshold the price ID is switched
+ * automatically so Paddle charges the correct per-seat rate.
  *
  * This is a fire-and-forget helper – it logs errors but never throws, so
  * callers (admin create / delete actions) won't fail if Paddle is unreachable.
@@ -66,16 +120,19 @@ export async function syncSubscriptionQuantity(organisationId, quantityOverride)
 			return false;
 		}
 
-		// Determine the price ID from the org's current plan
-		const priceId = getPriceIdForOrg(org);
-		if (!priceId) {
-			console.warn('[paddle] syncSubscriptionQuantity: no price ID mapped for org plan');
-			return false;
-		}
+		const plan = org.subscriptionPlan;
+		if (!plan || plan === 'free') return false;
 
 		const quantity = typeof quantityOverride === 'number'
 			? Math.max(quantityOverride, 1)
 			: await getAdminSeatCount();
+
+		// Pick the right price ID for the current seat count (may cross tier boundary)
+		const priceId = getPriceIdForPlan(plan, quantity);
+		if (!priceId) {
+			console.warn('[paddle] syncSubscriptionQuantity: no price ID mapped for plan', plan);
+			return false;
+		}
 
 		const baseUrl = getPaddleBaseUrl();
 		const res = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {
@@ -102,24 +159,10 @@ export async function syncSubscriptionQuantity(organisationId, quantityOverride)
 		});
 		invalidateOrganisationsCache();
 
-		console.log(`[paddle] subscription ${subscriptionId} quantity updated to ${quantity}`);
+		console.log(`[paddle] subscription ${subscriptionId} quantity updated to ${quantity} (price: ${priceId})`);
 		return true;
 	} catch (err) {
 		console.error('[paddle] syncSubscriptionQuantity unexpected error:', err?.message || err);
 		return false;
 	}
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Resolve the Paddle price ID that matches the organisation's current plan.
- * Returns null if the org is on the free plan or env vars are missing.
- */
-function getPriceIdForOrg(org) {
-	const plan = org.subscriptionPlan;
-	if (!plan || plan === 'free') return null;
-	if (plan === 'enterprise') return env.PADDLE_PRICE_ID_ENTERPRISE || null;
-	if (plan === 'professional') return env.PADDLE_PRICE_ID_PROFESSIONAL || null;
-	return null;
 }

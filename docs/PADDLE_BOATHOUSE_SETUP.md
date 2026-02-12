@@ -15,11 +15,24 @@ This document describes how to set up subscription billing with **Paddle** (paym
 
 The quantity is always **at least 1** (even if no admins exist yet).
 
+### Tiered pricing
+
+Paddle Billing does not have a built-in tiered/volume pricing option on a single price. Instead, OnNuma uses **two separate prices per plan** with different quantity ranges:
+
+| Tier | Seats | Env variable (Professional) | Env variable (Enterprise) |
+|------|-------|-----------------------------|---------------------------|
+| 1 | 1 – 300 | `PADDLE_PRICE_ID_PROFESSIONAL` | `PADDLE_PRICE_ID_ENTERPRISE` |
+| 2 | 301+ | `PADDLE_PRICE_ID_PROFESSIONAL_TIER2` | `PADDLE_PRICE_ID_ENTERPRISE_TIER2` |
+
+The app automatically selects the correct price ID based on the current seat count. When the count crosses the 300-seat boundary (in either direction), the subscription is updated to the appropriate price.
+
+The threshold is defined as `SEAT_TIER_THRESHOLD` (300) in `src/lib/crm/server/paddle.js`.
+
 ### Code locations
 
 | File | Role |
 |------|------|
-| `src/lib/crm/server/paddle.js` | Shared utility: `getAdminSeatCount()`, `syncSubscriptionQuantity()`, `getPaddleBaseUrl()` |
+| `src/lib/crm/server/paddle.js` | Shared utility: `getAdminSeatCount()`, `syncSubscriptionQuantity()`, `getPriceIdForPlan()`, `getPaddleBaseUrl()` |
 | `src/routes/hub/api/checkout/+server.js` | Creates a Paddle checkout transaction with `quantity = adminCount` |
 | `src/routes/hub/users/new/+page.server.js` | Calls `syncSubscriptionQuantity()` after creating an admin |
 | `src/routes/hub/users/[id]/+page.server.js` | Calls `syncSubscriptionQuantity()` after deleting an admin |
@@ -41,12 +54,16 @@ Add these to your `.env` (and to Railway or your production environment). **Do n
 
 ### Price IDs (Paddle)
 
-The app maps Paddle price IDs to plan tiers. These **must** be set for checkout and webhook plan-mapping to work correctly:
+The app maps Paddle price IDs to plan tiers. Each plan has **two prices** — one for 1–300 seats and one for 301+ seats:
 
 | Variable | Description |
 |----------|-------------|
-| `PADDLE_PRICE_ID_PROFESSIONAL` | Paddle price ID for the **Professional** plan (e.g. `pri_01hxxxxxx`). |
-| `PADDLE_PRICE_ID_ENTERPRISE` | Paddle price ID for the **Enterprise** plan (e.g. `pri_01hxxxxxx`). |
+| `PADDLE_PRICE_ID_PROFESSIONAL` | Price ID for Professional **tier 1** (1–300 seats). |
+| `PADDLE_PRICE_ID_PROFESSIONAL_TIER2` | Price ID for Professional **tier 2** (301+ seats, higher per-seat rate). |
+| `PADDLE_PRICE_ID_ENTERPRISE` | Price ID for Enterprise **tier 1** (1–300 seats). |
+| `PADDLE_PRICE_ID_ENTERPRISE_TIER2` | Price ID for Enterprise **tier 2** (301+ seats, higher per-seat rate). |
+
+> Tier 2 variables are optional. If not set, the tier 1 price is used for all seat counts.
 
 ### Boathouse
 
@@ -61,35 +78,42 @@ The app maps Paddle price IDs to plan tiers. These **must** be set for checkout 
 
 ### 1. Create Products and Per-Seat Prices
 
+Paddle Billing doesn't have a built-in tiered pricing mode on a single price. To achieve tiered per-seat pricing, create **two prices per plan** — one for the lower tier and one for the higher tier. The app selects the correct price automatically.
+
 1. Go to **Paddle Dashboard → Catalog → Products**.
-2. Create **one product** (e.g. "OnNuma Hub") — or two separate products if you prefer.
-3. For each plan tier, add a **price** on the product:
+2. Create a product (e.g. "OnNuma Hub Professional").
 
-#### Professional Price
-
-| Setting | Value |
-|---------|-------|
-| Name | Professional (per seat) |
-| Price | Your monthly per-seat price (e.g. **£5.00 / month**) |
-| Billing period | Monthly (or Annual — your choice) |
-| Quantity | **Enable quantity** — this is critical for per-seat billing |
-
-#### Enterprise Price
+#### Professional — Tier 1 Price (1–300 seats)
 
 | Setting | Value |
 |---------|-------|
-| Name | Enterprise (per seat) |
-| Price | Your monthly per-seat price (e.g. **£10.00 / month**) |
-| Billing period | Monthly (or Annual — your choice) |
-| Quantity | **Enable quantity** |
+| Name | Professional (per seat, 1–300) |
+| Price | Your lower per-seat rate (e.g. **£1.00 / month**) |
+| Billing period | Monthly (or Annual) |
+| Quantity → Minimum | 1 |
+| Quantity → Maximum | 300 |
 
-4. Copy the **price IDs** (they look like `pri_01hxxxxxx`) and set them in your environment:
+#### Professional — Tier 2 Price (301+ seats)
+
+Add a second price on the same product:
+
+| Setting | Value |
+|---------|-------|
+| Name | Professional (per seat, 301+) |
+| Price | Your higher per-seat rate (e.g. **£2.00 / month**) |
+| Billing period | Monthly (or Annual) |
+| Quantity → Minimum | 301 |
+| Quantity → Maximum | 999999 |
+
+3. Copy both **price IDs** and set them in your environment:
    ```
-   PADDLE_PRICE_ID_PROFESSIONAL=pri_01h...
-   PADDLE_PRICE_ID_ENTERPRISE=pri_01h...
+   PADDLE_PRICE_ID_PROFESSIONAL=pri_01h...        # tier 1 (1–300)
+   PADDLE_PRICE_ID_PROFESSIONAL_TIER2=pri_01h...   # tier 2 (301+)
    ```
 
-> **Important:** The prices must be set as **per-unit** prices (not flat-rate). Paddle will multiply the unit price by the quantity your app sends. For example, if the Professional price is £5/month and the app sends `quantity: 3`, Paddle will charge £15/month.
+4. **Repeat for Enterprise** — create an "OnNuma Hub Enterprise" product with the same two-tier pattern and set `PADDLE_PRICE_ID_ENTERPRISE` and `PADDLE_PRICE_ID_ENTERPRISE_TIER2`.
+
+> **How it works:** Paddle charges per-unit × quantity. The app counts admin users, picks the correct price ID based on whether the count is ≤ 300 or > 300, and sends that price ID with the quantity. If the seat count crosses the 300 boundary, the app automatically switches the subscription to the other price.
 
 ### 2. Create an API Key
 
@@ -176,8 +200,8 @@ Boathouse provides a billing portal where customers can manage their payment met
 ┌──────────────────────┐
 │  Checkout API        │
 │  counts admins → N   │
-│  sends quantity: N   │──────► Paddle creates transaction
-│  to Paddle           │        with N × unit price
+│  picks price tier    │──────► Paddle creates transaction
+│  sends quantity: N   │        with N × tier unit price
 └──────────────────────┘
            │
            ▼ (user pays in Paddle Checkout)
@@ -267,3 +291,5 @@ After Paddle integration is active, the organisation document will contain:
 | Webhook doesn't fire | Ensure the webhook URL is publicly accessible. Paddle cannot reach `localhost`. Use ngrok or a staging deployment for testing. |
 | "Billing not configured" in Hub | Set `PADDLE_API_KEY` and at least one of `PADDLE_PRICE_ID_PROFESSIONAL` or `PADDLE_PRICE_ID_ENTERPRISE`. |
 | Proration charges seem wrong | Check the `proration_billing_mode` in `paddle.js`. Change it if your preferred behaviour differs. |
+| Price doesn't change at 301 seats | Ensure `PADDLE_PRICE_ID_PROFESSIONAL_TIER2` (and/or `_ENTERPRISE_TIER2`) is set. Without it the app falls back to the tier 1 price for all counts. |
+| Webhook doesn't recognise tier 2 price | The webhook checks all four price ID env vars. Make sure the tier 2 IDs match exactly what's in Paddle. |

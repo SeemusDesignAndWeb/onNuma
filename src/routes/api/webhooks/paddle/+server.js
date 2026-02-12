@@ -55,23 +55,28 @@ function verifyPaddleSignature(rawBody, signatureHeader, secret) {
 
 /**
  * Map Paddle subscription status and items to plan.
- * Uses env PADDLE_PRICE_ID_PROFESSIONAL / PADDLE_PRICE_ID_ENTERPRISE if set.
+ * Recognises both tier-1 and tier-2 price IDs for each plan so that
+ * crossing the seat threshold doesn't break plan detection.
  */
 function subscriptionToPlan(data) {
 	const status = data?.status;
 	if (status === 'canceled' || status === 'past_due' || status === 'paused') {
 		return 'free';
 	}
-	const priceIdProfessional = env.PADDLE_PRICE_ID_PROFESSIONAL;
-	const priceIdEnterprise = env.PADDLE_PRICE_ID_ENTERPRISE;
+
+	// Collect all known price IDs per plan (tier 1 + tier 2)
+	const enterpriseIds = new Set(
+		[env.PADDLE_PRICE_ID_ENTERPRISE, env.PADDLE_PRICE_ID_ENTERPRISE_TIER2].filter(Boolean)
+	);
+	const professionalIds = new Set(
+		[env.PADDLE_PRICE_ID_PROFESSIONAL, env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2].filter(Boolean)
+	);
+
 	const items = data?.items;
 	if (Array.isArray(items) && items.length > 0) {
 		const priceId = items[0]?.price?.id;
-		if (priceId && priceIdEnterprise && priceId === priceIdEnterprise) return 'enterprise';
-		if (priceId && priceIdProfessional && priceId === priceIdProfessional) return 'professional';
-		// Fallback: if we have no env mapping, treat known IDs or first item as professional for safety
-		if (priceIdEnterprise && priceId === priceIdEnterprise) return 'enterprise';
-		if (priceIdProfessional && priceId === priceIdProfessional) return 'professional';
+		if (priceId && enterpriseIds.has(priceId)) return 'enterprise';
+		if (priceId && professionalIds.has(priceId)) return 'professional';
 	}
 	return 'free';
 }

@@ -7,7 +7,7 @@ import { json } from '@sveltejs/kit';
 import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { findById } from '$lib/crm/server/fileStore.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
-import { getPaddleBaseUrl, getAdminSeatCount } from '$lib/crm/server/paddle.js';
+import { getPaddleBaseUrl, getAdminSeatCount, getPriceIdForPlan } from '$lib/crm/server/paddle.js';
 import { env } from '$env/dynamic/private';
 
 const VALID_PLANS = new Set(['professional', 'enterprise']);
@@ -31,13 +31,6 @@ export async function GET({ url, locals }) {
 		return json({ error: 'Invalid plan. Use plan=professional or plan=enterprise' }, { status: 400 });
 	}
 
-	const priceId = plan === 'enterprise'
-		? env.PADDLE_PRICE_ID_ENTERPRISE
-		: env.PADDLE_PRICE_ID_PROFESSIONAL;
-	if (!priceId) {
-		return json({ error: `Price ID for ${plan} not configured` }, { status: 503 });
-	}
-
 	const organisationId = await getCurrentOrganisationId();
 	if (!organisationId) {
 		return json({ error: 'No organisation selected' }, { status: 400 });
@@ -49,7 +42,12 @@ export async function GET({ url, locals }) {
 	}
 
 	// Per-seat pricing: quantity = current number of admin users
+	// Price tier is selected automatically based on seat count (1-300 vs 301+)
 	const seatCount = await getAdminSeatCount();
+	const priceId = getPriceIdForPlan(plan, seatCount);
+	if (!priceId) {
+		return json({ error: `Price ID for ${plan} not configured` }, { status: 503 });
+	}
 
 	const body = {
 		items: [{ price_id: priceId, quantity: seatCount }],
