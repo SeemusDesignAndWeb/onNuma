@@ -62,21 +62,35 @@ function safeFilename(originalName) {
  */
 export async function saveUploadedImage(buffer, originalName, mimeType = 'image/jpeg') {
 	const dir = getUploadsDir();
+	const baseDir = getImagesBaseDir();
+	
+	console.log(`[upload] Starting upload: originalName=${originalName}, baseDir=${baseDir}, uploadsDir=${dir}`);
+	
 	if (!existsSync(dir)) {
+		console.log(`[upload] Creating uploads directory: ${dir}`);
 		await mkdir(dir, { recursive: true });
 	}
+	
 	const filename = safeFilename(originalName);
 	const filePath = join(dir, filename);
+	
+	console.log(`[upload] Writing file: ${filePath}, size=${buffer.length} bytes`);
 	await writeFile(filePath, buffer);
 
 	const path = getUploadPath(filename);
 	// Verify the same path the GET handler will use actually exists (same base dir)
 	const resolved = resolveImagePath(path);
-	if (!resolved || !existsSync(resolved)) {
+	const fileExists = resolved ? existsSync(resolved) : false;
+	
+	console.log(`[upload] Verification: path=${path}, resolved=${resolved}, exists=${fileExists}`);
+	
+	if (!resolved || !fileExists) {
 		throw new Error(
-			`Upload wrote to ${filePath} but cannot be resolved for serving (base: ${getImagesBaseDir()}). Check IMAGES_PATH.`
+			`Upload wrote to ${filePath} but cannot be resolved for serving (base: ${baseDir}, resolved: ${resolved}). Check IMAGES_PATH.`
 		);
 	}
+	
+	console.log(`[upload] Success: ${path}`);
 	return { path, filename };
 }
 

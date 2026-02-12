@@ -20,19 +20,28 @@ export async function GET({ params }) {
 	// [...path] can be string "uploads/file.png" or in some setups an array
 	const pathParam = params.path;
 	const path = Array.isArray(pathParam) ? pathParam.join('/') : (pathParam ?? '');
+	
+	// Debug logging for image requests
+	const baseDir = getImagesBaseDir();
+	console.log(`[images] Request: path=${path}, baseDir=${baseDir}`);
+	
 	if (!path || path.includes('..')) {
+		console.log(`[images] Rejected: invalid path`);
 		return new Response('Not Found', { status: 404 });
 	}
 
 	const storedPath = `/images/${path}`;
 	const filePath = resolveImagePath(storedPath);
-	if (!filePath || !existsSync(filePath)) {
+	const fileExists = filePath ? existsSync(filePath) : false;
+	
+	console.log(`[images] Resolved: storedPath=${storedPath}, filePath=${filePath}, exists=${fileExists}`);
+	
+	if (!filePath || !fileExists) {
 		const headers = new Headers();
-		// Dev only: show where we looked when image is missing
-		if (import.meta.env.DEV && filePath) {
-			headers.set('X-Image-Resolved-Path', filePath);
-			headers.set('X-Images-Base-Dir', getImagesBaseDir());
-		}
+		// Show debug info in headers (helps debugging without logs)
+		headers.set('X-Image-Resolved-Path', filePath || 'null');
+		headers.set('X-Images-Base-Dir', baseDir);
+		headers.set('X-File-Exists', String(fileExists));
 		return new Response('Not Found', { status: 404, headers });
 	}
 
