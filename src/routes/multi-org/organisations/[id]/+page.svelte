@@ -212,6 +212,52 @@
 		</div>
 	</form>
 
+	<!-- Onboarding Emails -->
+	<div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm md:col-span-2 lg:col-span-3">
+			<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Onboarding Emails</h2>
+			{#if form?.onboardingSaved}
+				<div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm">Onboarding email settings saved.</div>
+			{/if}
+			<form method="POST" action="?/saveOnboarding" use:enhance class="space-y-4">
+				<div class="flex items-center gap-3">
+					<label class="flex items-center gap-2 cursor-pointer">
+						<input type="checkbox" name="onboarding_enabled" checked={organisation?.onboardingEmails?.enabled} class="rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]" />
+						<span class="text-sm font-medium text-slate-700">Enable onboarding emails</span>
+					</label>
+				</div>
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+					<div>
+						<label for="sequence_id" class="block text-sm font-medium text-slate-700 mb-1">Sequence</label>
+						<select name="sequence_id" id="sequence_id" class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30">
+							<option value="">— None —</option>
+							{#each data?.sequences || [] as seq}
+								<option value={seq.id} selected={seq.id === organisation?.onboardingEmails?.sequence_id}>{seq.name} ({seq.status})</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label for="timezone" class="block text-sm font-medium text-slate-700 mb-1">Timezone</label>
+						<input type="text" name="timezone" id="timezone" value={organisation?.onboardingEmails?.timezone || 'Europe/London'} class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30" placeholder="Europe/London" />
+					</div>
+					<div>
+						<label for="send_hour" class="block text-sm font-medium text-slate-700 mb-1">Preferred send hour (local)</label>
+						<input type="number" name="send_hour" id="send_hour" min="0" max="23" value={organisation?.onboardingEmails?.send_hour ?? 9} class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30" />
+					</div>
+					<div>
+						<label for="sender_name_override" class="block text-sm font-medium text-slate-700 mb-1">Override sender name</label>
+						<input type="text" name="sender_name_override" id="sender_name_override" value={organisation?.onboardingEmails?.sender_name_override || ''} class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30" placeholder="Leave blank to use default" />
+					</div>
+					<div>
+						<label for="sender_email_override" class="block text-sm font-medium text-slate-700 mb-1">Override sender email</label>
+						<input type="email" name="sender_email_override" id="sender_email_override" value={organisation?.onboardingEmails?.sender_email_override || ''} class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30" placeholder="Leave blank to use default" />
+					</div>
+				</div>
+				<button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all">Save Onboarding Settings</button>
+			</form>
+		</div>
+	</div>
+
 	<!-- Settings: Create anonymised contacts -->
 	<div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">

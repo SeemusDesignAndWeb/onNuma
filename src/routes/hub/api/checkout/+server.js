@@ -7,16 +7,10 @@ import { json } from '@sveltejs/kit';
 import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { findById } from '$lib/crm/server/fileStore.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
+import { getPaddleBaseUrl, getAdminSeatCount } from '$lib/crm/server/paddle.js';
 import { env } from '$env/dynamic/private';
 
 const VALID_PLANS = new Set(['professional', 'enterprise']);
-const PADDLE_SANDBOX = 'https://sandbox-api.paddle.com';
-const PADDLE_PROD = 'https://api.paddle.com';
-
-function getPaddleBaseUrl() {
-	const envName = (env.PADDLE_ENVIRONMENT || 'sandbox').toLowerCase();
-	return envName === 'production' ? PADDLE_PROD : PADDLE_SANDBOX;
-}
 
 export async function GET({ url, locals }) {
 	const admin = locals?.admin;
@@ -54,8 +48,11 @@ export async function GET({ url, locals }) {
 		return json({ error: 'Organisation not found' }, { status: 404 });
 	}
 
+	// Per-seat pricing: quantity = current number of admin users
+	const seatCount = await getAdminSeatCount();
+
 	const body = {
-		items: [{ price_id: priceId, quantity: 1 }],
+		items: [{ price_id: priceId, quantity: seatCount }],
 		custom_data: { organisation_id: organisationId },
 		collection_mode: 'automatic'
 	};

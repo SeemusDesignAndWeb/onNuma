@@ -2,8 +2,9 @@ import { redirect } from '@sveltejs/kit';
 import { findById, update, remove } from '$lib/crm/server/fileStore.js';
 import { getAdminById, getAdminByEmail, updateAdminPassword, verifyAdminEmail, getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { isSuperAdmin, getAdminPermissions, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail } from '$lib/crm/server/permissions.js';
-import { getEffectiveSuperAdminEmail } from '$lib/crm/server/settings.js';
+import { getEffectiveSuperAdminEmail, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { logDataChange, logSensitiveOperation } from '$lib/crm/server/audit.js';
+import { syncSubscriptionQuantity } from '$lib/crm/server/paddle.js';
 
 export async function load({ params, cookies, request }) {
 	const admin = await getAdminById(params.id);
@@ -248,6 +249,12 @@ export const actions = {
 			email: admin?.email || 'unknown',
 			name: admin?.name || 'unknown'
 		}, event);
+
+		// Sync seat quantity with Paddle after admin removal (fire-and-forget)
+		const organisationId = await getCurrentOrganisationId();
+		if (organisationId) {
+			syncSubscriptionQuantity(organisationId).catch(() => {});
+		}
 
 		throw redirect(302, '/hub/users');
 	}

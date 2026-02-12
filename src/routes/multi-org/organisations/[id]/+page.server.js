@@ -51,12 +51,18 @@ export async function load({ params, locals, url }) {
 	}
 	const currentPlan = getPlanFromAreaPermissions(org.areaPermissions) || 'free';
 	const anonymisedCreated = url.searchParams.get('anonymised');
+
+	// Load sequences for onboarding email assignment
+	const sequences = await readCollection('marketing_sequences');
+	const activeSequences = sequences.filter(s => s && (s.status === 'active' || s.status === 'draft'));
+
 	return {
 		organisation: org,
 		multiOrgAdmin,
 		hubPlanTiers: getHubPlanTiers(),
 		currentPlan,
-		anonymisedCreated: anonymisedCreated ? parseInt(anonymisedCreated, 10) : null
+		anonymisedCreated: anonymisedCreated ? parseInt(anonymisedCreated, 10) : null,
+		sequences: activeSequences
 	};
 }
 
@@ -142,6 +148,28 @@ export const actions = {
 		invalidateHubDomainCache();
 		invalidateOrganisationsCache();
 		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id, !!locals.multiOrgAdminDomain));
+	},
+
+	saveOnboarding: async ({ request, params, locals }) => {
+		if (!locals.multiOrgAdmin) {
+			return fail(403, { error: 'Not authorised' });
+		}
+		const org = await findById('organisations', params.id);
+		if (!org) {
+			return fail(404, { error: 'Organisation not found' });
+		}
+		const form = await request.formData();
+		const onboardingEmails = {
+			enabled: form.get('onboarding_enabled') === 'on',
+			sequence_id: form.get('sequence_id')?.toString()?.trim() || null,
+			sender_name_override: form.get('sender_name_override')?.toString()?.trim() || '',
+			sender_email_override: form.get('sender_email_override')?.toString()?.trim() || '',
+			timezone: form.get('timezone')?.toString()?.trim() || 'Europe/London',
+			send_hour: parseInt(form.get('send_hour') || '9', 10)
+		};
+		await updatePartial('organisations', params.id, { onboardingEmails });
+		invalidateOrganisationsCache();
+		return { onboardingSaved: true };
 	},
 
 	createAnonymisedContacts: async ({ request, params, locals }) => {

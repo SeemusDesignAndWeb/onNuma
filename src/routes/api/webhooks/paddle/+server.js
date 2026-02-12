@@ -152,6 +152,11 @@ export async function POST({ request }) {
 	const scheduledChange = data.scheduled_change;
 	const cancelAtPeriodEnd = !!(scheduledChange && scheduledChange.action === 'cancel');
 
+	// Per-seat quantity: read from subscription items
+	const seatQuantity = (Array.isArray(data.items) && data.items.length > 0)
+		? (data.items[0]?.quantity ?? 1)
+		: 1;
+
 	const patch = {
 		paddleCustomerId: customerId || undefined,
 		paddleSubscriptionId: subscriptionId || undefined,
@@ -159,6 +164,7 @@ export async function POST({ request }) {
 		subscriptionPlan: plan !== 'free' ? plan : null,
 		currentPeriodEnd: nextBilledAt || null,
 		cancelAtPeriodEnd: cancelAtPeriodEnd || undefined,
+		paddleSeatQuantity: seatQuantity,
 		areaPermissions
 	};
 

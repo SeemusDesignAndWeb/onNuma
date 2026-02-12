@@ -7,6 +7,7 @@ import { getEffectiveSuperAdminEmail, getSettings } from '$lib/crm/server/settin
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
 import { readCollection } from '$lib/crm/server/fileStore.js';
+import { syncSubscriptionQuantity } from '$lib/crm/server/paddle.js';
 
 export async function load({ cookies, parent }) {
 	const admin = await getAdminFromCookies(cookies);
@@ -147,6 +148,11 @@ export const actions = {
 					console.error('Failed to send welcome email:', emailError);
 					// Continue with redirect even if email fails
 				}
+			}
+
+			// Sync seat quantity with Paddle (fire-and-forget – won't block or fail the action)
+			if (organisationId) {
+				syncSubscriptionQuantity(organisationId).catch(() => {});
 			}
 
 			// Redirect with success message
