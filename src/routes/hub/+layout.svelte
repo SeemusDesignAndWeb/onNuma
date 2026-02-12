@@ -101,10 +101,6 @@
 	}
 </script>
 
-<svelte:head>
-	<!-- Preload LCP image (Hub logo) so header paints faster -->
-	<link rel="preload" as="image" href={theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png'} fetchpriority="high" />
-</svelte:head>
 
 {#if orgUpdated}
 	<div class="mx-4 mt-4 p-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-sm flex items-center justify-between gap-4">
