@@ -25,7 +25,7 @@
 
 	const enterpriseBenefits = [
 		{ icon: '🏢', title: 'Multiple organisations', description: 'Manage multiple organisations from a single admin account' },
-		{ icon: '🛠️', title: 'Custom developments', description: 'Build functionality around your requirements' },
+		{ icon: '🛠️', title: 'Bespoke functionality', description: 'We build bespoke functionality for your requirements' },
 		{ icon: '🤝', title: 'Dedicated support', description: 'Personal account manager for your organisation' },
 		{ icon: '🎓', title: 'Custom onboarding', description: 'Tailored setup and training for your team' }
 	];
