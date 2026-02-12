@@ -29,6 +29,11 @@ export function getPaddleBaseUrl() {
 	return envName === 'production' ? PADDLE_PROD : PADDLE_SANDBOX;
 }
 
+/** Paddle API key trimmed (avoids "authentication_malformed" from newlines/quotes in .env). */
+export function getPaddleApiKey() {
+	return (env.PADDLE_API_KEY || '').trim();
+}
+
 // ── Admin / seat counting ───────────────────────────────────────────────────
 
 /**
@@ -102,7 +107,7 @@ export function getPriceIdForPlan(plan, seatCount) {
  */
 export async function syncSubscriptionQuantity(organisationId, quantityOverride) {
 	try {
-		const apiKey = env.PADDLE_API_KEY;
+		const apiKey = getPaddleApiKey();
 		if (!apiKey) {
 			// Billing not configured – nothing to sync
 			return false;

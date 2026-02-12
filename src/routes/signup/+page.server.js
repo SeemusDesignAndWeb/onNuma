@@ -4,8 +4,7 @@ import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerification
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
-import { getPaddleBaseUrl, getPriceIdForPlan } from '$lib/crm/server/paddle.js';
-import { env } from '$env/dynamic/private';
+import { getPaddleBaseUrl, getPriceIdForPlan, getPaddleApiKey } from '$lib/crm/server/paddle.js';
 
 /** Valid signup plans */
 const VALID_SIGNUP_PLANS = ['free', 'professional'];
@@ -167,7 +166,7 @@ export const actions = {
 		// Store the signup data as pending, redirect to Paddle checkout.
 		// The org and admin are created by the webhook after payment succeeds.
 		if (signupPlan === 'professional') {
-			const apiKey = env.PADDLE_API_KEY;
+			const apiKey = getPaddleApiKey();
 			const priceId = getPriceIdForPlan('professional', 1);
 			if (!apiKey || !priceId) {
 				return fail(503, {

@@ -7,7 +7,7 @@ import { json } from '@sveltejs/kit';
 import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { findById } from '$lib/crm/server/fileStore.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
-import { getPaddleBaseUrl, getAdminSeatCount, getPriceIdForPlan } from '$lib/crm/server/paddle.js';
+import { getPaddleBaseUrl, getAdminSeatCount, getPriceIdForPlan, getPaddleApiKey } from '$lib/crm/server/paddle.js';
 import { env } from '$env/dynamic/private';
 
 const VALID_PLANS = new Set(['professional', 'enterprise']);
@@ -21,7 +21,7 @@ export async function GET({ url, locals }) {
 		return json({ error: 'Forbidden: Superadmin required for billing' }, { status: 403 });
 	}
 
-	const apiKey = env.PADDLE_API_KEY;
+	const apiKey = getPaddleApiKey();
 	if (!apiKey) {
 		return json({ error: 'Billing not configured' }, { status: 503 });
 	}
