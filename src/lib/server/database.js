@@ -394,12 +394,6 @@ export function saveLanding(landing) {
 	writeDatabase(db);
 }
 
-export function saveLanding(landing) {
-	const db = readDatabase();
-	db.landing = { ...(db.landing || defaultDatabase.landing), ...landing };
-	writeDatabase(db);
-}
-
 // CRUD operations for Images
 export function getImages() {
 	const db = readDatabase();
