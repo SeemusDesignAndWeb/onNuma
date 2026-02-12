@@ -60,7 +60,7 @@ const defaultDatabase = {
 		podcastDescription: 'Latest sermons from Eltham Green Community Church',
 		teamDescription: 'EGCC is led by an Eldership Team. The team is led by our Lead Pastor John Watson who will seek God for the vision of the church.&nbsp; We take responsibility together for the life and care of the church.&nbsp; The Elders, with their wives, are supported by many others who take a leadership role whether that be in leading Worship, Ministry, Community Groups, Youth and Children\'s work and other church and community activities.',
 		teamHeroTitle: 'Developing leaders of tomorrow',
-		teamHeroImage: '/images/church-bg.jpg',
+		teamHeroImage: '/assets/church-bg.jpg',
 		youtubePlaylistId: '',
 		youtubeChannelId: '',
 		spotifyShowUrl: 'https://open.spotify.com/show/7aczNe2FL8GCTxpaqM9WF1?si=9bab49974d2e48bc'
@@ -69,7 +69,7 @@ const defaultDatabase = {
 		aboutLabel: 'Our Story',
 		aboutTitle: 'Welcome to Eltham Green Community Church',
 		aboutContent: '<p>Eltham Green Community Church is a vibrant, welcoming church family located in the heart of Eltham, London. We are a community of believers committed to following Jesus Christ and sharing His love with our neighbors.</p><p>Our mission is to build a community where everyone can experience God\'s love, grow in faith, and serve others. We believe in creating a space where people from all walks of life can come together to worship, learn, and support one another on their spiritual journey.</p><p>Whether you\'re exploring faith for the first time or looking for a church home, we\'d love to welcome you. Join us for worship, connect with our community, and discover how you can be part of what God is doing here in Eltham.</p>',
-		aboutImage: '/images/church-bg.jpg'
+		aboutImage: '/assets/church-bg.jpg'
 	},
 	landing: {
 		tagline: 'Organisation management that people actually use',

@@ -97,7 +97,7 @@
 					<div class="flex items-center gap-4">
 						<a href="/hub" class="flex items-center gap-2">
 							<img
-								src={theme?.logoPath?.trim() || '/images/OnNuma-Icon.png'}
+								src={theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png'}
 								alt="Hub home"
 								class="h-8 w-auto"
 								fetchpriority="high"
@@ -348,7 +348,7 @@
 				<div class="flex flex-col md:flex-row justify-center md:justify-between items-center space-y-4 md:space-y-0">
 					<a href="/" class="flex items-center" aria-label="OnNuma home">
 						<img
-							src="/images/onnuma-logo.png"
+							src="/assets/onnuma-logo.png"
 							alt="OnNuma"
 							class="h-8 w-auto"
 						/>

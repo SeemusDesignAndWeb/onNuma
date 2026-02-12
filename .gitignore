@@ -13,6 +13,7 @@ vite.config.ts.timestamp-*
 /data/*.json
 data/database.json
 data/*.ndjson
+data/images/
 
 # Audio files - should not be in git (too large)
 static/audio/uploaded/

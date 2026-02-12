@@ -175,7 +175,7 @@
 								type="text"
 								bind:value={editing.image}
 								class="flex-1 px-3 py-2 border rounded"
-								placeholder="/images/team-member.jpg"
+								placeholder="/assets/team-member.jpg"
 							/>
 							<button
 								type="button"

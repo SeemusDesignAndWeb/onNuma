@@ -19,7 +19,7 @@
 			<div class="text-center md:text-left">
 				<a href="/" class="inline-block mb-6">
 					<img
-						src="/images/egcc-logo-text.png"
+						src="/assets/egcc-logo-text.png"
 						alt="Eltham Green Community Church"
 						class="h-12 w-auto mx-auto md:mx-0"
 					/>

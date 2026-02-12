@@ -35,7 +35,7 @@ async function getEmailLogo(event) {
 	if (logoPath) {
 		return { logoUrl: `${baseUrl}/${logoPath.replace(/^\//, '')}`, alt: 'Logo' };
 	}
-	return { logoUrl: `${baseUrl}/images/onnuma-logo.png`, alt: 'OnNuma' };
+	return { logoUrl: `${baseUrl}/assets/onnuma-logo.png`, alt: 'OnNuma' };
 }
 
 /**
@@ -1572,7 +1572,7 @@ export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, e
 	const resetLink = `${baseUrl}${path}?token=${encodedToken}&email=${encodedEmail}`;
 
 	const fromEmail = fromEmailDefault() || 'onboarding@resend.dev';
-	const logoUrl = `${baseUrl}/images/onnuma-logo.png`;
+	const logoUrl = `${baseUrl}/assets/onnuma-logo.png`;
 	const html = `
 		<!DOCTYPE html>
 		<html>

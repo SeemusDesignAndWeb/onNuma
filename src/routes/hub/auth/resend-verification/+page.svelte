@@ -17,7 +17,7 @@
 	
 	$: email = $page.data?.email || '';
 	$: theme = $page.data?.theme ?? null;
-	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/images/onnuma-logo.png';
+	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/assets/onnuma-logo.png';
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8 sm:py-12 sm:px-6 lg:px-8">

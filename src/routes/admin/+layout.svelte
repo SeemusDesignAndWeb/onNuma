@@ -47,7 +47,7 @@
 				<div class="flex items-center justify-between h-16">
 					<div class="flex items-center gap-4">
 						<a href="/admin" class="flex items-center gap-2">
-							<img src="/images/onnuma-logo.png" alt="OnNuma" class="h-8 w-auto brightness-0 invert" />
+							<img src="/assets/onnuma-logo.png" alt="OnNuma" class="h-8 w-auto brightness-0 invert" />
 							<span class="text-xl font-bold text-white">Admin</span>
 						</a>
 					</div>

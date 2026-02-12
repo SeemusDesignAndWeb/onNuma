@@ -20,7 +20,7 @@ function getBaseUrl() {
  */
 function getEmailBranding() {
 	const baseUrl = getBaseUrl();
-	const logoUrl = `${baseUrl}/images/egcc-color.png`;
+	const logoUrl = `${baseUrl}/assets/egcc-color.png`;
 	return `
 		<div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
 			<a href="${baseUrl}" style="display: inline-block; text-decoration: none;">

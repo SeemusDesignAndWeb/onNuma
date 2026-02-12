@@ -102,7 +102,7 @@
 
 <svelte:head>
 	<!-- Preload LCP image (Hub logo) so header paints faster -->
-	<link rel="preload" as="image" href={theme?.logoPath?.trim() || '/images/OnNuma-Icon.png'} fetchpriority="high" />
+	<link rel="preload" as="image" href={theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png'} fetchpriority="high" />
 </svelte:head>
 
 {#if orgUpdated}

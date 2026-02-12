@@ -44,7 +44,7 @@
 			subtitle: 'A welcoming community of faith, hope, and love',
 			cta: 'Join Us',
 			ctaLink: '#services',
-			image: '/images/church-bg.jpg'
+			image: '/assets/church-bg.jpg'
 		},
 		{
 			id: 'default-2',
@@ -52,7 +52,7 @@
 			subtitle: 'Join us every Sunday for inspiring worship and fellowship',
 			cta: 'Service Times',
 			ctaLink: '#services',
-			image: '/images/church-bg.jpg'
+			image: '/assets/church-bg.jpg'
 		},
 		{
 			id: 'default-3',
@@ -60,7 +60,7 @@
 			subtitle: 'Building relationships and serving our community together',
 			cta: 'Get Involved',
 			ctaLink: '#contact',
-			image: '/images/church-bg.jpg'
+			image: '/assets/church-bg.jpg'
 		}
 	];
 

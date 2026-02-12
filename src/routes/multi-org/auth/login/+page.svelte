@@ -18,7 +18,7 @@
 	<div class="w-full max-w-md">
 		<!-- Logo -->
 		<div class="text-center mb-6">
-			<img src="/images/onnuma-logo.png" alt="OnNuma" class="w-auto max-w-[200px] h-14 mx-auto object-contain" />
+			<img src="/assets/onnuma-logo.png" alt="OnNuma" class="w-auto max-w-[200px] h-14 mx-auto object-contain" />
 		</div>
 
 		<div class="bg-white rounded-2xl shadow-xl shadow-[#7E7F9A]/10 border border-[#7E7F9A]/20 p-8">

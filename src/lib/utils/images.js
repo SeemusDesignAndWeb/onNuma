@@ -1,31 +1,22 @@
 /**
- * Image URL helpers. Images are served from /uploads/ (volume or static/uploads).
+ * Image URL helpers. Uploaded images are served from /images/.
  */
 
 /**
- * Get the full image URL.
- * @param {string} path - Image path (/uploads/...) or full URL
+ * Get the image URL.
+ * @param {string} path - Image path (/images/...) or full URL
  * @returns {string}
  */
 export function getImageUrl(path) {
 	if (!path) return '';
 	if (path.startsWith('http')) return path;
 	if (path.startsWith('/')) return path;
-	return `/uploads/${path}`;
+	return `/images/${path}`;
 }
 
 /**
- * Get image URL (alias for compatibility).
+ * Alias for compatibility.
  */
 export function getOptimizedImageUrl(path, _options = {}) {
 	return getImageUrl(path);
-}
-
-/**
- * Check if path is a local upload path.
- * @param {string} path
- * @returns {boolean}
- */
-export function isUploadPath(path) {
-	return !!path && path.startsWith('/uploads/');
 }

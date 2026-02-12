@@ -15,25 +15,25 @@
 		{
 			name: 'John Watson',
 			role: 'Lead Pastor',
-			image: '/images/team-john-watson.png',
+			image: '/assets/team-john-watson.png',
 			quote: 'John has been in the church from the beginning and made a commitment to Christ at the age of 18. Lived in Eltham attending local schools then working in the city. Having been self-employed since \'94, John now also works part-time in Fleet Street and has lead the church for the last 20 years. He is married to Janna and has three children and loves coffee and café culture.'
 		},
 		{
 			name: 'Daniel Bull',
 			role: 'Elder',
-			image: '/images/team-daniel-bull.png',
+			image: '/assets/team-daniel-bull.png',
 			quote: 'Daniel has been at EGCC since becoming a Christian at the age of 13. Through the years he has worked with the children and youth, led prayer teams and been involved in the ministry of the Word. He is married to Louisa and they have three sons. Daniel enjoys doing Parkrun and playing games if he gets the chance.'
 		},
 		{
 			name: 'Alan Robinson',
 			role: 'Elder',
-			image: '/images/team-alan-robinson.jpg',
+			image: '/assets/team-alan-robinson.jpg',
 			quote: 'Alan is a long term member of EGCC and has held a number of roles. Alan launched Greenwich Foodbank as it is known today, joining many separate groups together. Alan is married to Esme and has 3 children and a number of grandchildren. He has also been a Trustee, Fresh Ground Coffee House director for many years and continues to play a large supporting role in church life.'
 		},
 		{
 			name: 'Adam Bull',
 			role: 'Elder',
-			image: '/images/team-adam-bull.jpg',
+			image: '/assets/team-adam-bull.jpg',
 			quote: 'Adam has been a follower of Jesus for 28 years and has served in full-time ministry for the past 18 years. Much of that time has been spent in South Africa, where he\'s been involved in various ministries and church plants, driven by a deep passion to see people experience new life and purpose in Jesus. He is married to Bulelwa, and together they\'ve been blessed with two energetic boys, aged 4 and 2.'
 		}
 	];

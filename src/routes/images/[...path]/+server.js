@@ -1,9 +1,8 @@
 /**
- * Serve uploaded files from volume in production.
- * In local dev, Vite serves static/uploads directly, so this route isn't hit.
+ * Serve uploaded images from IMAGES_PATH (e.g., /data/images).
  */
 
-import { readUpload, getUploadsDir } from '$lib/server/volumeImageStore.js';
+import { readUpload, getImagesDir } from '$lib/server/volumeImageStore.js';
 
 const MIME_TYPES = {
 	jpg: 'image/jpeg',
@@ -24,11 +23,11 @@ export async function GET({ params }) {
 		return new Response('Not Found', { status: 404 });
 	}
 
-	const buffer = await readUpload(`/uploads/${filename}`);
+	const buffer = await readUpload(filename);
 	if (!buffer) {
 		return new Response('Not Found', { 
 			status: 404,
-			headers: { 'X-Uploads-Dir': getUploadsDir() }
+			headers: { 'X-Images-Dir': getImagesDir() }
 		});
 	}
 

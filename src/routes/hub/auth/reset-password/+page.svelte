@@ -8,7 +8,7 @@
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
 	$: theme = $page.data?.theme ?? null;
-	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/images/onnuma-logo.png';
+	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/assets/onnuma-logo.png';
 	
 	// Show notifications from form results
 	$: if (formResult?.error) {

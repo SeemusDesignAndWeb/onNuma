@@ -24,7 +24,7 @@
 	<!-- Full-screen background image -->
 	<div class="fixed inset-0 -z-10">
 		<img
-			src="/images/community-vibrant.png"
+			src="/assets/community-vibrant.png"
 			alt=""
 			class="w-full h-full object-cover"
 			aria-hidden="true"

@@ -55,7 +55,7 @@
 		<div class="flex items-center justify-between h-16">
 			<a href="/" class="flex items-center z-10" aria-label="OnNuma home">
 				<img
-					src={theme?.logoPath?.trim() || '/images/onnuma-logo.png'}
+					src={theme?.logoPath?.trim() || '/assets/onnuma-logo.png'}
 					alt="OnNuma"
 					class="h-8 w-auto {useLightNav ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]' : ''}"
 				/>

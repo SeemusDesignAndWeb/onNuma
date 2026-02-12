@@ -21,7 +21,7 @@
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 				<div class="flex items-center justify-between gap-4">
 					<div class="flex items-center gap-6">
-						<img src="/images/onnuma-logo.png" alt="OnNuma" class="h-9 w-auto object-contain" />
+						<img src="/assets/onnuma-logo.png" alt="OnNuma" class="h-9 w-auto object-contain" />
 						<nav class="flex items-center gap-1">
 							<a
 								href="{base}/organisations"
