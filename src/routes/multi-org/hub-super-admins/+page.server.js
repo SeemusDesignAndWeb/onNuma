@@ -68,7 +68,7 @@ export async function load({ locals }) {
 
 	return {
 		multiOrgAdmin,
-		multiOrgBasePath: locals.multiOrgAdminDomain ? '' : '/multi-org',
+		multiOrgBasePath: '/multi-org',
 		orgsWithSuperAdmin,
 		adminStatusList,
 		orphanedAdmins,

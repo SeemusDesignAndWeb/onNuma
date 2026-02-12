@@ -28,6 +28,6 @@ export async function load({ locals }) {
 	return {
 		billingList,
 		multiOrgAdmin,
-		multiOrgBasePath: locals.multiOrgAdminDomain ? '' : '/multi-org'
+		multiOrgBasePath: '/multi-org'
 	};
 }

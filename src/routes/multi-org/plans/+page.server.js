@@ -37,7 +37,7 @@ export async function load({ locals }) {
 		plans,
 		planModules: PLAN_MODULE_OPTIONS,
 		multiOrgAdmin,
-		multiOrgBasePath: locals.multiOrgAdminDomain ? '' : '/multi-org'
+		multiOrgBasePath: '/multi-org'
 	};
 }
 

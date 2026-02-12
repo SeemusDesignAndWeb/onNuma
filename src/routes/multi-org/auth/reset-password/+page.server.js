@@ -2,14 +2,13 @@ import { fail, redirect } from '@sveltejs/kit';
 import { resetMultiOrgPasswordWithToken } from '$lib/crm/server/multiOrgAuth.js';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 
-export async function load({ url, locals }) {
+export async function load({ url }) {
 	const token = url.searchParams.get('token') || '';
 	const email = url.searchParams.get('email') || '';
-	const adminSubdomain = !!locals.multiOrgAdminDomain;
 	return {
 		token,
 		email,
-		multiOrgBasePath: adminSubdomain ? '' : '/multi-org'
+		multiOrgBasePath: '/multi-org'
 	};
 }
 

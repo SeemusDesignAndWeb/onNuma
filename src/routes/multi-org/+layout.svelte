@@ -3,14 +3,20 @@
 
 	export let data;
 	$: multiOrgAdmin = data?.multiOrgAdmin || null;
-	$: base = data?.multiOrgBasePath ?? '/multi-org';
-	$: pathname = $page.url.pathname;
-	// Active state: support both /multi-org/* (main host) and /* (admin subdomain) so navbar highlights correctly on client-side nav
-	$: isOrganisations = pathname === base + '/organisations' || pathname.startsWith(base + '/organisations/');
-	$: isHubSuperAdmins = pathname === base + '/hub-super-admins' || pathname.startsWith(base + '/hub-super-admins/');
-	$: isPlans = pathname === base + '/plans' || pathname.startsWith(base + '/plans/');
-	$: isBilling = pathname === base + '/billing' || pathname.startsWith(base + '/billing/');
-	$: isSettings = pathname.startsWith(base + '/settings');
+	
+	// Always use /multi-org/* paths for links - reroute() only works server-side
+	const base = '/multi-org';
+	
+	// Normalise pathname to handle both /multi-org/* and /* (admin subdomain initial load)
+	$: rawPath = $page.url.pathname;
+	$: path = rawPath.startsWith('/multi-org') ? rawPath.slice('/multi-org'.length) || '/' : rawPath;
+	
+	// Active state checks use normalised path
+	$: isOrganisations = path === '/organisations' || path.startsWith('/organisations/');
+	$: isHubSuperAdmins = path === '/hub-super-admins' || path.startsWith('/hub-super-admins/');
+	$: isPlans = path === '/plans' || path.startsWith('/plans/');
+	$: isBilling = path === '/billing' || path.startsWith('/billing/');
+	$: isSettings = path.startsWith('/settings');
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-[#f8f8fa] via-white to-[#F3DE8A]/20 flex flex-col">
