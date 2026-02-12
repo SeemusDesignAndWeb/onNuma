@@ -45,23 +45,30 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 	});
 
 	// MultiOrg area: separate login and session.
-	// On admin subdomain the path is /auth/* or /organisations (reroute only changes matched route, not event.url).
+	// On admin subdomain, paths are rewritten by hooks.js reroute (e.g. /organisations → /multi-org/organisations).
+	// We must detect ALL multi-org paths here so multiOrgAdmin is set correctly.
+	const adminSubdomain = !!event.locals.multiOrgAdminDomain;
 	const isMultiOrgPath =
 		pathname.startsWith('/multi-org') ||
-		(!!event.locals.multiOrgAdminDomain &&
-			(pathname === '/' || pathname.startsWith('/auth') || pathname.startsWith('/organisations')));
+		(adminSubdomain &&
+			(pathname === '/' ||
+				pathname.startsWith('/auth') ||
+				pathname.startsWith('/organisations') ||
+				pathname.startsWith('/hub-super-admins') ||
+				pathname.startsWith('/plans') ||
+				pathname.startsWith('/billing') ||
+				pathname.startsWith('/settings')));
 	const isMultiOrgPublicAuth =
 		pathname.startsWith('/multi-org/auth/login') ||
 		pathname.startsWith('/multi-org/auth/logout') ||
 		pathname.startsWith('/multi-org/auth/forgot-password') ||
 		pathname.startsWith('/multi-org/auth/reset-password') ||
-		(!!event.locals.multiOrgAdminDomain &&
+		(adminSubdomain &&
 			(pathname.startsWith('/auth/login') ||
 				pathname === '/auth/logout' ||
 				pathname.startsWith('/auth/forgot-password') ||
 				pathname.startsWith('/auth/reset-password')));
 	if (isMultiOrgPath) {
-		const adminSubdomain = !!event.locals.multiOrgAdminDomain;
 		if (isMultiOrgPublicAuth) {
 			if (request.method === 'GET' && (pathname.startsWith('/multi-org/auth/login') || pathname.startsWith('/auth/login'))) {
 				if (!getMultiOrgCsrfToken(cookies)) {

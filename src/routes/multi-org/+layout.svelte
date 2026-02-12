@@ -15,13 +15,14 @@
 
 <div class="min-h-screen bg-gradient-to-br from-[#f8f8fa] via-white to-[#F3DE8A]/20 flex flex-col">
 	{#if multiOrgAdmin}
-		<!-- Top bar: logo, nav items, user/sign out. Key by pathname so active state updates on client-side nav without refresh -->
-		{#key pathname}
-		<div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+		<!-- Top bar: logo, nav items, user/sign out -->
+		<header class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 				<div class="flex items-center justify-between gap-4">
 					<div class="flex items-center gap-6">
-						<img src="/assets/onnuma-logo.png" alt="OnNuma" class="h-9 w-auto object-contain" />
+						<a href="{base}/organisations" class="flex-shrink-0">
+							<img src="/assets/onnuma-logo.png" alt="OnNuma" class="h-9 w-auto object-contain" />
+						</a>
 						<nav class="flex items-center gap-1">
 							<a
 								href="{base}/organisations"
@@ -35,7 +36,7 @@
 								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isHubSuperAdmins ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
 							>
 								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-								Hub super admins
+								Hub Super Admins
 							</a>
 							<a
 								href="{base}/plans"
@@ -60,7 +61,10 @@
 							</a>
 						</nav>
 					</div>
-					<div class="flex items-center gap-2 text-sm text-slate-600">
+					<div class="flex items-center gap-3 text-sm">
+						{#if multiOrgAdmin.email}
+							<span class="text-slate-500 hidden sm:inline">{multiOrgAdmin.email}</span>
+						{/if}
 						<a
 							href="{base}/auth/logout"
 							class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
@@ -71,8 +75,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
-		{/key}
+		</header>
 	{/if}
 	<main class="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-0">
 		<slot />
