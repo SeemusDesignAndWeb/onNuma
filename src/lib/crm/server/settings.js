@@ -18,7 +18,7 @@ const DEFAULT_RECORD_ID = 'default';
 // Cache settings to avoid reading store on every request
 let settingsCache = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 5000; // 5 seconds cache
+const CACHE_TTL = 60000; // 60 seconds cache (increased from 5s for better performance)
 
 function getDefaultCalendarColours() {
 	return [

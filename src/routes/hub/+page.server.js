@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { readCollection, readCollectionCount } from '$lib/crm/server/fileStore.js';
+import { readCollection, readCollectionCount, readLatestFromCollection } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { getPlanMaxContacts } from '$lib/crm/server/permissions.js';
 
@@ -8,66 +8,49 @@ export async function load({ locals, parent }) {
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
 
-	// Use count-only for contacts so we don't load full list (improves Hub LCP when using database)
-	const [contactsCount, listsRaw, emailsRaw, eventsRaw, rotasRaw, formsRaw, emailStatsRaw] = await Promise.all([
+	// Optimized: Use counts for stats (no row loading) and limited queries for latest items
+	const [
+		contactsCount,
+		listsCount,
+		emailsCount,
+		eventsCount,
+		rotasCount,
+		formsCount,
+		latestNewslettersRaw,
+		latestRotasRaw,
+		latestEventsRaw,
+		emailStatsRaw
+	] = await Promise.all([
 		readCollectionCount('contacts', { organisationId }),
-		readCollection('lists'),
-		readCollection('emails'),
-		readCollection('events', { organisationId }),
-		readCollection('rotas', { organisationId }),
-		readCollection('forms'),
+		readCollectionCount('lists', { organisationId }),
+		readCollectionCount('emails', { organisationId }),
+		readCollectionCount('events', { organisationId }),
+		readCollectionCount('rotas', { organisationId }),
+		readCollectionCount('forms', { organisationId }),
+		readLatestFromCollection('emails', 3, { organisationId }),
+		readLatestFromCollection('rotas', 3, { organisationId }),
+		readLatestFromCollection('events', 3, { organisationId }),
+		// email_stats still needs full load to find today's stat
 		readCollection('email_stats')
 	]);
 
 	const planLimit = getPlanMaxContacts(plan || 'free');
-	const lists = organisationId ? filterByOrganisation(listsRaw, organisationId) : listsRaw;
-	const emails = organisationId ? filterByOrganisation(emailsRaw, organisationId) : emailsRaw;
-	const events = organisationId ? filterByOrganisation(eventsRaw, organisationId) : eventsRaw;
-	const rotas = organisationId ? filterByOrganisation(rotasRaw, organisationId) : rotasRaw;
-	const forms = organisationId ? filterByOrganisation(formsRaw, organisationId) : formsRaw;
-	const emailStats = organisationId ? filterByOrganisation(emailStatsRaw, organisationId) : emailStatsRaw;
 	const contactsDisplayCount = Math.min(contactsCount, planLimit);
 
-	// Filter out any null/undefined entries from collections (e.g. malformed data on Railway)
-	const validEmails = emails.filter(Boolean);
-	const validRotas = rotas.filter(Boolean);
-	const validEvents = events.filter(Boolean);
+	// Filter out any null/undefined entries (e.g. malformed data on Railway)
+	const latestNewsletters = latestNewslettersRaw.filter(Boolean);
+	const latestRotas = latestRotasRaw.filter(Boolean);
+	const latestEvents = latestEventsRaw.filter(Boolean);
 
-	// Get latest 3 emails (sorted by updatedAt or createdAt, most recent first)
-	const latestNewsletters = [...validEmails]
-		.sort((a, b) => {
-			const dateA = new Date(a.updatedAt || a.createdAt || 0);
-			const dateB = new Date(b.updatedAt || b.createdAt || 0);
-			return dateB - dateA;
-		})
-		.slice(0, 3);
-
-	// Get latest 3 rotas (sorted by updatedAt or createdAt, most recent first)
-	const latestRotas = [...validRotas]
-		.sort((a, b) => {
-			const dateA = new Date(a.updatedAt || a.createdAt || 0);
-			const dateB = new Date(b.updatedAt || b.createdAt || 0);
-			return dateB - dateA;
-		})
-		.slice(0, 3);
-
-	// Get latest 3 events (sorted by updatedAt or createdAt, most recent first)
-	const latestEvents = [...validEvents]
-		.sort((a, b) => {
-			const dateA = new Date(a.updatedAt || a.createdAt || 0);
-			const dateB = new Date(b.updatedAt || b.createdAt || 0);
-			return dateB - dateA;
-		})
-		.slice(0, 3);
-
-	// Enrich rotas with event titles
-	const eventsMap = new Map(validEvents.map(e => [e.id, e]));
+	// Enrich rotas with event titles - we already have latest events loaded
+	const eventsMap = new Map(latestEvents.map(e => [e.id, e]));
 	const enrichedRotas = latestRotas.map(rota => ({
 		...rota,
 		eventTitle: eventsMap.get(rota.eventId)?.title || 'Unknown Event'
 	}));
 
 	// Calculate emails sent today
+	const emailStats = organisationId ? filterByOrganisation(emailStatsRaw, organisationId) : emailStatsRaw;
 	const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 	const todayStat = emailStats.find(s => s.date === today);
 	const emailsSentToday = todayStat?.count || 0;
@@ -77,11 +60,11 @@ export async function load({ locals, parent }) {
 		emailModuleEnabled,
 		stats: {
 			contacts: contactsDisplayCount,
-			lists: lists.length,
-			newsletters: emails.length,
-			events: events.length,
-			rotas: rotas.length,
-			forms: forms.length,
+			lists: listsCount,
+			newsletters: emailsCount,
+			events: eventsCount,
+			rotas: rotasCount,
+			forms: formsCount,
 			emailsSentToday
 		},
 		latestNewsletters,

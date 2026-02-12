@@ -85,6 +85,19 @@ export async function readCollectionCount(collection, options = {}) {
 	return backend.readCollectionCount(collection, options);
 }
 
+/** Return latest N records from collection, ordered by updatedAt DESC. Faster for dashboard. */
+export async function readLatestFromCollection(collection, limit = 3, options = {}) {
+	const backend = await getBackend(collection);
+	if (typeof backend.readLatestFromCollection === 'function') {
+		return backend.readLatestFromCollection(collection, limit, options);
+	}
+	// Fallback: load all and slice (for file-based backend)
+	const all = await backend.readCollection(collection, options);
+	return all
+		.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+		.slice(0, limit);
+}
+
 export async function findById(collection, id) {
 	const backend = await getBackend(collection);
 	return backend.findById(collection, id);

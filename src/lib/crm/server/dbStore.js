@@ -199,7 +199,9 @@ async function readCollectionRecordTable(collection, options = {}) {
 
 /**
  * Return count of records for a collection (no rows loaded). Use for dashboard stats to improve LCP.
- * For record tables uses SELECT COUNT(*); for others loads collection and returns length.
+ * Uses SELECT COUNT(*) for all collections (fast, no row loading).
+ * @param {string} collection
+ * @param {{ organisationId?: string }} options
  */
 export async function readCollectionCount(collection, options = {}) {
 	await ensureTable();
@@ -215,11 +217,61 @@ export async function readCollectionCount(collection, options = {}) {
 		const res = await getPool().query(`SELECT COUNT(*)::int AS n FROM ${table}`);
 		return res.rows[0]?.n ?? 0;
 	}
+	// Generic crm_records table - use COUNT(*) with optional org filter on JSONB
+	if (options.organisationId != null) {
+		const res = await getPool().query(
+			`SELECT COUNT(*)::int AS n FROM ${TABLE_NAME} WHERE collection = $1 AND body->>'organisationId' = $2`,
+			[collection, options.organisationId]
+		);
+		return res.rows[0]?.n ?? 0;
+	}
 	const res = await getPool().query(
-		`SELECT id FROM ${TABLE_NAME} WHERE collection = $1`,
+		`SELECT COUNT(*)::int AS n FROM ${TABLE_NAME} WHERE collection = $1`,
 		[collection]
 	);
-	return res.rows.length;
+	return res.rows[0]?.n ?? 0;
+}
+
+/**
+ * Return the latest N records from a collection, ordered by updatedAt DESC.
+ * Much faster than loading entire collection when you only need recent items.
+ * @param {string} collection
+ * @param {number} limit - Number of records to return
+ * @param {{ organisationId?: string }} options
+ */
+export async function readLatestFromCollection(collection, limit = 3, options = {}) {
+	await ensureTable();
+	if (isRecordCollection(collection)) {
+		const table = getTableName(collection);
+		if (options.organisationId != null) {
+			const res = await getPool().query(
+				`SELECT * FROM ${table} WHERE organisation_id = $1 ORDER BY updated_at DESC NULLS LAST LIMIT $2`,
+				[options.organisationId, limit]
+			);
+			return res.rows.map((row) => tableRowToRecord(collection, row));
+		}
+		const res = await getPool().query(
+			`SELECT * FROM ${table} ORDER BY updated_at DESC NULLS LAST LIMIT $1`,
+			[limit]
+		);
+		return res.rows.map((row) => tableRowToRecord(collection, row));
+	}
+	// Generic crm_records table
+	if (options.organisationId != null) {
+		const res = await getPool().query(
+			`SELECT id, body, created_at, updated_at FROM ${TABLE_NAME} 
+			 WHERE collection = $1 AND body->>'organisationId' = $2 
+			 ORDER BY updated_at DESC NULLS LAST LIMIT $3`,
+			[collection, options.organisationId, limit]
+		);
+		return res.rows.map(rowToRecord);
+	}
+	const res = await getPool().query(
+		`SELECT id, body, created_at, updated_at FROM ${TABLE_NAME} 
+		 WHERE collection = $1 ORDER BY updated_at DESC NULLS LAST LIMIT $2`,
+		[collection, limit]
+	);
+	return res.rows.map(rowToRecord);
 }
 
 export async function readCollection(collection, options = {}) {
