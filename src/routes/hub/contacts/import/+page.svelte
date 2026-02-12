@@ -183,7 +183,7 @@
 						</ul>
 					</div>
 					<div>
-						<p class="font-semibold text-gray-700 mb-1">Church Membership:</p>
+						<p class="font-semibold text-gray-700 mb-1">Status:</p>
 						<ul class="list-disc list-inside text-gray-600 space-y-0.5">
 							<li>Membership Status</li>
 							<li>Date Joined</li>
@@ -246,7 +246,7 @@
 						</ul>
 					</div>
 					<div>
-						<p class="font-semibold text-gray-700 mb-1">Church Membership:</p>
+						<p class="font-semibold text-gray-700 mb-1">Status:</p>
 						<ul class="list-disc list-inside text-gray-600 space-y-0.5">
 							<li>Membership Status</li>
 							<li>Date Joined</li>

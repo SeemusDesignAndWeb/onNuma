@@ -312,6 +312,7 @@ export const actions = {
 			}
 
 			try {
+				const organisationId = await getCurrentOrganisationId();
 				const rota = await findById('rotas', params.id);
 				if (!rota) {
 					return fail(404, { error: 'Rota not found' });
@@ -347,7 +348,7 @@ export const actions = {
 				
 				// Get occurrenceId from form or use rota's occurrenceId
 				const occurrenceIdStr = data.get('occurrenceId');
-				const targetOccurrenceId = occurrenceIdStr || rota.occurrenceId || null;
+				let targetOccurrenceId = occurrenceIdStr || rota.occurrenceId || null;
 				
 				// If this rota is linked to a meeting planner for a specific occurrence,
 				// default to that occurrence so the assignment shows up in both places
