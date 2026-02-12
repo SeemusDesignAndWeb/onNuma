@@ -62,9 +62,9 @@ export async function sendEmail({ from, to, subject, html, text, replyTo }) {
 		...(replyTo && { 'h:Reply-To': replyTo })
 	};
 	
-	console.log('[Mailgun] Sending to domain:', domain, 'recipients:', toArr);
-	
+	console.log('[Mailgun] Sending to domain:', domain, 'recipients:', toArr, 'from:', from);
 	try {
+		console.log('[Mailgun] Calling client.messages.create...');
 		const response = await client.messages.create(domain, payload);
 		console.log('[Mailgun] Send successful:', response?.id || response?.message);
 		return { data: { id: response?.id ?? response?.message ?? null } };

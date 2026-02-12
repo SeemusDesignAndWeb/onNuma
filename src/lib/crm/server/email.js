@@ -1303,8 +1303,10 @@ export async function sendAdminWelcomeEmail({ to, name, email, verificationToken
 	const baseUrl = getBaseUrl(event);
 	const hubUrl = (hubBaseUrl && String(hubBaseUrl).trim()) ? String(hubBaseUrl).replace(/\/$/, '') : baseUrl;
 	const fromEmail = fromEmailDefault();
-	
-	console.log('[email] Config:', { baseUrl, hubUrl, fromEmail, MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN ? 'set' : 'NOT SET', MAILGUN_API_KEY: process.env.MAILGUN_API_KEY ? 'set' : 'NOT SET' });
+	if (!fromEmail || !fromEmail.trim()) {
+		console.warn('[email] sendAdminWelcomeEmail: fromEmail is empty — Mailgun may reject. Check MAILGUN_FROM_EMAIL or MAILGUN_DOMAIN.');
+	}
+	console.log('[email] Config:', { baseUrl, hubUrl, fromEmail: fromEmail || '(empty)', to, MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN ? 'set' : 'NOT SET', MAILGUN_API_KEY: process.env.MAILGUN_API_KEY ? 'set' : 'NOT SET' });
 	
 	// Verification and login links: use org's custom hub URL when provided so they log in at their custom URL
 	const verificationLink = `${hubUrl}/hub/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
@@ -1427,15 +1429,18 @@ If you have any questions or need assistance, please contact the system administ
 Visit our website: ${baseUrl}
 	`.trim();
 
-	console.log('[email] Sending welcome email via rateLimitedSend...');
+	console.log('[email] Calling rateLimitedSend with from:', fromEmail, 'to:', to);
 	try {
-		const result = await rateLimitedSend(() => sendEmail({
-			from: fromEmail,
-			to: [to],
-			subject: 'Welcome to TheHUB - Your Admin Account',
-			html: html,
-			text: text
-		}));
+		const result = await rateLimitedSend(() => {
+			console.log('[email] rateLimitedSend callback: invoking sendEmail now');
+			return sendEmail({
+				from: fromEmail,
+				to: [to],
+				subject: 'Welcome to TheHUB - Your Admin Account',
+				html: html,
+				text: text
+			});
+		});
 
 		console.log('[email] Welcome email sent successfully:', JSON.stringify(result));
 		return result;

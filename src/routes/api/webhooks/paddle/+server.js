@@ -149,9 +149,11 @@ async function generateUniqueHubDomain(name) {
  * Returns the new organisation ID.
  */
 async function fulfillPendingSignup(pendingSignup, subscriptionData) {
+	console.log('[paddle webhook] fulfillPendingSignup START, pendingSignup.id:', pendingSignup.id, 'email:', pendingSignup.email);
 	const { name, address, telephone, email, contactName, password, marketingConsent, plan: signupPlan } = pendingSignup;
 
 	const hubDomain = await generateUniqueHubDomain(name);
+	console.log('[paddle webhook] Generated hubDomain:', hubDomain);
 	const areaPermissions = getAreaPermissionsForPlan(signupPlan);
 
 	// Create organisation
@@ -198,6 +200,7 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 	await updatePartial('organisations', org.id, { hubSuperAdminEmail: email });
 
 	// Send welcome email with org's custom hub URL so they log in at their custom URL
+	console.log('[paddle webhook] About to send welcome email, verificationToken:', !!verificationToken, 'to:', email);
 	try {
 		if (verificationToken) {
 			const appBase = env.APP_BASE_URL || 'http://localhost:5173';
@@ -206,7 +209,7 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 			const hubBaseUrl = (org.hubDomain && org.hubDomain.includes('.'))
 				? `${protocol}//${org.hubDomain}`
 				: null;
-			console.log('[paddle webhook] Sending welcome email to:', email, hubBaseUrl ? `hub: ${hubBaseUrl}` : '');
+			console.log('[paddle webhook] Sending welcome email to:', email, 'hubBaseUrl:', hubBaseUrl ?? '(none)');
 			await sendAdminWelcomeEmail({
 				to: email,
 				name: contactName,
@@ -215,12 +218,13 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 				password,
 				hubBaseUrl: hubBaseUrl || undefined
 			}, { url: new URL(appOrigin) });
-			console.log('[paddle webhook] Welcome email sent to:', email);
+			console.log('[paddle webhook] Welcome email sent successfully to:', email);
 		} else {
 			console.warn('[paddle webhook] No verification token for admin — skipping welcome email for:', email);
 		}
 	} catch (emailErr) {
 		console.error('[paddle webhook] Welcome email failed:', emailErr?.message || emailErr);
+		if (emailErr?.stack) console.error('[paddle webhook] Welcome email stack:', emailErr.stack);
 	}
 
 	// Mark pending signup as fulfilled, then remove the password
@@ -270,17 +274,21 @@ export async function POST({ request }) {
 	if (!eventType) {
 		return json({ error: 'Missing event_type' }, { status: 400 });
 	}
+	console.log('[paddle webhook] Received event:', eventType);
 
 	if (!SUBSCRIPTION_EVENTS.has(eventType)) {
+		console.log('[paddle webhook] Ignoring non-subscription event');
 		return json({ received: true }, { status: 200 });
 	}
 
 	const data = payload.data;
 	if (!data || typeof data !== 'object') {
+		console.log('[paddle webhook] No or invalid data');
 		return json({ received: true }, { status: 200 });
 	}
 
 	const customData = getCustomData(data);
+	console.log('[paddle webhook] custom_data keys:', Object.keys(customData), 'pending_signup_id:', customData.pending_signup_id ?? customData.pendingSignupId ?? 'none', 'organisation_id:', customData.organisation_id ?? customData.organisationId ?? 'none');
 
 	// ─── Determine the organisation ID ──────────────────────────────────
 	let organisationId = null;
@@ -294,20 +302,26 @@ export async function POST({ request }) {
 	// Flow 2: new signup via pending_signup_id
 	const pendingSignupId = customData.pending_signup_id ?? customData.pendingSignupId;
 	if (!organisationId && pendingSignupId) {
+		console.log('[paddle webhook] Looking up pending signup:', pendingSignupId);
 		const pendingSignup = await findById('pending_signups', String(pendingSignupId).trim());
 		if (!pendingSignup) {
 			console.warn('[paddle webhook] Pending signup not found:', pendingSignupId);
 			return json({ received: true }, { status: 200 });
 		}
+		console.log('[paddle webhook] Pending signup status:', pendingSignup.status, 'organisationId:', pendingSignup.organisationId ?? 'none');
 		if (pendingSignup.status === 'fulfilled' && pendingSignup.organisationId) {
 			// Already fulfilled (e.g. duplicate webhook) — just use the existing org
 			organisationId = pendingSignup.organisationId;
+			console.log('[paddle webhook] Using existing fulfilled org:', organisationId);
 		} else {
 			// Fulfil the signup: create org + admin
+			console.log('[paddle webhook] Calling fulfillPendingSignup for pending signup:', pendingSignup.id);
 			try {
 				organisationId = await fulfillPendingSignup(pendingSignup, data);
+				console.log('[paddle webhook] fulfillPendingSignup completed, org:', organisationId);
 			} catch (err) {
 				console.error('[paddle webhook] Failed to fulfil pending signup:', err?.message || err);
+				if (err?.stack) console.error('[paddle webhook] Stack:', err.stack);
 				return json({ error: 'Signup fulfilment failed' }, { status: 500 });
 			}
 		}

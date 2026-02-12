@@ -47,10 +47,12 @@ async function processQueue() {
 		}
 
 		const { sendFn, resolve, reject, emailCount = 1 } = emailQueue.shift();
+		console.log('[Email Rate Limiter] Processing queue item, calling sendFn...');
 
 		try {
 			lastSendTime = Date.now();
 			const result = await sendFn();
+			console.log('[Email Rate Limiter] sendFn resolved successfully');
 			// Track successful email send (don't await to avoid blocking)
 			trackEmailSent(emailCount).catch(err => {
 				console.error('[Email Rate Limiter] Error tracking email:', err);
@@ -69,6 +71,7 @@ async function processQueue() {
 				lastSendTime = Date.now();
 			} else {
 				// Other error - reject immediately
+				console.error('[Email Rate Limiter] sendFn failed, rejecting:', error?.message || error);
 				reject(error);
 			}
 		}
@@ -84,6 +87,7 @@ async function processQueue() {
  * @returns {Promise} Promise that resolves when email is sent (or rejected on error)
  */
 export function rateLimitedSend(sendFn, emailCount = 1) {
+	console.log('[Email Rate Limiter] rateLimitedSend called, queue length will be:', emailQueue.length + 1);
 	return new Promise((resolve, reject) => {
 		emailQueue.push({ sendFn, resolve, reject, emailCount });
 		processQueue();
