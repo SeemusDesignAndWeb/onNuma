@@ -9,13 +9,28 @@
 	const ctaStart = landing.ctaStartOrganisationUrl || '/signup?plan=free';
 	const tagline = landing.tagline || 'Organisation management that people actually use';
 
-	// Pricing: scale by users – Free up to 30, Professional up to 500; slider max 500
-	let users = 30;
-	const minUsers = 1;
-	const maxUsers = 500;
+	// Pricing config from database
+	const pricing = landing.pricing || {};
+	const basePrice = pricing.basePrice ?? 12;
+	const pricePerTenUsers = pricing.pricePerTenUsers ?? 1;
+	const pricePerTenUsersAbove = pricing.pricePerTenUsersAbove ?? 2;
+	const threshold = pricing.threshold ?? 300;
+	const minUsers = pricing.minUsers ?? 50;
+	const maxUsers = pricing.maxUsers ?? 500;
+	const defaultUsers = pricing.defaultUsers ?? 100;
 	const freeMaxUsers = 30;
+
+	// Pricing: scale by users
+	let users = defaultUsers;
 	$: freeAvailable = users <= freeMaxUsers;
-	$: professionalPrice = Math.round(12 + (50 - 12) * (users - minUsers) / (maxUsers - minUsers));
+	$: professionalPrice = (() => {
+		if (users <= threshold) {
+			return basePrice + Math.floor((users - minUsers) / 10) * pricePerTenUsers;
+		} else {
+			const priceAtThreshold = basePrice + Math.floor((threshold - minUsers) / 10) * pricePerTenUsers;
+			return priceAtThreshold + Math.floor((users - threshold) / 10) * pricePerTenUsersAbove;
+		}
+	})();
 
 	function scrollTo(id) {
 		const el = document.getElementById(id);
@@ -268,7 +283,7 @@
 		</div>
 		<div class="grid md:grid-cols-3 gap-6 lg:gap-8">
 			<!-- Free – up to 30 users -->
-			<div class="rounded-2xl border p-6 md:p-8 flex flex-col transition-opacity {freeAvailable ? 'bg-white border-slate-200 shadow-sm opacity-100' : 'bg-slate-100 border-slate-200 opacity-75'}">
+			<div class="rounded-2xl border p-6 md:p-8 flex flex-col bg-white border-slate-200 shadow-sm">
 				<h3 class="text-xl font-bold text-brand-blue mb-1">Free</h3>
 				<p class="text-slate-500 text-sm mb-4">All modules except email and forms</p>
 				<div class="mb-6">
@@ -283,21 +298,18 @@
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Rotas and sign-up links</li>
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Email reminders</li>
 				</ul>
-				{#if freeAvailable}
-					<a href={ctaStart} class="block w-full py-3 px-4 rounded-lg font-semibold text-center border-2 border-brand-blue text-brand-blue hover:bg-brand-blue/10 transition-colors">Get started free</a>
-				{:else}
-					<p class="block w-full py-3 px-4 rounded-lg font-medium text-center border-2 border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed">Free plan up to {freeMaxUsers} users</p>
-				{/if}
+				<a href={ctaStart} class="block w-full py-3 px-4 rounded-lg font-semibold text-center border-2 border-brand-blue text-brand-blue hover:bg-brand-blue/10 transition-colors">Get started free</a>
 			</div>
 			<!-- Professional – up to 500 users -->
 			<div class="bg-white rounded-2xl border-2 border-brand-blue shadow-lg p-6 md:p-8 flex flex-col">
 				<h3 class="text-xl font-bold text-brand-blue mb-1">Professional</h3>
 				<p class="text-slate-500 text-sm mb-4">Everything included</p>
-				<div class="mb-6">
+				<div class="mb-2">
 					<span class="text-4xl font-bold text-slate-900">£{professionalPrice}</span>
 					<span class="text-slate-500">/month</span>
 				</div>
-				<p class="text-slate-600 text-sm mb-4">Up to <strong>500</strong> users</p>
+				<p class="text-brand-blue text-sm font-medium mb-1">for {users} users</p>
+				<p class="text-slate-500 text-xs mb-4">(slide for more or less)</p>
 				<ul class="space-y-3 text-slate-700 text-sm flex-1 mb-8">
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Everything in Free</li>
 					<li class="flex items-start gap-2"><span class="text-brand-green mt-0.5">✓</span> Forms</li>

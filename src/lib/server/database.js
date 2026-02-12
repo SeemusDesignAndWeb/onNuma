@@ -75,7 +75,17 @@ const defaultDatabase = {
 		tagline: 'Organisation management that people actually use',
 		ctaRequestDemoUrl: '/signup?plan=professional',
 		ctaStartOrganisationUrl: '/signup?plan=free',
-		heroImage: ''
+		heroImage: '',
+		// Professional pricing configuration
+		pricing: {
+			basePrice: 12,              // Base price at minimum users
+			pricePerTenUsers: 1,        // £ per 10 users (up to threshold)
+			pricePerTenUsersAbove: 2,   // £ per 10 users (above threshold)
+			threshold: 300,             // User count where pricing increases
+			minUsers: 50,               // Minimum users on slider
+			maxUsers: 500,              // Maximum users on slider
+			defaultUsers: 100           // Default slider position
+		}
 	}
 };
 
@@ -369,7 +379,19 @@ export function saveHome(home) {
 // Landing page (OnNuma marketing site)
 export function getLanding() {
 	const db = readDatabase();
-	return db.landing || defaultDatabase.landing;
+	const landing = db.landing || defaultDatabase.landing;
+	// Merge with defaults to ensure pricing config exists
+	return {
+		...defaultDatabase.landing,
+		...landing,
+		pricing: { ...defaultDatabase.landing.pricing, ...(landing.pricing || {}) }
+	};
+}
+
+export function saveLanding(landing) {
+	const db = readDatabase();
+	db.landing = { ...db.landing, ...landing };
+	writeDatabase(db);
 }
 
 export function saveLanding(landing) {

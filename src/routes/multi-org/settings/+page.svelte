@@ -10,6 +10,9 @@
 	$: demoEventsCreated = data?.demoEventsCreated ?? null;
 	$: error = form?.error ?? null;
 	$: organisationId = form?.organisationId ?? '';
+	$: pricingSaved = data?.pricingSaved ?? false;
+	$: pricingError = form?.pricingError ?? null;
+	$: pricing = data?.pricing ?? {};
 	// Restore from form after validation error
 	let contactCountValue = '30';
 	let createContactsChecked = false;
@@ -223,5 +226,122 @@
 				</div>
 			</div>
 		{/if}
+	</div>
+
+	<!-- Pricing Configuration -->
+	<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm mt-6">
+		<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Professional Pricing</h2>
+		<p class="text-sm text-slate-600">
+			Configure pricing for the Professional plan on the landing page.
+		</p>
+		{#if pricingSaved}
+			<p class="text-sm font-medium text-green-700">Pricing settings saved successfully.</p>
+		{/if}
+		{#if pricingError}
+			<p class="text-sm text-red-600">{pricingError}</p>
+		{/if}
+		<form method="POST" action="?/savePricing" class="space-y-5">
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				<div>
+					<label for="basePrice" class="block text-sm font-medium text-slate-700 mb-1">Base price (£)</label>
+					<input
+						id="basePrice"
+						name="basePrice"
+						type="number"
+						min="0"
+						max="1000"
+						value={pricing.basePrice ?? 12}
+						class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+					<p class="text-xs text-slate-500 mt-1">Starting price at minimum users</p>
+				</div>
+				<div>
+					<label for="threshold" class="block text-sm font-medium text-slate-700 mb-1">Price threshold (users)</label>
+					<input
+						id="threshold"
+						name="threshold"
+						type="number"
+						min="10"
+						max="10000"
+						value={pricing.threshold ?? 300}
+						class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+					<p class="text-xs text-slate-500 mt-1">User count where pricing rate increases</p>
+				</div>
+				<div>
+					<label for="pricePerTenUsers" class="block text-sm font-medium text-slate-700 mb-1">£ per 10 users (below threshold)</label>
+					<input
+						id="pricePerTenUsers"
+						name="pricePerTenUsers"
+						type="number"
+						min="0"
+						max="100"
+						value={pricing.pricePerTenUsers ?? 1}
+						class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+					<p class="text-xs text-slate-500 mt-1">Price added per 10 users up to threshold</p>
+				</div>
+				<div>
+					<label for="pricePerTenUsersAbove" class="block text-sm font-medium text-slate-700 mb-1">£ per 10 users (above threshold)</label>
+					<input
+						id="pricePerTenUsersAbove"
+						name="pricePerTenUsersAbove"
+						type="number"
+						min="0"
+						max="100"
+						value={pricing.pricePerTenUsersAbove ?? 2}
+						class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+					<p class="text-xs text-slate-500 mt-1">Price added per 10 users above threshold</p>
+				</div>
+			</div>
+
+			<h3 class="text-sm font-semibold text-slate-700 pt-2">Slider settings</h3>
+			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+				<div>
+					<label for="minUsers" class="block text-sm font-medium text-slate-700 mb-1">Minimum users</label>
+					<input
+						id="minUsers"
+						name="minUsers"
+						type="number"
+						min="1"
+						max="1000"
+						value={pricing.minUsers ?? 50}
+						class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+				</div>
+				<div>
+					<label for="maxUsers" class="block text-sm font-medium text-slate-700 mb-1">Maximum users</label>
+					<input
+						id="maxUsers"
+						name="maxUsers"
+						type="number"
+						min="1"
+						max="10000"
+						value={pricing.maxUsers ?? 500}
+						class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+				</div>
+				<div>
+					<label for="defaultUsers" class="block text-sm font-medium text-slate-700 mb-1">Default position</label>
+					<input
+						id="defaultUsers"
+						name="defaultUsers"
+						type="number"
+						min="1"
+						max="10000"
+						value={pricing.defaultUsers ?? 100}
+						class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+					/>
+				</div>
+			</div>
+
+			<button
+				type="submit"
+				class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all"
+			>
+				Save pricing
+			</button>
+		</form>
 	</div>
 </div>

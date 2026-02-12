@@ -3,6 +3,8 @@ import { findById, updatePartial, readCollection, writeCollection, create } from
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
 import { validateContact, validateEvent, validateOccurrence } from '$lib/crm/server/validators.js';
+import { getLanding, saveLanding } from '$lib/server/database.js';
+
 export async function load({ locals, url }) {
 	const multiOrgAdmin = locals.multiOrgAdmin;
 	const base = (path) => getMultiOrgPublicPath(path, !!locals.multiOrgAdminDomain);
@@ -16,11 +18,19 @@ export async function load({ locals, url }) {
 	const anonymisedCreated = anonymisedParam ? parseInt(anonymisedParam, 10) : null;
 	const demoEventsParam = url.searchParams.get('demo_events');
 	const demoEventsCreated = demoEventsParam ? parseInt(demoEventsParam, 10) : null;
+	const pricingSaved = url.searchParams.get('pricing_saved') === '1';
+
+	// Get current landing/pricing config
+	const landing = getLanding();
+	const pricing = landing.pricing || {};
+
 	return {
 		organisations,
 		multiOrgAdmin,
 		anonymisedCreated: Number.isNaN(anonymisedCreated) ? null : anonymisedCreated,
-		demoEventsCreated: Number.isNaN(demoEventsCreated) ? null : demoEventsCreated
+		demoEventsCreated: Number.isNaN(demoEventsCreated) ? null : demoEventsCreated,
+		pricing,
+		pricingSaved
 	};
 }
 
@@ -222,6 +232,62 @@ export const actions = {
 		throw redirect(
 			302,
 			getMultiOrgPublicPath('/multi-org/settings?' + params.toString(), !!locals.multiOrgAdminDomain)
+		);
+	},
+
+	savePricing: async ({ request, locals }) => {
+		if (!locals.multiOrgAdmin) {
+			return fail(403, { error: 'Not authorised' });
+		}
+		const form = await request.formData();
+
+		const basePrice = parseInt(form.get('basePrice')?.toString() ?? '12', 10);
+		const pricePerTenUsers = parseInt(form.get('pricePerTenUsers')?.toString() ?? '1', 10);
+		const pricePerTenUsersAbove = parseInt(form.get('pricePerTenUsersAbove')?.toString() ?? '2', 10);
+		const threshold = parseInt(form.get('threshold')?.toString() ?? '300', 10);
+		const minUsers = parseInt(form.get('minUsers')?.toString() ?? '50', 10);
+		const maxUsers = parseInt(form.get('maxUsers')?.toString() ?? '500', 10);
+		const defaultUsers = parseInt(form.get('defaultUsers')?.toString() ?? '100', 10);
+
+		// Validate
+		if (basePrice < 0 || basePrice > 1000) {
+			return fail(400, { pricingError: 'Base price must be between 0 and 1000' });
+		}
+		if (pricePerTenUsers < 0 || pricePerTenUsers > 100) {
+			return fail(400, { pricingError: 'Price per 10 users must be between 0 and 100' });
+		}
+		if (pricePerTenUsersAbove < 0 || pricePerTenUsersAbove > 100) {
+			return fail(400, { pricingError: 'Price per 10 users (above threshold) must be between 0 and 100' });
+		}
+		if (threshold < 10 || threshold > 10000) {
+			return fail(400, { pricingError: 'Threshold must be between 10 and 10000' });
+		}
+		if (minUsers < 1 || minUsers > 1000) {
+			return fail(400, { pricingError: 'Minimum users must be between 1 and 1000' });
+		}
+		if (maxUsers < minUsers || maxUsers > 10000) {
+			return fail(400, { pricingError: 'Maximum users must be greater than minimum and at most 10000' });
+		}
+		if (defaultUsers < minUsers || defaultUsers > maxUsers) {
+			return fail(400, { pricingError: 'Default users must be between min and max users' });
+		}
+
+		const pricing = {
+			basePrice,
+			pricePerTenUsers,
+			pricePerTenUsersAbove,
+			threshold,
+			minUsers,
+			maxUsers,
+			defaultUsers
+		};
+
+		const landing = getLanding();
+		saveLanding({ ...landing, pricing });
+
+		throw redirect(
+			302,
+			getMultiOrgPublicPath('/multi-org/settings?pricing_saved=1', !!locals.multiOrgAdminDomain)
 		);
 	}
 };
