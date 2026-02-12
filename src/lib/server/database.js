@@ -73,8 +73,8 @@ const defaultDatabase = {
 	},
 	landing: {
 		tagline: 'Organisation management that people actually use',
-		ctaRequestDemoUrl: '/multi-org',
-		ctaStartOrganisationUrl: '/multi-org/organisations/new',
+		ctaRequestDemoUrl: '/signup?plan=professional',
+		ctaStartOrganisationUrl: '/signup?plan=free',
 		heroImage: ''
 	}
 };
