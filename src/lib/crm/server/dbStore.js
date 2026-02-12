@@ -154,17 +154,41 @@ async function readCollectionRecordTable(collection, options = {}) {
 		return res.rows.map((row) => tableRowToRecord(collection, row));
 	}
 	if (collection === 'events' && options.organisationId != null) {
-		const res = await pool.query(
-			`SELECT * FROM ${table} WHERE organisation_id = $1 ORDER BY updated_at DESC NULLS LAST, created_at ASC NULLS LAST`,
-			[options.organisationId]
-		);
+		const conditions = [`organisation_id = $1`];
+		const values = [options.organisationId];
+		let param = 2;
+		const where = ' WHERE ' + conditions.join(' AND ');
+		const order = ' ORDER BY updated_at DESC NULLS LAST, created_at ASC NULLS LAST';
+		let sql = `SELECT * FROM ${table}${where}${order}`;
+		if (options.limit != null) {
+			sql += ` LIMIT $${param}`;
+			values.push(options.limit);
+			param++;
+		}
+		if (options.offset != null) {
+			sql += ` OFFSET $${param}`;
+			values.push(options.offset);
+		}
+		const res = await pool.query(sql, values);
 		return res.rows.map((row) => tableRowToRecord(collection, row));
 	}
 	if (collection === 'rotas' && options.organisationId != null) {
-		const res = await pool.query(
-			`SELECT * FROM ${table} WHERE organisation_id = $1 ORDER BY updated_at DESC NULLS LAST, created_at ASC NULLS LAST`,
-			[options.organisationId]
-		);
+		const conditions = [`organisation_id = $1`];
+		const values = [options.organisationId];
+		let param = 2;
+		const where = ' WHERE ' + conditions.join(' AND ');
+		const order = ' ORDER BY updated_at DESC NULLS LAST, created_at ASC NULLS LAST';
+		let sql = `SELECT * FROM ${table}${where}${order}`;
+		if (options.limit != null) {
+			sql += ` LIMIT $${param}`;
+			values.push(options.limit);
+			param++;
+		}
+		if (options.offset != null) {
+			sql += ` OFFSET $${param}`;
+			values.push(options.offset);
+		}
+		const res = await pool.query(sql, values);
 		return res.rows.map((row) => tableRowToRecord(collection, row));
 	}
 	const res = await pool.query(

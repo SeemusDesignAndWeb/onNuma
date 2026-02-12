@@ -1,4 +1,4 @@
-import { readCollection, writeCollection } from '$lib/crm/server/fileStore.js';
+import { readCollection, writeCollection, readCollectionCount } from '$lib/crm/server/fileStore.js';
 import { verifyCsrfToken, getCsrfToken } from '$lib/crm/server/auth.js';
 import { isSuperAdmin, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
 import { fail } from '@sveltejs/kit';
@@ -13,15 +13,32 @@ export async function load({ url, cookies, locals, parent }) {
 	const search = url.searchParams.get('search') || '';
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
-
-	const allContacts = await readCollection('contacts', { organisationId });
-	const orgContacts = filterByOrganisation(allContacts, organisationId);
-	const contacts = contactsWithinPlanLimit(orgContacts, plan);
 	const planLimit = getPlanMaxContacts(plan);
-	const totalInOrg = orgContacts.length;
+	const offset = (page - 1) * ITEMS_PER_PAGE;
+
+	// Pass search/limit/offset to readCollection - DB store will use them for efficiency,
+	// file store will ignore them and we'll filter in memory below
+	const allContacts = await readCollection('contacts', { 
+		organisationId,
+		search: search || undefined,
+		limit: ITEMS_PER_PAGE,
+		offset
+	});
 	
+	// For file store compatibility: filter by org (DB store already did this)
+	const orgContacts = filterByOrganisation(allContacts, organisationId);
+	
+	// Get total count for pagination (efficient for DB store)
+	const totalInOrg = await readCollectionCount('contacts', { organisationId });
+	
+	// Apply plan limits
+	let contacts = contactsWithinPlanLimit(orgContacts, plan);
+	
+	// For file store: need to apply search filter and pagination in memory
+	// (DB store already applied these, so this is a no-op for small result sets)
 	let filtered = contacts;
-	if (search) {
+	if (search && contacts.length > ITEMS_PER_PAGE) {
+		// File store returned all contacts - need to filter
 		const searchLower = search.toLowerCase();
 		filtered = contacts.filter(c =>
 			c.firstName?.toLowerCase().includes(searchLower) ||
@@ -29,10 +46,19 @@ export async function load({ url, cookies, locals, parent }) {
 		);
 	}
 
-	const total = filtered.length;
-	const start = (page - 1) * ITEMS_PER_PAGE;
-	const end = start + ITEMS_PER_PAGE;
-	const paginated = filtered.slice(start, end);
+	// Determine total based on whether we did in-memory filtering
+	const totalForPagination = Math.min(
+		search ? filtered.length : totalInOrg,
+		planLimit
+	);
+	
+	// For file store: paginate in memory if we have more than a page
+	let paginated = filtered;
+	if (filtered.length > ITEMS_PER_PAGE) {
+		const start = (page - 1) * ITEMS_PER_PAGE;
+		const end = start + ITEMS_PER_PAGE;
+		paginated = filtered.slice(start, end);
+	}
 
 	const csrfToken = getCsrfToken(cookies) || '';
 	const admin = locals.admin || null;
@@ -41,8 +67,8 @@ export async function load({ url, cookies, locals, parent }) {
 	return {
 		contacts: paginated,
 		currentPage: page,
-		totalPages: Math.ceil(total / ITEMS_PER_PAGE),
-		total,
+		totalPages: Math.ceil(totalForPagination / ITEMS_PER_PAGE),
+		total: totalForPagination,
 		search,
 		csrfToken,
 		isSuperAdmin: isSuperAdminUser,

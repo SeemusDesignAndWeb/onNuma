@@ -5,6 +5,13 @@
 	import { browser } from '$app/environment';
 	import { invalidateAll, goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { 
+		hubDataLoaded, 
+		hubDataLoading, 
+		loadHubData, 
+		clearHubData, 
+		refreshHubData 
+	} from '$lib/crm/stores/hubData.js';
 
 	export let data = {};
 	export let params = {};
@@ -14,6 +21,10 @@
 	$: superAdminEmail = data?.superAdminEmail ?? null;
 	$: showOnboarding = data?.showOnboarding ?? false;
 	$: organisationAreaPermissions = data?.organisationAreaPermissions ?? null;
+	$: currentOrgId = data?.organisationId ?? null;
+
+	// Track organisation changes to refresh store data
+	let previousOrgId = null;
 
 	// Lazy-load Onboarding only when needed to reduce initial Hub chunk parse time
 	let OnboardingComponent = null;
@@ -25,14 +36,37 @@
 		});
 	}
 
-	// When user switches back to this tab (e.g. after changing org in MultiOrg), refetch so Hub shows current org's data
+	// Load hub data into stores once after login (enables SPA-like navigation)
 	onMount(() => {
-		const handler = () => {
-			if (document.visibilityState === 'visible') invalidateAll();
+		// Load hub data if authenticated and not already loaded
+		if (admin && !$hubDataLoaded && !$hubDataLoading) {
+			loadHubData();
+		}
+		previousOrgId = currentOrgId;
+
+		// When user switches back to this tab (e.g. after changing org in MultiOrg), refetch
+		const visibilityHandler = () => {
+			if (document.visibilityState === 'visible') {
+				invalidateAll();
+				// Also refresh store data
+				if (admin && $hubDataLoaded) {
+					refreshHubData();
+				}
+			}
 		};
-		document.addEventListener('visibilitychange', handler);
-		return () => document.removeEventListener('visibilitychange', handler);
+		document.addEventListener('visibilitychange', visibilityHandler);
+		return () => {
+			document.removeEventListener('visibilitychange', visibilityHandler);
+		};
 	});
+
+	// Refresh store data when organisation changes
+	$: if (browser && currentOrgId && previousOrgId && currentOrgId !== previousOrgId) {
+		previousOrgId = currentOrgId;
+		if (admin) {
+			refreshHubData();
+		}
+	}
 
 	function getColor(val, fallback) {
 		return typeof val === 'string' && val.trim() && /^#[0-9A-Fa-f]{6}$/.test(val.trim()) ? val.trim() : fallback;

@@ -5,19 +5,47 @@
 	import Pager from '$lib/crm/components/Pager.svelte';
 	import { goto } from '$app/navigation';
 	import { formatDateUK } from '$lib/crm/utils/dateFormat.js';
+	import { contacts as contactsStore, hubDataLoaded } from '$lib/crm/stores/hubData.js';
+
+	const ITEMS_PER_PAGE = 10;
 
 	$: data = $page.data || {};
-	$: contacts = data.contacts || [];
-	$: currentPage = data.currentPage || 1;
-	$: totalPages = data.totalPages || 1;
-	$: search = data.search || '';
 	$: csrfToken = data.csrfToken || '';
 	$: isSuperAdmin = data.isSuperAdmin || false;
 	$: planLimit = data.planLimit ?? 0;
 	$: totalInOrg = data.totalInOrg ?? 0;
 	$: overPlanLimit = planLimit > 0 && totalInOrg > planLimit;
 
-	let searchInput = search;
+	// URL-based state (for bookmarkable URLs)
+	$: urlSearch = $page.url?.searchParams?.get('search') || '';
+	$: urlPage = parseInt($page.url?.searchParams?.get('page') || '1', 10);
+
+	// Use store data when loaded, otherwise fall back to server data
+	$: useStoreData = $hubDataLoaded && $contactsStore.length > 0;
+	$: allContacts = useStoreData ? $contactsStore : (data.contacts || []);
+
+	// Client-side search and pagination when using store data
+	$: searchLower = urlSearch.toLowerCase();
+	$: filteredContacts = urlSearch
+		? allContacts.filter(c =>
+			c.firstName?.toLowerCase().includes(searchLower) ||
+			c.lastName?.toLowerCase().includes(searchLower)
+		)
+		: allContacts;
+
+	// Calculate pagination
+	$: totalFiltered = filteredContacts.length;
+	$: totalPages = Math.max(1, Math.ceil(totalFiltered / ITEMS_PER_PAGE));
+	$: currentPage = Math.min(urlPage, totalPages);
+	$: startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+	$: contacts = filteredContacts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+	// Search input binding (local state for typing)
+	let searchInput = urlSearch;
+	$: if (urlSearch !== searchInput && !searchInput) {
+		searchInput = urlSearch;
+	}
+
 	let showBulkUpdateDialog = false;
 	let bulkUpdateResult = null;
 	let isSubmitting = false;
@@ -34,12 +62,12 @@
 		goto(`/hub/contacts?${params.toString()}`);
 	}
 
-	function handlePageChange(page) {
+	function handlePageChange(newPage) {
 		const params = new URLSearchParams();
-		if (search) {
-			params.set('search', search);
+		if (urlSearch) {
+			params.set('search', urlSearch);
 		}
-		params.set('page', page.toString());
+		params.set('page', newPage.toString());
 		goto(`/hub/contacts?${params.toString()}`);
 	}
 
