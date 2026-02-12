@@ -78,9 +78,6 @@
 					>
 						Log in to your Hub
 					</a>
-					<p class="text-center text-xs text-slate-500">
-						If you set a hub domain, use that URL (e.g. https://hub.yourchurch.org) to access your Hub.
-					</p>
 				</div>
 			</div>
 		{:else}
