@@ -2,15 +2,26 @@
  * Paddle Billing webhook endpoint.
  * Receives subscription (and optionally transaction) events, verifies signature,
  * and updates the organisation's subscription state and areaPermissions.
+ *
+ * Two flows:
+ *   1. Existing organisation (custom_data contains organisation_id)
+ *      → update subscription state on the org.
+ *   2. New signup (custom_data contains pending_signup_id)
+ *      → create the organisation + admin from the pending signup, then set subscription state.
+ *
  * @see https://developer.paddle.com/webhooks/respond-to-webhooks
  * @see https://developer.paddle.com/webhooks/signature-verification
  */
 
 import { json } from '@sveltejs/kit';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { findById, updatePartial } from '$lib/crm/server/fileStore.js';
+import { create, findById, updatePartial, update, remove } from '$lib/crm/server/fileStore.js';
+import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerificationToken } from '$lib/crm/server/auth.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
+import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
+import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
+import { readCollection } from '$lib/crm/server/fileStore.js';
 import { env } from '$env/dynamic/private';
 
 const SUBSCRIPTION_EVENTS = new Set([
@@ -25,6 +36,14 @@ const SUBSCRIPTION_EVENTS = new Set([
 ]);
 
 const REPLAY_TOLERANCE_SEC = 300; // 5 minutes
+
+/** All Hub area permissions for super admin */
+const FULL_PERMISSIONS = [
+	'contacts', 'lists', 'rotas', 'events', 'meeting_planners',
+	'emails', 'forms', 'safeguarding_forms', 'members', 'users'
+];
+
+// ── Signature verification ──────────────────────────────────────────────────
 
 function verifyPaddleSignature(rawBody, signatureHeader, secret) {
 	if (!secret || !signatureHeader || typeof rawBody !== 'string') {
@@ -53,10 +72,11 @@ function verifyPaddleSignature(rawBody, signatureHeader, secret) {
 	}
 }
 
+// ── Plan detection ──────────────────────────────────────────────────────────
+
 /**
  * Map Paddle subscription status and items to plan.
- * Recognises both tier-1 and tier-2 price IDs for each plan so that
- * crossing the seat threshold doesn't break plan detection.
+ * Recognises both tier-1 and tier-2 price IDs for each plan.
  */
 function subscriptionToPlan(data) {
 	const status = data?.status;
@@ -64,7 +84,6 @@ function subscriptionToPlan(data) {
 		return 'free';
 	}
 
-	// Collect all known price IDs per plan (tier 1 + tier 2)
 	const enterpriseIds = new Set(
 		[env.PADDLE_PRICE_ID_ENTERPRISE, env.PADDLE_PRICE_ID_ENTERPRISE_TIER2].filter(Boolean)
 	);
@@ -81,17 +100,125 @@ function subscriptionToPlan(data) {
 	return 'free';
 }
 
-/**
- * Extract organisation_id from subscription or transaction custom_data.
- */
-function getOrganisationIdFromPayload(data) {
+// ── Custom data extraction ──────────────────────────────────────────────────
+
+function getCustomData(data) {
 	const custom = data?.custom_data;
-	if (custom && typeof custom === 'object') {
-		const id = custom.organisation_id ?? custom.organisationId;
-		if (id && typeof id === 'string') return id.trim();
-	}
-	return null;
+	if (custom && typeof custom === 'object') return custom;
+	return {};
 }
+
+// ── Hub domain generation (duplicated from signup for isolation) ─────────────
+
+function generateSubdomain(name) {
+	return String(name)
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/-+/g, '-')
+		.replace(/^-|-$/g, '')
+		.slice(0, 10)
+		.replace(/-$/g, '');
+}
+
+async function generateUniqueHubDomain(name) {
+	const baseSubdomain = generateSubdomain(name);
+	if (!baseSubdomain) return `org-${Date.now()}`;
+	let subdomain = baseSubdomain;
+	let suffix = 1;
+	const orgs = await readCollection('organisations');
+	const taken = new Set(orgs.map((o) => (o.hubDomain || '').toLowerCase().trim()));
+	while (taken.has(subdomain)) {
+		subdomain = `${baseSubdomain}-${suffix}`;
+		suffix++;
+		if (suffix > 100) { subdomain = `${baseSubdomain}-${Date.now()}`; break; }
+	}
+	return subdomain;
+}
+
+// ── Pending signup fulfilment ───────────────────────────────────────────────
+
+/**
+ * Create the organisation and admin from a pending signup record.
+ * Called when a subscription.created webhook arrives with a pending_signup_id.
+ * Returns the new organisation ID.
+ */
+async function fulfillPendingSignup(pendingSignup, subscriptionData) {
+	const { name, address, telephone, email, contactName, password, marketingConsent, plan: signupPlan } = pendingSignup;
+
+	const hubDomain = await generateUniqueHubDomain(name);
+	const areaPermissions = getAreaPermissionsForPlan(signupPlan);
+
+	// Create organisation
+	const org = await create('organisations', {
+		name,
+		address,
+		telephone,
+		email,
+		contactName,
+		hubDomain: hubDomain || null,
+		areaPermissions,
+		signupPlan,
+		isHubOrganisation: true,
+		marketingConsent: !!marketingConsent
+	});
+	invalidateHubDomainCache();
+
+	// Create Hub admin with full permissions
+	const admin = await createAdmin({
+		email,
+		password,
+		name: contactName,
+		permissions: FULL_PERMISSIONS
+	});
+	await updateAdminPassword(admin.id, password);
+
+	// Set verification token for welcome email
+	const adminRecord = await findById('admins', admin.id);
+	if (adminRecord) {
+		const now = new Date();
+		const token = adminRecord.emailVerificationToken || generateVerificationToken();
+		const expires = adminRecord.emailVerificationTokenExpires || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+		await update('admins', admin.id, {
+			...adminRecord,
+			emailVerificationToken: token,
+			emailVerificationTokenExpires: expires,
+			marketingConsent: !!marketingConsent,
+			updatedAt: now.toISOString()
+		});
+	}
+
+	// Link super admin email
+	await updatePartial('organisations', org.id, { hubSuperAdminEmail: email });
+
+	// Send welcome email (fire-and-forget)
+	try {
+		const fullAdmin = await getAdminByEmail(email);
+		if (fullAdmin?.emailVerificationToken) {
+			await sendAdminWelcomeEmail({
+				to: email,
+				name: contactName,
+				email,
+				verificationToken: fullAdmin.emailVerificationToken,
+				password
+			}, { url: new URL(env.APP_BASE_URL || 'http://localhost:5173') });
+		}
+	} catch (emailErr) {
+		console.error('[paddle webhook] Welcome email failed:', emailErr?.message || emailErr);
+	}
+
+	// Mark pending signup as fulfilled, then remove the password
+	await updatePartial('pending_signups', pendingSignup.id, {
+		status: 'fulfilled',
+		organisationId: org.id,
+		fulfilledAt: new Date().toISOString(),
+		password: null // Remove stored password
+	});
+
+	console.log(`[paddle webhook] Fulfilled pending signup ${pendingSignup.id} → org ${org.id}`);
+	return org.id;
+}
+
+// ── Main handler ────────────────────────────────────────────────────────────
 
 export async function POST({ request }) {
 	const secret = env.PADDLE_WEBHOOK_SECRET;
@@ -136,11 +263,45 @@ export async function POST({ request }) {
 		return json({ received: true }, { status: 200 });
 	}
 
-	const organisationId = getOrganisationIdFromPayload(data);
+	const customData = getCustomData(data);
+
+	// ─── Determine the organisation ID ──────────────────────────────────
+	let organisationId = null;
+
+	// Flow 1: existing organisation
+	const orgIdFromPayload = customData.organisation_id ?? customData.organisationId;
+	if (orgIdFromPayload && typeof orgIdFromPayload === 'string') {
+		organisationId = orgIdFromPayload.trim();
+	}
+
+	// Flow 2: new signup via pending_signup_id
+	const pendingSignupId = customData.pending_signup_id ?? customData.pendingSignupId;
+	if (!organisationId && pendingSignupId) {
+		const pendingSignup = await findById('pending_signups', String(pendingSignupId).trim());
+		if (!pendingSignup) {
+			console.warn('[paddle webhook] Pending signup not found:', pendingSignupId);
+			return json({ received: true }, { status: 200 });
+		}
+		if (pendingSignup.status === 'fulfilled' && pendingSignup.organisationId) {
+			// Already fulfilled (e.g. duplicate webhook) — just use the existing org
+			organisationId = pendingSignup.organisationId;
+		} else {
+			// Fulfil the signup: create org + admin
+			try {
+				organisationId = await fulfillPendingSignup(pendingSignup, data);
+			} catch (err) {
+				console.error('[paddle webhook] Failed to fulfil pending signup:', err?.message || err);
+				return json({ error: 'Signup fulfilment failed' }, { status: 500 });
+			}
+		}
+	}
+
 	if (!organisationId) {
-		console.warn('[paddle webhook] No organisation_id in custom_data for', eventType);
+		console.warn('[paddle webhook] No organisation_id or pending_signup_id in custom_data for', eventType);
 		return json({ received: true }, { status: 200 });
 	}
+
+	// ─── Update subscription state on the organisation ──────────────────
 
 	const org = await findById('organisations', organisationId);
 	if (!org) {

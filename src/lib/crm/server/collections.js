@@ -43,6 +43,7 @@ export const ALL_COLLECTIONS = [
 	'occurrence_tokens',
 	'occurrences',
 	'organisations',
+	'pending_signups',
 	'registers',
 	'rota_tokens',
 	'rotas',

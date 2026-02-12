@@ -4,6 +4,8 @@ import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerification
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
+import { getPaddleBaseUrl, getPriceIdForPlan } from '$lib/crm/server/paddle.js';
+import { env } from '$env/dynamic/private';
 
 /** Valid signup plans */
 const VALID_SIGNUP_PLANS = ['free', 'professional'];
@@ -161,26 +163,103 @@ export const actions = {
 			});
 		}
 
+		// ─── Professional plan: payment first ────────────────────────────
+		// Store the signup data as pending, redirect to Paddle checkout.
+		// The org and admin are created by the webhook after payment succeeds.
+		if (signupPlan === 'professional') {
+			const apiKey = env.PADDLE_API_KEY;
+			const priceId = getPriceIdForPlan('professional', 1);
+			if (!apiKey || !priceId) {
+				return fail(503, {
+					errors: { _form: 'Billing is not configured yet. Please try the Free plan or contact us.' },
+					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+				});
+			}
+
+			// Save all signup data so the webhook can create the org + admin later
+			let pendingSignup;
+			try {
+				pendingSignup = await create('pending_signups', {
+					name,
+					address,
+					telephone,
+					email,
+					contactName,
+					password, // Stored temporarily; deleted after org creation
+					marketingConsent,
+					plan: signupPlan,
+					status: 'pending',
+					createdAt: new Date().toISOString()
+				});
+			} catch (err) {
+				console.error('[signup] Failed to store pending signup:', err);
+				return fail(500, {
+					errors: { _form: 'Something went wrong. Please try again.' },
+					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+				});
+			}
+
+			// Create Paddle checkout transaction
+			try {
+				const baseUrl = getPaddleBaseUrl();
+				const body = {
+					items: [{ price_id: priceId, quantity: 1 }],
+					custom_data: { pending_signup_id: pendingSignup.id },
+					collection_mode: 'automatic'
+				};
+
+				const res = await fetch(`${baseUrl}/transactions`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${apiKey}`
+					},
+					body: JSON.stringify(body)
+				});
+
+				if (!res.ok) {
+					const errText = await res.text();
+					console.error('[signup] Paddle checkout error:', res.status, errText);
+					return fail(502, {
+						errors: { _form: 'Failed to start checkout. Please try again or choose the Free plan.' },
+						values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+					});
+				}
+
+				const data = await res.json();
+				const checkoutUrl = data?.data?.checkout?.url;
+				if (!checkoutUrl) {
+					console.error('[signup] No checkout URL in Paddle response:', data);
+					return fail(502, {
+						errors: { _form: 'Failed to start checkout. Please try again.' },
+						values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+					});
+				}
+
+				// Redirect to Paddle checkout — payment happens there.
+				// On success, Paddle redirects to the success URL and fires the webhook.
+				throw redirect(302, checkoutUrl);
+			} catch (err) {
+				if (err.status === 302) throw err; // re-throw redirect
+				console.error('[signup] Paddle checkout unexpected error:', err);
+				return fail(500, {
+					errors: { _form: 'Something went wrong starting checkout. Please try again.' },
+					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
+				});
+			}
+		}
+
+		// ─── Free plan: create org + admin immediately ───────────────────
+
 		// Auto-generate hub domain from organisation name
 		const hubDomain = await generateUniqueHubDomain(name);
 
 		// Get area permissions based on the selected signup plan
 		const areaPermissions = getAreaPermissionsForPlan(signupPlan);
 
-		// Set up trial for Professional plan (14 days)
-		const TRIAL_DAYS = 14;
-		const isProfessionalTrial = signupPlan === 'professional';
-		const trialEndsAt = isProfessionalTrial 
-			? new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
-			: null;
-
 		let org;
 		let admin;
 		try {
-			// Create organisation with selected plan permissions.
-			// signupPlan stored so we know what plan they signed up for (for billing/upgrade tracking).
-			// For Professional signups, trialEndsAt marks when trial expires (reverts to Free).
-			// marketingConsent stored so we know who we can market to.
 			org = await create('organisations', {
 				name,
 				address,
@@ -189,17 +268,13 @@ export const actions = {
 				contactName,
 				hubDomain: hubDomain || null,
 				areaPermissions,
-				signupPlan, // Track which plan button they clicked (free or professional)
-				...(isProfessionalTrial && { 
-					trialEndsAt,
-					trialPlan: 'professional' // The plan they're trialing
-				}),
+				signupPlan,
 				isHubOrganisation: true,
 				marketingConsent: !!marketingConsent
 			});
 			invalidateHubDomainCache();
 
-			// Create Hub admin with full permissions (super admin for this org), or get existing if email already in admins
+			// Create Hub admin with full permissions (super admin for this org)
 			admin = await createAdmin({
 				email,
 				password,
@@ -207,10 +282,10 @@ export const actions = {
 				permissions: FULL_PERMISSIONS
 			});
 
-			// Ensure admin has the password they just set (required when reusing an existing admin who had no org)
+			// Ensure admin has the password they just set
 			await updateAdminPassword(admin.id, password);
 
-			// Ensure verification token exists for welcome email (existing admins don't get one from createAdmin)
+			// Ensure verification token exists for welcome email
 			const adminRecord = await findById('admins', admin.id);
 			if (adminRecord) {
 				const now = new Date();
@@ -225,15 +300,15 @@ export const actions = {
 				});
 			}
 
-			// Link this org's super admin to the new user (use updatePartial to avoid full read-modify-write race)
+			// Link this org's super admin to the new user
 			await updatePartial('organisations', org.id, { hubSuperAdminEmail: email });
 
-			// Verify org is visible in the store (so multi-org list will show it)
+			// Verify org is visible in the store
 			const verifyOrg = await findById('organisations', org.id);
 			if (!verifyOrg) {
 				console.error('[signup] Organisation not found after create:', org.id);
 				return fail(500, {
-					errors: { _form: 'Organisation was created but could not be verified. Please contact support or check the organisations list.' },
+					errors: { _form: 'Organisation was created but could not be verified. Please contact support.' },
 					values: { name, address, telephone, email, contactName, marketingConsent, plan: signupPlan }
 				});
 			}
@@ -252,7 +327,7 @@ export const actions = {
 			});
 		}
 
-		// Send welcome/verification email (app uses Resend/Mailgun; no org email settings)
+		// Send welcome/verification email
 		console.log('[signup] Looking up admin for welcome email:', email);
 		const fullAdmin = await getAdminByEmail(email);
 		console.log('[signup] Admin found:', fullAdmin ? 'yes' : 'no', 'Has token:', !!fullAdmin?.emailVerificationToken);

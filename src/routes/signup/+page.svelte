@@ -67,9 +67,15 @@
 						</svg>
 					</div>
 					<h1 class="text-2xl font-bold text-slate-800">You're all set</h1>
-					<p class="mt-2 text-slate-600 text-sm">
-						Your {planLabel} trial organisation has been created. Check your email to verify your account, then log in to your Hub.
-					</p>
+					{#if plan === 'professional'}
+						<p class="mt-2 text-slate-600 text-sm">
+							Payment received — your Professional organisation is being created. Check your email to verify your account, then log in to your Hub.
+						</p>
+					{:else}
+						<p class="mt-2 text-slate-600 text-sm">
+							Your Free organisation has been created. Check your email to verify your account, then log in to your Hub.
+						</p>
+					{/if}
 				</div>
 				<div class="space-y-3">
 					<a
