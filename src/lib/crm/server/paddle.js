@@ -58,18 +58,21 @@ export async function getAdminSeatCount() {
 }
 
 // ── Price tier selection ────────────────────────────────────────────────────
+// Professional: 3 fixed prices. Tier 1 = 31–100 (£15); Tier 2 = 101–250 (£25); Tier 3 = 251–500 (£50).
+// 1–30 uses TIER1 price. PADDLE_PRICE_ID_PROFESSIONAL_TIER1, _TIER2, _TIER3; each quantity 1.
 
 /**
- * Get all known Paddle price IDs for a given plan (both tiers).
- * Used by the webhook to recognise any of these as belonging to the plan.
+ * Get all known Paddle price IDs for a given plan.
+ * Professional: 3 prices (TIER1/£15, TIER2/£25, TIER3/£50). Enterprise: legacy tier 1/tier 2.
  * @param {'professional'|'enterprise'} plan
  * @returns {string[]}
  */
 export function getAllPriceIdsForPlan(plan) {
 	const ids = [];
 	if (plan === 'professional') {
-		if (env.PADDLE_PRICE_ID_PROFESSIONAL) ids.push(env.PADDLE_PRICE_ID_PROFESSIONAL);
+		if (env.PADDLE_PRICE_ID_PROFESSIONAL_TIER1) ids.push(env.PADDLE_PRICE_ID_PROFESSIONAL_TIER1);
 		if (env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2) ids.push(env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2);
+		if (env.PADDLE_PRICE_ID_PROFESSIONAL_TIER3) ids.push(env.PADDLE_PRICE_ID_PROFESSIONAL_TIER3);
 	} else if (plan === 'enterprise') {
 		if (env.PADDLE_PRICE_ID_ENTERPRISE) ids.push(env.PADDLE_PRICE_ID_ENTERPRISE);
 		if (env.PADDLE_PRICE_ID_ENTERPRISE_TIER2) ids.push(env.PADDLE_PRICE_ID_ENTERPRISE_TIER2);
@@ -78,15 +81,24 @@ export function getAllPriceIdsForPlan(plan) {
 }
 
 /**
- * Select the correct Paddle price ID for a plan based on the seat count.
- *   - 1–300 seats  → base price (PADDLE_PRICE_ID_PROFESSIONAL / _ENTERPRISE) — must allow quantity 1 in Paddle
- *   - 301+ seats   → tier 2 price (_TIER2), falls back to base if tier 2 not configured
- *
- * In Paddle: create two prices per plan if you use tiered pricing — one with quantity range 1–300
- * (for signup and small orgs), one with 301+ for large orgs. Set them to _PROFESSIONAL and _TIER2.
+ * Get Professional price ID by contact tier. Tier 1 = 31–100 (£15); 1–30 uses TIER1. Tier 2 = 101–250 (£25). Tier 3 = 251–500 (£50).
+ * @param {number} contactOrSeatCount – contact count (signup) or seat count (Hub), 1–500
+ * @returns {string|null} Price ID for PADDLE_PRICE_ID_PROFESSIONAL_TIER1, _TIER2, or _TIER3
+ */
+export function getPriceIdForProfessionalByTier(contactOrSeatCount) {
+	const n = Math.max(0, Math.min(500, Math.floor(Number(contactOrSeatCount) || 0)));
+	if (n <= 100) return env.PADDLE_PRICE_ID_PROFESSIONAL_TIER1 || null;
+	if (n <= 250) return env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2 || null;
+	return env.PADDLE_PRICE_ID_PROFESSIONAL_TIER3 || null;
+}
+
+/**
+ * Select the correct Paddle price ID for a plan.
+ * Professional: 3 fixed prices (£15 / £25 / £50) by tier, quantity always 1.
+ * Enterprise: legacy seat-based (1–300 vs 301+).
  *
  * @param {'professional'|'enterprise'} plan
- * @param {number} seatCount
+ * @param {number} seatCount – for Professional used as tier (1–100→£15, 101–250→£25, 251+→£50)
  * @returns {string|null} The price ID, or null if not configured.
  */
 export function getPriceIdForPlan(plan, seatCount) {
@@ -96,9 +108,7 @@ export function getPriceIdForPlan(plan, seatCount) {
 		return (seatCount > SEAT_TIER_THRESHOLD && tier2) ? tier2 : base;
 	}
 	if (plan === 'professional') {
-		const base = env.PADDLE_PRICE_ID_PROFESSIONAL || null;
-		const tier2 = env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2 || null;
-		return (seatCount > SEAT_TIER_THRESHOLD && tier2) ? tier2 : base;
+		return getPriceIdForProfessionalByTier(seatCount);
 	}
 	return null;
 }
@@ -142,16 +152,17 @@ export async function syncSubscriptionQuantity(organisationId, quantityOverride)
 		const plan = org.subscriptionPlan;
 		if (!plan || plan === 'free') return false;
 
-		const quantity = typeof quantityOverride === 'number'
+		const seatCount = typeof quantityOverride === 'number'
 			? Math.max(quantityOverride, 1)
 			: await getAdminSeatCount();
 
-		// Pick the right price ID for the current seat count (may cross tier boundary)
-		const priceId = getPriceIdForPlan(plan, quantity);
+		// Professional: 3 fixed prices, quantity always 1. Enterprise: per-seat quantity.
+		const priceId = getPriceIdForPlan(plan, seatCount);
 		if (!priceId) {
 			console.warn('[paddle] syncSubscriptionQuantity: no price ID mapped for plan', plan);
 			return false;
 		}
+		const quantity = plan === 'professional' ? 1 : seatCount;
 
 		const baseUrl = getPaddleBaseUrl();
 		const res = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {

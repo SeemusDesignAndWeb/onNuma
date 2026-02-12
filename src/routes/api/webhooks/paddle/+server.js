@@ -88,7 +88,11 @@ function subscriptionToPlan(data) {
 		[env.PADDLE_PRICE_ID_ENTERPRISE, env.PADDLE_PRICE_ID_ENTERPRISE_TIER2].filter(Boolean)
 	);
 	const professionalIds = new Set(
-		[env.PADDLE_PRICE_ID_PROFESSIONAL, env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2].filter(Boolean)
+		[
+			env.PADDLE_PRICE_ID_PROFESSIONAL_TIER1,
+			env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2,
+			env.PADDLE_PRICE_ID_PROFESSIONAL_TIER3
+		].filter(Boolean)
 	);
 
 	const items = data?.items;

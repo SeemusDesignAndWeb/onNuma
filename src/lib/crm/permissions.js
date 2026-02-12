@@ -334,10 +334,11 @@ export function getHubPlanTiers() {
 
 /**
  * Professional contact tiers: fixed price per band. Minimum £15 (never below).
- * Up to 100 = £15; up to 250 = £25; up to 500 = £50.
+ * Tier 1 = 31–100 (£15); 1–30 same £15. Tier 2 = 101–250 (£25). Tier 3 = 251–500 (£50).
  */
 export const PROFESSIONAL_CONTACT_TIERS = [
-	{ min: 1, max: 100, price: 15 },
+	{ min: 1, max: 30, price: 15 },
+	{ min: 31, max: 100, price: 15 },
 	{ min: 101, max: 250, price: 25 },
 	{ min: 251, max: 500, price: 50 }
 ];

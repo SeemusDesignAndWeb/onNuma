@@ -4,7 +4,7 @@ import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerification
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
-import { getPaddleBaseUrl, getPriceIdForPlan, getPaddleApiKey } from '$lib/crm/server/paddle.js';
+import { getPaddleBaseUrl, getPriceIdForProfessionalByTier, getPaddleApiKey } from '$lib/crm/server/paddle.js';
 
 /** Valid signup plans */
 const VALID_SIGNUP_PLANS = ['free', 'professional'];
@@ -139,11 +139,10 @@ export const actions = {
 		const signupPlanRaw = form.get('plan')?.toString()?.trim() || DEFAULT_PLAN;
 		const signupPlan = VALID_SIGNUP_PLANS.includes(signupPlanRaw) ? signupPlanRaw : DEFAULT_PLAN;
 
-		// Number of contacts (Professional): 1–500, fixed tier pricing. Paddle checkout uses 1 seat for now.
+		// Number of contacts (Professional): 1–500, fixed tier pricing. Paddle: one of 3 prices (£15/£25/£50), quantity 1.
 		const numberOfContactsRaw = form.get('numberOfContacts')?.toString()?.trim();
 		const contactsParsed = parseInt(numberOfContactsRaw || '30', 10);
 		const contactCount = Number.isNaN(contactsParsed) ? 30 : Math.min(500, Math.max(1, contactsParsed));
-		const seatCount = 1;
 
 		let errors = validateSignup({
 			name,
@@ -167,7 +166,7 @@ export const actions = {
 			contactName,
 			marketingConsent,
 			plan: signupPlan,
-			numberOfUsers: seatCount,
+			numberOfUsers: 1,
 			numberOfContacts: signupPlan === 'professional' ? contactCount : 30
 		});
 		if (errors) {
@@ -190,7 +189,7 @@ export const actions = {
 		// The org and admin are created by the webhook after payment succeeds.
 		if (signupPlan === 'professional') {
 			const apiKey = getPaddleApiKey();
-			const priceId = getPriceIdForPlan('professional', seatCount);
+			const priceId = getPriceIdForProfessionalByTier(contactCount);
 			if (!apiKey || !priceId) {
 				return fail(503, {
 					errors: { _form: 'Billing is not configured yet. Please try the Free plan or contact us.' },
@@ -226,7 +225,7 @@ export const actions = {
 			try {
 				const baseUrl = getPaddleBaseUrl();
 				const body = {
-					items: [{ price_id: priceId, quantity: seatCount }],
+					items: [{ price_id: priceId, quantity: 1 }],
 					custom_data: { pending_signup_id: pendingSignup.id },
 					collection_mode: 'automatic'
 				};

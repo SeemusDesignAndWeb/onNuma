@@ -41,16 +41,16 @@ export async function GET({ url, locals }) {
 		return json({ error: 'Organisation not found' }, { status: 404 });
 	}
 
-	// Per-seat pricing: quantity = current number of admin users
-	// Price tier is selected automatically based on seat count (1-300 vs 301+)
+	// Professional: 3 fixed prices (£15/£25/£50) by tier, quantity 1. Enterprise: per-seat, quantity = admin count.
 	const seatCount = await getAdminSeatCount();
 	const priceId = getPriceIdForPlan(plan, seatCount);
 	if (!priceId) {
 		return json({ error: `Price ID for ${plan} not configured` }, { status: 503 });
 	}
+	const quantity = plan === 'professional' ? 1 : seatCount;
 
 	const body = {
-		items: [{ price_id: priceId, quantity: seatCount }],
+		items: [{ price_id: priceId, quantity }],
 		custom_data: { organisation_id: organisationId },
 		collection_mode: 'automatic'
 	};
