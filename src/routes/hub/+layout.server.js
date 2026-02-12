@@ -2,7 +2,7 @@ import { getCsrfToken } from '$lib/crm/server/auth.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { getCachedOrganisations } from '$lib/crm/server/organisationsCache.js';
-import { getPlanFromAreaPermissions, getAreaPermissionsForPlan, isSuperAdmin } from '$lib/crm/server/permissions.js';
+import { getPlanFromAreaPermissions, getAreaPermissionsForPlan, isSuperAdmin, getTrialStatus, getEffectiveOrgPermissions } from '$lib/crm/server/permissions.js';
 import { env } from '$env/dynamic/private';
 
 /** Strip Cloudinary logo URLs so Hub shows default logo until settings are updated. */
@@ -40,8 +40,14 @@ export async function load({ cookies, locals }) {
 		showOnboarding = !org.onboardingDismissedAt;
 	}
 	// Hub navbar and access run off the organisation's plan (Free / Professional / Enterprise)
-	const plan = org && Array.isArray(org.areaPermissions) ? getPlanFromAreaPermissions(org.areaPermissions) : null;
-	const organisationAreaPermissions = plan ? getAreaPermissionsForPlan(plan) : (org && Array.isArray(org.areaPermissions) ? org.areaPermissions : null);
+	// Use getEffectiveOrgPermissions to account for trial expiry (reverts to Free if trial expired)
+	const effectivePermissions = org ? getEffectiveOrgPermissions(org) : null;
+	const plan = effectivePermissions ? getPlanFromAreaPermissions(effectivePermissions) : null;
+	const organisationAreaPermissions = effectivePermissions || null;
+	
+	// Get trial status for UI banner
+	const trialStatus = org ? getTrialStatus(org) : { inTrial: false, expired: false, daysRemaining: 0, trialPlan: null };
+	
 	const theme = sanitizeThemeLogoUrls(settings?.theme || null);
 	const sundayPlannersLabel =
 		typeof settings?.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== ''
@@ -61,6 +67,7 @@ export async function load({ cookies, locals }) {
 		organisationId: organisationId || null,
 		organisationAreaPermissions,
 		plan: plan || 'free',
+		trialStatus,
 		sundayPlannersLabel,
 		showBilling: !!showBilling,
 		showBillingPortal: !!showBillingPortal,

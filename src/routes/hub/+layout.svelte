@@ -22,6 +22,7 @@
 	$: showOnboarding = data?.showOnboarding ?? false;
 	$: organisationAreaPermissions = data?.organisationAreaPermissions ?? null;
 	$: currentOrgId = data?.organisationId ?? null;
+	$: trialStatus = data?.trialStatus ?? { inTrial: false, expired: false, daysRemaining: 0, trialPlan: null };
 
 	// Track organisation changes to refresh store data
 	let previousOrgId = null;
@@ -121,6 +122,41 @@
 		</button>
 	</div>
 {/if}
+
+{#if trialStatus.inTrial}
+	<div class="mx-4 mt-4 p-3 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-sm flex items-center justify-between gap-4">
+		<span>
+			<strong>Professional Trial:</strong> 
+			{#if trialStatus.daysRemaining === 1}
+				1 day remaining
+			{:else if trialStatus.daysRemaining > 0}
+				{trialStatus.daysRemaining} days remaining
+			{:else}
+				Trial ends today
+			{/if}
+			– Upgrade to keep all your Professional features.
+		</span>
+		<a
+			href="/hub/billing"
+			class="px-3 py-1 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700 transition-colors whitespace-nowrap"
+		>
+			Upgrade now
+		</a>
+	</div>
+{:else if trialStatus.expired}
+	<div class="mx-4 mt-4 p-3 rounded-lg bg-red-50 text-red-800 border border-red-200 text-sm flex items-center justify-between gap-4">
+		<span>
+			<strong>Trial ended:</strong> Your Professional trial has expired. You're now on the Free plan. Upgrade to restore Forms, Email campaigns, Members and more.
+		</span>
+		<a
+			href="/hub/billing"
+			class="px-3 py-1 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors whitespace-nowrap"
+		>
+			Upgrade now
+		</a>
+	</div>
+{/if}
+
 <CrmShell {admin} {theme} superAdminEmail={superAdminEmail} organisationAreaPermissions={organisationAreaPermissions} sundayPlannersLabel={data?.sundayPlannersLabel ?? 'Sunday Planners'} showBilling={data?.showBilling ?? false} showBillingPortal={data?.showBillingPortal ?? false}>
 	<slot />
 </CrmShell>

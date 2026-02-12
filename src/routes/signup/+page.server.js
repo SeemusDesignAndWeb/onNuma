@@ -167,12 +167,20 @@ export const actions = {
 		// Get area permissions based on the selected signup plan
 		const areaPermissions = getAreaPermissionsForPlan(signupPlan);
 
+		// Set up trial for Professional plan (14 days)
+		const TRIAL_DAYS = 14;
+		const isProfessionalTrial = signupPlan === 'professional';
+		const trialEndsAt = isProfessionalTrial 
+			? new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
+			: null;
+
 		let org;
 		let admin;
 		try {
 			// Create organisation with selected plan permissions.
 			// signupPlan stored so we know what plan they signed up for (for billing/upgrade tracking).
-			// marketingConsent stored so we know who we can market to (query organisations where marketingConsent === true).
+			// For Professional signups, trialEndsAt marks when trial expires (reverts to Free).
+			// marketingConsent stored so we know who we can market to.
 			org = await create('organisations', {
 				name,
 				address,
@@ -182,6 +190,10 @@ export const actions = {
 				hubDomain: hubDomain || null,
 				areaPermissions,
 				signupPlan, // Track which plan button they clicked (free or professional)
+				...(isProfessionalTrial && { 
+					trialEndsAt,
+					trialPlan: 'professional' // The plan they're trialing
+				}),
 				isHubOrganisation: true,
 				marketingConsent: !!marketingConsent
 			});

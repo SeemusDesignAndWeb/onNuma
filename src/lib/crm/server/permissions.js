@@ -28,5 +28,11 @@ export {
 	PLAN_MAX_CONTACTS,
 	PLAN_PRICING,
 	getPlanMaxUsers,
-	getPlanMaxContacts
+	getPlanMaxContacts,
+	// Trial management
+	isTrialExpired,
+	isInTrial,
+	getTrialDaysRemaining,
+	getEffectiveOrgPermissions,
+	getTrialStatus
 } from '$lib/crm/permissions.js';

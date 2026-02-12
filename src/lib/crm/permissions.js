@@ -363,3 +363,80 @@ export function canCreateAdmin(admin, superAdminEmail = null) {
 	if (!admin) return false;
 	return isSuperAdmin(admin, superAdminEmail);
 }
+
+// ============================================================================
+// TRIAL MANAGEMENT
+// ============================================================================
+
+/**
+ * Check if an organisation's trial has expired.
+ * @param {object} organisation - Organisation object with trialEndsAt field
+ * @returns {boolean} True if trial has expired
+ */
+export function isTrialExpired(organisation) {
+	if (!organisation?.trialEndsAt) return false;
+	const trialEnd = new Date(organisation.trialEndsAt);
+	return Date.now() > trialEnd.getTime();
+}
+
+/**
+ * Check if an organisation is currently in a trial period.
+ * @param {object} organisation - Organisation object
+ * @returns {boolean} True if in active trial (has trial that hasn't expired)
+ */
+export function isInTrial(organisation) {
+	if (!organisation?.trialEndsAt) return false;
+	return !isTrialExpired(organisation);
+}
+
+/**
+ * Get the number of days remaining in trial.
+ * @param {object} organisation - Organisation object
+ * @returns {number} Days remaining (0 if expired or no trial)
+ */
+export function getTrialDaysRemaining(organisation) {
+	if (!organisation?.trialEndsAt) return 0;
+	const trialEnd = new Date(organisation.trialEndsAt);
+	const remaining = trialEnd.getTime() - Date.now();
+	if (remaining <= 0) return 0;
+	return Math.ceil(remaining / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Get effective area permissions for an organisation, accounting for trial status.
+ * If trial has expired, returns Free plan permissions.
+ * @param {object} organisation - Organisation object
+ * @returns {string[]} Effective area permissions
+ */
+export function getEffectiveOrgPermissions(organisation) {
+	if (!organisation) return getAreaPermissionsForPlan('free');
+	
+	// If organisation has a trial that has expired, return Free permissions
+	if (organisation.trialEndsAt && isTrialExpired(organisation)) {
+		return getAreaPermissionsForPlan('free');
+	}
+	
+	// Otherwise return the organisation's stored permissions
+	return organisation.areaPermissions || getAreaPermissionsForPlan('free');
+}
+
+/**
+ * Get trial status info for display in UI.
+ * @param {object} organisation - Organisation object
+ * @returns {{ inTrial: boolean, expired: boolean, daysRemaining: number, trialPlan: string|null }}
+ */
+export function getTrialStatus(organisation) {
+	if (!organisation?.trialEndsAt) {
+		return { inTrial: false, expired: false, daysRemaining: 0, trialPlan: null };
+	}
+	
+	const expired = isTrialExpired(organisation);
+	const daysRemaining = getTrialDaysRemaining(organisation);
+	
+	return {
+		inTrial: !expired,
+		expired,
+		daysRemaining,
+		trialPlan: organisation.trialPlan || 'professional'
+	};
+}
