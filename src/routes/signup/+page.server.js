@@ -305,11 +305,10 @@ export const actions = {
 					});
 				}
 
-				// Redirect to Paddle checkout — payment happens there.
-				// On success, Paddle redirects to the success URL and fires the webhook.
-				throw redirect(302, checkoutUrl);
+				// Return checkout URL so the client can navigate (enhance uses fetch, so 302 would not leave the page).
+				// Build + email happen only after payment, when we receive transaction.completed webhook.
+				return { redirectUrl: checkoutUrl };
 			} catch (err) {
-				if (err.status === 302) throw err; // re-throw redirect
 				console.error('[signup] Paddle checkout unexpected error:', err);
 				return fail(500, {
 					errors: { _form: 'Something went wrong starting checkout. Please try again.' },

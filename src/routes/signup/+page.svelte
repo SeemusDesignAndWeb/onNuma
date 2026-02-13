@@ -60,6 +60,12 @@
 	$: displayCost =
 		plan === 'professional' ? getProfessionalPriceForContactCount(numberOfContacts) : null;
 
+	// When server returns Paddle checkout URL (Professional plan), leave the page so user actually reaches checkout.
+	// (Form uses enhance → fetch; without this they would stay on signup and never see Paddle.)
+	$: if (form?.redirectUrl && typeof window !== 'undefined') {
+		window.location.href = form.redirectUrl;
+	}
+
 	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
 	onMount(() => {
 		if (data.success) invalidate('app:organisations');
