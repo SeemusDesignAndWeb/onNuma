@@ -19,6 +19,7 @@
 		: (values.plan === 'professional' || values.plan === 'free')
 			? values.plan
 			: 'free';
+	$: isProfessionalPlan = plan === 'professional';
 	$: planLabel = plan === 'professional' ? 'Professional' : 'Free';
 
 	// Upsell benefits - show next tier benefits
@@ -147,12 +148,10 @@
 	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
 	onMount(() => {
 		if (data.success) invalidate('app:organisations');
-		if (plan === 'professional') {
-			ensurePaddleReady();
-			// If we are on a Paddle payment-link URL, auto-open overlay for this transaction.
-			const ptxn = $page.url.searchParams.get('_ptxn');
-			if (ptxn) openCheckout(ptxn);
-		}
+		if (!isProfessionalPlan) return;
+		// If we are on a Paddle payment-link URL, auto-open overlay for this transaction.
+		const ptxn = $page.url.searchParams.get('_ptxn');
+		if (ptxn) openCheckout(ptxn);
 	});
 </script>
 
@@ -230,7 +229,7 @@
 						{#if plan === 'professional'}
 							Start with Professional
 						{:else}
-							Start your free trial
+							Start your free account
 						{/if}
 					</h1>
 					<p class="mt-1 text-sm text-white/95">
@@ -255,7 +254,7 @@
 
 				<form method="POST" action="?/create" use:enhance={() => async ({ result, update }) => {
 	// Professional plan: server returns transactionId → open Paddle.js overlay checkout
-	if (result?.type === 'success' && result?.data?.transactionId) {
+	if (isProfessionalPlan && result?.type === 'success' && result?.data?.transactionId) {
 		openCheckout(result.data.transactionId);
 		return; // don't call update() — form stays visible behind the overlay
 	}
@@ -405,9 +404,9 @@
 									class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm text-white bg-[#EB9486] hover:bg-[#e08070] transition-all"
 								>
 									{#if plan === 'professional'}
-										Start Professional trial
+										Start Professional
 									{:else}
-										Start free trial
+										Create free account
 									{/if}
 								</button>
 								<a

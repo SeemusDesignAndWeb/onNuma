@@ -179,6 +179,7 @@ export async function load({ url }) {
 	const success = url.searchParams.get('success') === '1';
 	const hub = url.searchParams.get('hub')?.trim() || null;
 	const plan = url.searchParams.get('plan');
+	const selectedPlan = plan === 'professional' || plan === 'free' ? plan : null;
 	let hubLoginUrl = null;
 	if (success && hub) {
 		const baseDomain = process.env.HUB_BASE_DOMAIN || 'onnuma.com';
@@ -190,13 +191,19 @@ export async function load({ url }) {
 	}
 	const hubSubdomainRequired = url.searchParams.get('hub_subdomain_required') === '1';
 
-	// Paddle client-side token and environment for Paddle.js overlay checkout
-	const paddleClientToken = (process.env.PUBLIC_PADDLE_CLIENT_TOKEN || '').trim() || null;
-	const paddleEnvironment = (process.env.PADDLE_ENVIRONMENT || 'sandbox').toLowerCase();
+	// Only expose Paddle config to Professional signup pages.
+	const paddleClientToken =
+		selectedPlan === 'professional'
+			? (process.env.PUBLIC_PADDLE_CLIENT_TOKEN || '').trim() || null
+			: null;
+	const paddleEnvironment =
+		selectedPlan === 'professional'
+			? (process.env.PADDLE_ENVIRONMENT || 'sandbox').toLowerCase()
+			: null;
 
 	return {
 		success,
-		plan: plan === 'professional' || plan === 'free' ? plan : null,
+		plan: selectedPlan,
 		hubLoginUrl,
 		hubSubdomainRequired,
 		paddleClientToken,
