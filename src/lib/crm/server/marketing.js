@@ -19,6 +19,11 @@ export const SUPPORTED_PLACEHOLDERS = [
 	{ key: 'first_name', description: 'Contact first name' },
 	{ key: 'last_name', description: 'Contact last name' },
 	{ key: 'full_name', description: 'Contact full name' },
+	{ key: 'firstName', description: 'Contact first name (legacy alias)' },
+	{ key: 'lastName', description: 'Contact last name (legacy alias)' },
+	{ key: 'name', description: 'Contact full name (legacy alias)' },
+	{ key: 'email', description: 'Contact email (legacy alias)' },
+	{ key: 'phone', description: 'Contact phone (legacy alias)' },
 	{ key: 'org_name', description: 'Organisation name' },
 	{ key: 'org_logo_url', description: 'Organisation logo URL' },
 	{ key: 'login_url', description: 'Hub login URL' },
@@ -101,6 +106,12 @@ export function buildPlaceholderData(contact, org, baseUrl, links = {}) {
 		first_name: firstName,
 		last_name: lastName,
 		full_name: fullName,
+		// Legacy aliases used in Hub newsletter templates.
+		firstName,
+		lastName,
+		name: fullName,
+		email: c.email || '',
+		phone: c.phone || '',
 		org_name: o.name || '',
 		org_logo_url: o.logoUrl || `${baseUrl}/assets/onnuma-logo.png`,
 		login_url: `${baseUrl}/hub/auth/login`,
@@ -240,6 +251,57 @@ export async function duplicateEmailTemplate(templateId, adminId) {
 	};
 	await create('marketing_email_templates', copy);
 	await createTemplateVersion(copy, adminId, 'Duplicated from ' + original.name);
+	return copy;
+}
+
+/**
+ * Create a new reusable mailshot.
+ */
+export async function createMailshot(data) {
+	const now = new Date().toISOString();
+	const id = randomUUID();
+	const mailshot = {
+		id,
+		name: data.name || 'Untitled mailshot',
+		internal_notes: data.internal_notes || '',
+		subject: data.subject || '',
+		preview_text: data.preview_text || '',
+		body_html: data.body_html || '',
+		body_text: data.body_text || '',
+		placeholders: detectPlaceholders(`${data.subject || ''} ${data.body_html || ''} ${data.body_text || ''}`),
+		status: 'draft',
+		tags: Array.isArray(data.tags) ? data.tags : [],
+		created_at: now,
+		updated_at: now,
+		created_by: data.created_by || null,
+		last_sent_at: null,
+		send_count: 0
+	};
+	await create('marketing_mailshots', mailshot);
+	return mailshot;
+}
+
+/**
+ * Duplicate an existing reusable mailshot.
+ */
+export async function duplicateMailshot(mailshotId, adminId) {
+	const original = await findById('marketing_mailshots', mailshotId);
+	if (!original) throw new Error('Mailshot not found');
+
+	const now = new Date().toISOString();
+	const id = randomUUID();
+	const copy = {
+		...original,
+		id,
+		name: `${original.name} (copy)`,
+		status: 'draft',
+		created_at: now,
+		updated_at: now,
+		created_by: adminId || original.created_by,
+		last_sent_at: null,
+		send_count: 0
+	};
+	await create('marketing_mailshots', copy);
 	return copy;
 }
 
@@ -843,6 +905,191 @@ export async function sendTestEmail(templateId, toEmail, organisationId, baseUrl
 	);
 
 	return result;
+}
+
+/**
+ * Send a test version of a mailshot to one or more addresses.
+ */
+export async function sendTestMailshot({ mailshot, toEmails, organisationId, baseUrl }) {
+	if (!mailshot) throw new Error('Mailshot not provided');
+	if (!Array.isArray(toEmails) || toEmails.length === 0) {
+		throw new Error('At least one test email is required');
+	}
+
+	const org = organisationId ? await findById('organisations', organisationId) : {};
+	const links = await resolveLinks(organisationId);
+	const branding = await getOrgBranding(organisationId);
+
+	const sampleContact = {
+		firstName: 'Test',
+		lastName: 'User',
+		email: toEmails[0]
+	};
+	const data = buildPlaceholderData(sampleContact, org, baseUrl, links);
+	data.unsubscribe_url = `${baseUrl}/marketing/unsubscribe`;
+
+	let bodyHtml = await insertContentBlocks(mailshot.body_html || '', true);
+	let bodyText = await insertContentBlocks(
+		mailshot.body_text || mailshot.body_html?.replace(/<[^>]*>/g, '') || '',
+		false
+	);
+	bodyHtml = renderTemplate(bodyHtml, data);
+	bodyText = renderTemplate(bodyText, data);
+	const subject = `[TEST] ${renderTemplate(mailshot.subject || '', data)}`;
+	const previewText = renderTemplate(mailshot.preview_text || '', data);
+
+	const fromEmail =
+		branding.sender_email ||
+		env.MAILGUN_FROM_EMAIL ||
+		(env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : 'noreply@onnuma.com');
+	const fromName = branding.sender_name || (org && org.name) || 'OnNuma';
+
+	const results = [];
+	for (const toEmail of toEmails) {
+		try {
+			const result = await rateLimitedSend(() =>
+				sendEmail({
+					from: `${fromName} <${fromEmail}>`,
+					to: [toEmail],
+					subject,
+					html: wrapInEmailLayout(bodyHtml, previewText, branding, baseUrl, data.unsubscribe_url),
+					text: appendUnsubscribeToText(bodyText, data.unsubscribe_url)
+				})
+			);
+			results.push({
+				email: toEmail,
+				status: 'sent',
+				messageId: result?.data?.id ?? null
+			});
+		} catch (error) {
+			results.push({
+				email: toEmail,
+				status: 'error',
+				error: error.message || 'Send failed'
+			});
+		}
+	}
+
+	return {
+		total: toEmails.length,
+		sent: results.filter((r) => r.status === 'sent').length,
+		failed: results.filter((r) => r.status === 'error').length,
+		results
+	};
+}
+
+/**
+ * Send a one-off marketing broadcast to all subscribed contacts.
+ * Respects legacy contact subscription flag and marketing preference opt-outs.
+ */
+export async function sendMarketingBroadcast({ subject, previewText, bodyHtml, bodyText, baseUrl }) {
+	const contacts = await readCollection('contacts');
+	const prefs = await readCollection('marketing_user_preferences');
+	const orgs = await readCollection('organisations');
+
+	const prefMap = new Map(
+		prefs
+			.filter((p) => p?.user_id)
+			.map((p) => [p.user_id, p])
+	);
+	const orgMap = new Map(
+		orgs
+			.filter((o) => o?.id)
+			.map((o) => [o.id, o])
+	);
+
+	const eligible = contacts.filter((contact) => {
+		if (!contact?.email || contact.subscribed === false) return false;
+		const pref = prefMap.get(contact.id);
+		return !pref?.opted_out_non_essential;
+	});
+
+	const results = [];
+	let sent = 0;
+	let failed = 0;
+	let skipped = contacts.length - eligible.length;
+
+	for (const contact of eligible) {
+		try {
+			const organisationId = contact.organisationId || null;
+			const org = organisationId ? (orgMap.get(organisationId) || {}) : {};
+			const links = await resolveLinks(organisationId);
+			const branding = await getOrgBranding(organisationId);
+
+			const data = buildPlaceholderData(contact, org, baseUrl, links);
+			const unsubscribeToken = await ensureUnsubscribeToken(contact.id, contact.email);
+			data.unsubscribe_url = unsubscribeToken?.token
+				? `${baseUrl}/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken.token)}`
+				: `${baseUrl}/marketing/unsubscribe`;
+
+			let renderedHtml = await insertContentBlocks(bodyHtml || '', true);
+			let renderedText = await insertContentBlocks(
+				bodyText || bodyHtml?.replace(/<[^>]*>/g, '') || '',
+				false
+			);
+			renderedHtml = renderTemplate(renderedHtml, data);
+			renderedText = renderTemplate(renderedText, data);
+			const renderedSubject = renderTemplate(subject || '', data);
+			const renderedPreview = renderTemplate(previewText || '', data);
+
+			const fromEmail =
+				branding.sender_email ||
+				env.MAILGUN_FROM_EMAIL ||
+				(env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : 'noreply@onnuma.com');
+			const fromName = branding.sender_name || org.name || 'OnNuma';
+
+			const sendResult = await rateLimitedSend(() =>
+				sendEmail({
+					from: `${fromName} <${fromEmail}>`,
+					to: [contact.email],
+					subject: renderedSubject,
+					html: wrapInEmailLayout(
+						renderedHtml,
+						renderedPreview,
+						branding,
+						baseUrl,
+						data.unsubscribe_url
+					),
+					text: appendUnsubscribeToText(renderedText, data.unsubscribe_url)
+				})
+			);
+
+			const messageId = sendResult?.data?.id ?? null;
+			sent++;
+			results.push({ email: contact.email, status: 'sent', messageId });
+
+			await create('marketing_send_logs', {
+				id: randomUUID(),
+				queue_entry_id: null,
+				user_id: contact.id,
+				template_id: null,
+				sequence_id: null,
+				sequence_step_id: null,
+				organisation_id: organisationId,
+				status: 'sent',
+				message_id: messageId,
+				email: contact.email,
+				sent_at: new Date().toISOString(),
+				error: null
+			});
+		} catch (error) {
+			failed++;
+			results.push({
+				email: contact.email,
+				status: 'error',
+				error: error.message || 'Unknown send error'
+			});
+		}
+	}
+
+	return {
+		totalContacts: contacts.length,
+		eligible: eligible.length,
+		skipped,
+		sent,
+		failed,
+		results
+	};
 }
 
 // ---------------------------------------------------------------------------

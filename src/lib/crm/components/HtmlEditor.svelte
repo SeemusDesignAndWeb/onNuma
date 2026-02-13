@@ -7,6 +7,10 @@
 	export let placeholder = 'Enter content...';
 	export let showPlaceholders = false; // Show placeholder dropdown
 	export let showImagePicker = false; // Show image picker
+	export let customPlaceholders = null; // Optional custom placeholder list
+	export let imageApiEndpoint = '/hub/api/images'; // API endpoint for image library
+	export let imageManagerHref = '/hub/images'; // Optional image manager link
+	export let showImageManagerLink = true; // Show/hide image manager link
 
 	let quill = null;
 	let quillContainer = null;
@@ -25,7 +29,7 @@
 	let sourceContent = value || '';
 	let sourceTextarea = null;
 
-	const placeholders = [
+	const defaultPlaceholders = [
 		{ value: '{{firstName}}', label: 'First Name' },
 		{ value: '{{lastName}}', label: 'Last Name' },
 		{ value: '{{name}}', label: 'Full Name' },
@@ -34,6 +38,10 @@
 		{ value: '{{rotaLinks}}', label: 'Upcoming Rotas' },
 		{ value: '{{upcomingEvents}}', label: 'Upcoming Events' }
 	];
+
+	$: placeholders = Array.isArray(customPlaceholders) && customPlaceholders.length > 0
+		? customPlaceholders
+		: defaultPlaceholders;
 
 	onMount(async () => {
 		if (!quillContainer || !browser) return;
@@ -316,7 +324,7 @@
 		if (forceReload) images = [];
 		loadingImages = true;
 		try {
-			const response = await fetch('/hub/api/images');
+			const response = await fetch(imageApiEndpoint);
 			if (response.ok) {
 				images = await response.json();
 			}
@@ -344,7 +352,7 @@
 		try {
 			const formData = new FormData();
 			formData.append('file', file);
-			const response = await fetch('/hub/api/images', { method: 'POST', body: formData });
+			const response = await fetch(imageApiEndpoint, { method: 'POST', body: formData });
 			if (response.ok) {
 				const result = await response.json();
 				images = [result.image, ...images];
@@ -588,7 +596,6 @@
 
 	function openImagePicker() {
 		showImageModal = true;
-		showImageOptions = false;
 		if (images.length === 0) {
 			loadImages();
 		}
@@ -768,16 +775,18 @@
 					{/if}
 				</div>
 			{/if}
-			<a
-				href="/hub/images"
-				target="_blank"
-				class="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700 flex items-center gap-1.5"
-			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-				</svg>
-				Upload images
-			</a>
+			{#if showImageManagerLink}
+				<a
+					href={imageManagerHref}
+					target="_blank"
+					class="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700 flex items-center gap-1.5"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+					</svg>
+					Upload images
+				</a>
+			{/if}
 		</div>
 	{/if}
 	<div class="html-editor-wrapper">

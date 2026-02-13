@@ -27,6 +27,7 @@ export const ALL_COLLECTIONS = [
 	'loom_videos',
 	'marketing_content_blocks',
 	'marketing_email_templates',
+	'marketing_mailshots',
 	'marketing_links',
 	'marketing_org_branding',
 	'marketing_send_logs',

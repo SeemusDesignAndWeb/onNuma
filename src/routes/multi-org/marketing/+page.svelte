@@ -9,6 +9,7 @@
 
 	const cards = [
 		{ label: 'Email Templates', href: '/marketing/templates', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', get: (s) => `${s?.templates?.active ?? 0} active / ${s?.templates?.total ?? 0} total` },
+		{ label: 'Mailshots', href: '/marketing/mailshots', color: 'bg-cyan-50 text-cyan-700 border-cyan-200', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', get: (s) => `${s?.mailshots?.active ?? 0} active / ${s?.mailshots?.total ?? 0} total` },
 		{ label: 'Sequences', href: '/marketing/sequences', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', get: (s) => `${s?.sequences?.active ?? 0} active / ${s?.sequences?.total ?? 0} total` },
 		{ label: 'Content Blocks', href: '/marketing/blocks', color: 'bg-purple-50 text-purple-700 border-purple-200', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', get: (s) => `${s?.blocks ?? 0} blocks` },
 		{ label: 'Links Library', href: '/marketing/links', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1', get: (s) => `${s?.links ?? 0} links` }
@@ -83,6 +84,10 @@
 			<a href="{base}/marketing/sequences/new" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-all">
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
 				New Sequence
+			</a>
+			<a href="{base}/marketing/mailshots/new" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-cyan-600 hover:bg-cyan-700 transition-all">
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+				New Mailshot
 			</a>
 			<a href="{base}/marketing/blocks/new" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
