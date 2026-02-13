@@ -10,6 +10,7 @@
 	$: values = form?.values || {};
 	$: errors = form?.errors || {};
 	$: success = data.success ?? false;
+	$: fromPayment = data.fromPayment ?? false; // true only when returned from Paddle after payment (success_url)
 	$: hubSubdomainRequired = data.hubSubdomainRequired ?? false;
 
 	// Plan: prefer URL so /signup?plan=professional always shows Professional (and slider). Use form values when URL has no plan (e.g. after submit error).
@@ -116,9 +117,13 @@
 						</svg>
 					</div>
 					<h1 class="text-2xl font-bold text-slate-800">You're all set</h1>
-					{#if plan === 'professional'}
+					{#if plan === 'professional' && fromPayment}
 						<p class="mt-2 text-slate-600 text-sm">
 							Payment received — your Professional organisation is being created. Check your email to verify your account, then log in to your Hub.
+						</p>
+					{:else if plan === 'professional'}
+						<p class="mt-2 text-slate-600 text-sm">
+							Complete your signup by paying at checkout. If you've just paid, check your email for the link to log in to your Hub.
 						</p>
 					{:else}
 						<p class="mt-2 text-slate-600 text-sm">
@@ -165,11 +170,12 @@
 				{/if}
 
 				<form method="POST" action="?/create" use:enhance={() => async ({ result, update }) => {
-	await update();
-	// Redirect to Paddle checkout using URL from response (reliable; store update can lag)
+	// Redirect to Paddle first; do not call update() so we never apply a server redirect (which would show success before payment)
 	if (result?.type === 'success' && result?.data?.redirectUrl) {
 		window.location.href = result.data.redirectUrl;
+		return;
 	}
+	await update();
 }}>
 					<input type="hidden" name="plan" value={plan} />
 					<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">

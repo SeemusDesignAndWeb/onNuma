@@ -131,6 +131,7 @@ async function isEmailOrgOwner(email) {
 
 export async function load({ url }) {
 	const success = url.searchParams.get('success') === '1';
+	const fromPayment = url.searchParams.get('from_payment') === '1'; // set by Paddle success_url after payment
 	const hub = url.searchParams.get('hub')?.trim() || null;
 	const plan = url.searchParams.get('plan');
 	let hubLoginUrl = null;
@@ -145,6 +146,7 @@ export async function load({ url }) {
 	const hubSubdomainRequired = url.searchParams.get('hub_subdomain_required') === '1';
 	return {
 		success,
+		fromPayment,
 		plan: plan === 'professional' || plan === 'free' ? plan : null,
 		hubLoginUrl,
 		hubSubdomainRequired
@@ -163,6 +165,7 @@ export const actions = {
 		const marketingConsent = form.get('marketingConsent') === 'on';
 		const signupPlanRaw = form.get('plan')?.toString()?.trim() || DEFAULT_PLAN;
 		const signupPlan = VALID_SIGNUP_PLANS.includes(signupPlanRaw) ? signupPlanRaw : DEFAULT_PLAN;
+		console.log('[signup] create action: plan from form:', JSON.stringify(signupPlanRaw), '→ signupPlan:', signupPlan);
 
 		// Number of contacts (Professional): 1–500, fixed tier pricing. Paddle: one of 3 prices (£15/£25/£50), quantity 1.
 		const numberOfContactsRaw = form.get('numberOfContacts')?.toString()?.trim();
