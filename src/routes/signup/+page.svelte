@@ -10,7 +10,6 @@
 	$: values = form?.values || {};
 	$: errors = form?.errors || {};
 	$: success = data.success ?? false;
-	$: fromPayment = data.fromPayment ?? false; // true only when returned from Paddle after payment (success_url)
 	$: hubSubdomainRequired = data.hubSubdomainRequired ?? false;
 
 	// Plan: prefer URL so /signup?plan=professional always shows Professional (and slider). Use form values when URL has no plan (e.g. after submit error).
@@ -61,17 +60,58 @@
 	$: displayCost =
 		plan === 'professional' ? getProfessionalPriceForContactCount(numberOfContacts) : null;
 
-	// Paddle checkout URL from server (for showing "Redirecting..." if redirect is slow)
-	$: redirectUrl = form?.redirectUrl;
+	// ── Paddle.js overlay checkout ──────────────────────────────────────
+	let checkoutOpen = false;   // true while Paddle overlay is showing
+	let checkoutDone = false;   // true after payment completed
+	let paddleReady = false;    // true once Paddle.js is initialised
+
+	function initPaddle() {
+		if (paddleReady || typeof window === 'undefined' || !window.Paddle) return;
+		const token = data.paddleClientToken;
+		if (!token) {
+			console.error('[signup] PUBLIC_PADDLE_CLIENT_TOKEN not set — cannot open checkout');
+			return;
+		}
+		if (data.paddleEnvironment === 'sandbox') {
+			window.Paddle.Environment.set('sandbox');
+		}
+		window.Paddle.Initialize({
+			token,
+			eventCallback: (ev) => {
+				if (ev.name === 'checkout.completed') {
+					checkoutOpen = false;
+					checkoutDone = true;
+				}
+				if (ev.name === 'checkout.closed' && !checkoutDone) {
+					checkoutOpen = false;
+				}
+			}
+		});
+		paddleReady = true;
+	}
+
+	function openCheckout(transactionId) {
+		if (!paddleReady) initPaddle();
+		if (!paddleReady) return; // still not ready (no token)
+		checkoutOpen = true;
+		window.Paddle.Checkout.open({ transactionId });
+	}
 
 	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
 	onMount(() => {
 		if (data.success) invalidate('app:organisations');
+		// Eagerly init Paddle.js if we're on Professional plan
+		if (plan === 'professional' && data.paddleClientToken) {
+			initPaddle();
+		}
 	});
 </script>
 
 <svelte:head>
 	<title>Sign up – {planLabel} plan | OnNuma Hub</title>
+	{#if plan === 'professional' && data.paddleClientToken}
+		<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+	{/if}
 </svelte:head>
 
 <section class="relative min-h-screen flex flex-col overflow-hidden">
@@ -96,19 +136,24 @@
 				</div>
 				<p class="text-center text-sm text-slate-500">Don't have an account? <a href="/signup" class="text-[#EB9486] hover:underline font-medium">Sign up</a></p>
 			</div>
-		{:else if redirectUrl}
+		{:else if checkoutDone}
+			<!-- Paddle checkout completed — payment received -->
 			<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-md w-full">
-				<div class="text-center">
-					<div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-600 mb-4 animate-pulse">
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+				<div class="text-center mb-6">
+					<div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-4">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 						</svg>
 					</div>
-					<h1 class="text-xl font-bold text-slate-800">Redirecting to checkout</h1>
-					<p class="mt-2 text-slate-600 text-sm">Taking you to secure payment. If nothing happens, <a href={redirectUrl} class="text-[#EB9486] hover:underline font-medium">click here</a>.</p>
+					<h1 class="text-2xl font-bold text-slate-800">Payment received</h1>
+					<p class="mt-2 text-slate-600 text-sm">
+						Your Professional organisation is being created. Check your email to verify your account, then log in to your Hub.
+					</p>
 				</div>
+				<p class="text-slate-600 text-sm text-center">Check your email for the link to log in to your Hub.</p>
 			</div>
 		{:else if success}
+			<!-- Free plan signup completed -->
 			<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-md w-full">
 				<div class="text-center mb-6">
 					<div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-4">
@@ -117,19 +162,9 @@
 						</svg>
 					</div>
 					<h1 class="text-2xl font-bold text-slate-800">You're all set</h1>
-					{#if plan === 'professional' && fromPayment}
-						<p class="mt-2 text-slate-600 text-sm">
-							Payment received — your Professional organisation is being created. Check your email to verify your account, then log in to your Hub.
-						</p>
-					{:else if plan === 'professional'}
-						<p class="mt-2 text-slate-600 text-sm">
-							Complete your signup by paying at checkout. If you've just paid, check your email for the link to log in to your Hub.
-						</p>
-					{:else}
-						<p class="mt-2 text-slate-600 text-sm">
-							Your Free organisation has been created. Check your email to verify your account, then log in to your Hub.
-						</p>
-					{/if}
+					<p class="mt-2 text-slate-600 text-sm">
+						Your Free organisation has been created. Check your email to verify your account, then log in to your Hub.
+					</p>
 				</div>
 				<div class="space-y-3">
 					{#if data.hubLoginUrl}
@@ -170,10 +205,10 @@
 				{/if}
 
 				<form method="POST" action="?/create" use:enhance={() => async ({ result, update }) => {
-	// Redirect to Paddle first; do not call update() so we never apply a server redirect (which would show success before payment)
-	if (result?.type === 'success' && result?.data?.redirectUrl) {
-		window.location.href = result.data.redirectUrl;
-		return;
+	// Professional plan: server returns transactionId → open Paddle.js overlay checkout
+	if (result?.type === 'success' && result?.data?.transactionId) {
+		openCheckout(result.data.transactionId);
+		return; // don't call update() — form stays visible behind the overlay
 	}
 	await update();
 }}>

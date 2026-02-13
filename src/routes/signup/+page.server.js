@@ -131,7 +131,6 @@ async function isEmailOrgOwner(email) {
 
 export async function load({ url }) {
 	const success = url.searchParams.get('success') === '1';
-	const fromPayment = url.searchParams.get('from_payment') === '1'; // set by Paddle success_url after payment
 	const hub = url.searchParams.get('hub')?.trim() || null;
 	const plan = url.searchParams.get('plan');
 	let hubLoginUrl = null;
@@ -144,12 +143,18 @@ export async function load({ url }) {
 		hubLoginUrl = `${protocol}//${host}/hub/auth/login`;
 	}
 	const hubSubdomainRequired = url.searchParams.get('hub_subdomain_required') === '1';
+
+	// Paddle client-side token and environment for Paddle.js overlay checkout
+	const paddleClientToken = (process.env.PUBLIC_PADDLE_CLIENT_TOKEN || '').trim() || null;
+	const paddleEnvironment = (process.env.PADDLE_ENVIRONMENT || 'sandbox').toLowerCase();
+
 	return {
 		success,
-		fromPayment,
 		plan: plan === 'professional' || plan === 'free' ? plan : null,
 		hubLoginUrl,
-		hubSubdomainRequired
+		hubSubdomainRequired,
+		paddleClientToken,
+		paddleEnvironment
 	};
 }
 
@@ -299,18 +304,19 @@ export const actions = {
 				}
 
 				const data = await res.json();
-				const checkoutUrl = data?.data?.checkout?.url;
-				if (!checkoutUrl) {
-					console.error('[signup] No checkout URL in Paddle response:', data);
+				const transactionId = data?.data?.id;
+				if (!transactionId) {
+					console.error('[signup] No transaction ID in Paddle response:', data);
 					return fail(502, {
 						errors: { _form: 'Failed to start checkout. Please try again.' },
 						values: valuesWithSeats()
 					});
 				}
 
-				// Return checkout URL so the client can navigate (enhance uses fetch, so 302 would not leave the page).
+				console.log('[signup] Paddle transaction created:', transactionId, '— returning to client for Paddle.js overlay checkout');
+				// Return transaction ID so the client opens the Paddle.js overlay checkout.
 				// Build + email happen only after payment, when we receive transaction.completed webhook.
-				return { redirectUrl: checkoutUrl };
+				return { transactionId };
 			} catch (err) {
 				console.error('[signup] Paddle checkout unexpected error:', err);
 				return fail(500, {
