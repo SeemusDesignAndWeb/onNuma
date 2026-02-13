@@ -102,7 +102,7 @@
 				</div>
 				<div class="space-y-3">
 					<a
-						href="/hub/auth/login"
+						href={data.hubLoginUrl || '/hub/auth/login'}
 						class="block w-full py-3 px-4 rounded-xl font-medium text-center text-white bg-[#EB9486] hover:bg-[#e08070] transition-colors"
 					>
 						Log in to your Hub

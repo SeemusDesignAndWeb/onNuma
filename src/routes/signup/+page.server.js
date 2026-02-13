@@ -121,8 +121,22 @@ async function isEmailOrgOwner(email) {
 }
 
 export async function load({ url }) {
+	const success = url.searchParams.get('success') === '1';
+	const hub = url.searchParams.get('hub')?.trim() || null;
+	const plan = url.searchParams.get('plan');
+	let hubLoginUrl = null;
+	if (success && hub) {
+		const baseDomain = process.env.HUB_BASE_DOMAIN || 'onnuma.com';
+		const appBase = process.env.APP_BASE_URL || 'https://www.onnuma.com';
+		const protocol = appBase.startsWith('http') ? new URL(appBase).protocol : 'https:';
+		// Subdomain-only (e.g. "acme") → https://acme.onnuma.com/hub/auth/login
+		const host = hub.includes('.') ? hub : `${hub}.${baseDomain}`;
+		hubLoginUrl = `${protocol}//${host}/hub/auth/login`;
+	}
 	return {
-		success: url.searchParams.get('success') === '1'
+		success,
+		plan: plan === 'professional' || plan === 'free' ? plan : null,
+		hubLoginUrl
 	};
 }
 
@@ -395,6 +409,6 @@ export const actions = {
 			console.warn('[signup] Skipping welcome email - no verification token found for admin:', email);
 		}
 
-		throw redirect(302, `/signup?success=1&plan=${signupPlan}`);
+		throw redirect(302, `/signup?success=1&plan=${signupPlan}&hub=${encodeURIComponent(hubDomain)}`);
 	}
 };
