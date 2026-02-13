@@ -60,18 +60,16 @@ export async function verifyPassword(password, hash) {
 /**
  * Get admin user by email
  * @param {string} email - Admin email
+ * @param {string|null} [organisationId] - Optional org scope
  * @returns {Promise<object|null>} Admin user or null
  */
-export async function getAdminByEmail(email) {
-	const admins = await readCollection('admins');
-	console.log('[getAdminByEmail] Looking for email:', email);
-	console.log('[getAdminByEmail] Found', admins.length, 'admins');
-	console.log('[getAdminByEmail] Admin emails:', admins.map(a => a.email));
+export async function getAdminByEmail(email, organisationId = null) {
+	const admins = organisationId
+		? await getAdminsForOrganisation(organisationId)
+		: await readCollection('admins');
 	// Normalize email to lowercase for comparison
 	const normalizedEmail = email.toLowerCase().trim();
-	const found = admins.find(a => a.email?.toLowerCase().trim() === normalizedEmail) || null;
-	console.log('[getAdminByEmail] Result:', found ? 'Found' : 'Not found');
-	return found;
+	return admins.find(a => a.email?.toLowerCase().trim() === normalizedEmail) || null;
 }
 
 /**
@@ -84,6 +82,48 @@ export async function getAdminById(id) {
 }
 
 /**
+ * Get all admins scoped to one organisation.
+ * Legacy fallback: include admins without organisationId only when their email
+ * matches the organisation's hubSuperAdminEmail.
+ * @param {string|null} organisationId
+ * @returns {Promise<object[]>}
+ */
+export async function getAdminsForOrganisation(organisationId) {
+	const admins = await readCollection('admins');
+	if (!organisationId) return admins;
+	const orgs = await readCollection('organisations');
+	const org = orgs.find((o) => o.id === organisationId) || null;
+	const hubSuperAdminEmail = (org?.hubSuperAdminEmail || '').toLowerCase().trim();
+	return admins.filter((a) => {
+		if (a.organisationId === organisationId) return true;
+		// Backward compatibility for legacy rows missing organisationId.
+		if (!a.organisationId && hubSuperAdminEmail && (a.email || '').toLowerCase().trim() === hubSuperAdminEmail) {
+			return true;
+		}
+		return false;
+	});
+}
+
+/**
+ * Check if an admin belongs to an organisation.
+ * @param {object|null} admin
+ * @param {string|null} organisationId
+ * @returns {Promise<boolean>}
+ */
+export async function isAdminInOrganisation(admin, organisationId) {
+	if (!admin || !organisationId) return !!admin;
+	if (admin.organisationId === organisationId) return true;
+	// Backward compatibility for legacy rows missing organisationId.
+	if (!admin.organisationId) {
+		const orgs = await readCollection('organisations');
+		const org = orgs.find((o) => o.id === organisationId) || null;
+		const hubSuperAdminEmail = (org?.hubSuperAdminEmail || '').toLowerCase().trim();
+		return !!hubSuperAdminEmail && (admin.email || '').toLowerCase().trim() === hubSuperAdminEmail;
+	}
+	return false;
+}
+
+/**
  * Generate email verification token
  * @returns {string} Verification token
  */
@@ -93,10 +133,10 @@ export function generateVerificationToken() {
 
 /**
  * Create a new admin user
- * @param {object} data - Admin data (email, password, name, permissions)
+ * @param {object} data - Admin data (email, password, name, permissions, organisationId)
  * @returns {Promise<object>} Created admin or existing admin (to prevent email enumeration)
  */
-export async function createAdmin({ email, password, name, permissions = [] }) {
+export async function createAdmin({ email, password, name, permissions = [], organisationId = null }) {
 	// Validate password complexity
 	validatePassword(password);
 	
@@ -127,6 +167,7 @@ export async function createAdmin({ email, password, name, permissions = [] }) {
 		email,
 		passwordHash: hashedPassword,
 		name,
+		organisationId: organisationId || null,
 		role: 'admin',
 		permissions: finalPermissions,
 		emailVerified: false,
@@ -175,10 +216,11 @@ export function isAccountLocked(admin) {
  * Authenticate admin user
  * @param {string} email - Admin email
  * @param {string} password - Plain text password
+ * @param {string|null} [organisationId] - Optional org scope
  * @returns {Promise<object|null>} Admin user or null, or throws error if account locked/password expired
  */
-export async function authenticateAdmin(email, password) {
-	const admin = await getAdminByEmail(email);
+export async function authenticateAdmin(email, password, organisationId = null) {
+	const admin = await getAdminByEmail(email, organisationId);
 	
 	// Check account lockout
 	if (admin && isAccountLocked(admin)) {

@@ -8,6 +8,7 @@ import { readCollection, findById, create, update, findMany, remove } from './fi
 import { rateLimitedSend } from './emailRateLimiter.js';
 import { sendEmail } from '$lib/server/mailgun.js';
 import { env } from '$env/dynamic/private';
+import { ensureUnsubscribeToken } from './tokens.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -592,8 +593,11 @@ export async function processSendQueue(baseUrl) {
 
 			// Build data and render
 			const data = buildPlaceholderData(contact, org, baseUrl, links);
-			// Unsubscribe link (simple token-based)
-			data.unsubscribe_url = `${baseUrl}/marketing/unsubscribe?uid=${contact.id}&org=${entry.organisation_id || ''}`;
+			// Unsubscribe link (token-based).
+			const unsubscribeToken = await ensureUnsubscribeToken(contact.id, contact.email);
+			data.unsubscribe_url = unsubscribeToken?.token
+				? `${baseUrl}/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken.token)}`
+				: `${baseUrl}/marketing/unsubscribe`;
 
 			let bodyHtml = await insertContentBlocks(template.body_html, true);
 			let bodyText = await insertContentBlocks(template.body_text || template.body_html?.replace(/<[^>]*>/g, ''), false);
@@ -612,7 +616,7 @@ export async function processSendQueue(baseUrl) {
 					to: [contact.email],
 					subject,
 					html: wrapInEmailLayout(bodyHtml, previewText, branding, baseUrl, data.unsubscribe_url),
-					text: bodyText
+					text: appendUnsubscribeToText(bodyText, data.unsubscribe_url)
 				})
 			);
 
@@ -788,6 +792,12 @@ function wrapInEmailLayout(bodyHtml, previewText, branding, baseUrl, unsubscribe
 </html>`;
 }
 
+function appendUnsubscribeToText(bodyText, unsubscribeUrl) {
+	const text = String(bodyText || '').trim();
+	if (!unsubscribeUrl) return text;
+	return `${text}\n\n---\nUnsubscribe: ${unsubscribeUrl}`;
+}
+
 // ---------------------------------------------------------------------------
 // Test send
 // ---------------------------------------------------------------------------
@@ -810,7 +820,7 @@ export async function sendTestEmail(templateId, toEmail, organisationId, baseUrl
 		email: toEmail
 	};
 	const data = buildPlaceholderData(sampleContact, org, baseUrl, links);
-	data.unsubscribe_url = `${baseUrl}/marketing/unsubscribe?uid=test&org=${organisationId || ''}`;
+	data.unsubscribe_url = `${baseUrl}/marketing/unsubscribe`;
 
 	let bodyHtml = await insertContentBlocks(template.body_html, true);
 	let bodyText = await insertContentBlocks(template.body_text || template.body_html?.replace(/<[^>]*>/g, ''), false);
@@ -828,7 +838,7 @@ export async function sendTestEmail(templateId, toEmail, organisationId, baseUrl
 			to: [toEmail],
 			subject,
 			html: wrapInEmailLayout(bodyHtml, previewText, branding, baseUrl, data.unsubscribe_url),
-			text: bodyText
+			text: appendUnsubscribeToText(bodyText, data.unsubscribe_url)
 		})
 	);
 

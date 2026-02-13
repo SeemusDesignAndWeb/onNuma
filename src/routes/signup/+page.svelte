@@ -191,12 +191,10 @@
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 						</svg>
 					</div>
-					<h1 class="text-2xl font-bold text-slate-800">Payment received</h1>
-					<p class="mt-2 text-slate-600 text-sm">
-						Your Professional organisation is being created. Check your email to verify your account, then log in to your Hub.
+					<p class="text-slate-600 text-sm">
+						Your Professional organisation is being created. Check your email to verify your account, and to see details on how to log into your new Hub.
 					</p>
 				</div>
-				<p class="text-slate-600 text-sm text-center">Check your email for the link to log in to your Hub.</p>
 			</div>
 		{:else if success && plan !== 'professional'}
 			<!-- Free plan signup completed -->

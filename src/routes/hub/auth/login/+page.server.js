@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { authenticateAdmin, createSession, setSessionCookie } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logAuditEvent } from '$lib/crm/server/audit.js';
+import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 
 // Rate limiting for login attempts
 const loginAttempts = new Map();
@@ -88,7 +89,8 @@ export const actions = {
 		let admin;
 		let unverifiedEmail = null;
 		try {
-			admin = await authenticateAdmin(email.toString(), password.toString());
+			const organisationId = await getCurrentOrganisationId();
+			admin = await authenticateAdmin(email.toString(), password.toString(), organisationId);
 		} catch (error) {
 			// Handle email not verified error
 			if (error.message === 'EMAIL_NOT_VERIFIED') {

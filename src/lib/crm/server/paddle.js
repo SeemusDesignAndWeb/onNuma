@@ -48,13 +48,15 @@ export function getPaddleApiKey() {
 // ── Admin / seat counting ───────────────────────────────────────────────────
 
 /**
- * Count the current number of admin users (seats).
- * All admins in the store belong to the current hub instance.
+ * Count admin users (seats) for one organisation.
  * @returns {Promise<number>} The admin count (minimum 1).
  */
-export async function getAdminSeatCount() {
+export async function getAdminSeatCount(organisationId) {
 	const admins = await readCollection('admins');
-	return Math.max(admins.length, 1);
+	const orgAdmins = organisationId
+		? admins.filter((a) => a.organisationId === organisationId)
+		: admins;
+	return Math.max(orgAdmins.length, 1);
 }
 
 // ── Price tier selection ────────────────────────────────────────────────────
@@ -160,7 +162,7 @@ export async function syncSubscriptionQuantity(organisationId, quantityOverride)
 
 		const seatCount = typeof quantityOverride === 'number'
 			? Math.max(quantityOverride, 1)
-			: await getAdminSeatCount();
+			: await getAdminSeatCount(organisationId);
 
 		// Professional: 3 fixed prices, quantity always 1. Enterprise: per-seat quantity.
 		const priceId = getPriceIdForPlan(plan, seatCount);

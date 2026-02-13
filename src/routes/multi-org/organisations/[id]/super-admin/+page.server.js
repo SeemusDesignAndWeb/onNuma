@@ -33,7 +33,7 @@ export async function load({ params, locals }) {
 	const currentHubSuperAdminEmail = org.hubSuperAdminEmail || (await getHubSuperAdminEmail());
 	let currentHubSuperAdminName = null;
 	if (currentHubSuperAdminEmail) {
-		const existing = await getAdminByEmail(currentHubSuperAdminEmail);
+		const existing = await getAdminByEmail(currentHubSuperAdminEmail, params.id);
 		if (existing) currentHubSuperAdminName = existing.name || null;
 	}
 	return {
@@ -67,7 +67,7 @@ export const actions = {
 			return fail(400, { error: 'Name is required' });
 		}
 
-		const existing = await getAdminByEmail(email);
+		const existing = await getAdminByEmail(email, params.id);
 		if (existing) {
 			// Update existing Hub admin: set name and full permissions
 			await update('admins', existing.id, {
@@ -91,7 +91,8 @@ export const actions = {
 					email,
 					password,
 					name,
-					permissions: FULL_PERMISSIONS
+					permissions: FULL_PERMISSIONS,
+					organisationId: params.id
 				});
 			} catch (err) {
 				return fail(400, { error: err.message || 'Failed to create admin' });

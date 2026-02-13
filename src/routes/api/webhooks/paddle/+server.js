@@ -144,6 +144,52 @@ async function generateUniqueHubDomain(name) {
 	return toCandidate(subdomain);
 }
 
+/**
+ * Ensure a paid-signup admin exists in contacts for marketing sends.
+ * Only creates/updates when explicit marketing consent was granted.
+ */
+async function registerMarketingContactForSignup({ organisationId, email, contactName, marketingConsent }) {
+	if (!organisationId || !email || !marketingConsent) return;
+
+	const nowIso = new Date().toISOString();
+	const normalizedEmail = String(email).toLowerCase().trim();
+	const nameParts = String(contactName || '').trim().split(/\s+/).filter(Boolean);
+	const firstName = nameParts[0] || '';
+	const lastName = nameParts.slice(1).join(' ');
+	const today = nowIso.slice(0, 10);
+
+	const contacts = await readCollection('contacts');
+	const existing = contacts.find(
+		(c) =>
+			c.organisationId === organisationId &&
+			String(c.email || '').toLowerCase().trim() === normalizedEmail
+	);
+
+	if (existing) {
+		await update('contacts', existing.id, {
+			...existing,
+			email: normalizedEmail,
+			firstName: firstName || existing.firstName || '',
+			lastName: lastName || existing.lastName || '',
+			subscribed: true,
+			joinedAt: existing.joinedAt || nowIso,
+			dateJoined: existing.dateJoined || today
+		});
+		return;
+	}
+
+	await create('contacts', {
+		organisationId,
+		email: normalizedEmail,
+		firstName,
+		lastName,
+		subscribed: true,
+		joinedAt: nowIso,
+		dateJoined: today,
+		notes: 'Created from signup marketing consent'
+	});
+}
+
 // ── Pending signup fulfilment ───────────────────────────────────────────────
 
 /**
@@ -179,7 +225,8 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 		email,
 		password,
 		name: contactName,
-		permissions: FULL_PERMISSIONS
+		permissions: FULL_PERMISSIONS,
+		organisationId: org.id
 	});
 	await updateAdminPassword(admin.id, password);
 
@@ -201,6 +248,14 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 
 	// Link super admin email
 	await updatePartial('organisations', org.id, { hubSuperAdminEmail: email });
+
+	// Register as a marketing contact when user opted in during signup.
+	await registerMarketingContactForSignup({
+		organisationId: org.id,
+		email,
+		contactName,
+		marketingConsent
+	});
 
 	// Send welcome email with org's custom hub URL so they log in at their custom URL
 	console.log('[paddle webhook] About to send welcome email, verificationToken:', !!verificationToken, 'to:', email);

@@ -42,7 +42,7 @@ export async function GET({ url, locals }) {
 	}
 
 	// Professional: 3 fixed prices (£15/£25/£50) by tier, quantity 1. Enterprise: per-seat, quantity = admin count.
-	const seatCount = await getAdminSeatCount();
+	const seatCount = await getAdminSeatCount(organisationId);
 	const priceId = getPriceIdForPlan(plan, seatCount);
 	if (!priceId) {
 		return json({ error: `Price ID for ${plan} not configured` }, { status: 503 });

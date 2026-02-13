@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { findById, update, remove } from '$lib/crm/server/fileStore.js';
-import { getAdminById, getAdminByEmail, updateAdminPassword, verifyAdminEmail, getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
+import { getAdminById, getAdminByEmail, updateAdminPassword, verifyAdminEmail, getCsrfToken, verifyCsrfToken, getAdminFromCookies, isAdminInOrganisation } from '$lib/crm/server/auth.js';
 import { isSuperAdmin, getAdminPermissions, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail } from '$lib/crm/server/permissions.js';
 import { getEffectiveSuperAdminEmail, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { logDataChange, logSensitiveOperation } from '$lib/crm/server/audit.js';
@@ -8,7 +8,11 @@ import { syncSubscriptionQuantity } from '$lib/crm/server/paddle.js';
 
 export async function load({ params, cookies, request }) {
 	const admin = await getAdminById(params.id);
+	const organisationId = await getCurrentOrganisationId();
 	if (!admin) {
+		throw redirect(302, '/hub/users');
+	}
+	if (!(await isAdminInOrganisation(admin, organisationId))) {
 		throw redirect(302, '/hub/users');
 	}
 
@@ -100,9 +104,14 @@ export const actions = {
 			if (!currentAdmin) {
 				return { error: 'Not authenticated' };
 			}
+			const organisationId = await getCurrentOrganisationId();
+			const targetAdmin = await getAdminById(params.id);
+			if (!targetAdmin || !(await isAdminInOrganisation(targetAdmin, organisationId))) {
+				return { error: 'Admin not found in current organisation' };
+			}
 
 			// Check if email is already taken by another admin
-			const existing = await getAdminByEmail(email.toString());
+			const existing = await getAdminByEmail(email.toString(), organisationId);
 			if (existing && existing.id !== params.id) {
 				return { error: 'An admin with this email already exists' };
 			}
@@ -169,6 +178,11 @@ export const actions = {
 		}
 
 		try {
+			const organisationId = await getCurrentOrganisationId();
+			const targetAdmin = await getAdminById(params.id);
+			if (!targetAdmin || !(await isAdminInOrganisation(targetAdmin, organisationId))) {
+				return { error: 'Admin not found in current organisation' };
+			}
 			const newPassword = data.get('newPassword');
 			const confirmPassword = data.get('confirmPassword');
 
@@ -197,6 +211,11 @@ export const actions = {
 		}
 
 		try {
+			const organisationId = await getCurrentOrganisationId();
+			const targetAdmin = await getAdminById(params.id);
+			if (!targetAdmin || !(await isAdminInOrganisation(targetAdmin, organisationId))) {
+				return { error: 'Admin not found in current organisation' };
+			}
 			await update('admins', params.id, {
 				failedLoginAttempts: 0,
 				accountLockedUntil: null
@@ -217,6 +236,11 @@ export const actions = {
 		}
 
 		try {
+			const organisationId = await getCurrentOrganisationId();
+			const targetAdmin = await getAdminById(params.id);
+			if (!targetAdmin || !(await isAdminInOrganisation(targetAdmin, organisationId))) {
+				return { error: 'Admin not found in current organisation' };
+			}
 			await update('admins', params.id, {
 				emailVerified: true,
 				emailVerificationToken: null,
@@ -239,6 +263,10 @@ export const actions = {
 
 		// Get admin data before deletion for audit log
 		const admin = await getAdminById(params.id);
+		const organisationId = await getCurrentOrganisationId();
+		if (!admin || !(await isAdminInOrganisation(admin, organisationId))) {
+			return { error: 'Admin not found in current organisation' };
+		}
 		
 		await remove('admins', params.id);
 
@@ -251,7 +279,6 @@ export const actions = {
 		}, event);
 
 		// Sync seat quantity with Paddle after admin removal (fire-and-forget)
-		const organisationId = await getCurrentOrganisationId();
 		if (organisationId) {
 			syncSubscriptionQuantity(organisationId).catch(() => {});
 		}

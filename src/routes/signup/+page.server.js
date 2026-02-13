@@ -129,6 +129,52 @@ async function isEmailOrgOwner(email) {
 	);
 }
 
+/**
+ * Ensure a signup user is available as a marketing contact.
+ * This only runs when marketing consent is explicitly granted.
+ */
+async function registerMarketingContactForSignup({ organisationId, email, contactName, marketingConsent }) {
+	if (!organisationId || !email || !marketingConsent) return;
+
+	const nowIso = new Date().toISOString();
+	const normalizedEmail = String(email).toLowerCase().trim();
+	const nameParts = String(contactName || '').trim().split(/\s+/).filter(Boolean);
+	const firstName = nameParts[0] || '';
+	const lastName = nameParts.slice(1).join(' ');
+	const today = nowIso.slice(0, 10);
+
+	const contacts = await readCollection('contacts');
+	const existing = contacts.find(
+		(c) =>
+			c.organisationId === organisationId &&
+			String(c.email || '').toLowerCase().trim() === normalizedEmail
+	);
+
+	if (existing) {
+		await update('contacts', existing.id, {
+			...existing,
+			email: normalizedEmail,
+			firstName: firstName || existing.firstName || '',
+			lastName: lastName || existing.lastName || '',
+			subscribed: true,
+			joinedAt: existing.joinedAt || nowIso,
+			dateJoined: existing.dateJoined || today
+		});
+		return;
+	}
+
+	await create('contacts', {
+		organisationId,
+		email: normalizedEmail,
+		firstName,
+		lastName,
+		subscribed: true,
+		joinedAt: nowIso,
+		dateJoined: today,
+		notes: 'Created from signup marketing consent'
+	});
+}
+
 export async function load({ url }) {
 	const success = url.searchParams.get('success') === '1';
 	const hub = url.searchParams.get('hub')?.trim() || null;
@@ -358,7 +404,8 @@ export const actions = {
 				email,
 				password,
 				name: contactName,
-				permissions: FULL_PERMISSIONS
+				permissions: FULL_PERMISSIONS,
+				organisationId: org.id
 			});
 
 			// Ensure admin has the password they just set
@@ -381,6 +428,14 @@ export const actions = {
 
 			// Link this org's super admin to the new user
 			await updatePartial('organisations', org.id, { hubSuperAdminEmail: email });
+
+			// Register as a marketing contact when user opted in during signup.
+			await registerMarketingContactForSignup({
+				organisationId: org.id,
+				email,
+				contactName,
+				marketingConsent
+			});
 
 			// Verify org is visible in the store
 			const verifyOrg = await findById('organisations', org.id);

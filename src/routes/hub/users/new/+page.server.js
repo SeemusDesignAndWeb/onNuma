@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
-import { createAdmin, getAdminFromCookies } from '$lib/crm/server/auth.js';
+import { createAdmin, getAdminFromCookies, getAdminsForOrganisation, getAdminByEmail } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
 import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail, getPlanMaxAdmins, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
-import { getEffectiveSuperAdminEmail, getSettings } from '$lib/crm/server/settings.js';
+import { getEffectiveSuperAdminEmail, getSettings, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
 import { readCollection } from '$lib/crm/server/fileStore.js';
@@ -24,7 +24,8 @@ export async function load({ cookies, parent }) {
 	const parentData = await parent();
 	const plan = parentData.plan || 'free';
 	const maxAdmins = getPlanMaxAdmins(plan);
-	const admins = await readCollection('admins');
+	const organisationId = await getCurrentOrganisationId();
+	const admins = await getAdminsForOrganisation(organisationId);
 	const adminCount = admins.length;
 	if (adminCount >= maxAdmins) {
 		throw redirect(302, '/hub/users?limit=1');
@@ -75,7 +76,7 @@ export const actions = {
 			? getPlanFromAreaPermissions(org.areaPermissions) || 'free'
 			: 'free';
 		const maxAdmins = getPlanMaxAdmins(plan);
-		const admins = await readCollection('admins');
+		const admins = await getAdminsForOrganisation(organisationId);
 		if (admins.length >= maxAdmins) {
 			return { error: `Admin limit reached (${maxAdmins} for ${plan} plan). Upgrade your plan to add more admins.` };
 		}
@@ -112,11 +113,12 @@ export const actions = {
 				email: email.toString(),
 				password: password.toString(),
 				name: name.toString(),
-				permissions: validPermissions
+				permissions: validPermissions,
+				organisationId
 			});
 
 			// Check if admin already exists (createAdmin returns existing admin without error to prevent enumeration)
-			const existing = await import('$lib/crm/server/auth.js').then(m => m.getAdminByEmail(email.toString()));
+			const existing = await getAdminByEmail(email.toString());
 			if (existing && existing.id !== admin.id) {
 				return { error: 'An admin with this email already exists' };
 			}
