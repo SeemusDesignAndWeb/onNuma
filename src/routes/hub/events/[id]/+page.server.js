@@ -27,6 +27,37 @@ export async function load({ params, cookies, url }) {
 	const eventSignups = await findMany('event_signups', s => s.eventId === params.id);
 	const meetingPlanners = await findMany('meeting_planners', mp => mp.eventId === params.id);
 
+	// All occurrences for Bookings view (no date filter), sorted by startsAt ascending
+	const { filterByOrganisation } = await import('$lib/crm/server/orgContext.js');
+	const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
+	const allOccurrencesForBookings = [...eventOccurrences]
+		.sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
+		.map(occ => {
+			const occSignups = eventSignups.filter(s => s.occurrenceId === occ.id);
+			const totalAttendees = occSignups.reduce((sum, s) => sum + (s.guestCount || 0) + 1, 0);
+			const effectiveMaxSpaces = occ.maxSpaces !== null && occ.maxSpaces !== undefined ? occ.maxSpaces : event.maxSpaces;
+			const availableSpots = effectiveMaxSpaces ? effectiveMaxSpaces - totalAttendees : null;
+			const isFull = effectiveMaxSpaces ? totalAttendees >= effectiveMaxSpaces : false;
+			const enrichedSignups = occSignups.map(s => {
+				const contact = contacts.find(c => c.email && s.email && c.email.toLowerCase() === s.email.toLowerCase());
+				const displayName = contact
+					? `${(contact.firstName || '').trim()} ${(contact.lastName || '').trim()}`.trim() || contact.email || s.name
+					: s.name;
+				return { ...s, displayName };
+			});
+			return {
+				...occ,
+				signupStats: {
+					signupCount: occSignups.length,
+					totalAttendees,
+					availableSpots,
+					isFull,
+					effectiveMaxSpaces,
+					signups: enrichedSignups
+				}
+			};
+		});
+
 	// Calculate rota statistics and signup statistics for each occurrence
 	const occurrencesWithStats = occurrences.map(occ => {
 		// Find rotas that apply to this occurrence
@@ -125,11 +156,11 @@ export async function load({ params, cookies, url }) {
 
 	const csrfToken = getCsrfToken(cookies) || '';
 	const eventColors = await getEventColors();
-	const { filterByOrganisation } = await import('$lib/crm/server/orgContext.js');
 	const lists = filterByOrganisation(await readCollection('lists'), organisationId);
 	return {
 		event,
 		occurrences: occurrencesWithStats,
+		allOccurrencesForBookings,
 		rotas,
 		meetingPlanners,
 		rotaSignupLink,

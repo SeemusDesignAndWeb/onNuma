@@ -10,7 +10,7 @@
     import Table from '$lib/crm/components/Table.svelte';
     import MultiSelect from '$lib/crm/components/MultiSelect.svelte';
     import ImagePicker from '$lib/components/ImagePicker.svelte';
-    import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
+    import { formatDateTimeUK, formatDateUK, formatTimeUK } from '$lib/crm/utils/dateFormat.js';
     import { notifications } from '$lib/crm/stores/notifications.js';
     import { dialog } from '$lib/crm/stores/notifications.js';
     import { EVENT_COLORS } from '$lib/crm/constants/eventColours.js';
@@ -27,6 +27,10 @@
     $: formResult = $page.form;
     $: lists = $page.data?.lists || [];
     $: highlightOccurrenceId = $page.data?.highlightOccurrenceId ?? null;
+    $: allOccurrencesForBookings = $page.data?.allOccurrencesForBookings || [];
+    $: showBookings = event?.enableSignup === true;
+    $: totalBookingsSignupCount = allOccurrencesForBookings.reduce((n, o) => n + (o.signupStats?.signups?.length || 0), 0);
+    $: occurrencesWithSignupsForBookings = allOccurrencesForBookings.filter(o => (o.signupStats?.signups?.length || 0) > 0);
     // Server resolves viewing occurrence from URL ?occurrenceId= (from all occurrences, so calendar click always shows context)
     $: viewingOccurrence = $page.data?.viewingOccurrence ?? (highlightOccurrenceId && occurrences.length ? occurrences.find(o => o.id === highlightOccurrenceId) : null);
     $: backHref = $page.url.pathname + '?edit=false' + (highlightOccurrenceId ? '&occurrenceId=' + highlightOccurrenceId : '');
@@ -60,6 +64,49 @@
         } else if (formResult?.error) {
             notifications.error(formResult.error);
         }
+    }
+
+    function escapeCsvCell(val) {
+        if (val == null) return '';
+        const s = String(val);
+        if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+    }
+
+    function exportBookingsToCsv() {
+        const rows = [];
+        const header = ['Occurrence date', 'Occurrence time', 'Name', 'Email', 'Guests', 'Total attendees', 'Dietary requirements', 'Signed up at'];
+        rows.push(header.map(escapeCsvCell).join(','));
+        for (const occ of allOccurrencesForBookings) {
+            const signups = occ.signupStats?.signups || [];
+            const occDate = occ.startsAt ? formatDateUK(occ.startsAt) : '';
+            const occTime = occ.allDay ? 'All day' : (occ.startsAt ? formatTimeUK(occ.startsAt) : '');
+            for (const s of signups) {
+                const totalAttendees = 1 + (s.guestCount || 0);
+                const signedUpAt = s.createdAt ? formatDateTimeUK(s.createdAt) : '';
+                rows.push([
+                    occDate,
+                    occTime,
+                    s.displayName ?? s.name,
+                    s.email ?? '',
+                    s.guestCount ?? 0,
+                    totalAttendees,
+                    s.dietaryRequirements ?? '',
+                    signedUpAt
+                ].map(escapeCsvCell).join(','));
+            }
+        }
+        const csv = '\uFEFF' + rows.join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safeTitle = (event?.title || 'event').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').substring(0, 80);
+        const datePart = new Date().toISOString().slice(0, 10);
+        a.download = `event-bookings-${safeTitle}-${datePart}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        notifications.success('CSV downloaded');
     }
 
     async function handleDeleteSignup(signupId) {
@@ -102,6 +149,7 @@
     };
     let showImagePicker = false;
     let showOccurrences = false;
+    let showBookingsSection = true;
     let showMeetingPlanners = false;
     let showRotas = false;
     let showEventEmailModal = false;
@@ -636,73 +684,119 @@
                         getRowClass={(row) => highlightOccurrenceId && row.id === highlightOccurrenceId ? 'ring-2 ring-hub-blue-500 bg-hub-blue-50' : ''}
                     />
                 </div>
-                
-                {#if occurrences.some(occ => occ.signupStats?.signupCount > 0)}
-                    <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
-                        <h4 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Event Signups</h4>
-                        
-                        <div class="space-y-4 sm:space-y-6">
-                            {#each occurrences as occ}
-                                {#if occ.signupStats?.signupCount > 0}
-                                    <div class="border border-gray-200 rounded-lg p-3 sm:p-4">
-                                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
-                                            <div class="flex-1">
-                                                <h5 class="text-xs font-medium text-gray-900">
-                                                    {formatDateTimeUK(occ.startsAt)}
-                                                </h5>
-                                                <p class="text-xs sm:text-sm text-gray-600 mt-1">
-                                                    {occ.signupStats.signupCount} {occ.signupStats.signupCount === 1 ? 'person has' : 'people have'} signed up
-                                                    ({occ.signupStats.totalAttendees} total attendees including guests)
-                                                </p>
-                                                {#if occ.maxSpaces}
-                                                    <p class="text-xs sm:text-sm text-gray-600 mt-1">
-                                                        Spots: {occ.signupStats.totalAttendees} / {occ.maxSpaces}
-                                                        {#if occ.signupStats.isFull}
-                                                            <span class="text-hub-red-600 font-medium ml-2">(Full)</span>
-                                                        {:else}
-                                                            <span class="text-hub-green-600 ml-2">({occ.signupStats.availableSpots} available)</span>
-                                                        {/if}
-                                                    </p>
-                                                {/if}
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mt-3">
-                                            <h6 class="text-xs sm:text-sm font-medium text-gray-700 mb-2">Signups:</h6>
-                                            <ul class="space-y-2">
-                                                {#each occ.signupStats.signups as signup}
-                                                    <li class="text-xs sm:text-sm text-gray-600 flex items-start justify-between gap-2">
-                                                        <div class="flex items-start gap-2 flex-1 min-w-0">
-                                                            <span class="w-2 h-2 bg-hub-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                                                            <div class="min-w-0 flex-1">
-                                                                <span class="font-medium">{signup.name}</span>
-                                                                <span class="text-gray-400 hidden sm:inline"> ({signup.email})</span>
-                                                                <span class="text-gray-400 sm:hidden block text-xs truncate">{signup.email}</span>
-                                                                {#if signup.guestCount > 0}
-                                                                    <span class="text-gray-500"> - {signup.guestCount} {signup.guestCount === 1 ? 'guest' : 'guests'}</span>
-                                                                {/if}
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            on:click={() => handleDeleteSignup(signup.id)}
-                                                            class="text-hub-red-600 hover:text-hub-red-800 font-medium text-xs ml-2 flex-shrink-0"
-                                                            title="Remove signup"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </li>
-                                                {/each}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                {/if}
-                            {/each}
-                        </div>
-                    </div>
-                {/if}
             </div>
         {/if}
     </div>
+
+    {#if showBookings}
+        <div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
+            <div class="flex items-center gap-2 flex-wrap">
+                <button
+                    type="button"
+                    on:click={() => (showBookingsSection = !showBookingsSection)}
+                    class="flex items-center gap-2 flex-1 min-w-0 text-left group"
+                    aria-expanded={showBookingsSection}
+                >
+                    <svg
+                        class="w-5 h-5 text-gray-500 flex-shrink-0 transition-transform duration-200"
+                        class:rotate-180={!showBookingsSection}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                    <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-700">Bookings</h3>
+                    <span class="text-sm font-normal text-gray-500">({totalBookingsSignupCount} signup{totalBookingsSignupCount !== 1 ? 's' : ''})</span>
+                </button>
+                {#if totalBookingsSignupCount > 0}
+                    <button
+                        type="button"
+                        on:click={exportBookingsToCsv}
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-xs font-medium flex-shrink-0"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Export to CSV
+                    </button>
+                {/if}
+            </div>
+            {#if showBookingsSection}
+                <div class="mt-3 pt-3 border-t border-gray-200" transition:slide={{ duration: 200 }}>
+                    {#if occurrencesWithSignupsForBookings.length > 0}
+                        <div class="space-y-4 sm:space-y-6">
+                            {#each occurrencesWithSignupsForBookings as occ}
+                                {@const stats = occ.signupStats}
+                                {@const effectiveMaxSpaces = occ.maxSpaces !== null && occ.maxSpaces !== undefined ? occ.maxSpaces : (event?.maxSpaces ?? null)}
+                                <div class="border border-gray-200 rounded-lg p-3 sm:p-4">
+                                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
+                                        <div class="flex-1">
+                                            <h5 class="text-xs font-medium text-gray-900">
+                                                {formatDateTimeUK(occ.startsAt)}
+                                                {#if occ.endsAt}
+                                                    <span class="text-gray-500"> – {formatDateTimeUK(occ.endsAt)}</span>
+                                                {/if}
+                                            </h5>
+                                            <p class="text-xs sm:text-sm text-gray-600 mt-1">
+                                                {stats.signupCount} {stats.signupCount === 1 ? 'signup' : 'signups'}, {stats.totalAttendees} total attendees
+                                                {#if effectiveMaxSpaces != null}
+                                                    — {stats.totalAttendees} / {effectiveMaxSpaces} spots
+                                                    {#if stats.isFull}
+                                                        <span class="text-hub-red-600 font-medium">(Full)</span>
+                                                    {:else}
+                                                        <span class="text-hub-green-600">({stats.availableSpots} available)</span>
+                                                    {/if}
+                                                {/if}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full text-sm">
+                                            <thead>
+                                                <tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase">
+                                                    <th class="py-2 pr-3">Name</th>
+                                                    <th class="py-2 pr-3">Email</th>
+                                                    <th class="py-2 pr-3">Guests</th>
+                                                    {#if event.showDietaryRequirements}
+                                                        <th class="py-2 pr-3">Dietary</th>
+                                                    {/if}
+                                                    <th class="py-2 pl-2 w-20"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {#each stats.signups as signup}
+                                                    <tr class="border-b border-gray-100 last:border-0">
+                                                        <td class="py-2 pr-3 font-medium text-gray-900">{signup.displayName ?? signup.name}</td>
+                                                        <td class="py-2 pr-3 text-gray-600">{signup.email}</td>
+                                                        <td class="py-2 pr-3 text-gray-600">{signup.guestCount ?? 0}</td>
+                                                        {#if event.showDietaryRequirements}
+                                                            <td class="py-2 pr-3 text-gray-600">{signup.dietaryRequirements ?? '—'}</td>
+                                                        {/if}
+                                                        <td class="py-2 pl-2">
+                                                            <button
+                                                                type="button"
+                                                                on:click={() => handleDeleteSignup(signup.id)}
+                                                                class="text-hub-red-600 hover:text-hub-red-800 font-medium text-xs"
+                                                                title="Remove signup"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                {/each}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                    {:else}
+                        <p class="text-sm text-gray-500 py-4">No signups yet. When people sign up for this event, they will appear here.</p>
+                    {/if}
+                </div>
+            {/if}
+        </div>
+    {/if}
 
     {#if meetingPlanners.length > 0}
         <div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">

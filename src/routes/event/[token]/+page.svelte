@@ -8,6 +8,7 @@
 	$: event = $page.data?.event;
 	$: occurrences = $page.data?.occurrences || [];
 	$: allOccurrences = $page.data?.allOccurrences || [];
+	$: upcomingOccurrencesForSignup = $page.data?.upcomingOccurrencesForSignup || [];
 	$: occurrenceId = $page.data?.occurrenceId;
 	$: rotas = $page.data?.rotas || [];
 	$: upcomingOccurrencesForRotas = $page.data?.upcomingOccurrencesForRotas || [];
@@ -70,9 +71,10 @@
 		});
 	}
 
-	// Get selected occurrence details
-	$: selectedOccurrence = occurrences.find(occ => occ.id === selectedOccurrenceId) || 
-		(allOccurrences.find(occ => occ.id === selectedOccurrenceId));
+	// Get selected occurrence details (prefer upcoming list so selected date displays when in dropdown)
+	$: selectedOccurrence = upcomingOccurrencesForSignup.find(occ => occ.id === selectedOccurrenceId) ||
+		occurrences.find(occ => occ.id === selectedOccurrenceId) ||
+		allOccurrences.find(occ => occ.id === selectedOccurrenceId);
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -199,6 +201,9 @@
 					{#if event.enableSignup}
 						<div class="bg-white shadow rounded-lg p-6">
 							<h2 class="text-2xl font-bold text-gray-900 mb-4">Sign Up for This Event</h2>
+							{#if upcomingOccurrencesForSignup.length === 0}
+								<p class="text-gray-600">There are no dates available to sign up for from today onwards. All occurrences for this event have passed.</p>
+							{:else}
 						<form 
 							method="POST" 
 							action="?/signup" 
@@ -218,7 +223,7 @@
 								class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 py-2 px-3"
 							>
 								<option value="">-- Select a date --</option>
-								{#each allOccurrences as occ}
+								{#each upcomingOccurrencesForSignup as occ}
 									{@const effectiveMaxSpaces = occ.maxSpaces !== null && occ.maxSpaces !== undefined 
 										? occ.maxSpaces 
 										: (event?.maxSpaces || null)}
@@ -300,6 +305,7 @@
 							Sign Up
 						</button>
 					</form>
+							{/if}
 						</div>
 					{/if}
 				</div>
