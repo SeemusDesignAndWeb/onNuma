@@ -10,6 +10,7 @@
 	$: values = form?.values || {};
 	$: errors = form?.errors || {};
 	$: success = data.success ?? false;
+	$: hubSubdomainRequired = data.hubSubdomainRequired ?? false;
 
 	// Plan: prefer URL so /signup?plan=professional always shows Professional (and slider). Use form values when URL has no plan (e.g. after submit error).
 	$: urlPlan = $page.url.searchParams.get('plan');
@@ -81,7 +82,17 @@
 		<div class="absolute inset-0 bg-slate-900/60" aria-hidden="true"></div>
 	</div>
 	<div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-6 flex items-center justify-center min-h-[calc(100vh-5rem)]">
-		{#if success}
+		{#if hubSubdomainRequired}
+			<div class="bg-amber-50 border border-amber-200 rounded-2xl shadow-sm p-6 sm:p-8 max-w-md w-full">
+				<div class="text-center mb-4">
+					<h1 class="text-xl font-bold text-slate-800">Log in at your organisation's Hub</h1>
+					<p class="mt-2 text-slate-600 text-sm">
+						Hub login is only available at your organisation's URL (e.g. <strong>yourorg.onnuma.com</strong>). Use the link from your welcome email, or type your Hub address in the browser.
+					</p>
+				</div>
+				<p class="text-center text-sm text-slate-500">Don't have an account? <a href="/signup" class="text-[#EB9486] hover:underline font-medium">Sign up</a></p>
+			</div>
+		{:else if success}
 			<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-md w-full">
 				<div class="text-center mb-6">
 					<div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-4">
@@ -101,12 +112,16 @@
 					{/if}
 				</div>
 				<div class="space-y-3">
-					<a
-						href={data.hubLoginUrl || '/hub/auth/login'}
-						class="block w-full py-3 px-4 rounded-xl font-medium text-center text-white bg-[#EB9486] hover:bg-[#e08070] transition-colors"
-					>
-						Log in to your Hub
-					</a>
+					{#if data.hubLoginUrl}
+						<a
+							href={data.hubLoginUrl}
+							class="block w-full py-3 px-4 rounded-xl font-medium text-center text-white bg-[#EB9486] hover:bg-[#e08070] transition-colors"
+						>
+							Log in to your Hub
+						</a>
+					{:else}
+						<p class="text-slate-600 text-sm text-center">Check your email for the link to log in to your Hub.</p>
+					{/if}
 				</div>
 			</div>
 		{:else}
@@ -285,7 +300,7 @@
 									{/if}
 								</button>
 								<a
-									href="/hub/auth/login"
+									href="/signup?hub_subdomain_required=1"
 									class="inline-flex items-center px-4 py-2 rounded-xl font-medium text-sm text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
 								>
 									Already have an account? Log in

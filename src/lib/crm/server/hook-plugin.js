@@ -7,7 +7,7 @@ import {
 	setMultiOrgCsrfToken,
 	getMultiOrgCsrfToken
 } from './multiOrgAuth.js';
-import { resolveOrganisationFromHost, getMultiOrgPublicPath } from './hubDomain.js';
+import { resolveOrganisationFromHost, getMultiOrgPublicPath, isMainAppDomain } from './hubDomain.js';
 import { runWithOrganisation } from './requestOrg.js';
 
 /**
@@ -112,8 +112,13 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		throw redirect(302, '/hub/auth/login');
 	}
 
-	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages and static assets) to hub login.
+	// When host is the main app domain (www.onnuma.com), never serve /hub — redirect to signup with message.
 	const host = url.host || request.headers.get('host') || '';
+	if (pathname.startsWith('/hub') && isMainAppDomain(host)) {
+		throw redirect(302, '/signup?hub_subdomain_required=1');
+	}
+
+	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages and static assets) to hub login.
 	const orgFromHost = await resolveOrganisationFromHost(host);
 	const isPublicAsset = pathname.startsWith('/images/') || pathname.startsWith('/assets/');
 	if (orgFromHost && !pathname.startsWith('/hub') && !isPublicHubPath && !isPublicAsset) {

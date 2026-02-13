@@ -70,6 +70,21 @@ export function invalidateHubDomainCache() {
 	orgsCacheTime = 0;
 }
 
+// --- Main app domain (www.onnuma.com) — Hub must not be served here ---
+
+const HUB_BASE_DOMAIN = (process.env.HUB_BASE_DOMAIN || 'onnuma.com').toLowerCase().trim().replace(/^\.+|\.+$/g, '');
+
+/**
+ * Whether the request host is the main public site (www.onnuma.com or onnuma.com).
+ * Hub routes must not be served on this host; redirect to signup with subdomain message.
+ */
+export function isMainAppDomain(host) {
+	if (!host || typeof host !== 'string') return false;
+	const h = normaliseHost(host);
+	if (!h) return false;
+	return (h === 'www.' + HUB_BASE_DOMAIN) || (h === HUB_BASE_DOMAIN);
+}
+
 // --- Multi-org admin subdomain (e.g. admin.onnuma.com → /multi-org at root) ---
 
 const MULTI_ORG_ADMIN_DOMAIN = process.env.MULTI_ORG_ADMIN_DOMAIN || '';

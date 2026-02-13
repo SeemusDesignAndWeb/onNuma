@@ -97,14 +97,23 @@ async function generateUniqueHubDomain(name) {
 	return subdomain;
 }
 
+/** Base domain for hub subdomains (e.g. onnuma.com). */
+function getHubBaseDomain() {
+	return (process.env.HUB_BASE_DOMAIN || 'onnuma.com').toLowerCase().trim().replace(/^\.+|\.+$/g, '') || 'onnuma.com';
+}
+
 async function isHubDomainTaken(subdomain, excludeOrgId = null) {
 	const orgs = await readCollection('organisations');
-	const normalised = subdomain.toLowerCase().trim();
+	const normalised = (subdomain && String(subdomain).toLowerCase().trim()) || '';
+	if (!normalised) return false;
+	const baseDomain = getHubBaseDomain();
+	const fullHost = baseDomain ? `${normalised}.${baseDomain}` : null;
 	return orgs.some(
-		(o) =>
-			o.hubDomain &&
-			String(o.hubDomain).toLowerCase().trim() === normalised &&
-			o.id !== excludeOrgId
+		(o) => {
+			if (!o.hubDomain || o.id === excludeOrgId) return false;
+			const d = String(o.hubDomain).toLowerCase().trim();
+			return d === normalised || (fullHost && d === fullHost);
+		}
 	);
 }
 
@@ -133,10 +142,12 @@ export async function load({ url }) {
 		const host = hub.includes('.') ? hub : `${hub}.${baseDomain}`;
 		hubLoginUrl = `${protocol}//${host}/hub/auth/login`;
 	}
+	const hubSubdomainRequired = url.searchParams.get('hub_subdomain_required') === '1';
 	return {
 		success,
 		plan: plan === 'professional' || plan === 'free' ? plan : null,
-		hubLoginUrl
+		hubLoginUrl,
+		hubSubdomainRequired
 	};
 }
 
@@ -309,8 +320,10 @@ export const actions = {
 
 		// ─── Free plan: create org + admin immediately ───────────────────
 
-		// Auto-generate hub domain from organisation name
-		const hubDomain = await generateUniqueHubDomain(name);
+		// Auto-generate hub subdomain from organisation name; store full host (subdomain.onnuma.com)
+		const subdomain = await generateUniqueHubDomain(name);
+		const baseDomain = getHubBaseDomain();
+		const fullHubDomain = subdomain && baseDomain ? `${subdomain}.${baseDomain}` : subdomain || null;
 
 		// Get area permissions based on the selected signup plan
 		const areaPermissions = getAreaPermissionsForPlan(signupPlan);
@@ -324,7 +337,7 @@ export const actions = {
 				telephone,
 				email,
 				contactName,
-				hubDomain: hubDomain || null,
+				hubDomain: fullHubDomain,
 				areaPermissions,
 				signupPlan,
 				isHubOrganisation: true,
@@ -393,12 +406,16 @@ export const actions = {
 		if (fullAdmin?.emailVerificationToken) {
 			console.log('[signup] Attempting to send welcome email to:', email);
 			try {
+				const appOrigin = url.origin || (process.env.APP_BASE_URL && process.env.APP_BASE_URL.startsWith('http') ? process.env.APP_BASE_URL : 'https://www.onnuma.com');
+				const protocol = new URL(appOrigin).protocol;
+				const hubBaseUrl = fullHubDomain ? `${protocol}//${fullHubDomain}` : undefined;
 				const emailResult = await sendAdminWelcomeEmail({
 					to: email,
 					name: contactName,
 					email,
 					verificationToken: fullAdmin.emailVerificationToken,
-					password
+					password,
+					hubBaseUrl
 				}, { url });
 				console.log('[signup] Welcome email sent successfully:', JSON.stringify(emailResult));
 			} catch (emailErr) {
@@ -409,6 +426,6 @@ export const actions = {
 			console.warn('[signup] Skipping welcome email - no verification token found for admin:', email);
 		}
 
-		throw redirect(302, `/signup?success=1&plan=${signupPlan}&hub=${encodeURIComponent(hubDomain)}`);
+		throw redirect(302, `/signup?success=1&plan=${signupPlan}&hub=${encodeURIComponent(subdomain)}`);
 	}
 };
