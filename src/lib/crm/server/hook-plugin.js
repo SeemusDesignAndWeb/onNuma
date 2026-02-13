@@ -41,7 +41,7 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		'X-Frame-Options': 'DENY',
 		'X-XSS-Protection': '1; mode=block',
 		'Referrer-Policy': 'strict-origin-when-cross-origin',
-		'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src 'self' https://www.google.com https://maps.google.com https://www.loom.com;"
+		'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com; connect-src 'self' https://*.paddle.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src 'self' https://www.google.com https://maps.google.com https://www.loom.com https://*.paddle.com;"
 	});
 
 	// MultiOrg area: separate login and session.
