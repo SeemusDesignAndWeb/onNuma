@@ -277,21 +277,35 @@ export async function POST({ request }) {
 	if (!eventType) {
 		return json({ error: 'Missing event_type' }, { status: 400 });
 	}
-	console.log('[paddle webhook] Received event:', eventType);
+	const occurrenceId = payload?.occurrence_id ?? payload?.event_id ?? null;
+	console.log('[paddle webhook] Received event:', eventType, occurrenceId ? `(occurrence_id: ${occurrenceId})` : '');
 
 	const data = payload.data;
 	if (!data || typeof data !== 'object') {
-		console.log('[paddle webhook] No or invalid data');
+		console.log('[paddle webhook] No or invalid data, returning 200');
+		return json({ received: true }, { status: 200 });
+	}
+
+	// Log transaction id when present (for correlation in Paddle dashboard)
+	if (data.id && (eventType.startsWith('transaction.') || eventType.startsWith('subscription.'))) {
+		console.log('[paddle webhook] data.id:', data.id, eventType === 'transaction.completed' ? '(transaction status: completed)' : '');
+	}
+
+	// transaction.created = checkout opened only; we wait for transaction.completed (payment) to fulfill signup.
+	if (eventType === 'transaction.created') {
+		const customData = getCustomData(data);
+		const pendingSignupId = customData.pending_signup_id ?? customData.pendingSignupId;
+		console.log('[paddle webhook] transaction.created: checkout opened, waiting for transaction.completed (after payment). custom_data.pending_signup_id:', pendingSignupId ?? 'none');
 		return json({ received: true }, { status: 200 });
 	}
 
 	// ─── Transaction flow: new signup paid via one-time checkout ─────────────
-	// transaction.created = checkout opened (ignore). transaction.completed = paid → fulfill pending signup.
 	if (TRANSACTION_EVENTS.has(eventType)) {
+		console.log('[paddle webhook] Handling transaction.completed, fulfilling signup if pending_signup_id present');
 		const customData = getCustomData(data);
 		const pendingSignupId = customData.pending_signup_id ?? customData.pendingSignupId;
 		if (!pendingSignupId) {
-			console.log('[paddle webhook] transaction event has no pending_signup_id, ignoring');
+			console.log('[paddle webhook] transaction.completed has no pending_signup_id in custom_data, skipping fulfillment');
 			return json({ received: true }, { status: 200 });
 		}
 		const pendingSignup = await findById('pending_signups', String(pendingSignupId).trim());
@@ -300,9 +314,10 @@ export async function POST({ request }) {
 			return json({ received: true }, { status: 200 });
 		}
 		if (pendingSignup.status === 'fulfilled' && pendingSignup.organisationId) {
-			console.log('[paddle webhook] Pending signup already fulfilled:', pendingSignup.organisationId);
+			console.log('[paddle webhook] Pending signup already fulfilled, org:', pendingSignup.organisationId);
 			return json({ received: true }, { status: 200 });
 		}
+		console.log('[paddle webhook] Fulfilling pending signup from transaction.completed, pending_signup_id:', pendingSignupId, 'email:', pendingSignup.email);
 		try {
 			const organisationId = await fulfillPendingSignup(pendingSignup, data);
 			const customerId = data.customer_id || null;
@@ -319,9 +334,11 @@ export async function POST({ request }) {
 	}
 
 	if (!SUBSCRIPTION_EVENTS.has(eventType)) {
-		console.log('[paddle webhook] Ignoring non-subscription event');
+		console.log('[paddle webhook] Ignoring event (not subscription and not transaction.completed):', eventType);
 		return json({ received: true }, { status: 200 });
 	}
+
+	console.log('[paddle webhook] Processing subscription event:', eventType);
 
 	// ─── Subscription flow: update org subscription state ───────────────────
 
