@@ -262,6 +262,17 @@ export const actions = {
 			});
 		}
 
+		// Block reuse of an email that already has an admin account.
+		// createAdmin() returns existing admins by design, which can silently skip
+		// assigning the new organisation's super-admin details.
+		const existingAdmin = await getAdminByEmail(email);
+		if (existingAdmin) {
+			return fail(400, {
+				errors: { email: 'This email address is already registered. Use a different email or log in.' },
+				values: valuesWithSeats()
+			});
+		}
+
 		// Only one signup per email as organisation owner (block if they already own an org)
 		if (await isEmailOrgOwner(email)) {
 			return fail(400, {

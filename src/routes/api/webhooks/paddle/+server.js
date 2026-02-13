@@ -16,7 +16,7 @@
 import { json } from '@sveltejs/kit';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { create, findById, updatePartial, update, remove } from '$lib/crm/server/fileStore.js';
-import { createAdmin, updateAdminPassword, generateVerificationToken } from '$lib/crm/server/auth.js';
+import { createAdmin, updateAdminPassword, generateVerificationToken, getAdminByEmail } from '$lib/crm/server/auth.js';
 import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
@@ -200,6 +200,10 @@ async function registerMarketingContactForSignup({ organisationId, email, contac
 async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 	console.log('[paddle webhook] fulfillPendingSignup START, pendingSignup.id:', pendingSignup.id, 'email:', pendingSignup.email);
 	const { name, address, telephone, email, contactName, password, marketingConsent, plan: signupPlan } = pendingSignup;
+	const existingAdmin = await getAdminByEmail(email);
+	if (existingAdmin?.organisationId) {
+		throw new Error(`Signup email already belongs to an admin account (${existingAdmin.organisationId}).`);
+	}
 
 	const hubDomain = await generateUniqueHubDomain(name);
 	console.log('[paddle webhook] Generated hubDomain:', hubDomain);
@@ -228,6 +232,21 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 		permissions: FULL_PERMISSIONS,
 		organisationId: org.id
 	});
+
+	// Hard guarantee: paid signup owner must be this org's super admin with full permissions.
+	const createdAdminRecord = await findById('admins', admin.id);
+	if (!createdAdminRecord) {
+		throw new Error(`Admin record not found after signup fulfilment (${admin.id}).`);
+	}
+	const existingPermissions = Array.isArray(createdAdminRecord.permissions) ? createdAdminRecord.permissions : [];
+	const hasFullPermissions = FULL_PERMISSIONS.every((permission) => existingPermissions.includes(permission));
+	if (createdAdminRecord.organisationId !== org.id || !hasFullPermissions) {
+		await updatePartial('admins', admin.id, {
+			organisationId: org.id,
+			role: 'admin',
+			permissions: FULL_PERMISSIONS
+		});
+	}
 	await updateAdminPassword(admin.id, password);
 
 	// Set verification token for welcome email (use this token when sending — don't rely on read-after-write)
