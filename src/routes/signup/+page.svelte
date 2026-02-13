@@ -64,14 +64,52 @@
 	let checkoutOpen = false;   // true while Paddle overlay is showing
 	let checkoutDone = false;   // true after payment completed
 	let paddleReady = false;    // true once Paddle.js is initialised
+	let paddleLoadPromise = null;
+	let checkoutError = '';
 
-	function initPaddle() {
-		if (paddleReady || typeof window === 'undefined' || !window.Paddle) return;
+	async function ensurePaddleReady() {
+		if (paddleReady) return true;
+		if (typeof window === 'undefined') return false;
 		const token = data.paddleClientToken;
 		if (!token) {
+			checkoutError = 'Billing is not configured: PUBLIC_PADDLE_CLIENT_TOKEN is missing.';
 			console.error('[signup] PUBLIC_PADDLE_CLIENT_TOKEN not set — cannot open checkout');
-			return;
+			return false;
 		}
+
+		// Load Paddle.js if needed (handles race with script availability)
+		if (!window.Paddle) {
+			if (!paddleLoadPromise) {
+				paddleLoadPromise = new Promise((resolve, reject) => {
+					const existing = document.querySelector('script[data-paddle-js="1"]');
+					if (existing) {
+						existing.addEventListener('load', resolve, { once: true });
+						existing.addEventListener('error', reject, { once: true });
+						return;
+					}
+					const script = document.createElement('script');
+					script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
+					script.async = true;
+					script.dataset.paddleJs = '1';
+					script.onload = resolve;
+					script.onerror = reject;
+					document.head.appendChild(script);
+				});
+			}
+			try {
+				await paddleLoadPromise;
+			} catch (e) {
+				checkoutError = 'Could not load secure checkout. Please refresh and try again.';
+				console.error('[signup] Failed to load Paddle.js:', e);
+				return false;
+			}
+		}
+
+		if (!window.Paddle) {
+			checkoutError = 'Secure checkout failed to initialize. Please refresh and try again.';
+			return false;
+		}
+
 		if (data.paddleEnvironment === 'sandbox') {
 			window.Paddle.Environment.set('sandbox');
 		}
@@ -81,6 +119,7 @@
 				if (ev.name === 'checkout.completed') {
 					checkoutOpen = false;
 					checkoutDone = true;
+					checkoutError = '';
 				}
 				if (ev.name === 'checkout.closed' && !checkoutDone) {
 					checkoutOpen = false;
@@ -88,30 +127,37 @@
 			}
 		});
 		paddleReady = true;
+		return true;
 	}
 
-	function openCheckout(transactionId) {
-		if (!paddleReady) initPaddle();
-		if (!paddleReady) return; // still not ready (no token)
+	async function openCheckout(transactionId) {
+		checkoutError = '';
+		const ok = await ensurePaddleReady();
+		if (!ok) return;
 		checkoutOpen = true;
-		window.Paddle.Checkout.open({ transactionId });
+		try {
+			window.Paddle.Checkout.open({ transactionId });
+		} catch (e) {
+			checkoutOpen = false;
+			checkoutError = 'Could not open secure checkout. Please try again.';
+			console.error('[signup] Paddle.Checkout.open failed:', e);
+		}
 	}
 
 	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
 	onMount(() => {
 		if (data.success) invalidate('app:organisations');
-		// Eagerly init Paddle.js if we're on Professional plan
-		if (plan === 'professional' && data.paddleClientToken) {
-			initPaddle();
+		if (plan === 'professional') {
+			ensurePaddleReady();
+			// If we are on a Paddle payment-link URL, auto-open overlay for this transaction.
+			const ptxn = $page.url.searchParams.get('_ptxn');
+			if (ptxn) openCheckout(ptxn);
 		}
 	});
 </script>
 
 <svelte:head>
 	<title>Sign up – {planLabel} plan | OnNuma Hub</title>
-	{#if plan === 'professional' && data.paddleClientToken}
-		<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-	{/if}
 </svelte:head>
 
 <section class="relative min-h-screen flex flex-col overflow-hidden">
@@ -152,7 +198,7 @@
 				</div>
 				<p class="text-slate-600 text-sm text-center">Check your email for the link to log in to your Hub.</p>
 			</div>
-		{:else if success}
+		{:else if success && plan !== 'professional'}
 			<!-- Free plan signup completed -->
 			<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-md w-full">
 				<div class="text-center mb-6">
@@ -201,6 +247,11 @@
 				{#if errors._form}
 					<div class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs">
 						{errors._form}
+					</div>
+				{/if}
+				{#if checkoutError}
+					<div class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs">
+						{checkoutError}
 					</div>
 				{/if}
 
