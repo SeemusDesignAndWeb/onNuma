@@ -35,6 +35,9 @@ const SUBSCRIPTION_EVENTS = new Set([
 	'subscription.trialing'
 ]);
 
+/** Transaction events we handle (e.g. new Professional signup paid via one-time transaction). */
+const TRANSACTION_EVENTS = new Set(['transaction.completed']);
+
 const REPLAY_TOLERANCE_SEC = 300; // 5 minutes
 
 /** All Hub area permissions for super admin */
@@ -276,16 +279,51 @@ export async function POST({ request }) {
 	}
 	console.log('[paddle webhook] Received event:', eventType);
 
-	if (!SUBSCRIPTION_EVENTS.has(eventType)) {
-		console.log('[paddle webhook] Ignoring non-subscription event');
-		return json({ received: true }, { status: 200 });
-	}
-
 	const data = payload.data;
 	if (!data || typeof data !== 'object') {
 		console.log('[paddle webhook] No or invalid data');
 		return json({ received: true }, { status: 200 });
 	}
+
+	// ─── Transaction flow: new signup paid via one-time checkout ─────────────
+	// transaction.created = checkout opened (ignore). transaction.completed = paid → fulfill pending signup.
+	if (TRANSACTION_EVENTS.has(eventType)) {
+		const customData = getCustomData(data);
+		const pendingSignupId = customData.pending_signup_id ?? customData.pendingSignupId;
+		if (!pendingSignupId) {
+			console.log('[paddle webhook] transaction event has no pending_signup_id, ignoring');
+			return json({ received: true }, { status: 200 });
+		}
+		const pendingSignup = await findById('pending_signups', String(pendingSignupId).trim());
+		if (!pendingSignup) {
+			console.warn('[paddle webhook] Pending signup not found for transaction:', pendingSignupId);
+			return json({ received: true }, { status: 200 });
+		}
+		if (pendingSignup.status === 'fulfilled' && pendingSignup.organisationId) {
+			console.log('[paddle webhook] Pending signup already fulfilled:', pendingSignup.organisationId);
+			return json({ received: true }, { status: 200 });
+		}
+		try {
+			const organisationId = await fulfillPendingSignup(pendingSignup, data);
+			const customerId = data.customer_id || null;
+			if (customerId) {
+				await updatePartial('organisations', organisationId, { paddleCustomerId: customerId });
+			}
+			console.log('[paddle webhook] Fulfilled signup from transaction.completed, org:', organisationId);
+		} catch (err) {
+			console.error('[paddle webhook] Failed to fulfil pending signup from transaction:', err?.message || err);
+			if (err?.stack) console.error('[paddle webhook] Stack:', err.stack);
+			return json({ error: 'Signup fulfilment failed' }, { status: 500 });
+		}
+		return json({ received: true }, { status: 200 });
+	}
+
+	if (!SUBSCRIPTION_EVENTS.has(eventType)) {
+		console.log('[paddle webhook] Ignoring non-subscription event');
+		return json({ received: true }, { status: 200 });
+	}
+
+	// ─── Subscription flow: update org subscription state ───────────────────
 
 	const customData = getCustomData(data);
 	console.log('[paddle webhook] custom_data keys:', Object.keys(customData), 'pending_signup_id:', customData.pending_signup_id ?? customData.pendingSignupId ?? 'none', 'organisation_id:', customData.organisation_id ?? customData.organisationId ?? 'none');
