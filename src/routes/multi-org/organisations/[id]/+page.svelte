@@ -62,6 +62,19 @@
 					</button>
 				</form>
 			{/if}
+			<form
+				method="POST"
+				action="?/delete"
+				class="inline-block"
+				onsubmit="return confirm('Permanently delete this organisation? Its record will be removed. Related data (contacts, rotas, etc.) will remain in the system but will no longer be linked to an organisation. This cannot be undone.');"
+			>
+				<button
+					type="submit"
+					class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+				>
+					Delete organisation
+				</button>
+			</form>
 		</div>
 	</div>
 

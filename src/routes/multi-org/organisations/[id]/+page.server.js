@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { findById, update, updatePartial, readCollection, writeCollection, create } from '$lib/crm/server/fileStore.js';
+import { findById, update, updatePartial, readCollection, writeCollection, create, remove } from '$lib/crm/server/fileStore.js';
 import { getAreaPermissionsForPlan, getPlanFromAreaPermissions, getHubPlanTiers } from '$lib/crm/server/permissions.js';
 import { isValidHubDomain, normaliseHost, invalidateHubDomainCache, getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { getCurrentOrganisationId, setCurrentOrganisationId } from '$lib/crm/server/settings.js';
@@ -250,5 +250,26 @@ export const actions = {
 			302,
 			getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?anonymised=' + count, !!locals.multiOrgAdminDomain)
 		);
+	},
+
+	delete: async ({ params, locals }) => {
+		if (!locals.multiOrgAdmin) {
+			return fail(403, { error: 'Not authorised' });
+		}
+		const org = await findById('organisations', params.id);
+		if (!org) {
+			return fail(404, { error: 'Organisation not found' });
+		}
+		const currentHubId = await getCurrentOrganisationId();
+		if (currentHubId === params.id) {
+			const all = await readCollection('organisations');
+			const other = (Array.isArray(all) ? all : []).find((o) => o && o.id !== params.id && !o.archivedAt);
+			await setCurrentOrganisationId(other?.id ?? null);
+		}
+		await remove('organisations', params.id);
+		invalidateHubDomainCache();
+		invalidateOrganisationsCache();
+		await invalidateAllSessions();
+		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations', !!locals.multiOrgAdminDomain));
 	}
 };
