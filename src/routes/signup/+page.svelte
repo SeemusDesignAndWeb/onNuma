@@ -60,11 +60,8 @@
 	$: displayCost =
 		plan === 'professional' ? getProfessionalPriceForContactCount(numberOfContacts) : null;
 
-	// When server returns Paddle checkout URL (Professional plan), leave the page so user actually reaches checkout.
-	// (Form uses enhance → fetch; without this they would stay on signup and never see Paddle.)
-	$: if (form?.redirectUrl && typeof window !== 'undefined') {
-		window.location.href = form.redirectUrl;
-	}
+	// Paddle checkout URL from server (for showing "Redirecting..." if redirect is slow)
+	$: redirectUrl = form?.redirectUrl;
 
 	// After successful signup, invalidate organisations list so multi-org admin sees the new org when they visit
 	onMount(() => {
@@ -97,6 +94,18 @@
 					</p>
 				</div>
 				<p class="text-center text-sm text-slate-500">Don't have an account? <a href="/signup" class="text-[#EB9486] hover:underline font-medium">Sign up</a></p>
+			</div>
+		{:else if redirectUrl}
+			<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-md w-full">
+				<div class="text-center">
+					<div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-600 mb-4 animate-pulse">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+					</div>
+					<h1 class="text-xl font-bold text-slate-800">Redirecting to checkout</h1>
+					<p class="mt-2 text-slate-600 text-sm">Taking you to secure payment. If nothing happens, <a href={redirectUrl} class="text-[#EB9486] hover:underline font-medium">click here</a>.</p>
+				</div>
 			</div>
 		{:else if success}
 			<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-md w-full">
@@ -155,7 +164,13 @@
 					</div>
 				{/if}
 
-				<form method="POST" action="?/create" use:enhance={() => async ({ update }) => await update()}>
+				<form method="POST" action="?/create" use:enhance={() => async ({ result, update }) => {
+	await update();
+	// Redirect to Paddle checkout using URL from response (reliable; store update can lag)
+	if (result?.type === 'success' && result?.data?.redirectUrl) {
+		window.location.href = result.data.redirectUrl;
+	}
+}}>
 					<input type="hidden" name="plan" value={plan} />
 					<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
 					<!-- Form columns -->
