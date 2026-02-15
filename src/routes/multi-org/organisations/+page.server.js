@@ -24,11 +24,21 @@ export async function load({ locals, depends }) {
 		return acc;
 	}, /** @type {Record<string, number>} */ ({}));
 
-	const organisationsWithCounts = await Promise.all(organisations.map(async (org) => ({
-		...org,
-		contactCount: org?.id ? (contactCountByOrg[org.id] ?? 0) : 0,
-		plan: (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free'
-	})));
+	const adminsRaw = await readCollection('admins');
+	const admins = Array.isArray(adminsRaw) ? adminsRaw : [];
+	const normalise = (e) => (e && String(e).toLowerCase().trim()) || '';
+	const adminByEmail = new Map(admins.map((a) => [normalise(a.email), a]));
+
+	const organisationsWithCounts = await Promise.all(organisations.map(async (org) => {
+		const superAdminEmail = org?.hubSuperAdminEmail || org?.email;
+		const admin = superAdminEmail ? adminByEmail.get(normalise(superAdminEmail)) : null;
+		return {
+			...org,
+			contactCount: org?.id ? (contactCountByOrg[org.id] ?? 0) : 0,
+			plan: (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free',
+			superAdminEmailVerified: admin ? !!admin.emailVerified : null
+		};
+	}));
 
 	const currentHubOrganisationId = await getCurrentOrganisationId();
 	return {

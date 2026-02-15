@@ -486,6 +486,7 @@ export async function requestPasswordReset(email) {
 		id: admin.id,
 		email: admin.email,
 		name: admin.name,
+		organisationId: admin.organisationId ?? null,
 		passwordResetToken: resetToken,
 		passwordResetTokenExpires: expiresAt.toISOString()
 	};

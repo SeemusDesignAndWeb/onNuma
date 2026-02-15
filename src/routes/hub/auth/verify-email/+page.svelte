@@ -53,7 +53,8 @@
 						</svg>
 					</div>
 					<h2 class="text-xl font-semibold text-gray-900 mb-2">Email Verified Successfully!</h2>
-					<p class="text-sm text-gray-600 mb-6">{message}</p>
+					<p class="text-sm text-gray-600 mb-4">{message}</p>
+					<p class="text-xs text-gray-500 mb-4">Use the button below to log in on this page (your organisation's Hub). If login fails, use the login link from your welcome email so you're on the correct address.</p>
 					<a
 						href="/hub/auth/login?verified=true"
 						class="inline-block bg-hub-green-600 text-white px-6 py-2 rounded-md hover:bg-hub-green-700 transition-colors font-medium"

@@ -146,6 +146,8 @@
 								Resend verification email
 							</a>
 						</div>
+					{:else if error === 'Invalid email or password' && $page.url?.searchParams?.get('verified') === 'true'}
+						<p class="mt-2 text-xs text-red-700">If you just verified your email, ensure you're on your organisation's Hub (check the web address in your browser — it should match the link in your welcome email).</p>
 					{/if}
 				</div>
 			{/if}

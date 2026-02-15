@@ -42,14 +42,26 @@ async function getEmailLogo(event) {
  * Generate email branding HTML with logo and site link.
  * Uses Hub theme logo if set; otherwise OnNuma logo.
  * @param {object} event - SvelteKit event object (for base URL)
+ * @param {{ baseUrlForLogo?: string }} [options] - When baseUrlForLogo is set, use that origin for logo image and link and always use default OnNuma logo (for org-specific emails so logo is correct before any theme change).
  * @returns {Promise<string>} Branding HTML
  */
-async function getEmailBranding(event) {
+async function getEmailBranding(event, options = {}) {
 	const baseUrl = getBaseUrl(event);
-	const { logoUrl, alt } = await getEmailLogo(event);
+	let logoUrl, alt, linkUrl;
+	if (options?.baseUrlForLogo && String(options.baseUrlForLogo).trim()) {
+		const logoBase = String(options.baseUrlForLogo).replace(/\/$/, '');
+		logoUrl = `${logoBase}/assets/onnuma-logo.png`;
+		alt = 'OnNuma';
+		linkUrl = logoBase;
+	} else {
+		const resolved = await getEmailLogo(event);
+		logoUrl = resolved.logoUrl;
+		alt = resolved.alt;
+		linkUrl = baseUrl;
+	}
 	return `
 		<div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
-			<a href="${baseUrl}" style="display: inline-block; text-decoration: none;">
+			<a href="${linkUrl}" style="display: inline-block; text-decoration: none;">
 				<img src="${logoUrl}" alt="${alt}" style="max-width: 200px; height: auto; display: block; margin: 0 auto;" />
 			</a>
 		</div>
@@ -1312,7 +1324,8 @@ export async function sendAdminWelcomeEmail({ to, name, email, verificationToken
 	const verificationLink = `${hubUrl}/hub/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
 	const hubLoginLink = `${hubUrl}/hub/auth/login`;
 
-	const branding = await getEmailBranding(event);
+	// Use org's hub URL for logo so default OnNuma logo shows (unless super user changes theme later)
+	const branding = await getEmailBranding(event, { baseUrlForLogo: hubUrl });
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -1452,25 +1465,29 @@ Visit our website: ${baseUrl}
 }
 
 /**
- * Send password reset email
+ * Send password reset email (Hub admin).
+ * When hubBaseUrl is provided, the reset link and logo use the organisation's subdomain.
  * @param {object} options - Email options
  * @param {string} options.to - Admin email address
  * @param {string} options.name - Admin name
  * @param {string} options.resetToken - Password reset token
- * @param {object} event - SvelteKit event object (for base URL)
+ * @param {string} [options.hubBaseUrl] - Base URL for this org's hub (e.g. https://orgslug.onnuma.com). When set, reset link and logo use this so the user resets on their org's URL.
+ * @param {object} event - SvelteKit event object (for base URL when hubBaseUrl not set)
  * @returns {Promise<object>} Resend API response
  */
-export async function sendPasswordResetEmail({ to, name, resetToken }, event) {
+export async function sendPasswordResetEmail({ to, name, resetToken, hubBaseUrl }, event) {
 	const baseUrl = getBaseUrl(event);
+	const hubUrl = (hubBaseUrl && String(hubBaseUrl).trim()) ? String(hubBaseUrl).replace(/\/$/, '') : baseUrl;
 	const fromEmail = fromEmailDefault();
 	
-	// Create reset link - token is base64url encoded so should be URL-safe, but encode it anyway to be safe
+	// Create reset link - use org's hub URL when provided so link goes to organisation's subdomain
 	const encodedToken = encodeURIComponent(resetToken);
 	const encodedEmail = encodeURIComponent(to);
-	const resetLink = `${baseUrl}/hub/auth/reset-password?token=${encodedToken}&email=${encodedEmail}`;
+	const resetLink = `${hubUrl}/hub/auth/reset-password?token=${encodedToken}&email=${encodedEmail}`;
 	
 	console.log('[sendPasswordResetEmail] Generated reset link:', {
 		baseUrl: baseUrl,
+		hubUrl: hubUrl,
 		tokenLength: resetToken.length,
 		encodedTokenLength: encodedToken.length,
 		email: to,
@@ -1479,7 +1496,8 @@ export async function sendPasswordResetEmail({ to, name, resetToken }, event) {
 		fullLink: resetLink
 	});
 
-	const branding = await getEmailBranding(event);
+	// Use org's hub URL for logo so default OnNuma logo shows on the correct domain
+	const branding = await getEmailBranding(event, { baseUrlForLogo: hubUrl });
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -1521,7 +1539,7 @@ export async function sendPasswordResetEmail({ to, name, resetToken }, event) {
 				<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
 					<p style="margin: 0;">If you have any questions or need assistance, please contact the system administrator.</p>
 					<p style="margin: 8px 0 0 0;">
-						<a href="${baseUrl}" style="color: #4A97D2; text-decoration: none;">Visit Eltham Green Community Church Website</a>
+						<a href="${hubUrl}" style="color: #4A97D2; text-decoration: none;">Visit TheHUB</a>
 					</p>
 				</div>
 				</div>
@@ -1549,7 +1567,7 @@ Security Notice:
 
 If you have any questions or need assistance, please contact the system administrator.
 
-Visit our website: ${baseUrl}
+Visit: ${hubUrl}
 	`.trim();
 
 	try {
