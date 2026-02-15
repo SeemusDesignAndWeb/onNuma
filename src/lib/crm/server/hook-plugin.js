@@ -7,7 +7,7 @@ import {
 	setMultiOrgCsrfToken,
 	getMultiOrgCsrfToken
 } from './multiOrgAuth.js';
-import { resolveOrganisationFromHost, getMultiOrgPublicPath, isMainAppDomain } from './hubDomain.js';
+import { resolveOrganisationFromHost, getMultiOrgPublicPath, isMainAppDomain, isOtherSubdomain, getFrontendOrigin } from './hubDomain.js';
 import { runWithOrganisation } from './requestOrg.js';
 
 /**
@@ -112,15 +112,24 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		throw redirect(302, '/hub/auth/login');
 	}
 
-	// When host is the main app domain (www.onnuma.com), never serve /hub — redirect to signup with message.
+	// Host-based routing: only www (and bare domain) = front-end; admin = multi-org; other subdomains = hub if org exists, else front-end.
+	// /hub on www should revert to front-end root (www.onnuma.com).
 	const host = url.host || request.headers.get('host') || '';
 	if (pathname.startsWith('/hub') && isMainAppDomain(host)) {
-		throw redirect(302, '/signup?hub_subdomain_required=1');
+		throw redirect(302, getFrontendOrigin() + '/');
+	}
+
+	const orgFromHost = await resolveOrganisationFromHost(host);
+	const isPublicAsset = pathname.startsWith('/images/') || pathname.startsWith('/assets/');
+
+	// Other subdomains (not www, not admin): if no organisation has this hub domain, send to front-end.
+	if (isOtherSubdomain(host) && !orgFromHost) {
+		const frontendOrigin = getFrontendOrigin();
+		const location = frontendOrigin + (url.pathname || '/') + (url.search || '');
+		throw redirect(302, location);
 	}
 
 	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages, /myhub, and static assets) to hub login.
-	const orgFromHost = await resolveOrganisationFromHost(host);
-	const isPublicAsset = pathname.startsWith('/images/') || pathname.startsWith('/assets/');
 	if (orgFromHost && !pathname.startsWith('/hub') && !pathname.startsWith('/myhub') && !isPublicHubPath && !isPublicAsset) {
 		throw redirect(302, '/hub/auth/login');
 	}

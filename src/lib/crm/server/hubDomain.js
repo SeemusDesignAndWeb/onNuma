@@ -76,13 +76,47 @@ const HUB_BASE_DOMAIN = (process.env.HUB_BASE_DOMAIN || 'onnuma.com').toLowerCas
 
 /**
  * Whether the request host is the main public site (www.onnuma.com or onnuma.com).
- * Hub routes must not be served on this host; redirect to signup with subdomain message.
+ * Only these hosts serve the front-end (marketing/signup). Hub routes redirect to signup here.
  */
 export function isMainAppDomain(host) {
 	if (!host || typeof host !== 'string') return false;
 	const h = normaliseHost(host);
 	if (!h) return false;
 	return (h === 'www.' + HUB_BASE_DOMAIN) || (h === HUB_BASE_DOMAIN);
+}
+
+/**
+ * Whether the request host is a subdomain of the base domain (e.g. *.onnuma.com or onnuma.com).
+ */
+export function isSubdomainOfBaseDomain(host) {
+	if (!host || typeof host !== 'string') return false;
+	const h = normaliseHost(host);
+	if (!h || !HUB_BASE_DOMAIN) return false;
+	return h === HUB_BASE_DOMAIN || h.endsWith('.' + HUB_BASE_DOMAIN);
+}
+
+/**
+ * Whether the request host is "another" subdomain (subdomain of base but not www and not admin).
+ * These hosts either serve the Hub (if org exists for that hub domain) or should redirect to front-end.
+ */
+export function isOtherSubdomain(host) {
+	if (!host || typeof host !== 'string') return false;
+	return isSubdomainOfBaseDomain(host) && !isMainAppDomain(host) && !isMultiOrgAdminDomain(host);
+}
+
+/**
+ * Origin URL for the front-end site (www). Used when redirecting non-org subdomains to the main site.
+ */
+export function getFrontendOrigin() {
+	const appBase = (process.env.APP_BASE_URL || '').trim();
+	if (appBase && (appBase.startsWith('http://') || appBase.startsWith('https://'))) {
+		try {
+			return new URL(appBase).origin;
+		} catch {
+			// fallback
+		}
+	}
+	return 'https://www.' + HUB_BASE_DOMAIN;
 }
 
 // --- Multi-org admin subdomain (e.g. admin.onnuma.com → /multi-org at root) ---
