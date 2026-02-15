@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { findById, update } from '$lib/crm/server/fileStore.js';
-import { getAdminByEmail, createAdmin, updateAdminPassword } from '$lib/crm/server/auth.js';
+import { getAdminByEmail, getAdminById, createAdmin, updateAdminPassword, regenerateVerificationToken } from '$lib/crm/server/auth.js';
+import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
 import { setHubSuperAdminEmail, getHubSuperAdminEmail } from '$lib/crm/server/settings.js';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
@@ -16,7 +17,8 @@ const FULL_PERMISSIONS = [
 	'forms',
 	'safeguarding_forms',
 	'members',
-	'users'
+	'users',
+	'super_admin'
 ];
 
 export async function load({ params, locals }) {
@@ -45,7 +47,7 @@ export async function load({ params, locals }) {
 }
 
 export const actions = {
-	set: async ({ request, params, locals }) => {
+	set: async ({ request, params, locals, url }) => {
 		const multiOrgAdmin = locals.multiOrgAdmin;
 		if (!multiOrgAdmin || multiOrgAdmin.role !== 'super_admin') {
 			return fail(403, { error: 'Not authorised' });
@@ -67,16 +69,44 @@ export const actions = {
 			return fail(400, { error: 'Name is required' });
 		}
 
-		const existing = await getAdminByEmail(email, params.id);
-		if (existing) {
-			// Update existing Hub admin: set name and full permissions
-			await update('admins', existing.id, {
+		const normalizedEmail = email.toLowerCase().trim();
+		let targetAdminId = null;
+
+		const existingInOrg = await getAdminByEmail(email, params.id);
+		const existingGlobal = await getAdminByEmail(email);
+		if (existingInOrg) {
+			// Update existing Hub admin in this org: ensure full super-admin capability and clear any lockout.
+			await update('admins', existingInOrg.id, {
 				name,
-				permissions: FULL_PERMISSIONS
+				permissions: FULL_PERMISSIONS,
+				organisationId: params.id,
+				failedLoginAttempts: 0,
+				accountLockedUntil: null
 			});
+			targetAdminId = existingInOrg.id;
 			if (password) {
 				try {
-					await updateAdminPassword(existing.id, password);
+					await updateAdminPassword(existingInOrg.id, password);
+				} catch (err) {
+					return fail(400, { error: err.message || 'Invalid password' });
+				}
+			}
+		} else if (existingGlobal) {
+			// Do not allow one Hub admin account to be super admin for multiple orgs.
+			if (existingGlobal.organisationId && existingGlobal.organisationId !== params.id) {
+				return fail(400, { error: 'This email is already used by another organisation.' });
+			}
+			await update('admins', existingGlobal.id, {
+				name,
+				permissions: FULL_PERMISSIONS,
+				organisationId: params.id,
+				failedLoginAttempts: 0,
+				accountLockedUntil: null
+			});
+			targetAdminId = existingGlobal.id;
+			if (password) {
+				try {
+					await updateAdminPassword(existingGlobal.id, password);
 				} catch (err) {
 					return fail(400, { error: err.message || 'Invalid password' });
 				}
@@ -87,16 +117,41 @@ export const actions = {
 				return fail(400, { error: 'Password is required for a new Hub super admin' });
 			}
 			try {
-				await createAdmin({
-					email,
+				const created = await createAdmin({
+					email: normalizedEmail,
 					password,
 					name,
 					permissions: FULL_PERMISSIONS,
 					organisationId: params.id
 				});
+				targetAdminId = created.id;
 			} catch (err) {
 				return fail(400, { error: err.message || 'Failed to create admin' });
 			}
+		}
+
+		// For unverified accounts, ensure they get a fresh verification email.
+		try {
+			const targetAdmin = targetAdminId ? await getAdminById(targetAdminId) : null;
+			if (targetAdmin && !targetAdmin.emailVerified) {
+				let verificationToken = targetAdmin.emailVerificationToken || null;
+				const tokenExpired = !targetAdmin.emailVerificationTokenExpires
+					|| new Date(targetAdmin.emailVerificationTokenExpires).getTime() <= Date.now();
+				if (!verificationToken || tokenExpired) {
+					verificationToken = await regenerateVerificationToken(targetAdmin.id);
+				}
+				const hubBaseUrl = org.hubDomain ? `https://${String(org.hubDomain).trim()}` : undefined;
+				await sendAdminWelcomeEmail({
+					to: normalizedEmail,
+					name,
+					email: normalizedEmail,
+					verificationToken,
+					password: password || null,
+					hubBaseUrl
+				}, { url });
+			}
+		} catch (err) {
+			return fail(500, { error: err.message || 'Hub super admin updated, but failed to send verification email.' });
 		}
 
 		await setHubSuperAdminEmail(email);

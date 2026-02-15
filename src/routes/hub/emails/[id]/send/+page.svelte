@@ -117,15 +117,15 @@
 {#if newsletter}
 	<div class="space-y-6">
 		<!-- Header Card -->
-		<div class="panel-head-theme shadow-lg rounded-lg p-6 text-white">
+		<div class="hub-top-panel p-6">
 			<div class="flex items-center justify-between">
 				<div>
-					<h1 class="text-3xl font-bold mb-2 text-white">Send Email</h1>
-					<p class="text-hub-blue-100">Send "{newsletter.subject || 'Untitled Email'}" to a contact list or specific contacts</p>
+					<h1 class="text-3xl font-bold mb-2 text-gray-900">Send Email</h1>
+					<p class="text-gray-600">Send "{newsletter.subject || 'Untitled Email'}" to a contact list or specific contacts</p>
 				</div>
 				<a
 					href="/hub/emails/{newsletter.id}"
-					class="bg-white/20 hover:bg-white/30 text-white px-[18px] py-2.5 rounded-md transition-colors font-medium border border-white/30 flex items-center gap-2"
+					class="hub-btn border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -243,7 +243,7 @@
 					<button
 						on:click={sendNewsletter}
 						disabled={sending || (sendMode === 'list' ? !selectedListId || lists.length === 0 : selectedContactIds.length === 0)}
-						class="btn-theme-2 px-[18px] py-2.5 rounded-md disabled:opacity-50 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors"
+						class="hub-btn btn-theme-2 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
 					>
 						{#if sending}
 							<svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -260,7 +260,7 @@
 					</button>
 					<a
 						href="/hub/emails/{newsletter.id}"
-						class="btn-theme-3 px-[18px] py-2.5 rounded-md font-medium inline-flex items-center gap-2 transition-colors"
+						class="hub-btn btn-theme-3 inline-flex items-center gap-2"
 					>
 						Cancel
 					</a>

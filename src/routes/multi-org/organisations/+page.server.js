@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { setCurrentOrganisationId, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
-import { getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import { getConfiguredPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
 
 export async function load({ locals, depends }) {
 	// Invalidate with invalidate('app:organisations') to refetch after new signups etc.
@@ -24,11 +24,11 @@ export async function load({ locals, depends }) {
 		return acc;
 	}, /** @type {Record<string, number>} */ ({}));
 
-	const organisationsWithCounts = organisations.map((org) => ({
+	const organisationsWithCounts = await Promise.all(organisations.map(async (org) => ({
 		...org,
 		contactCount: org?.id ? (contactCountByOrg[org.id] ?? 0) : 0,
-		plan: getPlanFromAreaPermissions(org?.areaPermissions) || 'free'
-	}));
+		plan: (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free'
+	})));
 
 	const currentHubOrganisationId = await getCurrentOrganisationId();
 	return {

@@ -20,9 +20,11 @@
 	$: isAdminArea = $page.url.pathname.startsWith('/admin');
 	$: isHubArea = $page.url.pathname.startsWith('/hub');
 	$: isMultiOrgArea = $page.url.pathname.startsWith('/multi-org');
+	$: isMyArea = $page.url.pathname.startsWith('/my');
 	// On admin subdomain path is /auth/* or /organisations, so we also hide website UI via data from server
 	$: multiOrgAdminDomain = data?.multiOrgAdminDomain ?? false;
-	$: hideWebsiteElements = isAdminArea || isHubArea || isMultiOrgArea || multiOrgAdminDomain;
+	// My volunteering area: no OnNuma frontend navbar (uses its own layout)
+	$: hideWebsiteElements = isAdminArea || isHubArea || isMultiOrgArea || isMyArea || multiOrgAdminDomain;
 	// External = public hub pages: signup sub-routes (rota/event/member), event token, forms, unsubscribe, view-rotas (theme applies only here when Hub branding is on).
 	// Root /signup (free-trial) is part of the frontend marketing site and uses full navbar (not /signup/ so not external).
 	$: isExternalPage = $page.url.pathname.startsWith('/signup/') || $page.url.pathname.startsWith('/event/') || $page.url.pathname.startsWith('/forms') || $page.url.pathname.startsWith('/unsubscribe') || $page.url.pathname.startsWith('/view-rotas');
@@ -32,34 +34,34 @@
 	// Hub/admin: always use theme. Main website: never use theme. External (public hub) pages: always use theme (OnNuma = Hub branding only).
 	$: effectiveTheme = hideWebsiteElements ? theme : (isExternalPage ? theme : null);
 
-	// Apply theme CSS variables on external (public hub) pages. Main website: never touch theme vars (keeps app.css defaults).
+	// Apply theme CSS variables on external (public hub) pages. Main website: never touch theme vars.
 	$: if (typeof document !== 'undefined') {
 		const root = document.documentElement;
+		const D = { primary: '#0d9488', brand: '#0284c7', navbar: '#0f172a', b1: '#0284c7', b2: '#0d9488', b3: '#475569', b4: '#0369a1', b5: '#f59e0b', p1: '#0284c7', p2: '#0369a1', p3: '#0f172a', panel: '#f1f5f9' };
 		if (isExternalPage && theme) {
-			root.style.setProperty('--color-primary', getColor(theme.primaryColor, '#4BB170'));
-			root.style.setProperty('--color-brand', getColor(theme.brandColor, '#4A97D2'));
+			root.style.setProperty('--color-primary', getColor(theme.primaryColor, D.primary));
+			root.style.setProperty('--color-brand', getColor(theme.brandColor, D.brand));
 			const navbarBg = theme.navbarBackgroundColor;
 			if (typeof navbarBg === 'string') {
 				const t = navbarBg.trim();
-				if (t && /^#[0-9A-Fa-f]{6}$/.test(t) && t !== '#FFFFFF' && t !== '#ffffff') {
+				if (t && /^#[0-9A-Fa-f]{6}$/.test(t)) {
 					root.style.setProperty('--color-navbar-bg', t);
 				} else {
-					root.style.setProperty('--color-navbar-bg', '#4A97D2');
+					root.style.setProperty('--color-navbar-bg', D.navbar);
 				}
 			} else {
-				root.style.setProperty('--color-navbar-bg', '#4A97D2');
+				root.style.setProperty('--color-navbar-bg', D.navbar);
 			}
-			root.style.setProperty('--color-button-1', getColor(theme.buttonColors?.[0], '#4A97D2'));
-			root.style.setProperty('--color-button-2', getColor(theme.buttonColors?.[1], '#4BB170'));
-			root.style.setProperty('--color-button-3', getColor(theme.buttonColors?.[2], '#3B79A8'));
-			root.style.setProperty('--color-button-4', getColor(theme.buttonColors?.[3], '#3C8E5A'));
-			root.style.setProperty('--color-button-5', getColor(theme.buttonColors?.[4], '#E6A324'));
-			root.style.setProperty('--color-panel-head-1', getColor(theme.panelHeadColors?.[0], '#4A97D2'));
-			root.style.setProperty('--color-panel-head-2', getColor(theme.panelHeadColors?.[1], '#3B79A8'));
-			root.style.setProperty('--color-panel-head-3', getColor(theme.panelHeadColors?.[2], '#2C5B7E'));
-			root.style.setProperty('--color-panel-bg', getColor(theme.panelBackgroundColor, '#E8F2F9'));
+			root.style.setProperty('--color-button-1', getColor(theme.buttonColors?.[0], D.b1));
+			root.style.setProperty('--color-button-2', getColor(theme.buttonColors?.[1], D.b2));
+			root.style.setProperty('--color-button-3', getColor(theme.buttonColors?.[2], D.b3));
+			root.style.setProperty('--color-button-4', getColor(theme.buttonColors?.[3], D.b4));
+			root.style.setProperty('--color-button-5', getColor(theme.buttonColors?.[4], D.b5));
+			root.style.setProperty('--color-panel-head-1', getColor(theme.panelHeadColors?.[0], D.p1));
+			root.style.setProperty('--color-panel-head-2', getColor(theme.panelHeadColors?.[1], D.p2));
+			root.style.setProperty('--color-panel-head-3', getColor(theme.panelHeadColors?.[2], D.p3));
+			root.style.setProperty('--color-panel-bg', getColor(theme.panelBackgroundColor, D.panel));
 		} else {
-			// Main website: ensure navbar uses public site default (white)
 			root.style.setProperty('--color-navbar-bg', '#FFFFFF');
 		}
 	}

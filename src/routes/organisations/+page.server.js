@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { setCurrentOrganisationId, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
-import { getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import { getConfiguredPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
 
 /** List load: organisations and current hub. Layout handles redirect when not on admin subdomain. */
 export async function load({ locals }) {
@@ -21,11 +21,11 @@ export async function load({ locals }) {
 		return acc;
 	}, /** @type {Record<string, number>} */ ({}));
 
-	const organisationsWithCounts = organisations.map((org) => ({
+	const organisationsWithCounts = await Promise.all(organisations.map(async (org) => ({
 		...org,
 		contactCount: org?.id ? (contactCountByOrg[org.id] ?? 0) : 0,
-		plan: getPlanFromAreaPermissions(org?.areaPermissions) || 'free'
-	}));
+		plan: (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free'
+	})));
 
 	const currentHubOrganisationId = await getCurrentOrganisationId();
 	return {

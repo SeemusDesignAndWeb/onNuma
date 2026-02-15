@@ -285,20 +285,20 @@
 					<button
 						type="submit"
 						form="occurrence-edit-form"
-						class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-2 text-white"
 					>
 						Save Changes
 					</button>
 					<a
 						href="/hub/events/{event.id}"
-						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs inline-block"
+						class="hub-btn bg-theme-button-3 text-white"
 					>
 						Back
 					</a>
 				{:else}
 					<a
 						href="/hub/events/{event.id}"
-						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn border border-gray-300 text-gray-700 hover:bg-gray-50"
 					>
 						Back
 					</a>
@@ -307,9 +307,9 @@
 							href={publicOccurrenceLink}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 flex items-center gap-1.5 text-xs whitespace-nowrap"
+							class="hub-btn bg-theme-button-2 text-white whitespace-nowrap"
 						>
-							<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 							</svg>
 							Public View
@@ -317,13 +317,13 @@
 					{/if}
 					<button
 						on:click={() => editing = true}
-						class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-2 text-white"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
+						class="hub-btn bg-hub-red-600 text-white hover:bg-hub-red-700"
 					>
 						Delete
 					</button>

@@ -1,6 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { findById, update, updatePartial, readCollection, writeCollection, create, remove } from '$lib/crm/server/fileStore.js';
-import { getAreaPermissionsForPlan, getPlanFromAreaPermissions, getHubPlanTiers } from '$lib/crm/server/permissions.js';
+import {
+	getConfiguredAreaPermissionsForPlan,
+	getConfiguredPlanFromAreaPermissions,
+	getHubPlanTiers
+} from '$lib/crm/server/permissions.js';
 import { isValidHubDomain, normaliseHost, invalidateHubDomainCache, getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { getCurrentOrganisationId, setCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
@@ -49,7 +53,7 @@ export async function load({ params, locals, url }) {
 	if (!org) {
 		throw redirect(302, base('/multi-org/organisations'));
 	}
-	const currentPlan = getPlanFromAreaPermissions(org.areaPermissions) || 'free';
+	const currentPlan = (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
 	const anonymisedCreated = url.searchParams.get('anonymised');
 
 	// Load sequences for onboarding email assignment
@@ -84,7 +88,9 @@ export const actions = {
 		const contactName = form.get('contactName')?.toString()?.trim() || '';
 		const hubDomain = form.get('hubDomain')?.toString()?.trim() || '';
 		const plan = (form.get('plan')?.toString() || 'free').toLowerCase().trim();
-		const areaPermissions = VALID_PLANS.has(plan) ? getAreaPermissionsForPlan(plan) : getAreaPermissionsForPlan(getPlanFromAreaPermissions(org.areaPermissions) || 'free');
+		const existingPlan = (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
+		const targetPlan = VALID_PLANS.has(plan) ? plan : existingPlan;
+		const areaPermissions = await getConfiguredAreaPermissionsForPlan(targetPlan);
 
 		const errors = validateOrganisation({ name, email, hubDomain, plan }, params.id);
 		if (errors) {
@@ -224,12 +230,18 @@ export const actions = {
 			}
 		}
 
+		const firstNames = ['Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia', 'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence', 'Finley', 'Willow', 'Henry', 'Emilia', 'Sophie', 'Ella', 'Jack', 'Grace', 'Thomas', 'Poppy', 'William', 'Charlotte'];
+		const lastNames = ['Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies', 'Evans', 'Wilson', 'Thomas', 'Roberts', 'Robinson', 'Wright', 'Thompson', 'White', 'Hughes', 'Edwards', 'Green', 'Hall', 'Martin', 'Wood', 'Clarke', 'Jackson', 'Hill', 'Lewis'];
+		const domains = ['gmail.com', 'outlook.com', 'yahoo.com', 'btinternet.com', 'hotmail.co.uk', 'live.co.uk', 'sky.com'];
 		for (let i = 1; i <= count; i++) {
-			const email = `contact${i}@anonymised.example.com`;
+			const firstName = firstNames[(i - 1) % firstNames.length];
+			const lastName = lastNames[Math.floor((i - 1) / firstNames.length) % lastNames.length];
+			const domain = domains[(i - 1) % domains.length];
+			const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${count > 1 ? `.${i}` : ''}@${domain}`;
 			const validated = validateContact({
 				email,
-				firstName: 'Contact',
-				lastName: String(i),
+				firstName,
+				lastName,
 				phone: i <= 999 ? `07000 000${String(i).padStart(3, '0')}` : `07000 ${i}`,
 				addressLine1: `${i} Example Street`,
 				addressLine2: i % 3 === 0 ? 'Flat ' + Math.floor(i / 3) : '',
@@ -239,7 +251,7 @@ export const actions = {
 				country: 'United Kingdom',
 				membershipStatus: ['member', 'regular-attender', 'visitor'][i % 3] || 'member',
 				dateJoined: i % 2 === 0 ? new Date(2020 + (i % 4), i % 12, 1).toISOString().slice(0, 10) : null,
-				notes: 'Anonymised demo contact.',
+				notes: 'Demo contact (realistic name and email for testing).',
 				subscribed: true,
 				spouseId: null
 			});

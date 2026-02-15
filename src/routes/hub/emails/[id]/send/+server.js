@@ -3,7 +3,7 @@ import { findById, readCollection, update } from '$lib/crm/server/fileStore.js';
 import { prepareNewsletterEmail, sendNewsletterBatch } from '$lib/crm/server/email.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
-import { getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import { getConfiguredPlanFromAreaPermissions, getConfiguredPlanMaxContacts } from '$lib/crm/server/permissions.js';
 
 export async function POST({ request, cookies, params, url }) {
 	const data = await request.json();
@@ -23,9 +23,10 @@ export async function POST({ request, cookies, params, url }) {
 	}
 
 	const orgs = await readCollection('organisations');
-	const plan = getPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions) || 'free';
+	const plan = (await getConfiguredPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions)) || 'free';
+	const planLimit = await getConfiguredPlanMaxContacts(plan);
 	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
-	const allContacts = contactsWithinPlanLimit(orgContacts, plan);
+	const allContacts = contactsWithinPlanLimit(orgContacts, planLimit);
 
 	const listId = data.listId;
 	const contactIds = Array.isArray(data.contactIds) ? data.contactIds : [];

@@ -39,18 +39,19 @@ function getDefaultMeetingPlannerRotas() {
 	return [];
 }
 
-function getDefaultTheme() {
+/** Cool, clean default palette: slate + sky/teal. Used when no theme is saved and for fallbacks. */
+export function getDefaultTheme() {
 	return {
 		logoPath: '',
 		loginLogoPath: '',
-		primaryColor: '#4BB170',
-		brandColor: '#4A97D2',
-		navbarBackgroundColor: '#4A97D2',
-		buttonColors: ['#4A97D2', '#4BB170', '#3B79A8', '#3C8E5A', '#E6A324'],
-		panelHeadColors: ['#4A97D2', '#3B79A8', '#2C5B7E'],
-		panelBackgroundColor: '#E8F2F9', // Lighter shade of blue for all panels
-		externalPagesLayout: 'integrated', // 'integrated' | 'standalone'
-		publicPagesBranding: 'hub' // Hub public pages (signup, forms, etc.) always use theme; main website is never affected
+		primaryColor: '#0d9488',   // teal-500
+		brandColor: '#0284c7',    // sky-600
+		navbarBackgroundColor: '#0f172a', // slate-900
+		buttonColors: ['#0284c7', '#0d9488', '#475569', '#0369a1', '#f59e0b'], // sky-600, teal-500, slate-600, sky-700, amber-500
+		panelHeadColors: ['#0284c7', '#0369a1', '#0f172a'],
+		panelBackgroundColor: '#f1f5f9', // slate-100
+		externalPagesLayout: 'integrated',
+		publicPagesBranding: 'hub'
 	};
 }
 
@@ -344,7 +345,7 @@ export function invalidateSettingsCache() {
 
 /**
  * Update plan setup overrides (multi-org admin). Deep-merges each plan so partial updates don't wipe other fields.
- * @param {Record<string, { description?: string, maxContacts?: number, maxAdmins?: number, costPerContact?: number | null, costPerAdmin?: number | null, areaPermissions?: string[] }>} planSetup
+ * @param {Record<string, { description?: string, maxContacts?: number, maxAdmins?: number, areaPermissions?: string[] }>} planSetup
  */
 export async function updatePlanSetup(planSetup) {
 	if (!planSetup || typeof planSetup !== 'object') return;

@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import { readCollection, findMany, findById, update } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
@@ -6,117 +6,9 @@ import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 import { validateRota } from '$lib/crm/server/validators.js';
 import { filterUpcomingOccurrences } from '$lib/crm/utils/occurrenceFilters.js';
 
-export async function load({ cookies }) {
-	const organisationId = await getCurrentOrganisationId();
-	const [rotasRaw, eventsRaw, occurrencesRaw, contactsRaw] = await Promise.all([
-		readCollection('rotas'),
-		readCollection('events'),
-		readCollection('occurrences'),
-		readCollection('contacts')
-	]);
-	const allRotas = organisationId ? filterByOrganisation(rotasRaw, organisationId) : rotasRaw;
-	const events = organisationId ? filterByOrganisation(eventsRaw, organisationId) : eventsRaw;
-	const allOccurrences = organisationId ? filterByOrganisation(occurrencesRaw, organisationId) : occurrencesRaw;
-	const contacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
-	const rotas = allRotas.filter(r => (r.visibility || 'public') === 'public');
-	const occurrences = filterUpcomingOccurrences(allOccurrences);
-	
-	// Group rotas by event
-	const eventsMap = new Map(events.map(e => [e.id, e]));
-	const rotasByEvent = new Map();
-	
-	// Initialize events with rotas
-	rotas.forEach(rota => {
-		if (!rotasByEvent.has(rota.eventId)) {
-			const event = eventsMap.get(rota.eventId);
-			if (event) {
-				rotasByEvent.set(rota.eventId, {
-					event,
-					rotas: []
-				});
-			}
-		}
-	});
-	
-	// Process rotas with assignee counts per occurrence
-	const rotasWithDetails = rotas.map(rota => {
-		const assignees = rota.assignees || [];
-		const eventOccurrences = occurrences.filter(o => o.eventId === rota.eventId);
-		
-		// Group assignees by occurrence
-		const assigneesByOcc = {};
-		if (eventOccurrences.length > 0) {
-			eventOccurrences.forEach(occ => {
-				assigneesByOcc[occ.id] = assignees.filter(a => {
-					if (typeof a === 'string') {
-						// Old format - if rota has occurrenceId, only count for that occurrence
-						return rota.occurrenceId === occ.id;
-					}
-					if (a && typeof a === 'object') {
-						const aOccId = a.occurrenceId || rota.occurrenceId;
-						return aOccId === occ.id;
-					}
-					return false;
-				}).map(a => {
-					// Enrich with contact details
-					if (typeof a === 'string') {
-						const contact = contacts.find(c => c.id === a);
-						return {
-							id: contact?.id,
-							name: contact ? `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email : 'Unknown',
-							email: contact?.email || ''
-						};
-					}
-					if (a && typeof a === 'object' && a.contactId) {
-						if (typeof a.contactId === 'string') {
-							const contact = contacts.find(c => c.id === a.contactId);
-							return {
-								id: contact?.id,
-								name: contact ? `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email : (a.name || 'Unknown'),
-								email: contact?.email || a.email || ''
-							};
-						}
-						// Public signup format
-						return {
-							id: null,
-							name: a.contactId.name || a.name || 'Unknown',
-							email: a.contactId.email || a.email || ''
-						};
-					}
-					// Public signup
-					return {
-						id: null,
-						name: a.name || 'Unknown',
-						email: a.email || ''
-					};
-				});
-			});
-		}
-		
-		return {
-			...rota,
-			assigneesByOcc
-		};
-	});
-	
-	// Add rotas to their events
-	rotasWithDetails.forEach(rota => {
-		if (rotasByEvent.has(rota.eventId)) {
-			rotasByEvent.get(rota.eventId).rotas.push(rota);
-		}
-	});
-	
-	// Convert to array and sort by event title
-	const eventsWithRotas = Array.from(rotasByEvent.values())
-		.map(({ event, rotas }) => ({
-			event,
-			rotas,
-			occurrences: occurrences.filter(o => o.eventId === event.id)
-		}))
-		.sort((a, b) => a.event.title.localeCompare(b.event.title));
-	
-	const csrfToken = getCsrfToken(cookies) || '';
-	return { eventsWithRotas, csrfToken };
+export async function load() {
+	// Redirect to My volunteering – same functionality at /my/opportunities
+	throw redirect(302, '/my/opportunities');
 }
 
 export const actions = {

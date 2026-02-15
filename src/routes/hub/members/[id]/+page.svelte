@@ -95,38 +95,38 @@
 					<button
 						type="submit"
 						form="member-edit-form"
-						class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-2 text-white"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-3 text-white"
 					>
 						Back
 					</button>
 				{:else}
 					<a
 						href="/hub/contacts/{member.id}"
-						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 inline-flex items-center gap-1.5 text-xs"
+						class="hub-btn bg-theme-button-3 text-white"
 					>
-						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 						</svg>
 						View Contact Details
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-2 text-white"
 					>
 						Edit
 					</button>
 					<a
 						href="/hub/members"
-						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 inline-flex items-center gap-1.5 text-xs"
+						class="hub-btn border border-gray-300 text-gray-700 hover:bg-gray-50"
 					>
-						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 						</svg>
 						Back to Members
@@ -148,9 +148,9 @@
 				
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					<!-- Getting to Know You -->
-					<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-						<div class="panel-head-theme px-[18px] py-2.5">
-							<h3 class="text-lg font-semibold text-white">Getting to Know You</h3>
+					<div class="hub-top-panel overflow-hidden">
+						<div class="hub-top-panel-header">
+							<h3 class="text-lg font-semibold text-gray-900">Getting to Know You</h3>
 						</div>
 						<div class="p-6 space-y-4">
 							<div class="grid grid-cols-2 gap-4">
@@ -176,9 +176,9 @@
 					</div>
 
 					<!-- Previous Church -->
-					<div class="bg-white border-2 border-hub-green-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-[18px] py-2.5">
-							<h3 class="text-lg font-semibold text-white">Previous Church</h3>
+					<div class="hub-top-panel overflow-hidden lg:col-span-2">
+						<div class="hub-top-panel-header">
+							<h3 class="text-lg font-semibold text-gray-900">Previous Church</h3>
 						</div>
 						<div class="p-6 space-y-4">
 							<FormField label="Previous Church" name="previousChurch" bind:value={formData.previousChurch} />
@@ -189,9 +189,9 @@
 					<!-- Faith Journey, Community Involvement, and Membership Reflections - One Row -->
 					<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:col-span-2">
 						<!-- Faith Journey -->
-						<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
-								<h3 class="text-lg font-semibold text-white">Faith Journey</h3>
+						<div class="hub-top-panel overflow-hidden">
+							<div class="hub-top-panel-header">
+								<h3 class="text-lg font-semibold text-gray-900">Faith Journey</h3>
 							</div>
 							<div class="p-6 space-y-4">
 								<div>
@@ -265,9 +265,9 @@
 						</div>
 
 						<!-- Community Involvement -->
-						<div class="bg-white border-2 border-hub-red-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-red-500 to-hub-red-600 px-[18px] py-2.5">
-								<h3 class="text-lg font-semibold text-white">Community Involvement</h3>
+						<div class="hub-top-panel overflow-hidden">
+							<div class="hub-top-panel-header">
+								<h3 class="text-lg font-semibold text-gray-900">Community Involvement</h3>
 							</div>
 							<div class="p-6 space-y-4">
 								<div>
@@ -324,9 +324,9 @@
 						</div>
 
 						<!-- Membership Reflections -->
-						<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-							<div class="panel-head-theme px-[18px] py-2.5">
-								<h3 class="text-lg font-semibold text-white">Membership Reflections</h3>
+						<div class="hub-top-panel overflow-hidden">
+							<div class="hub-top-panel-header">
+								<h3 class="text-lg font-semibold text-gray-900">Membership Reflections</h3>
 							</div>
 							<div class="p-6">
 								<FormField 
@@ -341,9 +341,9 @@
 					</div>
 
 					<!-- Additional Information -->
-					<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
-							<h3 class="text-lg font-semibold text-white">Additional Information</h3>
+					<div class="hub-top-panel overflow-hidden lg:col-span-2">
+						<div class="hub-top-panel-header">
+							<h3 class="text-lg font-semibold text-gray-900">Additional Information</h3>
 						</div>
 						<div class="p-6 space-y-4">
 							<FormField 
@@ -368,9 +368,9 @@
 			<!-- View Mode -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				<!-- Contact Information Panel -->
-				<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-					<div class="panel-head-theme px-[18px] py-2.5">
-						<h3 class="text-lg font-semibold text-white">Contact Information</h3>
+				<div class="hub-top-panel overflow-hidden">
+					<div class="hub-top-panel-header">
+						<h3 class="text-lg font-semibold text-gray-900">Contact Information</h3>
 					</div>
 					<div class="p-6">
 						<dl class="grid grid-cols-1 gap-4">
@@ -402,9 +402,9 @@
 
 				<!-- Getting to Know You Panel -->
 				{#if memberData && (memberData.title || memberData.dateOfBirth || memberData.placeOfBirth || memberData.maritalStatus || memberData.spouseName || memberData.childrenNamesAndAges)}
-					<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-						<div class="panel-head-theme px-[18px] py-2.5">
-							<h3 class="text-lg font-semibold text-white">Getting to Know You</h3>
+					<div class="hub-top-panel overflow-hidden">
+						<div class="hub-top-panel-header">
+							<h3 class="text-lg font-semibold text-gray-900">Getting to Know You</h3>
 						</div>
 						<div class="p-6">
 							<dl class="grid grid-cols-1 gap-4">
@@ -451,9 +451,9 @@
 
 				<!-- Previous Church Panel -->
 				{#if memberData && (memberData.previousChurch || memberData.previousChurchFeelings)}
-					<div class="bg-white border-2 border-hub-green-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-green-500 to-hub-green-600 px-[18px] py-2.5">
-							<h3 class="text-lg font-semibold text-white">Previous Church</h3>
+					<div class="hub-top-panel overflow-hidden lg:col-span-2">
+						<div class="hub-top-panel-header">
+							<h3 class="text-lg font-semibold text-gray-900">Previous Church</h3>
 						</div>
 						<div class="p-6">
 							<dl class="grid grid-cols-1 gap-4">
@@ -478,9 +478,9 @@
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:col-span-2">
 					<!-- Faith Journey Panel -->
 					{#if memberData && (memberData.isChristFollower !== undefined || memberData.hasBeenWaterBaptised !== undefined || memberData.hasBeenFilledWithHolySpirit !== undefined)}
-						<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
-								<h3 class="text-lg font-semibold text-white">Faith Journey</h3>
+						<div class="hub-top-panel overflow-hidden">
+							<div class="hub-top-panel-header">
+								<h3 class="text-lg font-semibold text-gray-900">Faith Journey</h3>
 							</div>
 							<div class="p-6">
 								<dl class="grid grid-cols-1 gap-4">
@@ -527,9 +527,9 @@
 
 					<!-- Community Involvement Panel -->
 					{#if memberData && (memberData.attendingCommunityGroup !== undefined || memberData.currentlyServing !== undefined || memberData.servingArea || memberData.desiredServingArea || memberData.elderMeetingAvailability)}
-						<div class="bg-white border-2 border-hub-red-200 rounded-lg shadow-md overflow-hidden">
-							<div class="bg-gradient-to-r from-hub-red-500 to-hub-red-600 px-[18px] py-2.5">
-								<h3 class="text-lg font-semibold text-white">Community Involvement</h3>
+						<div class="hub-top-panel overflow-hidden">
+							<div class="hub-top-panel-header">
+								<h3 class="text-lg font-semibold text-gray-900">Community Involvement</h3>
 							</div>
 							<div class="p-6">
 								<dl class="grid grid-cols-1 gap-4">
@@ -578,9 +578,9 @@
 
 					<!-- Membership Reflections Panel -->
 					{#if memberData && memberData.membershipReflections}
-						<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-							<div class="panel-head-theme px-[18px] py-2.5">
-								<h3 class="text-lg font-semibold text-white">Membership Reflections</h3>
+						<div class="hub-top-panel overflow-hidden">
+							<div class="hub-top-panel-header">
+								<h3 class="text-lg font-semibold text-gray-900">Membership Reflections</h3>
 							</div>
 							<div class="p-6">
 								<p class="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">{memberData.membershipReflections}</p>
@@ -591,9 +591,9 @@
 
 				<!-- Additional Information Panel -->
 				{#if memberData && (memberData.additionalInfo || memberData.prayerSupportNeeds)}
-					<div class="bg-white border-2 border-hub-yellow-200 rounded-lg shadow-md overflow-hidden lg:col-span-2">
-						<div class="bg-gradient-to-r from-hub-yellow-500 to-hub-yellow-600 px-[18px] py-2.5">
-							<h3 class="text-lg font-semibold text-white">Additional Information</h3>
+					<div class="hub-top-panel overflow-hidden lg:col-span-2">
+						<div class="hub-top-panel-header">
+							<h3 class="text-lg font-semibold text-gray-900">Additional Information</h3>
 						</div>
 						<div class="p-6 space-y-6">
 							{#if memberData.additionalInfo}

@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { getAdminFromCookies } from '$lib/crm/server/auth.js';
-import { isSuperAdmin, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import { isSuperAdmin, getConfiguredPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
 import { getSettings, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { readCollection, getStoreMode, findById } from '$lib/crm/server/fileStore.js';
 import { filterByOrganisation } from '$lib/crm/server/orgContext.js';
@@ -43,7 +43,7 @@ export async function load({ cookies }) {
 
 	// Billing: plan, subscription state, and feature flags (no secrets exposed)
 	const plan = currentOrganisation && Array.isArray(currentOrganisation.areaPermissions)
-		? (getPlanFromAreaPermissions(currentOrganisation.areaPermissions) || 'free')
+		? ((await getConfiguredPlanFromAreaPermissions(currentOrganisation.areaPermissions)) || 'free')
 		: 'free';
 	const subscriptionStatus = currentOrganisation?.subscriptionStatus ?? null;
 	const currentPeriodEnd = currentOrganisation?.currentPeriodEnd ?? null;

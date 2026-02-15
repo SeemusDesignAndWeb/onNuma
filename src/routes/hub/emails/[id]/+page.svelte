@@ -179,13 +179,13 @@
 {#if newsletter}
 	<div class="space-y-6">
 		<!-- Header Card -->
-		<div class="panel-head-theme shadow-lg rounded-lg p-6 text-white">
+		<div class="hub-top-panel p-6">
 			<div class="flex justify-between items-start mb-4">
 				<div class="flex-1">
-					<h1 class="text-3xl font-bold mb-2 text-white">{newsletter.subject || 'Untitled Email'}</h1>
+					<h1 class="text-3xl font-bold mb-2 text-gray-900">{newsletter.subject || 'Untitled Email'}</h1>
 				</div>
 				<div class="flex flex-col items-end gap-2">
-					<a href="/hub/emails/{newsletter.id}/send" class="btn-theme-1 px-4 py-2.5 rounded-md transition-colors text-base font-semibold shadow-md flex items-center gap-1.5">
+					<a href="/hub/emails/{newsletter.id}/send" class="hub-btn btn-theme-1 shadow-md flex items-center gap-1.5">
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
 						</svg>
@@ -198,7 +198,7 @@
 					<button
 						type="submit"
 						form="newsletter-form"
-						class="btn-theme-2 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
+						class="hub-btn btn-theme-2 shadow-md flex items-center gap-1.5"
 					>
 						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -209,7 +209,7 @@
 					<button
 						type="button"
 						on:click={() => showSaveTemplateModal = true}
-						class="btn-theme-1 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
+						class="hub-btn btn-theme-1 shadow-md flex items-center gap-1.5"
 					>
 						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -217,7 +217,7 @@
 						<span class="hidden sm:inline">Save as Template</span>
 						<span class="sm:hidden">Template</span>
 					</button>
-					<a href="/hub/emails/{newsletter.id}/preview" class="btn-theme-4 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5">
+					<a href="/hub/emails/{newsletter.id}/preview" class="hub-btn btn-theme-4 shadow-md flex items-center gap-1.5">
 						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -236,9 +236,9 @@
 					<button
 						type="button"
 						on:click={() => goto('/hub/emails')}
-						class="btn-theme-3 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
+						class="hub-btn border border-gray-300 text-gray-700 hover:bg-gray-50"
 					>
-						<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 						</svg>
 						Back
@@ -246,7 +246,7 @@
 					<button
 						type="button"
 						on:click={handleDelete}
-						class="bg-hub-red-600 hover:bg-hub-red-700 text-white px-2.5 py-1.5.5 sm:px-4 sm:py-2 rounded-md transition-colors text-xs font-semibold shadow-md flex items-center gap-1.5"
+						class="hub-btn bg-hub-red-600 text-white hover:bg-hub-red-700"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -365,14 +365,14 @@
 				<button
 					type="button"
 					on:click={() => { showSaveTemplateModal = false; templateName = ''; templateDescription = ''; }}
-					class="btn-theme-3 px-[18px] py-2.5 rounded-md"
+					class="hub-btn btn-theme-3"
 				>
 					Back
 				</button>
 				<button
 					type="button"
 					on:click={handleSaveAsTemplate}
-					class="btn-theme-2 px-[18px] py-2.5 rounded-md"
+					class="hub-btn btn-theme-2"
 				>
 					Save Template
 				</button>

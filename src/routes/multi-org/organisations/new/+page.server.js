@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { create, readCollection } from '$lib/crm/server/fileStore.js';
 import { invalidateHubDomainCache, getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
-import { getOrganisationHubAreas, getAreaPermissionsForPlan, getHubPlanTiers } from '$lib/crm/server/permissions.js';
+import { getConfiguredAreaPermissionsForPlan, getHubPlanTiers } from '$lib/crm/server/permissions.js';
 import { isValidHubDomain, normaliseHost } from '$lib/crm/server/hubDomain.js';
 
 const VALID_PLANS = new Set(['free', 'professional', 'enterprise']);
@@ -58,7 +58,9 @@ export const actions = {
 		const contactName = form.get('contactName')?.toString()?.trim() || '';
 		const hubDomain = form.get('hubDomain')?.toString()?.trim() || '';
 		const plan = (form.get('plan')?.toString() || 'free').toLowerCase().trim();
-		const areaPermissions = VALID_PLANS.has(plan) ? getAreaPermissionsForPlan(plan) : getAreaPermissionsForPlan('free');
+		const areaPermissions = await getConfiguredAreaPermissionsForPlan(
+			VALID_PLANS.has(plan) ? plan : 'free'
+		);
 
 		const errors = validateOrganisation({ name, email, hubDomain, plan });
 		if (errors) {

@@ -1,5 +1,5 @@
 import { getEvents, getSettings } from '$lib/server/database';
-import { getSettings as getHubSettings } from '$lib/crm/server/settings.js';
+import { getSettings as getHubSettings, getDefaultTheme } from '$lib/crm/server/settings.js';
 
 function isWebsitePath(pathname) {
 	if (!pathname || pathname.startsWith('/hub') || pathname.startsWith('/admin') || pathname.startsWith('/multi-org') || pathname.startsWith('/api')) return false;
@@ -21,7 +21,7 @@ export const load = async ({ locals, url }) => {
 			// Skip Hub settings on marketing home (/) – theme not used there, saves a round trip and improves LCP/TTFB
 			if (pathname !== '/') {
 				const hubSettings = await getHubSettings();
-				theme = hubSettings?.theme || null;
+				theme = hubSettings?.theme || getDefaultTheme();
 			}
 			const highlighted = (allEvents || []).filter((e) => e.highlighted && e.published);
 			highlightedEvent = highlighted.sort((a, b) =>

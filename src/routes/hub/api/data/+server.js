@@ -8,7 +8,7 @@
 import { json } from '@sveltejs/kit';
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
-import { getPlanFromAreaPermissions, getPlanMaxContacts } from '$lib/crm/server/permissions.js';
+import { getConfiguredPlanFromAreaPermissions, getConfiguredPlanMaxContacts } from '$lib/crm/server/permissions.js';
 import { getCachedOrganisations } from '$lib/crm/server/organisationsCache.js';
 
 /** GET: Load all hub data for the current organisation */
@@ -26,8 +26,8 @@ export async function GET({ locals }) {
 	// Get plan from organisation
 	const orgs = await getCachedOrganisations();
 	const org = orgs.find(o => o.id === organisationId);
-	const plan = getPlanFromAreaPermissions(org?.areaPermissions) || 'free';
-	const planLimit = getPlanMaxContacts(plan);
+	const plan = (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free';
+	const planLimit = await getConfiguredPlanMaxContacts(plan);
 
 	// Load all collections in parallel
 	const [contactsRaw, eventsRaw, rotasRaw, listsRaw, formsRaw, emailsRaw, emailStatsRaw] = await Promise.all([
@@ -42,7 +42,7 @@ export async function GET({ locals }) {
 
 	// Filter by org and apply plan limits
 	const orgContacts = filterByOrganisation(contactsRaw, organisationId);
-	const contacts = contactsWithinPlanLimit(orgContacts, plan);
+	const contacts = contactsWithinPlanLimit(orgContacts, planLimit);
 
 	// Return minimal contact fields for list view (full contact fetched on demand)
 	const contactsForList = contacts.map(c => ({

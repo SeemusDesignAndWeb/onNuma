@@ -1,29 +1,10 @@
 import { redirect, fail } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
-import { getPlanSetupDetails, PLAN_MODULE_OPTIONS } from '$lib/crm/server/permissions.js';
-import { getSettings, updatePlanSetup } from '$lib/crm/server/settings.js';
+import { getConfiguredPlanSetupDetails, PLAN_MODULE_OPTIONS } from '$lib/crm/server/permissions.js';
+import { updatePlanSetup } from '$lib/crm/server/settings.js';
 
 const VALID_PLAN_IDS = new Set(['free', 'professional', 'enterprise']);
-
-function mergePlansWithOverrides(planSetupOverrides) {
-	const basePlans = getPlanSetupDetails();
-	const overrides = planSetupOverrides && typeof planSetupOverrides === 'object' ? planSetupOverrides : {};
-	return basePlans.map((plan) => {
-		const o = overrides[plan.value];
-		if (!o) return plan;
-		const num = (v) => (v === '' || v === null || v === undefined) ? null : (typeof v === 'number' ? v : parseFloat(v));
-		const areaPermissions = Array.isArray(o.areaPermissions) ? o.areaPermissions : plan.areaPermissions;
-		return {
-			...plan,
-			description: typeof o.description === 'string' ? o.description.trim() || plan.description : plan.description,
-			maxContacts: typeof o.maxContacts === 'number' && o.maxContacts >= 0 ? o.maxContacts : plan.maxContacts,
-			maxAdmins: typeof o.maxAdmins === 'number' && o.maxAdmins >= 0 ? o.maxAdmins : plan.maxAdmins,
-			costPerContact: 'costPerContact' in o ? (num(o.costPerContact) ?? null) : plan.costPerContact,
-			costPerAdmin: 'costPerAdmin' in o ? (num(o.costPerAdmin) ?? null) : plan.costPerAdmin,
-			areaPermissions
-		};
-	});
-}
 
 export async function load({ locals }) {
 	const multiOrgAdmin = locals.multiOrgAdmin;
@@ -31,11 +12,25 @@ export async function load({ locals }) {
 	if (!multiOrgAdmin) {
 		throw redirect(302, base('/multi-org/auth/login'));
 	}
-	const settings = await getSettings();
-	const plans = mergePlansWithOverrides(settings.planSetup);
+	const plans = await getConfiguredPlanSetupDetails();
+	const paddleMapping = {
+		environment: (env.PADDLE_ENVIRONMENT || 'sandbox').toLowerCase(),
+		apiConfigured: !!env.PADDLE_API_KEY,
+		webhookConfigured: !!env.PADDLE_WEBHOOK_SECRET,
+		professional: [
+			{ tier: 'Tier 1 (1-100 contacts)', priceId: env.PADDLE_PRICE_ID_PROFESSIONAL_TIER1 || null },
+			{ tier: 'Tier 2 (101-250 contacts)', priceId: env.PADDLE_PRICE_ID_PROFESSIONAL_TIER2 || null },
+			{ tier: 'Tier 3 (251-500 contacts)', priceId: env.PADDLE_PRICE_ID_PROFESSIONAL_TIER3 || null }
+		],
+		enterprise: [
+			{ tier: 'Tier 1 (1-300 seats)', priceId: env.PADDLE_PRICE_ID_ENTERPRISE || null },
+			{ tier: 'Tier 2 (301+ seats)', priceId: env.PADDLE_PRICE_ID_ENTERPRISE_TIER2 || null }
+		]
+	};
 	return {
 		plans,
 		planModules: PLAN_MODULE_OPTIONS,
+		paddleMapping,
 		multiOrgAdmin,
 		multiOrgBasePath: '/multi-org'
 	};
@@ -54,20 +49,12 @@ export const actions = {
 		const description = form.get('description')?.toString()?.trim() ?? '';
 		const maxContactsRaw = form.get('maxContacts')?.toString()?.trim();
 		const maxAdminsRaw = form.get('maxAdmins')?.toString()?.trim();
-		const costPerContactRaw = form.get('costPerContact')?.toString()?.trim();
-		const costPerAdminRaw = form.get('costPerAdmin')?.toString()?.trim();
 
 		const maxContacts = maxContactsRaw !== '' && maxContactsRaw !== undefined
 			? parseInt(maxContactsRaw, 10)
 			: null;
 		const maxAdmins = maxAdminsRaw !== '' && maxAdminsRaw !== undefined
 			? parseInt(maxAdminsRaw, 10)
-			: null;
-		const costPerContact = costPerContactRaw !== '' && costPerContactRaw !== undefined && costPerContactRaw !== null
-			? parseFloat(costPerContactRaw)
-			: null;
-		const costPerAdmin = costPerAdminRaw !== '' && costPerAdminRaw !== undefined && costPerAdminRaw !== null
-			? parseFloat(costPerAdminRaw)
 			: null;
 		const areaPermissions = form.getAll('areaPermissions').filter((v) => typeof v === 'string' && v.trim());
 
@@ -77,20 +64,11 @@ export const actions = {
 		if (maxAdmins !== null && (Number.isNaN(maxAdmins) || maxAdmins < 0)) {
 			return fail(400, { error: 'Admins allowed must be 0 or more' });
 		}
-		if (costPerContact !== null && Number.isNaN(costPerContact)) {
-			return fail(400, { error: 'Cost per contact must be a number' });
-		}
-		if (costPerAdmin !== null && Number.isNaN(costPerAdmin)) {
-			return fail(400, { error: 'Cost per admin must be a number' });
-		}
-
 		const patch = {
 			[planValue]: {
 				...(description !== '' && { description }),
 				...(maxContacts !== null && { maxContacts }),
 				...(maxAdmins !== null && { maxAdmins }),
-				costPerContact: costPerContact !== null ? costPerContact : null,
-				costPerAdmin: costPerAdmin !== null ? costPerAdmin : null,
 				areaPermissions
 			}
 		};

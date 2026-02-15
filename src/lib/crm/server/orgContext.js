@@ -37,13 +37,16 @@ function sortContactsByName(contacts) {
  * Return only the first N contacts allowed by the plan (sorted by firstName, lastName).
  * Excess contacts are not deleted; they are just not included. Use for list views and pickers.
  * @param {Array<{ firstName?: string, lastName?: string }>} contacts - Already org-scoped contacts
- * @param {string} plan - 'free' | 'professional' | 'enterprise'
+ * @param {string|number} planOrLimit - plan key or explicit numeric limit
  * @returns {Array} Sorted, capped list
  */
-export function contactsWithinPlanLimit(contacts, plan) {
+export function contactsWithinPlanLimit(contacts, planOrLimit) {
 	if (!Array.isArray(contacts)) return [];
 	const sorted = sortContactsByName(contacts);
-	const max = getPlanMaxContacts(plan || 'free');
+	const max =
+		typeof planOrLimit === 'number' && Number.isFinite(planOrLimit)
+			? Math.max(0, Math.floor(planOrLimit))
+			: getPlanMaxContacts(planOrLimit || 'free');
 	return sorted.slice(0, max);
 }
 

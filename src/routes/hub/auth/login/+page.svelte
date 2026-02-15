@@ -70,8 +70,8 @@
 	});
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8 sm:py-12 sm:px-6 lg:px-8">
-	<div class="max-w-md w-full space-y-6 sm:space-y-8">
+<div class="w-full max-w-md">
+	<div class="space-y-6 sm:space-y-8">
 		<div class="text-center">
 			<img
 				src={loginLogoSrc}
@@ -106,7 +106,7 @@
 						type="email"
 						autocomplete="email"
 						required
-						class="appearance-none rounded-none relative block w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-theme-button-2 focus:border-hub-green-600 focus:z-10"
+						class="appearance-none rounded-none relative block w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-theme-button-2 focus:border-theme-button-2 focus:z-10"
 						placeholder="Email address"
 					/>
 				</div>
@@ -118,18 +118,18 @@
 						type="password"
 						autocomplete="current-password"
 						required
-						class="appearance-none rounded-none relative block w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-theme-button-2 focus:border-hub-green-600 focus:z-10"
+						class="appearance-none rounded-none relative block w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-theme-button-2 focus:border-theme-button-2 focus:z-10"
 						placeholder="Password"
 					/>
 				</div>
 			</div>
 
 			{#if message}
-				<div class="mt-4 p-3 rounded-md text-sm {message.type === 'success' ? 'bg-hub-green-50 text-hub-green-800 border border-hub-green-200' : 'bg-hub-red-50 text-hub-red-800 border border-hub-red-200'}">
+				<div class="mt-4 p-3 rounded-md text-sm {message.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'}">
 					{message.text}
 					{#if message.type === 'error' && (message.text.includes('verification') || message.text.includes('verify'))}
 						<div class="mt-2">
-							<a href="/hub/auth/resend-verification" class="text-hub-blue-600 hover:text-hub-blue-600/80 underline text-sm font-medium">
+							<a href="/hub/auth/resend-verification" class="text-theme-button-1 hover:opacity-80 underline text-sm font-medium">
 								Resend verification email
 							</a>
 						</div>
@@ -138,11 +138,11 @@
 			{/if}
 			
 			{#if error}
-				<div class="mt-4 p-3 rounded-md text-sm bg-hub-red-50 text-hub-red-800 border border-hub-red-200">
+				<div class="mt-4 p-3 rounded-md text-sm bg-red-50 text-red-800 border border-red-200">
 					{error}
 					{#if unverifiedEmail}
 						<div class="mt-2">
-							<a href="/hub/auth/resend-verification?email={encodeURIComponent(unverifiedEmail)}" class="text-hub-blue-600 hover:text-hub-blue-600/80 underline text-sm font-medium">
+							<a href="/hub/auth/resend-verification?email={encodeURIComponent(unverifiedEmail)}" class="text-theme-button-1 hover:opacity-80 underline text-sm font-medium">
 								Resend verification email
 							</a>
 						</div>
@@ -151,12 +151,12 @@
 			{/if}
 
 			<div class="mt-4 text-center text-xs sm:text-sm text-gray-600 px-2">
-				By signing in you agree to abide by the <button type="button" on:click={openPrivacyModal} class="text-hub-blue-600 hover:text-hub-blue-600/80 underline break-words bg-transparent border-0 p-0 cursor-pointer">privacy policy</button>.
+				By signing in you agree to abide by the <button type="button" on:click={openPrivacyModal} class="text-theme-button-1 hover:opacity-80 underline break-words bg-transparent border-0 p-0 cursor-pointer">privacy policy</button>.
 			</div>
 
 			{#if submitting}
-				<div class="mt-4 p-3 rounded-md text-sm bg-hub-green-50 text-hub-green-800 border border-hub-green-200 flex items-center justify-center gap-2">
-					<svg class="animate-spin h-4 w-4 text-hub-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+				<div class="mt-4 p-3 rounded-md text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center gap-2">
+					<svg class="animate-spin h-4 w-4 text-theme-button-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
 						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 					</svg>
@@ -167,14 +167,14 @@
 				<button
 					type="submit"
 					disabled={submitting}
-					class="group relative w-full flex justify-center py-2.5 sm:py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-hub-green-600 hover:bg-hub-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-button-2 disabled:opacity-70 disabled:cursor-not-allowed"
+					class="hub-login-btn group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
 				>
 					Sign in
 				</button>
 			</div>
 
 			<div class="mt-4 text-center">
-				<a href="/hub/auth/forgot-password" class="text-xs sm:text-sm font-medium text-hub-blue-600 hover:text-hub-blue-600/80">
+				<a href="/hub/auth/forgot-password" class="text-xs sm:text-sm font-medium text-theme-button-1 hover:opacity-80">
 					Forgot password?
 				</a>
 			</div>
@@ -229,7 +229,7 @@
 				<button
 					type="button"
 					on:click={closePrivacyModal}
-					class="w-full sm:w-auto px-6 py-2 bg-hub-green-600 text-white rounded-md hover:bg-hub-green-700 transition-colors"
+					class="w-full sm:w-auto px-6 py-2 bg-theme-button-2 text-white rounded-md hover:opacity-90 transition-colors"
 				>
 					Close
 				</button>
@@ -239,6 +239,16 @@
 {/if}
 
 <style>
+	.hub-login-btn {
+		background: var(--color-button-2, #0d9488);
+	}
+	.hub-login-btn:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--color-button-2, #0d9488) 88%, black);
+	}
+	.hub-login-btn:focus {
+		--tw-ring-color: var(--color-button-2, #0d9488);
+	}
+
 	:global(.prose) {
 		color: #374151;
 	}

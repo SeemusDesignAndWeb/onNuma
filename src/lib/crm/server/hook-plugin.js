@@ -125,8 +125,8 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		throw redirect(302, '/hub/auth/login');
 	}
 
-	// Run with org context for /hub and all public hub pages so getCurrentOrganisationId() returns the right org.
-	if (!pathname.startsWith('/hub') && !isPublicHubPath) {
+	// Run with org context for /hub, public hub pages, and /my so getCurrentOrganisationId() returns the right org.
+	if (!pathname.startsWith('/hub') && !isPublicHubPath && !pathname.startsWith('/my')) {
 		return resolve(event);
 	}
 
@@ -145,6 +145,17 @@ async function crmHandleHubAndSignup(event, resolve) {
 	const { url, request, cookies } = event;
 	const isProduction = process.env.NODE_ENV === 'production';
 	const pathname = url.pathname;
+
+	// My (volunteer) routes - no hub admin required; member resolved from cookie in layout
+	if (pathname.startsWith('/my')) {
+		if (request.method === 'GET') {
+			if (!getCsrfToken(cookies)) {
+				const csrfToken = generateCsrfToken();
+				setCsrfToken(cookies, csrfToken, isProduction);
+			}
+		}
+		return resolve(event);
+	}
 
 	// Public signup routes - no auth required (rota, event, member, membership-form, rotas)
 	if (pathname.startsWith('/signup/rota/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member') || pathname.startsWith('/signup/membership-form') || pathname.startsWith('/signup/rotas')) {

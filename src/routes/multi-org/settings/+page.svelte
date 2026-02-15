@@ -1,6 +1,7 @@
 <script>
 	import { page } from '$app/stores';
-	import { dialog } from '$lib/crm/stores/notifications.js';
+	import { invalidateAll } from '$app/navigation';
+	import { dialog, notifications } from '$lib/crm/stores/notifications.js';
 
 	export let data;
 	$: base = data?.multiOrgBasePath ?? '/multi-org';
@@ -11,7 +12,70 @@
 	$: error = form?.error ?? null;
 	$: organisationId = form?.organisationId ?? '';
 
-	// Active section for sidebar navigation (only Demo Data now)
+	const defaultTheme = {
+		primaryColor: '#0d9488',
+		brandColor: '#0284c7',
+		navbarBackgroundColor: '#0f172a',
+		buttonColors: ['#0284c7', '#0d9488', '#475569', '#0369a1', '#f59e0b'],
+		panelHeadColors: ['#0284c7', '#0369a1', '#0f172a'],
+		panelBackgroundColor: '#f1f5f9'
+	};
+	$: hubTheme = data?.hubTheme ?? defaultTheme;
+	let themePrimary = hubTheme.primaryColor ?? defaultTheme.primaryColor;
+	let themeBrand = hubTheme.brandColor ?? defaultTheme.brandColor;
+	let themeNavbar = hubTheme.navbarBackgroundColor ?? defaultTheme.navbarBackgroundColor;
+	let themeButtons = [...(hubTheme.buttonColors ?? defaultTheme.buttonColors)].slice(0, 5);
+	let themePanelHeads = [...(hubTheme.panelHeadColors ?? defaultTheme.panelHeadColors)].slice(0, 3);
+	let themePanelBg = hubTheme.panelBackgroundColor ?? defaultTheme.panelBackgroundColor;
+	let lastSyncedTheme = null;
+	$: if (data?.hubTheme && data.hubTheme !== lastSyncedTheme) {
+		lastSyncedTheme = data.hubTheme;
+		themePrimary = data.hubTheme.primaryColor ?? defaultTheme.primaryColor;
+		themeBrand = data.hubTheme.brandColor ?? defaultTheme.brandColor;
+		themeNavbar = data.hubTheme.navbarBackgroundColor ?? defaultTheme.navbarBackgroundColor;
+		themeButtons = [...(data.hubTheme.buttonColors ?? defaultTheme.buttonColors)].slice(0, 5);
+		themePanelHeads = [...(data.hubTheme.panelHeadColors ?? defaultTheme.panelHeadColors)].slice(0, 3);
+		themePanelBg = data.hubTheme.panelBackgroundColor ?? defaultTheme.panelBackgroundColor;
+	}
+	let themeSaving = false;
+
+	async function saveHubTheme() {
+		const hex = /^#[0-9A-Fa-f]{6}$/;
+		if (!hex.test(themePrimary) || !hex.test(themeBrand) || !hex.test(themeNavbar) || !hex.test(themePanelBg)) {
+			notifications.error('All colours must be valid hex (e.g. #0284c7)');
+			return;
+		}
+		const buttons = themeButtons.slice(0, 5).map((c) => (hex.test(c) ? c : defaultTheme.buttonColors[0]));
+		const panels = themePanelHeads.slice(0, 3).map((c) => (hex.test(c) ? c : defaultTheme.panelHeadColors[0]));
+		themeSaving = true;
+		try {
+			const res = await fetch(`${base}/settings/hub-theme`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					primaryColor: themePrimary,
+					brandColor: themeBrand,
+					navbarBackgroundColor: themeNavbar,
+					buttonColors: buttons,
+					panelHeadColors: panels,
+					panelBackgroundColor: themePanelBg
+				})
+			});
+			const json = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				notifications.error(json.error || 'Failed to save theme');
+				return;
+			}
+			notifications.success('Hub theme saved. Colours apply across the Hub and public pages.');
+			await invalidateAll();
+		} catch (e) {
+			notifications.error(e?.message || 'Failed to save theme');
+		} finally {
+			themeSaving = false;
+		}
+	}
+
+	// Active section for sidebar navigation
 	let activeSection = 'demo';
 
 	// Restore from form after validation error
@@ -84,6 +148,7 @@
 	}
 
 	const sections = [
+		{ id: 'hub-theme', label: 'Hub theme' },
 		{ id: 'demo', label: 'Demo Data' }
 	];
 </script>
@@ -126,6 +191,83 @@
 
 	<!-- Content area -->
 	<div class="flex-1 min-w-0 max-w-3xl">
+		<!-- Hub theme Section -->
+		{#if activeSection === 'hub-theme'}
+			<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+				<div class="px-6 sm:px-8 pt-6 sm:pt-8 pb-5 border-b border-slate-100">
+					<h2 class="text-lg font-semibold text-slate-800">Hub theme</h2>
+					<p class="text-sm text-slate-500 mt-0.5">Colours used across the Hub and on public pages (signup, forms). Logos are set in Hub Settings.</p>
+				</div>
+				<div class="px-6 sm:px-8 py-6 sm:py-8 space-y-6">
+					<div>
+						<label class="block text-sm font-medium text-slate-700 mb-1">Navbar background</label>
+						<div class="flex items-center gap-2">
+							<input type="color" bind:value={themeNavbar} class="h-10 w-14 rounded-lg border border-slate-300 cursor-pointer" />
+							<input type="text" bind:value={themeNavbar} class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-xl font-mono focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30" placeholder="#0f172a" />
+						</div>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-slate-700 mb-2">Primary &amp; brand</label>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<div>
+								<span class="block text-xs text-slate-500 mb-1">Primary</span>
+								<div class="flex gap-2">
+									<input type="color" bind:value={themePrimary} class="h-9 w-12 rounded-lg border border-slate-300 cursor-pointer" />
+									<input type="text" bind:value={themePrimary} class="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-lg font-mono" />
+								</div>
+							</div>
+							<div>
+								<span class="block text-xs text-slate-500 mb-1">Brand</span>
+								<div class="flex gap-2">
+									<input type="color" bind:value={themeBrand} class="h-9 w-12 rounded-lg border border-slate-300 cursor-pointer" />
+									<input type="text" bind:value={themeBrand} class="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-lg font-mono" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-slate-700 mb-2">Button colours (1–5)</label>
+						<div class="space-y-2">
+							{#each themeButtons as _, i}
+								<div class="flex items-center gap-2">
+									<input type="color" bind:value={themeButtons[i]} class="h-9 w-12 rounded-lg border border-slate-300 cursor-pointer" />
+									<input type="text" bind:value={themeButtons[i]} class="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-lg font-mono" placeholder="#hex" />
+									<span class="text-xs text-slate-500 w-5">{i + 1}</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-slate-700 mb-2">Panel head colours (1–3)</label>
+						<div class="space-y-2">
+							{#each themePanelHeads as _, i}
+								<div class="flex items-center gap-2">
+									<input type="color" bind:value={themePanelHeads[i]} class="h-9 w-12 rounded-lg border border-slate-300 cursor-pointer" />
+									<input type="text" bind:value={themePanelHeads[i]} class="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-lg font-mono" />
+									<span class="text-xs text-slate-500 w-5">{i + 1}</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-slate-700 mb-1">Panel background</label>
+						<div class="flex items-center gap-2">
+							<input type="color" bind:value={themePanelBg} class="h-9 w-12 rounded-lg border border-slate-300 cursor-pointer" />
+							<input type="text" bind:value={themePanelBg} class="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-lg font-mono" />
+						</div>
+					</div>
+					<button
+						type="button"
+						on:click={saveHubTheme}
+						disabled={themeSaving}
+						class="px-4 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{themeSaving ? 'Saving…' : 'Save theme'}
+					</button>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Demo Data Section -->
 		{#if activeSection === 'demo'}
 			<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">

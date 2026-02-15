@@ -2,6 +2,12 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { ulid } from 'ulid';
+import { config as loadEnv } from 'dotenv';
+import pg from 'pg';
+import { getCreateTableSql, TABLE_NAME as CRM_TABLE_NAME } from '../src/lib/crm/server/dbSchema.js';
+
+// Load .env so DATA_STORE and DATABASE_URL are set when script runs standalone
+loadEnv();
 
 // Get data directory from environment variable or default to ./data
 // In production (Railway), set CRM_DATA_DIR=/data to use the persistent volume
@@ -35,15 +41,95 @@ function createRecord(data) {
 }
 
 // Write NDJSON file
-async function writeCollection(collection, records) {
+async function writeCollectionToFile(collection, records) {
 	const filePath = join(DATA_DIR, `${collection}.ndjson`);
 	await writeFile(filePath, records.map(r => JSON.stringify(r)).join('\n') + '\n', 'utf8');
 }
 
-// Generate dummy contacts
+// Write collection to Postgres when DATA_STORE=database (matches dbStore record shape)
+const TABLE_NAME = CRM_TABLE_NAME;
+function recordToRow(record) {
+	const id = record?.id;
+	const createdAt = record?.createdAt ?? null;
+	const updatedAt = record?.updatedAt ?? null;
+	const body = { ...record };
+	delete body.id;
+	delete body.createdAt;
+	delete body.updatedAt;
+	return { id, body, created_at: createdAt, updated_at: updatedAt };
+}
+
+function rowToRecord(row) {
+	const rec = { ...row.body, id: row.id };
+	if (row.created_at) rec.createdAt = row.created_at;
+	if (row.updated_at) rec.updatedAt = row.updated_at;
+	return rec;
+}
+
+async function readCollectionFromDb(pool, collection) {
+	const client = await pool.connect();
+	try {
+		const res = await client.query(
+			`SELECT id, body, created_at, updated_at FROM ${TABLE_NAME} WHERE collection = $1 ORDER BY created_at ASC`,
+			[collection]
+		);
+		return (res.rows || []).map(rowToRecord);
+	} finally {
+		client.release();
+	}
+}
+
+async function writeCollectionToDb(pool, collection, records) {
+	const byId = new Map();
+	for (const rec of records) {
+		const id = rec?.id;
+		if (id != null) byId.set(id, rec);
+	}
+	const uniqueRecords = [...byId.values()];
+	const client = await pool.connect();
+	try {
+		await client.query('BEGIN');
+		await client.query(`DELETE FROM ${TABLE_NAME} WHERE collection = $1`, [collection]);
+		for (const rec of uniqueRecords) {
+			const row = recordToRow(rec);
+			await client.query(
+				`INSERT INTO ${TABLE_NAME} (collection, id, body, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)`,
+				[collection, row.id, JSON.stringify(row.body), row.created_at, row.updated_at]
+			);
+		}
+		await client.query('COMMIT');
+	} catch (e) {
+		await client.query('ROLLBACK');
+		throw e;
+	} finally {
+		client.release();
+	}
+}
+
+/** Resolve first organisation ID so dummy data is org-scoped and visible in the Hub. */
+async function resolveOrganisationId(useDb, pool) {
+	if (useDb && pool) {
+		const orgs = await readCollectionFromDb(pool, 'organisations');
+		const first = (orgs || []).find(o => o && !o.archivedAt);
+		return first?.id ?? null;
+	}
+	const filePath = join(DATA_DIR, 'organisations.ndjson');
+	if (existsSync(filePath)) {
+		const { readFile } = await import('fs/promises');
+		const text = await readFile(filePath, 'utf8');
+		const lines = text.trim().split('\n').filter(Boolean);
+		for (const line of lines) {
+			const o = JSON.parse(line);
+			if (o && !o.archivedAt) return o.id || null;
+		}
+	}
+	return null;
+}
+
+// Generate dummy contacts (realistic UK-style names for text/demo purposes)
 function generateContacts() {
-	const firstNames = ['John', 'Sarah', 'Michael', 'Emma', 'David', 'Olivia', 'James', 'Sophia', 'Robert', 'Isabella', 'William', 'Charlotte', 'Richard', 'Amelia', 'Joseph', 'Mia'];
-	const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor'];
+	const firstNames = ['Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia', 'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence', 'Finley', 'Willow', 'Henry', 'Emilia', 'Charlie', 'Sophie', 'Jack', 'Ella', 'Thomas', 'Grace', 'William', 'Poppy'];
+	const lastNames = ['Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies', 'Evans', 'Wilson', 'Thomas', 'Roberts', 'Robinson', 'Wright', 'Thompson', 'White', 'Hughes', 'Edwards', 'Green', 'Hall', 'Martin', 'Wood', 'Clarke', 'Jackson', 'Hill', 'Lewis'];
 	const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'example.com'];
 	const streets = ['High Street', 'Church Road', 'Main Avenue', 'Park Lane', 'Oak Drive', 'Maple Close', 'Elm Way'];
 	const cities = ['London', 'Birmingham', 'Manchester', 'Leeds', 'Glasgow', 'Liverpool', 'Bristol'];
@@ -153,23 +239,23 @@ function generateEvents() {
 	return events;
 }
 
-// Generate dummy occurrences
+// Generate dummy occurrences (more per event for rota testing)
 function generateOccurrences(events) {
 	const occurrences = [];
-	
+
 	for (const event of events) {
-		// Create 2-4 occurrences per event
-		const count = Math.floor(Math.random() * 3) + 2;
-		
+		// Create 4-6 occurrences per event so rotas have plenty of dates to test
+		const count = Math.floor(Math.random() * 3) + 4;
+
 		for (let i = 0; i < count; i++) {
 			const now = new Date();
-			const daysOffset = Math.floor(Math.random() * 60) + (i * 7); // Spread over weeks
+			const daysOffset = Math.floor(Math.random() * 56) + (i * 7); // Spread over ~8 weeks
 			const startDate = new Date(now.getTime() + daysOffset * 24 * 60 * 60 * 1000);
 			startDate.setHours(10 + Math.floor(Math.random() * 8), Math.floor(Math.random() * 4) * 15, 0, 0);
-			
+
 			const endDate = new Date(startDate);
 			endDate.setHours(startDate.getHours() + Math.floor(Math.random() * 3) + 1);
-			
+
 			occurrences.push(createRecord({
 				eventId: event.id,
 				startsAt: startDate.toISOString(),
@@ -181,34 +267,44 @@ function generateOccurrences(events) {
 	return occurrences;
 }
 
-// Generate dummy rotas
-function generateRotas(events, occurrences) {
+// Generate dummy rotas (assignees use real contact IDs so participation and "suggested to invite" work)
+// Only ~90% of contacts are assigned to rotas so some remain "not engaged" for testing Suggested to invite
+function generateRotas(events, occurrences, contacts) {
 	const roles = ['Worship Leader', 'Sound Technician', 'Usher', 'Children\'s Worker', 'Preacher', 'Prayer Team', 'Setup Team', 'Welcome Team'];
 	const rotas = [];
-	
+	const shuffled = [...(contacts || [])].sort(() => 0.5 - Math.random());
+	const eligibleCount = Math.max(1, Math.floor(shuffled.length * 0.9));
+	const eligibleForRotas = shuffled.slice(0, eligibleCount);
+	let contactIndex = 0;
+
+	function nextAssignee() {
+		if (eligibleForRotas.length === 0) return null;
+		const c = eligibleForRotas[contactIndex % eligibleForRotas.length];
+		contactIndex++;
+		const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || 'Unknown';
+		return { contactId: c.id, name, email: c.email || '' };
+	}
+
 	for (const event of events) {
-		// Create 2-3 rotas per event
-		const rotaCount = Math.floor(Math.random() * 2) + 2;
-		
+		// Create 2-4 rotas per event so there are plenty to test
+		const rotaCount = Math.floor(Math.random() * 3) + 2;
+
 		for (let i = 0; i < rotaCount; i++) {
 			const role = roles[Math.floor(Math.random() * roles.length)];
 			const eventOccurrences = occurrences.filter(o => o.eventId === event.id);
-			const occurrence = eventOccurrences.length > 0 && Math.random() > 0.5 
+			const occurrence = eventOccurrences.length > 0 && Math.random() > 0.5
 				? eventOccurrences[Math.floor(Math.random() * eventOccurrences.length)]
 				: null;
-			
-			const capacity = Math.floor(Math.random() * 5) + 1;
-			const assigneeCount = Math.floor(Math.random() * capacity);
-			
+
+			const capacity = Math.floor(Math.random() * 4) + 2;
+			const assigneeCount = Math.min(Math.floor(Math.random() * (capacity + 1)), eligibleForRotas.length);
+
 			const assignees = [];
 			for (let j = 0; j < assigneeCount; j++) {
-				assignees.push({
-					contactId: ulid(),
-					name: `Volunteer ${j + 1}`,
-					email: `volunteer${j + 1}@example.com`
-				});
+				const a = nextAssignee();
+				if (a) assignees.push(a);
 			}
-			
+
 			rotas.push(createRecord({
 				eventId: event.id,
 				occurrenceId: occurrence ? occurrence.id : null,
@@ -299,8 +395,8 @@ function generateForms() {
 // Generate dummy form submissions (registers)
 async function generateFormSubmissions(forms) {
 	const registers = [];
-	const firstNames = ['John', 'Sarah', 'Michael', 'Emma', 'David', 'Olivia', 'James', 'Sophia', 'Robert', 'Isabella', 'William', 'Charlotte', 'Richard', 'Amelia', 'Joseph', 'Mia'];
-	const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor'];
+	const firstNames = ['Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia', 'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence', 'Finley', 'Willow', 'Henry', 'Emilia', 'Sophie', 'Ella', 'Jack', 'Grace', 'Thomas', 'Poppy', 'William', 'Charlotte'];
+	const lastNames = ['Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies', 'Evans', 'Wilson', 'Thomas', 'Roberts', 'Robinson', 'Wright', 'Thompson', 'White', 'Hughes', 'Edwards', 'Green', 'Hall', 'Martin', 'Wood', 'Clarke', 'Jackson', 'Hill', 'Lewis'];
 	const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'example.com'];
 	
 	// Try to import encrypt function for safeguarding forms
@@ -454,46 +550,101 @@ async function generateFormSubmissions(forms) {
 // Main function
 async function main() {
 	console.log('Creating dummy data...\n');
-	
+
 	await ensureDir();
-	
+
+	const useDb = process.env.DATA_STORE === 'database' && process.env.DATABASE_URL;
+	let pool = null;
+	let organisationId = null;
+
+	if (useDb) {
+		pool = new pg.Pool({
+			connectionString: process.env.DATABASE_URL,
+			max: 5,
+			ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false }
+		});
+		const client = await pool.connect();
+		try {
+			for (const stmt of getCreateTableSql().split(';').filter(Boolean)) {
+				await client.query(stmt.trim() + ';');
+			}
+		} finally {
+			client.release();
+		}
+		organisationId = await resolveOrganisationId(true, pool);
+		if (organisationId) {
+			console.log(`📌 Using organisation ID: ${organisationId}`);
+		} else {
+			console.warn('⚠️  No organisation found — set organisationId on records so they appear in the Hub for an org.');
+		}
+	} else {
+		organisationId = await resolveOrganisationId(false, null);
+		if (organisationId) console.log(`📌 Using organisation ID: ${organisationId}`);
+	}
+
 	// Generate data
 	const contacts = generateContacts();
 	console.log(`✅ Created ${contacts.length} contacts`);
-	
+
 	const lists = generateLists(contacts);
 	console.log(`✅ Created ${lists.length} lists`);
-	
+
 	const events = generateEvents();
 	console.log(`✅ Created ${events.length} events`);
-	
+
 	const occurrences = generateOccurrences(events);
 	console.log(`✅ Created ${occurrences.length} occurrences`);
-	
-	const rotas = generateRotas(events, occurrences);
-	console.log(`✅ Created ${rotas.length} rotas`);
-	
+
+	const rotas = generateRotas(events, occurrences, contacts);
+	console.log(`✅ Created ${rotas.length} rotas (assignees linked to contacts)`);
+
 	const newsletters = generateNewsletters();
 	console.log(`✅ Created ${newsletters.length} newsletters`);
-	
+
 	const forms = generateForms();
 	console.log(`✅ Created ${forms.length} forms`);
-	
+
 	const registers = await generateFormSubmissions(forms);
 	console.log(`✅ Created ${registers.length} form submissions`);
-	
-	// Write to files
-	await writeCollection('contacts', contacts);
-	await writeCollection('lists', lists);
-	await writeCollection('events', events);
-	await writeCollection('occurrences', occurrences);
-	await writeCollection('rotas', rotas);
-	await writeCollection('newsletters', newsletters);
-	await writeCollection('forms', forms);
-	await writeCollection('registers', registers);
-	
-	console.log('\n✨ Dummy data created successfully!');
-	console.log('\nYou can now view the data in The HUB at /hub');
+
+	// Apply organisationId so data is visible in the Hub when an org is selected
+	if (organisationId) {
+		for (const r of contacts) r.organisationId = organisationId;
+		for (const r of lists) r.organisationId = organisationId;
+		for (const r of events) r.organisationId = organisationId;
+		for (const r of occurrences) r.organisationId = organisationId;
+		for (const r of rotas) r.organisationId = organisationId;
+		for (const r of newsletters) r.organisationId = organisationId;
+		for (const r of forms) r.organisationId = organisationId;
+		for (const r of registers) r.organisationId = organisationId;
+	}
+
+	if (useDb && pool) {
+		try {
+			await writeCollectionToDb(pool, 'contacts', contacts);
+			await writeCollectionToDb(pool, 'lists', lists);
+			await writeCollectionToDb(pool, 'events', events);
+			await writeCollectionToDb(pool, 'occurrences', occurrences);
+			await writeCollectionToDb(pool, 'rotas', rotas);
+			await writeCollectionToDb(pool, 'newsletters', newsletters);
+			await writeCollectionToDb(pool, 'forms', forms);
+			await writeCollectionToDb(pool, 'registers', registers);
+			console.log('\n✨ Dummy data written to database (DATA_STORE=database).');
+		} finally {
+			await pool.end();
+		}
+	} else {
+		await writeCollectionToFile('contacts', contacts);
+		await writeCollectionToFile('lists', lists);
+		await writeCollectionToFile('events', events);
+		await writeCollectionToFile('occurrences', occurrences);
+		await writeCollectionToFile('rotas', rotas);
+		await writeCollectionToFile('newsletters', newsletters);
+		await writeCollectionToFile('forms', forms);
+		await writeCollectionToFile('registers', registers);
+		console.log('\n✨ Dummy data created successfully!');
+	}
+	console.log('\nYou can now view the data in The HUB at /hub (Events, Rotas, Suggested to invite).');
 }
 
 main().catch(error => {

@@ -672,7 +672,7 @@
 </script>
 
 {#if rota}
-	<div class="bg-white shadow rounded-lg p-6 mb-6">
+	<div class="hub-top-panel p-6 mb-6">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
 			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{rota.role || 'Unknown'} rota</h2>
 			<div class="flex flex-wrap gap-2">
@@ -709,14 +709,14 @@
 					<button
 						type="submit"
 						form="rota-edit-form"
-						class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-2 text-white"
 					>
 						Save Changes
 					</button>
 					<button
 						type="button"
 						on:click={() => editing = false}
-						class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-3 text-white"
 					>
 						Back
 					</button>
@@ -724,7 +724,7 @@
 					<a
 						href="/hub/rotas/{rota.id}/export-pdf"
 						target="_blank"
-						class="bg-theme-button-1 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs flex items-center gap-2"
+						class="hub-btn bg-theme-button-1 text-white"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -733,13 +733,13 @@
 					</a>
 					<button
 						on:click={() => editing = true}
-						class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+						class="hub-btn bg-theme-button-2 text-white"
 					>
 						Edit
 					</button>
 					<button
 						on:click={handleDelete}
-						class="bg-hub-red-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-red-700 text-xs"
+						class="hub-btn bg-hub-red-600 text-white hover:bg-hub-red-700"
 					>
 						Delete
 					</button>
@@ -1190,14 +1190,14 @@
 							selectedContactIds = new Set(); 
 							selectedListId = '';
 						}}
-						class="bg-theme-button-3 text-white px-[18px] py-2.5 rounded-md hover:opacity-90"
+						class="hub-btn bg-theme-button-3 text-white"
 					>
 						Back
 					</button>
 					<button
 						on:click={handleAddAssignees}
 						disabled={selectedContactIds.size === 0}
-						class="bg-theme-button-2 text-white px-[18px] py-2.5 rounded-md hover:opacity-90 disabled:opacity-50"
+						class="hub-btn bg-theme-button-2 text-white disabled:opacity-50"
 					>
 						Add Selected ({selectedContactIds.size})
 					</button>
@@ -1276,7 +1276,7 @@
 					<button
 						type="button"
 						on:click={() => { showAddHelpFile = false; helpFileUrl = ''; helpFileTitle = ''; helpFileFile = null; }}
-						class="bg-theme-button-3 text-white px-4 py-2 rounded-md hover:opacity-90 text-sm"
+						class="hub-btn bg-theme-button-3 text-white"
 					>
 						Cancel
 					</button>
@@ -1284,7 +1284,7 @@
 						type="button"
 						on:click={handleAddHelpFile}
 						disabled={helpFileUploading || (helpFileType === 'link' ? (!helpFileUrl || !helpFileTitle) : !helpFileFile)}
-						class="bg-theme-button-2 text-white px-4 py-2 rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+						class="hub-btn bg-theme-button-2 text-white disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{#if helpFileUploading}
 							Uploading...

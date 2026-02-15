@@ -1,5 +1,5 @@
 import { getCsrfToken } from '$lib/crm/server/auth.js';
-import { getAdminPermissions, isSuperAdmin, getPlanMaxAdmins } from '$lib/crm/server/permissions.js';
+import { getAdminPermissions, isSuperAdmin, getConfiguredPlanMaxAdmins } from '$lib/crm/server/permissions.js';
 import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { getAdminsForOrganisation } from '$lib/crm/server/auth.js';
 
@@ -8,7 +8,7 @@ const ITEMS_PER_PAGE = 20;
 export async function load({ url, cookies, parent }) {
 	const parentData = await parent();
 	const plan = parentData.plan || 'free';
-	const maxAdmins = getPlanMaxAdmins(plan);
+	const maxAdmins = await getConfiguredPlanMaxAdmins(plan);
 
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
 	const search = url.searchParams.get('search') || '';

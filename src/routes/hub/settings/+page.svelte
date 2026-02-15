@@ -13,8 +13,6 @@
 	let settings = data?.settings || { emailRateLimitDelay: 500, calendarColours: [], meetingPlannerRotas: [], theme: {} };
 	let availableRoles = data?.availableRoles || [];
 	
-	const defaultButtonColors = ['#4A97D2', '#4BB170', '#3B79A8', '#3C8E5A', '#E6A324'];
-	const defaultPanelHeadColors = ['#4A97D2', '#3B79A8', '#2C5B7E'];
 	function toHex(val, fallback) {
 		return (typeof val === 'string' && val.trim() && /^#[0-9A-Fa-f]{6}$/.test(val.trim())) ? val.trim() : fallback;
 	}
@@ -25,24 +23,13 @@
 	let emailRateLimitDelay = settings?.emailRateLimitDelay || 500;
 	let rotaReminderDaysAhead = settings?.rotaReminderDaysAhead ?? 3;
 	let calendarColours = (JSON.parse(JSON.stringify(settings?.calendarColours || []))).map(normalizeCalendarColour);
-	// meetingPlannerRotas is already filtered server-side to only roles that exist in this org
 	let meetingPlannerRotas = JSON.parse(JSON.stringify(settings?.meetingPlannerRotas || []));
 
+	// Theme: logos and layout only (colours are set in multi-org Settings)
 	let themeLogoPath = settings?.theme?.logoPath ?? '';
 	let themeLoginLogoPath = settings?.theme?.loginLogoPath ?? '';
-	let themePrimaryColor = toHex(settings?.theme?.primaryColor, '#4BB170');
-	let themeBrandColor = toHex(settings?.theme?.brandColor, '#4A97D2');
-	let themeNavbarBackgroundColor = toHex(settings?.theme?.navbarBackgroundColor, '#4A97D2');
-	let themeButtonColors = JSON.parse(JSON.stringify(settings?.theme?.buttonColors ?? defaultButtonColors));
-	let themePanelHeadColors = JSON.parse(JSON.stringify(settings?.theme?.panelHeadColors ?? defaultPanelHeadColors));
-	let themePanelBackgroundColor = toHex(settings?.theme?.panelBackgroundColor, '#E8F2F9');
 	let themeExternalPagesLayout = settings?.theme?.externalPagesLayout ?? 'integrated';
 	let themePublicPagesBranding = settings?.theme?.publicPagesBranding ?? 'hub';
-	// Ensure arrays have correct length and no empty/invalid hex (type="color" requires #rrggbb)
-	if (themeButtonColors.length < 5) themeButtonColors = [...themeButtonColors, ...defaultButtonColors.slice(themeButtonColors.length)];
-	if (themePanelHeadColors.length < 3) themePanelHeadColors = [...themePanelHeadColors, ...defaultPanelHeadColors.slice(themePanelHeadColors.length)];
-	themeButtonColors = themeButtonColors.slice(0, 5).map((c, i) => toHex(c, defaultButtonColors[i]));
-	themePanelHeadColors = themePanelHeadColors.slice(0, 3).map((c, i) => toHex(c, defaultPanelHeadColors[i]));
 	let saving = false;
 	let editingColourIndex = null;
 	let originalColour = null; // Store original colour when editing starts
@@ -161,7 +148,6 @@
 		}
 	}
 	
-	// Track last synced settings so we only overwrite theme fields when server data actually changes (e.g. after save)
 	let lastSyncedSettings = null;
 	$: if (data?.settings && data.settings !== lastSyncedSettings) {
 		lastSyncedSettings = data.settings;
@@ -173,16 +159,6 @@
 		if (settings.theme) {
 			themeLogoPath = settings.theme.logoPath ?? '';
 			themeLoginLogoPath = settings.theme.loginLogoPath ?? '';
-			themePrimaryColor = toHex(settings.theme.primaryColor, '#4BB170');
-			themeBrandColor = toHex(settings.theme.brandColor, '#4A97D2');
-			themeNavbarBackgroundColor = toHex(settings.theme.navbarBackgroundColor, '#4A97D2');
-			themeButtonColors = JSON.parse(JSON.stringify(settings.theme.buttonColors ?? defaultButtonColors));
-			themePanelHeadColors = JSON.parse(JSON.stringify(settings.theme.panelHeadColors ?? defaultPanelHeadColors));
-			if (themeButtonColors.length < 5) themeButtonColors = [...themeButtonColors, ...defaultButtonColors.slice(themeButtonColors.length)];
-			if (themePanelHeadColors.length < 3) themePanelHeadColors = [...themePanelHeadColors, ...defaultPanelHeadColors.slice(themePanelHeadColors.length)];
-			themeButtonColors = themeButtonColors.slice(0, 5).map((c, i) => toHex(c, defaultButtonColors[i]));
-			themePanelHeadColors = themePanelHeadColors.slice(0, 3).map((c, i) => toHex(c, defaultPanelHeadColors[i]));
-			themePanelBackgroundColor = toHex(settings.theme.panelBackgroundColor, '#E8F2F9');
 			themeExternalPagesLayout = settings.theme.externalPagesLayout ?? 'integrated';
 			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'hub';
 		}
@@ -259,51 +235,21 @@
 		}
 	}
 
-	function validateHex(val, name) {
-		return typeof val === 'string' && /^#[0-9A-Fa-f]{6}$/.test(val);
-	}
 	async function saveTheme() {
 		saving = true;
 		try {
-			if (!validateHex(themePrimaryColor, 'Primary')) {
-				notifications.error('Primary colour must be a hex colour (e.g. #4BB170)');
-				saving = false;
-				return;
-			}
-			if (!validateHex(themeBrandColor, 'Brand')) {
-				notifications.error('Brand colour must be a hex colour (e.g. #4A97D2)');
-				saving = false;
-				return;
-			}
-			if (!validateHex(themeNavbarBackgroundColor, 'Navbar')) {
-				notifications.error('Navbar background must be a hex colour');
-				saving = false;
-				return;
-			}
-			const buttonColours = themeButtonColors.slice(0, 5).map((c) => (validateHex(c, 'Button') ? c : defaultButtonColors[0]));
-			const panelColours = themePanelHeadColors.slice(0, 3).map((c) => (validateHex(c, 'Panel') ? c : defaultPanelHeadColors[0]));
-			if (!validateHex(themePanelBackgroundColor, 'Panel Background')) {
-				notifications.error('Panel background must be a hex colour');
-				saving = false;
-				return;
-			}
+			// Only logos and layout (colours are set in multi-org Settings)
 			const response = await fetch('/hub/settings', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						theme: {
-							logoPath: themeLogoPath.trim(),
-							loginLogoPath: themeLoginLogoPath.trim(),
-							primaryColor: themePrimaryColor,
-							brandColor: themeBrandColor,
-							navbarBackgroundColor: themeNavbarBackgroundColor,
-							buttonColors: buttonColours,
-							panelHeadColors: panelColours,
-							panelBackgroundColor: themePanelBackgroundColor,
-							externalPagesLayout: themeExternalPagesLayout,
-							publicPagesBranding: themePublicPagesBranding
-						}
-					})
+				body: JSON.stringify({
+					theme: {
+						logoPath: themeLogoPath.trim(),
+						loginLogoPath: themeLoginLogoPath.trim(),
+						externalPagesLayout: themeExternalPagesLayout,
+						publicPagesBranding: themePublicPagesBranding
+					}
+				})
 			});
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => ({ message: 'Failed to save theme' }));
@@ -735,7 +681,7 @@
 	<title>Settings - TheHUB</title>
 </svelte:head>
 
-<div class="max-w-4xl mx-auto px-4 py-8">
+<div class="w-full px-4 py-8">
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
 		<h1 class="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
 		<p class="text-gray-600 mb-6">Manage system settings (Superadmin only)</p>
@@ -792,12 +738,12 @@
 			</nav>
 		</div>
 		
-		<!-- Theme Settings -->
+		<!-- Theme Settings (logos only; colours set in multi-org Settings) -->
 		{#if activeTab === 'theme'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Theme</h2>
 			<p class="text-sm text-gray-600 mb-4">
-				Set colours and logo used on the public pages (e.g. signup). Leave logo blank to use the default.
+				Set logos used in the Hub and on public pages (e.g. signup). Theme colours are set in <a href="/multi-org/settings" class="text-theme-button-1 hover:underline">multi-org Settings</a>.
 			</p>
 			<div class="space-y-4 max-w-xl">
 				<div>
@@ -891,86 +837,6 @@
 						{/if}
 					</div>
 					<p class="mt-1.5 text-xs text-gray-500">Logo shown on the Hub login screen only. Leave empty to use the navbar logo or default.</p>
-				</div>
-				<div>
-					<label for="theme-navbar-bg" class="block text-sm font-medium text-gray-700 mb-1">Navbar background</label>
-					<div class="flex items-center gap-2">
-						<input
-							id="theme-navbar-bg"
-							type="color"
-							bind:value={themeNavbarBackgroundColor}
-							class="h-10 w-14 border border-gray-300 rounded-md cursor-pointer"
-						/>
-						<input
-							aria-label="Navbar background hex"
-							type="text"
-							bind:value={themeNavbarBackgroundColor}
-							class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1 font-mono"
-							placeholder="#4A97D2"
-						/>
-					</div>
-					<p class="mt-1 text-xs text-gray-500">Website navbar and Hub header when menu open.</p>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">Button colours (up to 5)</label>
-					<p class="text-xs text-gray-500 mb-2">Used for primary and secondary buttons across the site. Button 1 = main CTA.</p>
-					<div class="space-y-2">
-						{#each themeButtonColors as _, i}
-							<div class="flex items-center gap-2">
-								<input
-									type="color"
-									bind:value={themeButtonColors[i]}
-									class="h-9 w-12 border border-gray-300 rounded-md cursor-pointer"
-								/>
-								<input
-									type="text"
-									bind:value={themeButtonColors[i]}
-									class="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 font-mono"
-									placeholder="#hex"
-								/>
-								<span class="text-xs text-gray-500 w-6">{(i + 1)}</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">Panel head colours (up to 3)</label>
-					<p class="text-xs text-gray-500 mb-2">Used for section/panel headers and gradients (e.g. contact cards, form headers).</p>
-					<div class="space-y-2">
-						{#each themePanelHeadColors as _, i}
-							<div class="flex items-center gap-2">
-								<input
-									type="color"
-									bind:value={themePanelHeadColors[i]}
-									class="h-9 w-12 border border-gray-300 rounded-md cursor-pointer"
-								/>
-								<input
-									type="text"
-									bind:value={themePanelHeadColors[i]}
-									class="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 font-mono"
-									placeholder="#hex"
-								/>
-								<span class="text-xs text-gray-500 w-6">{(i + 1)}</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">Panel background colour</label>
-					<p class="text-xs text-gray-500 mb-2">Background colour for all panels (lighter shade recommended).</p>
-					<div class="flex items-center gap-2">
-						<input
-							type="color"
-							bind:value={themePanelBackgroundColor}
-							class="h-9 w-12 border border-gray-300 rounded-md cursor-pointer"
-						/>
-						<input
-							type="text"
-							bind:value={themePanelBackgroundColor}
-							class="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 font-mono"
-							placeholder="#hex"
-						/>
-					</div>
 				</div>
 				<button
 					on:click={saveTheme}
@@ -1177,7 +1043,7 @@
 					type="button"
 					on:click={saveSundayPlannerSettings}
 					disabled={savingSundayPlanner}
-					class="px-4 py-2 text-sm font-medium bg-hub-green-600 hover:bg-hub-green-700 text-white rounded-md disabled:opacity-50"
+					class="px-4 py-2 text-sm font-medium btn-theme-2 rounded-md disabled:opacity-50"
 				>
 					{savingSundayPlanner ? 'Saving…' : 'Save'}
 				</button>

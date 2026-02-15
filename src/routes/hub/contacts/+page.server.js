@@ -1,9 +1,8 @@
 import { readCollection, writeCollection, readCollectionCount } from '$lib/crm/server/fileStore.js';
 import { verifyCsrfToken, getCsrfToken } from '$lib/crm/server/auth.js';
-import { isSuperAdmin, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import { isSuperAdmin, getConfiguredPlanFromAreaPermissions, getConfiguredPlanMaxContacts } from '$lib/crm/server/permissions.js';
 import { fail } from '@sveltejs/kit';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { getPlanMaxContacts } from '$lib/crm/server/permissions.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
 const ITEMS_PER_PAGE = 10;
@@ -13,7 +12,7 @@ export async function load({ url, cookies, locals, parent }) {
 	const search = url.searchParams.get('search') || '';
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
-	const planLimit = getPlanMaxContacts(plan);
+	const planLimit = await getConfiguredPlanMaxContacts(plan);
 	const offset = (page - 1) * ITEMS_PER_PAGE;
 
 	// Pass search/limit/offset to readCollection - DB store will use them for efficiency,
@@ -106,8 +105,9 @@ export const actions = {
 			const allContacts = await readCollection('contacts', { organisationId });
 			const orgContacts = filterByOrganisation(allContacts, organisationId);
 			const orgs = await readCollection('organisations');
-			const plan = getPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions) || 'free';
-			const contacts = contactsWithinPlanLimit(orgContacts, plan);
+			const plan = (await getConfiguredPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions)) || 'free';
+			const planLimit = await getConfiguredPlanMaxContacts(plan);
+			const contacts = contactsWithinPlanLimit(orgContacts, planLimit);
 
 			// Filter contacts based on condition
 			let contactsToUpdate;

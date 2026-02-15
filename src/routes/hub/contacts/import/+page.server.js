@@ -1,9 +1,10 @@
 import { fail } from '@sveltejs/kit';
-import { readCollection, create } from '$lib/crm/server/fileStore.js';
+import { readCollection, readCollectionCount, create } from '$lib/crm/server/fileStore.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
 import { getCurrentOrganisationId, withOrganisationId } from '$lib/crm/server/orgContext.js';
+import { getConfiguredPlanFromAreaPermissions, getConfiguredPlanMaxContacts } from '$lib/crm/server/permissions.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -398,6 +399,19 @@ export const actions = {
 				success: [],
 				errors: []
 			};
+			const organisationId = await getCurrentOrganisationId();
+			const organisations = await readCollection('organisations');
+			const org = (Array.isArray(organisations) ? organisations : []).find((o) => o?.id === organisationId);
+			const plan = org ? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free' : 'free';
+			const planLimit = await getConfiguredPlanMaxContacts(plan);
+			const existingCount = await readCollectionCount('contacts', { organisationId });
+			const remainingCapacity = Math.max(0, planLimit - existingCount);
+			if (remainingCapacity <= 0) {
+				return fail(400, {
+					error: `Contact limit reached (${planLimit}). Upgrade your plan to import more contacts.`
+				});
+			}
+			let importedCount = 0;
 
 			for (let i = 0; i < rows.length; i++) {
 				const row = rows[i];
@@ -415,12 +429,19 @@ export const actions = {
 						});
 						continue;
 					}
+					if (importedCount >= remainingCapacity) {
+						results.errors.push({
+							row: rowNumber,
+							error: `Contact limit reached (${planLimit}).`
+						});
+						continue;
+					}
 
 					// Validate and create contact (scoped to current Hub organisation)
 					// Note: Duplicate emails are now allowed (e.g., husband and wife sharing an email)
 					const validated = validateContact(contactData);
-					const organisationId = await getCurrentOrganisationId();
 					const contact = await create('contacts', withOrganisationId(validated, organisationId));
+					importedCount += 1;
 					
 					results.success.push({
 						row: rowNumber,

@@ -33,25 +33,25 @@
 </script>
 
 <div class="space-y-6">
-	<div class="panel-head-theme shadow-lg rounded-lg p-6 text-white">
+	<div class="hub-top-panel p-6">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
 			<div>
 				<div class="flex items-center gap-3">
-					<svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-6 h-6 sm:w-8 sm:h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
 					</svg>
-					<h2 class="text-2xl sm:text-3xl font-bold text-white">New Contact</h2>
+					<h2 class="text-2xl sm:text-3xl font-bold text-gray-900">New Contact</h2>
 				</div>
-				<p class="mt-2 text-hub-blue-100 text-xs">Add a new contact to your database</p>
+				<p class="mt-2 text-gray-500 text-xs">Add a new contact to your database</p>
 			</div>
 			<div class="flex flex-wrap gap-2 sm:gap-3">
-				<a href="/hub/contacts" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 sm:px-6 sm:py-3 rounded-md font-medium inline-flex items-center gap-1.5 border border-white/30 text-xs">
-					<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<a href="/hub/contacts" class="hub-btn border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 					Cancel
 				</a>
-				<button type="submit" form="contact-create-form" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 sm:px-6 sm:py-3 rounded-md font-medium inline-flex items-center gap-1.5 border border-white/30 text-xs">
+				<button type="submit" form="contact-create-form" class="hub-btn btn-theme-2 inline-flex items-center gap-1.5">
 					<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 					</svg>
@@ -66,14 +66,12 @@
 		
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 			<!-- Personal Information Panel -->
-			<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-				<div class="panel-head-theme px-6 py-4">
-					<div class="flex items-center gap-2">
-						<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-						</svg>
-						<h3 class="text-lg font-semibold text-white">Personal Information</h3>
-					</div>
+			<div class="hub-top-panel overflow-hidden">
+				<div class="hub-top-panel-header flex items-center gap-2">
+					<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+					</svg>
+					<h3 class="text-lg font-semibold text-gray-900">Personal Information</h3>
 				</div>
 				<div class="p-6 space-y-4">
 					<FormField label="Email" name="email" type="email" bind:value={formData.email} required />
@@ -108,15 +106,13 @@
 			</div>
 
 			<!-- Address Panel -->
-			<div class="bg-white border-2 border-hub-blue-200 rounded-lg shadow-md overflow-hidden">
-				<div class="panel-head-theme px-6 py-4">
-					<div class="flex items-center gap-2">
-						<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-						</svg>
-						<h3 class="text-lg font-semibold text-white">Address</h3>
-					</div>
+			<div class="hub-top-panel overflow-hidden">
+				<div class="hub-top-panel-header flex items-center gap-2">
+					<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+					</svg>
+					<h3 class="text-lg font-semibold text-gray-900">Address</h3>
 				</div>
 				<div class="p-6 space-y-4">
 					<FormField label="Address Line 1" name="addressLine1" bind:value={formData.addressLine1} />

@@ -1,9 +1,11 @@
+import { redirect } from '@sveltejs/kit';
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { fail } from '@sveltejs/kit';
 
 export async function load() {
-	return {};
+	// Redirect to My volunteering – same functionality lives at /my/rotas
+	throw redirect(302, '/my/rotas');
 }
 
 export const actions = {

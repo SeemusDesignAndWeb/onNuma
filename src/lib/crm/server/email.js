@@ -1323,11 +1323,7 @@ export async function sendAdminWelcomeEmail({ to, name, email, verificationToken
 		</head>
 		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
 			<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
-				<div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px;">
-					<a href="${baseUrl}" style="display: inline-block; text-decoration: none;">
-						<img src="${onnumaLogoUrl}" alt="OnNuma" style="max-width: 200px; height: auto; display: block; margin: 0 auto;" />
-					</a>
-				</div>
+				${branding}
 				<div style="background: #ffffff; padding: 20px 15px; border-radius: 6px; text-align: center; margin-bottom: 20px; border: 1px solid #e5e7eb;">
 					<h1 style="color: #333; margin: 0; font-size: 20px; font-weight: 600;">Welcome to TheHUB</h1>
 					<p style="color: #666; margin: 8px 0 0 0; font-size: 14px;">Eltham Green Community Church</p>

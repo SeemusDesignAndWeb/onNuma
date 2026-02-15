@@ -47,11 +47,11 @@
 {#if newsletter}
 	<div class="space-y-6">
 		<!-- Header Card -->
-		<div class="panel-head-theme shadow-lg rounded-lg p-6 text-white">
+		<div class="hub-top-panel p-6">
 			<div class="flex justify-between items-start mb-4">
 				<div class="flex-1">
-					<h1 class="text-3xl font-bold mb-2 text-white">{newsletter.subject || 'Untitled Email'}</h1>
-					<div class="flex items-center gap-4 mt-3 text-white">
+					<h1 class="text-3xl font-bold mb-2 text-gray-900">{newsletter.subject || 'Untitled Email'}</h1>
+					<div class="flex items-center gap-4 mt-3 text-gray-600">
 						<span class="text-sm">
 							<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -71,11 +71,11 @@
 					</div>
 				</div>
 				<div class="flex flex-col items-end gap-2">
-					<span class="px-3 py-1 rounded-full text-sm font-semibold border-2 bg-white/20 text-white border-white/30">
+					<span class="px-3 py-1 rounded-full text-sm font-semibold border border-gray-300 bg-gray-50 text-gray-700">
 						{getStatusLabel(newsletter.status)}
 					</span>
 					{#if newsletter.logs && newsletter.logs.length > 0}
-						<span class="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30">
+						<span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200">
 							{newsletter.logs.length} {newsletter.logs.length === 1 ? 'send' : 'sends'}
 						</span>
 					{/if}
@@ -161,18 +161,18 @@
 					<a 
 						href="/hub/emails/{newsletter.id}/export-pdf" 
 						target="_blank"
-						class="bg-hub-red-600 text-white px-[18px] py-2.5 rounded-md hover:bg-hub-red-700 transition-colors font-medium inline-flex items-center gap-2"
+						class="hub-btn bg-hub-red-600 text-white hover:bg-hub-red-700 inline-flex items-center gap-2"
 					>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 						</svg>
 						Export PDF
 					</a>
-					<a href="/hub/emails/{newsletter.id}" class="btn-theme-2 px-[18px] py-2.5 rounded-md transition-colors font-medium">
+					<a href="/hub/emails/{newsletter.id}" class="hub-btn btn-theme-2">
 						Edit Email
 					</a>
 					{#if newsletter.status === 'draft' || !newsletter.status}
-						<a href="/hub/emails/{newsletter.id}/send" class="btn-theme-1 px-[18px] py-2.5 rounded-md transition-colors font-medium">
+						<a href="/hub/emails/{newsletter.id}/send" class="hub-btn btn-theme-1">
 							Send Email
 						</a>
 					{/if}

@@ -358,28 +358,17 @@ export function getProfessionalContactTierCap(contactCount) {
 	return 500;
 }
 
-/** Optional pricing per plan (cost per contact / per admin). null = not set, managed in Paddle. */
-export const PLAN_PRICING = {
-	free: { costPerContact: 0, costPerAdmin: 0 },
-	professional: { costPerContact: null, costPerAdmin: null },
-	enterprise: { costPerContact: null, costPerAdmin: null }
-};
-
 /**
- * Full plan setup detail for multi-org admin: description, limits, and pricing.
- * Pricing may be null (display as "Managed in Paddle").
+ * Full plan setup detail for multi-org admin: description, limits, and modules.
  */
 export function getPlanSetupDetails() {
 	const tiers = getHubPlanTiers();
 	return tiers.map((t) => {
 		const value = t.value;
-		const pricing = PLAN_PRICING[value] || {};
 		return {
 			...t,
 			maxContacts: getPlanMaxContacts(value),
 			maxAdmins: getPlanMaxAdmins(value),
-			costPerContact: pricing.costPerContact ?? null,
-			costPerAdmin: pricing.costPerAdmin ?? null,
 			areaPermissions: getAreaPermissionsForPlan(value)
 		};
 	});

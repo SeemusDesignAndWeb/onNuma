@@ -106,21 +106,21 @@
 	<div class="bg-white shadow rounded-lg p-6">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
 			<h2 class="text-2xl font-bold text-gray-900">Form Submission</h2>
-			<div class="flex flex-wrap gap-2">
-				<a href="/hub/forms/{form.id}" class="text-hub-green-600 hover:text-hub-green-800 px-3 py-2 rounded-md hover:bg-gray-50">
+			<div class="flex flex-wrap gap-2 items-center">
+				<a href="/hub/forms/{form.id}" class="text-sm font-medium text-hub-green-600 hover:text-hub-green-800 hover:underline">
 					← Back to Form
 				</a>
 				{#if isArchived}
 					<button
 						on:click={handleUnarchive}
-						class="bg-theme-button-2 text-white px-[18px] py-2.5 rounded-md hover:opacity-90"
+						class="hub-btn bg-theme-button-2 text-white"
 					>
 						Unarchive
 					</button>
 				{:else}
 					<button
 						on:click={handleArchive}
-						class="bg-theme-button-3 text-white px-[18px] py-2.5 rounded-md hover:opacity-90"
+						class="hub-btn bg-theme-button-3 text-white"
 					>
 						Archive
 					</button>
@@ -128,7 +128,7 @@
 				{#if canDelete}
 					<button
 						on:click={handleDelete}
-						class="bg-red-600 text-white px-[18px] py-2.5 rounded-md hover:bg-red-700"
+						class="hub-btn bg-hub-red-600 text-white hover:bg-hub-red-700"
 					>
 						Delete
 					</button>

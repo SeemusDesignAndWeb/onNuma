@@ -17,7 +17,7 @@ import { json } from '@sveltejs/kit';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { create, findById, updatePartial, update, remove } from '$lib/crm/server/fileStore.js';
 import { createAdmin, updateAdminPassword, generateVerificationToken, getAdminByEmail } from '$lib/crm/server/auth.js';
-import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
+import { getConfiguredAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
@@ -207,7 +207,7 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 
 	const hubDomain = await generateUniqueHubDomain(name);
 	console.log('[paddle webhook] Generated hubDomain:', hubDomain);
-	const areaPermissions = getAreaPermissionsForPlan(signupPlan);
+	const areaPermissions = await getConfiguredAreaPermissionsForPlan(signupPlan);
 
 	// Create organisation
 	const org = await create('organisations', {
@@ -470,7 +470,7 @@ export async function POST({ request }) {
 	}
 
 	const plan = subscriptionToPlan(data);
-	const areaPermissions = getAreaPermissionsForPlan(plan);
+	const areaPermissions = await getConfiguredAreaPermissionsForPlan(plan);
 	const status = data.status || '';
 	const subscriptionId = data.id || '';
 	const customerId = data.customer_id || org.paddleCustomerId || '';

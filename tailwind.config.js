@@ -7,25 +7,24 @@ export default {
 				sans: ['Montserrat', 'sans-serif']
 			},
 			colors: {
-				// Theme colours: overridden by Hub Settings theme (CSS vars set in root layout)
-				primary: 'var(--color-primary, #4BB170)', // Green (main brand color)
-				'primary-dark': '#3a8a56',
-				'brand-blue': 'var(--color-brand, #4A97D2)',
-				// Navbar, buttons (up to 5), panel heads (up to 3)
-				'theme-navbar': 'var(--color-navbar-bg, #4A97D2)',
+				// Theme colours: set by Hub/multi-org theme (CSS vars in hub layout). Fallbacks = default cool palette.
+				primary: 'var(--color-primary, #0d9488)',
+				'primary-dark': '#0f766e',
+				'brand-blue': 'var(--color-brand, #0284c7)',
+				'theme-navbar': 'var(--color-navbar-bg, #0f172a)',
 				'theme-button': {
-					1: 'var(--color-button-1, #4A97D2)',
-					2: 'var(--color-button-2, #4BB170)',
-					3: 'var(--color-button-3, #3B79A8)',
-					4: 'var(--color-button-4, #3C8E5A)',
-					5: 'var(--color-button-5, #E6A324)'
+					1: 'var(--color-button-1, #0284c7)',
+					2: 'var(--color-button-2, #0d9488)',
+					3: 'var(--color-button-3, #475569)',
+					4: 'var(--color-button-4, #0369a1)',
+					5: 'var(--color-button-5, #f59e0b)'
 				},
 				'theme-panel-head': {
-					1: 'var(--color-panel-head-1, #4A97D2)',
-					2: 'var(--color-panel-head-2, #3B79A8)',
-					3: 'var(--color-panel-head-3, #2C5B7E)'
+					1: 'var(--color-panel-head-1, #0284c7)',
+					2: 'var(--color-panel-head-2, #0369a1)',
+					3: 'var(--color-panel-head-3, #0f172a)'
 				},
-				'theme-panel-bg': 'var(--color-panel-bg, #E8F2F9)',
+				'theme-panel-bg': 'var(--color-panel-bg, #f1f5f9)',
 				'brand-green': '#4BB170',
 				'brand-yellow': '#E6A324',
 				'brand-red': '#A62524',

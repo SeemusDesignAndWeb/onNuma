@@ -7,7 +7,7 @@
 
 	$: formResult = $page.form;
 	$: data = $page.data || {};
-	
+
 	let name = '';
 	let email = '';
 	let submitted = false;
@@ -41,7 +41,6 @@
 		searchName = '';
 	}
 
-	// Sort rotas by date (upcoming first)
 	$: sortedRotas = [...userRotas].sort((a, b) => {
 		if (!a.date && !b.date) return 0;
 		if (!a.date) return 1;
@@ -51,160 +50,182 @@
 </script>
 
 <svelte:head>
-	<title>View Your Rotas - EGCC</title>
+	<title>My volunteering – See my rotas</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 py-12">
-	<div class="max-w-6xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
-		<div class="bg-white shadow-lg rounded-lg p-6 sm:p-8">
-			<div class="mb-8 text-center">
-				<h1 class="text-3xl sm:text-4xl font-bold text-brand-blue mb-2">View Your Rotas</h1>
-				<p class="text-gray-600">Enter your details to see all the rotas you're signed up for</p>
-			</div>
+<!-- Public "My volunteering" layout: clear nav, high contrast, large touch targets for 60+ -->
+<div class="min-h-screen bg-slate-50">
+	<!-- Simple header with two clear options -->
+	<header class="bg-white border-b-2 border-slate-200 shadow-sm">
+		<div class="max-w-3xl mx-auto px-4 sm:px-6 py-5">
+			<h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">My volunteering</h1>
+			<p class="text-slate-600 text-lg mb-6">See your rotas and sign up for more. Choose an option below.</p>
+			<nav class="flex flex-wrap gap-3" aria-label="Volunteer options">
+				<a
+					href="/view-rotas"
+					class="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-lg font-semibold bg-slate-900 text-white min-h-[52px] shadow-md hover:bg-slate-800 transition-colors"
+				>
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+					</svg>
+					See my rotas
+				</a>
+				<a
+					href="/signup/rotas"
+					class="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-lg font-semibold bg-white text-slate-700 border-2 border-slate-300 min-h-[52px] hover:bg-slate-50 hover:border-slate-400 transition-colors"
+				>
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+					</svg>
+					Sign up for rotas
+				</a>
+			</nav>
+		</div>
+	</header>
 
+	<main class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+		<div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
 			{#if !submitted}
-				<!-- Search Form -->
-				<div class="max-w-md mx-auto">
-					<div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-						<h2 class="text-xl font-semibold text-gray-900 mb-2">Get Started</h2>
-						<p class="text-sm text-gray-700">Please provide your name and email to view your rotas.</p>
-					</div>
+				<!-- Step 1: Enter details – large, clear form -->
+				<div class="p-6 sm:p-8">
+					<h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-2">See your rotas</h2>
+					<p class="text-slate-600 text-lg mb-6 leading-relaxed">
+						Enter your name and email below. We'll show you the rotas you're signed up for. Your details are only used to look up your commitments.
+					</p>
 
-					<form method="POST" action="?/search" use:enhance={handleEnhance}>
-						<div class="space-y-4">
-							<div>
-								<label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-									Full Name <span class="text-red-500">*</span>
-								</label>
-								<input
-									type="text"
-									id="name"
-									name="name"
-									bind:value={name}
-									required
-									class="w-full rounded-md border border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue py-2 px-4"
-									placeholder="Enter your full name"
-								/>
-							</div>
-							<div>
-								<label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-									Email <span class="text-red-500">*</span>
-								</label>
-								<input
-									type="email"
-									id="email"
-									name="email"
-									bind:value={email}
-									required
-									class="w-full rounded-md border border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue py-2 px-4"
-									placeholder="your.email@example.com"
-								/>
-							</div>
+					<form method="POST" action="?/search" use:enhance={handleEnhance} class="space-y-5">
+						<div>
+							<label for="name" class="block text-lg font-semibold text-slate-800 mb-2">
+								Full name
+							</label>
+							<input
+								type="text"
+								id="name"
+								name="name"
+								bind:value={name}
+								required
+								autocomplete="name"
+								class="volunteer-input w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-lg text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+								placeholder="e.g. John Smith"
+							/>
+						</div>
+						<div>
+							<label for="email" class="block text-lg font-semibold text-slate-800 mb-2">
+								Email address
+							</label>
+							<input
+								type="email"
+								id="email"
+								name="email"
+								bind:value={email}
+								required
+								autocomplete="email"
+								class="volunteer-input w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-lg text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+								placeholder="your.email@example.com"
+							/>
 						</div>
 
 						{#if formResult?.type === 'failure' && formResult.data?.error}
-							<div class="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
-								<p class="text-red-800 text-sm">{formResult.data.error}</p>
+							<div class="rounded-xl bg-red-50 border-2 border-red-200 p-4" role="alert">
+								<p class="text-red-800 text-lg">{formResult.data.error}</p>
 							</div>
 						{/if}
 
-						<div class="mt-6">
-							<button
-								type="submit"
-								disabled={isSubmitting || !name || !email}
-								class="w-full bg-brand-green text-white px-6 py-3 rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl transition-all"
-							>
-								{#if isSubmitting}
-									<span class="flex items-center justify-center gap-2">
-										<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-										</svg>
-										Searching...
-									</span>
-								{:else}
-									View My Rotas
-								{/if}
-							</button>
-						</div>
+						<button
+							type="submit"
+							disabled={isSubmitting || !name?.trim() || !email?.trim()}
+							class="w-full rounded-xl bg-blue-600 text-white text-xl font-bold py-4 px-6 shadow-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[56px] flex items-center justify-center gap-2"
+						>
+							{#if isSubmitting}
+								<svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								Looking up your rotas...
+							{:else}
+								Show my rotas
+							{/if}
+						</button>
 					</form>
 				</div>
 			{:else}
-				<!-- Results Section -->
-				<div>
-					<div class="flex items-center justify-between mb-6">
+				<!-- Step 2: Results – large, readable list -->
+				<div class="p-6 sm:p-8">
+					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 						<div>
-							<h2 class="text-2xl font-bold text-gray-900">Your Rotas</h2>
-							<p class="text-gray-600 mt-1">Showing rotas for {searchName}</p>
+							<h2 class="text-xl sm:text-2xl font-bold text-slate-900">Your rotas</h2>
+							<p class="text-slate-600 text-lg mt-1">Showing rotas for <strong class="text-slate-900">{searchName}</strong></p>
 						</div>
 						<button
+							type="button"
 							on:click={resetForm}
-							class="text-brand-blue hover:text-brand-blue/80 font-medium transition-colors"
+							class="rounded-xl border-2 border-slate-300 bg-white px-5 py-3 text-lg font-semibold text-slate-700 hover:bg-slate-50 transition-colors min-h-[52px]"
 						>
-							Search Again
+							Look up different details
 						</button>
 					</div>
 
 					{#if userRotas.length === 0}
-						<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-							<p class="text-yellow-800">
-								No rotas found for this email address. If you believe this is an error, please contact the church office.
+						<div class="rounded-xl bg-amber-50 border-2 border-amber-200 p-6" role="status">
+							<p class="text-amber-900 text-lg leading-relaxed">
+								We didn't find any rotas for this email address. If you've only just signed up, they may appear soon. If you think something's wrong, please contact your church or group office.
+							</p>
+							<p class="mt-4 text-lg">
+								<a href="/signup/rotas" class="font-semibold text-blue-600 hover:text-blue-800 underline">Sign up for rotas here</a> if you'd like to volunteer.
 							</p>
 						</div>
 					{:else}
-						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-								<thead class="bg-gray-50">
-									<tr>
-										<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Date
-										</th>
-										<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Event
-										</th>
-										<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											Rota
-										</th>
-									</tr>
-								</thead>
-								<tbody class="bg-white divide-y divide-gray-200">
-									{#each sortedRotas as rota}
-										<tr class="hover:bg-gray-50 transition-colors">
-											<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-												{#if rota.date}
-													<div class="font-medium">{formatDateLongUK(rota.date)}</div>
-													{#if rota.startTime}
-														<div class="text-gray-500 text-xs mt-1">
-															{formatTimeUK(rota.startTime)}
-															{#if rota.endTime}
-																- {formatTimeUK(rota.endTime)}
-															{/if}
-														</div>
-													{/if}
-												{:else}
-													<span class="text-gray-400">No date</span>
+						<p class="text-slate-600 text-lg mb-6">You're signed up for the following. Thank you for volunteering.</p>
+						<ul class="space-y-4" role="list">
+							{#each sortedRotas as rota}
+								<li class="rounded-xl border-2 border-slate-200 bg-slate-50 p-5 sm:p-6">
+									<div class="flex flex-col gap-2">
+										<span class="text-lg font-bold text-slate-900">{rota.role}</span>
+										<span class="text-lg text-slate-700">{rota.eventTitle}</span>
+										{#if rota.date}
+											<p class="text-lg text-slate-600 mt-1">
+												<span class="font-semibold">{formatDateLongUK(rota.date)}</span>
+												{#if rota.startTime}
+													<span class="block text-slate-600 mt-0.5">
+														{formatTimeUK(rota.startTime)}
+														{#if rota.endTime}
+															– {formatTimeUK(rota.endTime)}
+														{/if}
+													</span>
 												{/if}
-											</td>
-											<td class="px-6 py-4 text-sm text-gray-900">
-												<div class="font-medium">{rota.eventTitle}</div>
-												{#if rota.location}
-													<div class="text-gray-500 text-xs mt-1">{rota.location}</div>
-												{/if}
-											</td>
-											<td class="px-6 py-4 text-sm font-medium text-gray-900">
-												{rota.role}
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
+											</p>
+										{:else}
+											<p class="text-slate-500 text-lg">Date to be confirmed</p>
+										{/if}
+										{#if rota.location}
+											<p class="text-slate-600 text-lg">📍 {rota.location}</p>
+										{/if}
+									</div>
+								</li>
+							{/each}
+						</ul>
+						<p class="mt-6 text-lg text-slate-600">
+							Want to do more? <a href="/signup/rotas" class="font-semibold text-blue-600 hover:text-blue-800 underline">Sign up for more rotas</a>.
+						</p>
 					{/if}
 				</div>
 			{/if}
 		</div>
-	</div>
-	
-	<!-- Notification Popups -->
+	</main>
+
 	<NotificationPopup />
 </div>
+
+<style>
+	/* 18px minimum for inputs helps older users and avoids iOS zoom on focus */
+	.volunteer-input {
+		min-height: 3.25rem;
+		font-size: 1.125rem;
+	}
+	@media (min-width: 640px) {
+		.volunteer-input {
+			min-height: 3.5rem;
+			font-size: 1.25rem;
+		}
+	}
+</style>

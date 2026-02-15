@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { create, readCollection, findById, update, updatePartial } from '$lib/crm/server/fileStore.js';
 import { createAdmin, getAdminByEmail, updateAdminPassword, generateVerificationToken } from '$lib/crm/server/auth.js';
 import { invalidateHubDomainCache } from '$lib/crm/server/hubDomain.js';
-import { getAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
+import { getConfiguredAreaPermissionsForPlan } from '$lib/crm/server/permissions.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
 import { getPaddleBaseUrl, getPriceIdForProfessionalByTier, getPaddleApiKey } from '$lib/crm/server/paddle.js';
 
@@ -398,7 +398,7 @@ export const actions = {
 		const fullHubDomain = subdomain && baseDomain ? `${subdomain}.${baseDomain}` : subdomain || null;
 
 		// Get area permissions based on the selected signup plan
-		const areaPermissions = getAreaPermissionsForPlan(signupPlan);
+		const areaPermissions = await getConfiguredAreaPermissionsForPlan(signupPlan);
 
 		let org;
 		let admin;

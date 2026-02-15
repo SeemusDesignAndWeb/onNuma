@@ -352,7 +352,7 @@
                     </span>
                     <a
                         href="/hub/events/{event.id}/occurrences/{viewingOccurrence.id}?edit=true"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-hub-green-600 hover:bg-hub-green-700 text-white text-sm font-normal whitespace-nowrap"
+                        class="hub-btn bg-hub-green-600 hover:bg-hub-green-700 text-white whitespace-nowrap"
                     >
                         <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -637,7 +637,13 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                         Public view
                     </a>
-                    <form method="POST" action="?/createEventEmail" use:enhance={() => () => {}} class="contents">
+                    <form method="POST" action="?/createEventEmail" use:enhance={() => {
+                        creatingEventEmail = true;
+                        return async ({ update }) => {
+                            await update();
+                            creatingEventEmail = false;
+                        };
+                    }} class="contents">
                         <input type="hidden" name="_csrf" value={csrfToken} />
                         <button type="submit" disabled={creatingEventEmail} class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-xs font-medium disabled:opacity-50">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -909,7 +915,7 @@
                         showEventEmailModal = false;
                         createdEmailId = null;
                     }}
-                    class="flex-1 btn-theme-3 px-4 py-2.5 rounded-md text-sm font-medium"
+                    class="hub-btn flex-1 btn-theme-3"
                 >
                     Save as draft
                 </button>
@@ -921,7 +927,7 @@
                         createdEmailId = null;
                         goto(`/hub/emails/${id}`);
                     }}
-                    class="flex-1 btn-theme-2 px-4 py-2.5 rounded-md text-sm font-medium"
+                    class="hub-btn flex-1 btn-theme-2"
                 >
                     Send now
                 </button>

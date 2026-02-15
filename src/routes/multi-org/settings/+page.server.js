@@ -3,6 +3,8 @@ import { findById, updatePartial, readCollection, writeCollection, create } from
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
 import { validateContact, validateEvent, validateOccurrence } from '$lib/crm/server/validators.js';
+import { getSettings, getDefaultTheme } from '$lib/crm/server/settings.js';
+
 export async function load({ locals, url }) {
 	const multiOrgAdmin = locals.multiOrgAdmin;
 	const base = (path) => getMultiOrgPublicPath(path, !!locals.multiOrgAdminDomain);
@@ -17,9 +19,18 @@ export async function load({ locals, url }) {
 	const demoEventsParam = url.searchParams.get('demo_events');
 	const demoEventsCreated = demoEventsParam ? parseInt(demoEventsParam, 10) : null;
 
+	let hubTheme = getDefaultTheme();
+	try {
+		const hubSettings = await getSettings();
+		if (hubSettings?.theme && typeof hubSettings.theme === 'object') {
+			hubTheme = { ...getDefaultTheme(), ...hubSettings.theme };
+		}
+	} catch (_) {}
+
 	return {
 		organisations,
 		multiOrgAdmin,
+		hubTheme,
 		anonymisedCreated: Number.isNaN(anonymisedCreated) ? null : anonymisedCreated,
 		demoEventsCreated: Number.isNaN(demoEventsCreated) ? null : demoEventsCreated
 	};
@@ -114,12 +125,18 @@ export const actions = {
 				}
 			}
 
+			const firstNames = ['Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia', 'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence', 'Finley', 'Willow', 'Henry', 'Emilia', 'Sophie', 'Ella', 'Jack', 'Grace', 'Thomas', 'Poppy', 'William', 'Charlotte'];
+			const lastNames = ['Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies', 'Evans', 'Wilson', 'Thomas', 'Roberts', 'Robinson', 'Wright', 'Thompson', 'White', 'Hughes', 'Edwards', 'Green', 'Hall', 'Martin', 'Wood', 'Clarke', 'Jackson', 'Hill', 'Lewis'];
+			const domains = ['gmail.com', 'outlook.com', 'yahoo.com', 'btinternet.com', 'hotmail.co.uk', 'live.co.uk', 'sky.com'];
 			for (let i = 1; i <= count; i++) {
-				const email = `contact${i}@anonymised.example.com`;
+				const firstName = firstNames[(i - 1) % firstNames.length];
+				const lastName = lastNames[Math.floor((i - 1) / firstNames.length) % lastNames.length];
+				const domain = domains[(i - 1) % domains.length];
+				const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${count > 1 ? `.${i}` : ''}@${domain}`;
 				const validated = validateContact({
 					email,
-					firstName: 'Contact',
-					lastName: String(i),
+					firstName,
+					lastName,
 					phone: i <= 999 ? `07000 000${String(i).padStart(3, '0')}` : `07000 ${i}`,
 					addressLine1: `${i} Example Street`,
 					addressLine2: i % 3 === 0 ? 'Flat ' + Math.floor(i / 3) : '',
@@ -129,7 +146,7 @@ export const actions = {
 					country: 'United Kingdom',
 					membershipStatus: ['member', 'regular-attender', 'visitor'][i % 3] || 'member',
 					dateJoined: i % 2 === 0 ? new Date(2020 + (i % 4), i % 12, 1).toISOString().slice(0, 10) : null,
-					notes: 'Anonymised demo contact.',
+					notes: 'Demo contact (realistic name and email for testing).',
 					subscribed: true,
 					spouseId: null
 				});

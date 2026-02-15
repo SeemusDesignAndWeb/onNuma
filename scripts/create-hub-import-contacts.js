@@ -64,16 +64,16 @@ function ukPostcode() {
 
 function generateContacts() {
 	const firstNames = [
-		'John', 'Sarah', 'Michael', 'Emma', 'David', 'Olivia', 'James', 'Sophia',
-		'Robert', 'Isabella', 'William', 'Charlotte', 'Richard', 'Amelia', 'Joseph', 'Mia',
-		'Thomas', 'Harper', 'Charles', 'Evelyn', 'Daniel', 'Abigail', 'Matthew', 'Ella',
-		'Anthony', 'Scarlett', 'Mark', 'Grace', 'Donald', 'Chloe', 'Steven', 'Victoria'
+		'Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia',
+		'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence', 'Finley', 'Willow',
+		'Henry', 'Emilia', 'Sophie', 'Ella', 'Jack', 'Grace', 'Thomas', 'Poppy',
+		'William', 'Charlotte', 'Daniel', 'Ruby', 'Samuel', 'Hannah', 'Ryan', 'Chloe'
 	];
 	const lastNames = [
-		'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis',
-		'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor',
-		'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White', 'Harris', 'Clark',
-		'Lewis', 'Walker', 'Hall', 'Young', 'King', 'Wright', 'Scott', 'Green'
+		'Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies',
+		'Evans', 'Wilson', 'Thomas', 'Roberts', 'Robinson', 'Wright', 'Thompson', 'White',
+		'Hughes', 'Edwards', 'Green', 'Hall', 'Martin', 'Wood', 'Clarke', 'Jackson',
+		'Hill', 'Lewis', 'Walker', 'Scott', 'Cooper', 'Mitchell', 'Carter', 'Turner'
 	];
 	const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'btinternet.com', 'sky.com', 'live.co.uk'];
 	const streets = ['High Street', 'Church Road', 'Main Avenue', 'Park Lane', 'Oak Drive', 'Maple Close', 'Elm Way', 'Station Road', 'Victoria Road', 'Green Lane'];

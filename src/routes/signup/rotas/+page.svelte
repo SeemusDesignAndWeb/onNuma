@@ -672,6 +672,9 @@
 					<div class="order-1 lg:order-none lg:col-span-1">
 						<div class="bg-white shadow rounded-lg p-6 lg:sticky top-[76px] space-y-6">
 							<div>
+								<p class="text-sm text-gray-600 mb-3">
+									<a href="/view-rotas" class="font-medium text-brand-blue hover:underline">My volunteering – see my rotas</a>
+								</p>
 								<h1 class="text-2xl font-bold text-brand-blue mb-2">Rota Signup</h1>
 								<p class="text-sm text-gray-600 mb-4">
 									Sign up for available rotas across all events. Select the dates you're available for each role.

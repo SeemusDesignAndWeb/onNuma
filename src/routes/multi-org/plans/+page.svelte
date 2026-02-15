@@ -9,6 +9,7 @@
 	$: base = data?.multiOrgBasePath ?? '/multi-org';
 	$: plans = data?.plans ?? [];
 	$: planModules = data?.planModules ?? [];
+	$: paddleMapping = data?.paddleMapping ?? null;
 	$: formError = form?.error ?? null;
 	$: formSuccess = form?.success ?? false;
 
@@ -34,9 +35,9 @@
 </svelte:head>
 
 <div class="mb-8">
-	<h1 class="text-2xl font-bold text-slate-800">Plan setup and detail</h1>
+	<h1 class="text-2xl font-bold text-slate-800">Plan setup</h1>
 	<p class="mt-1 text-sm text-slate-500">
-		Hub plan tiers, limits, and pricing. Edit below; actual billing and subscriptions are managed in Paddle and Boathouse.
+		Hub plan tiers, limits, and modules. Billing and subscriptions are managed in Paddle and Boathouse.
 	</p>
 </div>
 
@@ -92,7 +93,7 @@
 							placeholder="Plan description shown to admins"
 						>{plan.description}</textarea>
 					</div>
-					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div>
 							<label for="plan-contacts-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Contacts allowed</label>
 							<input
@@ -114,32 +115,6 @@
 								min="0"
 								step="1"
 								value={plan.maxAdmins}
-								class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
-							/>
-						</div>
-						<div>
-							<label for="plan-cost-contact-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Cost per contact (£)</label>
-							<input
-								id="plan-cost-contact-{plan.value}"
-								type="number"
-								name="costPerContact"
-								min="0"
-								step="0.01"
-								value={plan.costPerContact !== null && plan.costPerContact !== undefined ? plan.costPerContact : ''}
-								placeholder="Leave blank for Paddle"
-								class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
-							/>
-						</div>
-						<div>
-							<label for="plan-cost-admin-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Cost per admin (£)</label>
-							<input
-								id="plan-cost-admin-{plan.value}"
-								type="number"
-								name="costPerAdmin"
-								min="0"
-								step="0.01"
-								value={plan.costPerAdmin !== null && plan.costPerAdmin !== undefined ? plan.costPerAdmin : ''}
-								placeholder="Leave blank for Paddle"
 								class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
 							/>
 						</div>
@@ -205,26 +180,6 @@
 						<dt class="font-medium text-slate-500">Admins allowed</dt>
 						<dd class="mt-0.5 text-slate-800 font-mono">{plan.maxAdmins.toLocaleString()}</dd>
 					</div>
-					<div>
-						<dt class="font-medium text-slate-500">Cost per contact</dt>
-						<dd class="mt-0.5 text-slate-800">
-							{#if plan.costPerContact !== null && plan.costPerContact !== undefined}
-								£{Number(plan.costPerContact).toFixed(2)}
-							{:else}
-								<span class="text-slate-500">Managed in Paddle</span>
-							{/if}
-						</dd>
-					</div>
-					<div>
-						<dt class="font-medium text-slate-500">Cost per admin</dt>
-						<dd class="mt-0.5 text-slate-800">
-							{#if plan.costPerAdmin !== null && plan.costPerAdmin !== undefined}
-								£{Number(plan.costPerAdmin).toFixed(2)}
-							{:else}
-								<span class="text-slate-500">Managed in Paddle</span>
-							{/if}
-						</dd>
-					</div>
 				</dl>
 			{/if}
 		</div>
@@ -232,5 +187,56 @@
 </div>
 
 <p class="mt-6 text-sm text-slate-500">
-	Edits are stored here and shown in the Hub. Actual billing and limits (e.g. enforcement of max contacts) may also depend on code and Paddle configuration. Organisations subscribe via the Hub billing page; invoices and payment methods are managed in Paddle and Boathouse.
+	Edits are stored here and shown in the Hub. Billing and subscriptions remain managed in Paddle and Boathouse.
 </p>
+
+{#if paddleMapping}
+	<div class="mt-8 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+		<div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200">
+			<h2 class="text-lg font-semibold text-slate-800">Paddle mapping</h2>
+			<p class="mt-1 text-sm text-slate-500">
+				Environment and price IDs currently configured on this deployment.
+			</p>
+		</div>
+		<div class="px-6 py-5 space-y-5 text-sm">
+			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+				<div>
+					<p class="font-medium text-slate-500">Environment</p>
+					<p class="mt-0.5 text-slate-800 capitalize">{paddleMapping.environment}</p>
+				</div>
+				<div>
+					<p class="font-medium text-slate-500">API key</p>
+					<p class="mt-0.5 text-slate-800">{paddleMapping.apiConfigured ? 'Configured' : 'Missing'}</p>
+				</div>
+				<div>
+					<p class="font-medium text-slate-500">Webhook secret</p>
+					<p class="mt-0.5 text-slate-800">{paddleMapping.webhookConfigured ? 'Configured' : 'Missing'}</p>
+				</div>
+			</div>
+
+			<div>
+				<p class="font-medium text-slate-500 mb-2">Professional prices</p>
+				<div class="space-y-2">
+					{#each paddleMapping.professional as row}
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border border-slate-200 rounded-xl px-3 py-2">
+							<span class="text-slate-700">{row.tier}</span>
+							<code class="text-xs text-slate-600">{row.priceId || 'Not configured'}</code>
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<div>
+				<p class="font-medium text-slate-500 mb-2">Enterprise prices</p>
+				<div class="space-y-2">
+					{#each paddleMapping.enterprise as row}
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border border-slate-200 rounded-xl px-3 py-2">
+							<span class="text-slate-700">{row.tier}</span>
+							<code class="text-xs text-slate-600">{row.priceId || 'Not configured'}</code>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}

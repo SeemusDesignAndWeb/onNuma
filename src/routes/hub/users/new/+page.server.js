@@ -2,7 +2,15 @@ import { redirect } from '@sveltejs/kit';
 import { createAdmin, getAdminFromCookies, getAdminsForOrganisation, getAdminByEmail } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
-import { isSuperAdmin, canCreateAdmin, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail, getPlanMaxAdmins, getPlanFromAreaPermissions } from '$lib/crm/server/permissions.js';
+import {
+	isSuperAdmin,
+	canCreateAdmin,
+	getAvailableHubAreas,
+	HUB_AREAS,
+	isSuperAdminEmail,
+	getConfiguredPlanMaxAdmins,
+	getConfiguredPlanFromAreaPermissions
+} from '$lib/crm/server/permissions.js';
 import { getEffectiveSuperAdminEmail, getSettings, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { getRequestOrganisationId } from '$lib/crm/server/requestOrg.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
@@ -23,7 +31,7 @@ export async function load({ cookies, parent }) {
 	
 	const parentData = await parent();
 	const plan = parentData.plan || 'free';
-	const maxAdmins = getPlanMaxAdmins(plan);
+	const maxAdmins = await getConfiguredPlanMaxAdmins(plan);
 	const organisationId = await getCurrentOrganisationId();
 	const admins = await getAdminsForOrganisation(organisationId);
 	const adminCount = admins.length;
@@ -73,9 +81,9 @@ export const actions = {
 		const organisationId = requestOrgId ?? settings?.currentOrganisationId ?? organisations?.[0]?.id ?? null;
 		const org = organisationId ? organisations.find((o) => o.id === organisationId) : null;
 		const plan = org && Array.isArray(org.areaPermissions)
-			? getPlanFromAreaPermissions(org.areaPermissions) || 'free'
+			? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free'
 			: 'free';
-		const maxAdmins = getPlanMaxAdmins(plan);
+		const maxAdmins = await getConfiguredPlanMaxAdmins(plan);
 		const admins = await getAdminsForOrganisation(organisationId);
 		if (admins.length >= maxAdmins) {
 			return { error: `Admin limit reached (${maxAdmins} for ${plan} plan). Upgrade your plan to add more admins.` };

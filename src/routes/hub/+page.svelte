@@ -1,37 +1,165 @@
 <script>
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { formatDateUK } from '$lib/crm/utils/dateFormat.js';
 	import { onMount } from 'svelte';
 	import { hasRouteAccess } from '$lib/crm/permissions.js';
-	
+
+	const DEFAULT_PANEL_ORDER = ['rotaGaps', 'leaderboard', 'engagement', 'suggested'];
+	const STORAGE_KEY_PREFIX = 'hub_dashboard_panel_order_';
+	const STORAGE_KEY_WIDE_PREFIX = 'hub_dashboard_panel_wide_';
+
 	$: admin = $page.data?.admin || null;
 	$: stats = $page.data?.stats || {};
-	$: latestNewsletters = $page.data?.latestNewsletters || [];
-	$: latestRotas = $page.data?.latestRotas || [];
-	$: latestEvents = $page.data?.latestEvents || [];
+	$: rotaGaps = $page.data?.rotaGaps || [];
+	$: organisationId = $page.data?.organisationId ?? null;
+	const ROTA_GAPS_PAGE_SIZE = 5;
+	let rotaGapsPage = 1;
+	$: rotaGapsTotal = rotaGaps.length;
+	$: rotaGapsTotalPages = Math.max(1, Math.ceil(rotaGapsTotal / ROTA_GAPS_PAGE_SIZE));
+	$: rotaGapsCurrentPage = Math.min(rotaGapsPage, rotaGapsTotalPages);
+	$: rotaGapsSlice = rotaGaps.slice((rotaGapsCurrentPage - 1) * ROTA_GAPS_PAGE_SIZE, rotaGapsCurrentPage * ROTA_GAPS_PAGE_SIZE);
+	$: volunteerLeaderboard = $page.data?.volunteerLeaderboard || [];
+	$: engagementState = $page.data?.engagementState || { engaged: 0, notEngaged: 0, total: 0 };
+	$: engagementStateEngagedPct = engagementState.total
+		? (engagementState.engaged / engagementState.total) * 100
+		: 0;
+	$: suggestedPeople = $page.data?.suggestedPeople || [];
+	$: suggestedPeopleTotal = $page.data?.suggestedPeopleTotal ?? 0;
 	$: organisationAreaPermissions = $page.data?.organisationAreaPermissions ?? null;
 	$: superAdminEmail = $page.data?.superAdminEmail ?? null;
 
-	// Check for access denied error in URL
 	$: urlParams = new URLSearchParams($page.url.search);
 	$: accessDenied = urlParams.get('error') === 'access_denied';
 
-	// Check permissions (respects MultiOrg org area restrictions)
 	$: canAccessContacts = admin && hasRouteAccess(admin, '/hub/contacts', superAdminEmail, organisationAreaPermissions);
 	$: canAccessLists = admin && hasRouteAccess(admin, '/hub/lists', superAdminEmail, organisationAreaPermissions);
 	$: canAccessNewsletters = admin && hasRouteAccess(admin, '/hub/emails', superAdminEmail, organisationAreaPermissions);
 	$: canAccessEvents = admin && hasRouteAccess(admin, '/hub/events', superAdminEmail, organisationAreaPermissions);
-	$: canAccessMeetingPlanners = admin && hasRouteAccess(admin, '/hub/meeting-planners', superAdminEmail, organisationAreaPermissions);
 	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/rotas', superAdminEmail, organisationAreaPermissions);
 	$: canAccessForms = admin && hasRouteAccess(admin, '/hub/forms', superAdminEmail, organisationAreaPermissions);
 
-	// Count visible modules so the grid can use full width (columns = number of modules)
-	$: moduleCount = [canAccessContacts, canAccessLists, canAccessNewsletters, canAccessEvents, canAccessRotas, canAccessForms].filter(Boolean).length;
-	$: recentPanelsCount = [canAccessNewsletters, canAccessRotas, canAccessEvents].filter(Boolean).length;
-	
+	$: visiblePanelIds = (() => {
+		const ids = [];
+		if (canAccessRotas) ids.push('rotaGaps');
+		if (canAccessContacts || canAccessRotas) ids.push('leaderboard');
+		if (canAccessContacts) ids.push('engagement');
+		if (canAccessContacts) ids.push('suggested');
+		return ids;
+	})();
+
+	function getStorageKey() {
+		return STORAGE_KEY_PREFIX + (organisationId || 'default');
+	}
+	function getSavedOrder() {
+		if (!browser) return [];
+		try {
+			const raw = localStorage.getItem(getStorageKey());
+			return raw ? JSON.parse(raw) : [];
+		} catch {
+			return [];
+		}
+	}
+	function mergeOrder(visible, saved) {
+		const order = (saved.length ? saved : DEFAULT_PANEL_ORDER).filter((id) => visible.includes(id));
+		for (const id of visible) {
+			if (!order.includes(id)) order.push(id);
+		}
+		return order;
+	}
+	function saveOrder(order) {
+		if (!browser) return;
+		try {
+			localStorage.setItem(getStorageKey(), JSON.stringify(order));
+		} catch {}
+	}
+
+	function getWideStorageKey() {
+		return STORAGE_KEY_WIDE_PREFIX + (organisationId || 'default');
+	}
+	function getSavedWidePanels() {
+		if (!browser) return new Set();
+		try {
+			const raw = localStorage.getItem(getWideStorageKey());
+			const arr = raw ? JSON.parse(raw) : [];
+			return new Set(Array.isArray(arr) ? arr : []);
+		} catch {
+			return new Set();
+		}
+	}
+	function saveWidePanels(wideSet) {
+		if (!browser) return;
+		try {
+			localStorage.setItem(getWideStorageKey(), JSON.stringify([...wideSet]));
+		} catch {}
+	}
+
+	let widePanelIds = new Set();
+	$: if (browser && visiblePanelIds.length) {
+		widePanelIds = getSavedWidePanels();
+	}
+
+	function togglePanelWide(panelId) {
+		const next = new Set(widePanelIds);
+		if (next.has(panelId)) next.delete(panelId);
+		else next.add(panelId);
+		widePanelIds = next;
+		saveWidePanels(next);
+	}
+
+	let orderedPanelIds = [];
+	let prevOrderKey = '';
+	$: orderKey = visiblePanelIds.join(',') + (organisationId || '');
+	$: if (visiblePanelIds.length) {
+		if (browser && orderKey !== prevOrderKey) {
+			prevOrderKey = orderKey;
+			orderedPanelIds = mergeOrder(visiblePanelIds, getSavedOrder());
+		} else if (!browser) {
+			orderedPanelIds = [...visiblePanelIds];
+		}
+	}
+
+	let draggedPanelId = null;
+	let dragOverPanelId = null;
+
+	function handlePanelDragStart(e, panelId) {
+		draggedPanelId = panelId;
+		e.dataTransfer.effectAllowed = 'move';
+		e.dataTransfer.setData('text/plain', panelId);
+		e.dataTransfer.setData('application/json', JSON.stringify({ panelId }));
+		try {
+			e.dataTransfer.setDragImage(e.target.closest('.dashboard-panel-wrap') || e.target, 0, 0);
+		} catch {}
+	}
+	function handlePanelDragOver(e, panelId) {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = 'move';
+		if (draggedPanelId && draggedPanelId !== panelId) dragOverPanelId = panelId;
+	}
+	function handlePanelDragLeave() {
+		dragOverPanelId = null;
+	}
+	function handlePanelDrop(e, targetPanelId) {
+		e.preventDefault();
+		if (!draggedPanelId || draggedPanelId === targetPanelId) {
+			draggedPanelId = null;
+			dragOverPanelId = null;
+			return;
+		}
+		const newOrder = orderedPanelIds.filter((id) => id !== draggedPanelId);
+		const targetIndex = newOrder.indexOf(targetPanelId);
+		newOrder.splice(targetIndex >= 0 ? targetIndex : 0, 0, draggedPanelId);
+		orderedPanelIds = newOrder;
+		saveOrder(newOrder);
+		draggedPanelId = null;
+		dragOverPanelId = null;
+	}
+	function handlePanelDragEnd() {
+		draggedPanelId = null;
+		dragOverPanelId = null;
+	}
+
 	onMount(() => {
-		// Clear error from URL after showing message
 		if (accessDenied) {
 			setTimeout(() => {
 				const newUrl = new URL(window.location.href);
@@ -40,11 +168,16 @@
 			}, 5000);
 		}
 	});
+
+	function formatRotaGapDate(dateStr) {
+		if (!dateStr) return '';
+		return formatDateUK(new Date(dateStr));
+	}
 </script>
 
 <!-- Access Denied Message -->
 {#if accessDenied}
-	<div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+	<div class="mb-4 rounded-xl bg-red-50 border-l-4 border-red-400 p-4">
 		<div class="flex">
 			<div class="flex-shrink-0">
 				<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -60,388 +193,470 @@
 	</div>
 {/if}
 
-<!-- Dashboard Cards with Quick Actions -->
 {#if !accessDenied}
-	<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-		<h2 class="text-xl font-bold text-gray-900">Dashboard</h2>
-		<div class="flex flex-wrap items-center justify-end gap-2">
+	<div class="space-y-6">
+		<!-- Page header -->
+		<h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+
+		<!-- Compact Quick Stats -->
+		<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+			{#if canAccessContacts}
+				<a href="/hub/contacts" class="dashboard-stat-tile rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+					<div class="flex items-center gap-3">
+						<div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+							<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+						</div>
+						<div>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Contacts</p>
+							<p class="text-xl font-semibold text-gray-900">{stats.contacts ?? 0}</p>
+						</div>
+					</div>
+				</a>
+			{/if}
+			{#if canAccessEvents}
+				<a href="/hub/events/calendar" class="dashboard-stat-tile rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+					<div class="flex items-center gap-3">
+						<div class="flex-shrink-0 w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+							<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+						</div>
+						<div>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Events</p>
+							<p class="text-xl font-semibold text-gray-900">{stats.events ?? 0}</p>
+						</div>
+					</div>
+				</a>
+			{/if}
 			{#if canAccessRotas}
-				<a href="/view-rotas" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-sm font-medium transition-colors">
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-					Rotas signup
-				</a>
-				<a href="/hub/rotas" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-sm font-medium transition-colors">
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-					Your rotas
+				<a href="/hub/rotas" class="dashboard-stat-tile rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+					<div class="flex items-center gap-3">
+						<div class="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+							<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+						</div>
+						<div>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Rotas</p>
+							<p class="text-xl font-semibold text-gray-900">{stats.rotas ?? 0}</p>
+						</div>
+					</div>
 				</a>
 			{/if}
-			{#if canAccessNewsletters && $page.data?.emailModuleEnabled}
-				<button
-					type="button"
-					disabled
-					aria-label="Emails sent today"
-					class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 text-sm font-medium cursor-default"
+			{#if canAccessNewsletters}
+				<a href="/hub/emails" class="dashboard-stat-tile rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+					<div class="flex items-center gap-3">
+						<div class="flex-shrink-0 w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
+							<svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+						</div>
+						<div>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Emails</p>
+							<p class="text-xl font-semibold text-gray-900">{stats.newsletters ?? 0}</p>
+						</div>
+					</div>
+				</a>
+			{/if}
+			{#if canAccessForms}
+				<a href="/hub/forms" class="dashboard-stat-tile rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+					<div class="flex items-center gap-3">
+						<div class="flex-shrink-0 w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center">
+							<svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+						</div>
+						<div>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Forms</p>
+							<p class="text-xl font-semibold text-gray-900">{stats.forms ?? 0}</p>
+						</div>
+					</div>
+				</a>
+			{/if}
+		</div>
+
+		<!-- Modular panels grid: 3 columns, drag-and-drop reorder -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+			{#each orderedPanelIds as panelId}
+				<div
+					class="dashboard-panel-wrap rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden transition-all duration-150 {widePanelIds.has(panelId) ? 'md:col-span-2 lg:col-span-2' : ''} {dragOverPanelId === panelId ? 'ring-2 ring-theme-button-1 ring-inset' : ''} {draggedPanelId === panelId ? 'opacity-50' : ''}"
+					data-panel-id={panelId}
+					on:dragover={(e) => handlePanelDragOver(e, panelId)}
+					on:dragleave={handlePanelDragLeave}
+					on:drop={(e) => handlePanelDrop(e, panelId)}
+					role="listitem"
 				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-					Emails sent today: {stats.emailsSentToday || 0}
-				</button>
-			{/if}
-		</div>
-	</div>
-	<div
-		class="hub-dashboard-cards grid gap-4 mb-8 w-full"
-		style="--hub-module-count: {moduleCount || 1};"
-	>
-		<!-- Contacts -->
-		{#if canAccessContacts}
-			<div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-hub-blue-500">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<svg class="h-6 w-6 text-hub-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-							</svg>
+					{#if panelId === 'rotaGaps'}
+				<div class="dashboard-panel h-full flex flex-col">
+					<header class="dashboard-panel-header">
+						<div class="dashboard-panel-header-row">
+							<div
+								class="dashboard-panel-drag-handle"
+								draggable="true"
+								role="button"
+								tabindex="0"
+								aria-label="Drag to reorder panel"
+								on:dragstart={(e) => handlePanelDragStart(e, panelId)}
+								on:dragend={handlePanelDragEnd}
+							>
+								<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M8 6a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zM5 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+								</svg>
+							</div>
+							<h2 class="dashboard-panel-title">Rota shortages</h2>
+							<a href="/hub/rotas" class="dashboard-panel-link">View your rotas</a>
+							<button
+								type="button"
+								class="dashboard-panel-width-toggle"
+								class:dashboard-panel-width-toggle--wide={widePanelIds.has(panelId)}
+								aria-label={widePanelIds.has(panelId) ? 'Make panel 1 column wide' : 'Make panel 2 columns wide'}
+								title={widePanelIds.has(panelId) ? 'Normal width' : '2 columns wide'}
+								on:click={() => togglePanelWide(panelId)}
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M5 12h14M13 5l7 7-7 7" />
+								</svg>
+							</button>
 						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="text-sm font-medium text-gray-500 truncate">Contacts</dt>
-								<dd class="text-lg font-medium text-gray-900">{stats.contacts || 0}</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-				<div class="bg-gray-50 px-5 py-3">
-					<div class="text-sm flex justify-between items-center">
-						<a href="/hub/contacts" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="View all">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-						</a>
-						<a href="/hub/contacts/new" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="Add new">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-						</a>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Lists -->
-		{#if canAccessLists}
-			<div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-hub-blue-500">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<svg class="h-6 w-6 text-hub-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-							</svg>
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="text-sm font-medium text-gray-500 truncate">Lists</dt>
-								<dd class="text-lg font-medium text-gray-900">{stats.lists || 0}</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-				<div class="bg-gray-50 px-5 py-3">
-					<div class="text-sm flex justify-between items-center">
-						<a href="/hub/lists" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="View all">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-						</a>
-						<a href="/hub/lists/new" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="Add new">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-						</a>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Emails -->
-		{#if canAccessNewsletters}
-			<div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-hub-green-500">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<svg class="h-6 w-6 text-hub-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-							</svg>
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="text-sm font-medium text-gray-500 truncate">Emails</dt>
-								<dd class="text-lg font-medium text-gray-900">{stats.newsletters || 0}</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-				<div class="bg-gray-50 px-5 py-3">
-					<div class="text-sm flex justify-between items-center">
-						<a href="/hub/emails" class="p-1.5 rounded text-hub-green-600 hover:text-hub-green-800 hover:bg-hub-green-50 transition-colors" title="View all">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-						</a>
-						<a href="/hub/emails/new" class="p-1.5 rounded text-hub-green-600 hover:text-hub-green-800 hover:bg-hub-green-50 transition-colors" title="Add new">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-						</a>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Events -->
-		{#if canAccessEvents}
-			<div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-hub-blue-500">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<svg class="h-6 w-6 text-hub-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="text-sm font-medium text-gray-500 truncate">Events</dt>
-								<dd class="text-lg font-medium text-gray-900">{stats.events || 0}</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-				<div class="bg-gray-50 px-5 py-3">
-					<div class="text-sm flex justify-between items-center">
-						<a href="/hub/events" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="View all">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-						</a>
-						<a href="/hub/events/new" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="Add new">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-						</a>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Rotas -->
-		{#if canAccessRotas}
-			<div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-hub-yellow-500">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<svg class="h-6 w-6 text-hub-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-							</svg>
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="text-sm font-medium text-gray-500 truncate">Rotas</dt>
-								<dd class="text-lg font-medium text-gray-900">{stats.rotas || 0}</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-				<div class="bg-gray-50 px-5 py-3">
-					<div class="text-sm flex justify-between items-center">
-						<a href="/hub/rotas" class="p-1.5 rounded text-hub-yellow-600 hover:text-hub-yellow-800 hover:bg-hub-yellow-50 transition-colors" title="View all">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-						</a>
-						<a href="/hub/rotas/new" class="p-1.5 rounded text-hub-yellow-600 hover:text-hub-yellow-800 hover:bg-hub-yellow-50 transition-colors" title="Add new">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-						</a>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Forms -->
-		{#if canAccessForms}
-			<div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-hub-red-500">
-				<div class="p-5">
-					<div class="flex items-center">
-						<div class="flex-shrink-0">
-							<svg class="h-6 w-6 text-hub-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-							</svg>
-						</div>
-						<div class="ml-5 w-0 flex-1">
-							<dl>
-								<dt class="text-sm font-medium text-gray-500 truncate">Forms</dt>
-								<dd class="text-lg font-medium text-gray-900">{stats.forms || 0}</dd>
-							</dl>
-						</div>
-					</div>
-				</div>
-				<div class="bg-gray-50 px-5 py-3">
-					<div class="text-sm flex justify-between items-center">
-						<a href="/hub/forms" class="p-1.5 rounded text-hub-red-600 hover:text-hub-red-800 hover:bg-hub-red-50 transition-colors" title="View all">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-						</a>
-						<a href="/hub/forms/new" class="p-1.5 rounded text-hub-red-600 hover:text-hub-red-800 hover:bg-hub-red-50 transition-colors" title="Add new">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-						</a>
-					</div>
-				</div>
-			</div>
-		{/if}
-	</div>
-
-	<!-- Recent Items: columns match number of panels so full width is used -->
-	<div
-		class="hub-recent-panels grid gap-6 w-full"
-		style="--hub-recent-count: {recentPanelsCount || 1};"
-	>
-		<!-- Latest Emails -->
-		{#if canAccessNewsletters}
-			<div class="bg-white shadow rounded-lg p-6 border-t-4 border-hub-green-500">
-				<div class="flex justify-between items-center mb-4">
-					<h3 class="text-lg font-semibold text-gray-900">Latest Emails</h3>
-					<span class="text-sm flex gap-1">
-						<a href="/hub/emails" class="p-1.5 rounded text-hub-green-600 hover:text-hub-green-800 hover:bg-hub-green-50 transition-colors" title="View all">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-						</a>
-						<a href="/hub/emails/new" class="p-1.5 rounded text-hub-green-600 hover:text-hub-green-800 hover:bg-hub-green-50 transition-colors" title="Add new">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-						</a>
-					</span>
-				</div>
-				{#if latestNewsletters.length === 0}
-					<p class="text-sm text-gray-500">No emails yet</p>
-				{:else}
-					<ul class="space-y-3">
-						{#each latestNewsletters as newsletter}
-							{#if newsletter}
-							<li class="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
-								<a 
-									href="/hub/emails/{newsletter.id}" 
-									class="block hover:text-hub-green-600 transition-colors"
-								>
-									<div class="flex justify-between items-start">
-										<div class="flex-1">
-											<div class="font-medium text-gray-900">{newsletter.subject || 'Untitled'}</div>
-											<div class="text-xs text-gray-500 mt-1">
-												{formatDateUK(newsletter.updatedAt || newsletter.createdAt || Date.now())}
-											</div>
-										</div>
-										<span class="ml-2 text-xs px-2.5 py-1.5 rounded-full {newsletter.status === 'sent' ? 'bg-hub-green-100 text-hub-green-800' : 'bg-gray-100 text-gray-800'}">
-											{newsletter.status || 'draft'}
-										</span>
-									</div>
-								</a>
-							</li>
+					</header>
+					<div class="dashboard-panel-body">
+						{#if rotaGaps.length === 0}
+							<p class="text-sm text-gray-500 py-1">No shortages at the moment. Well done!</p>
+						{:else}
+							<div class="overflow-x-auto">
+								<table class="min-w-full text-sm">
+									<thead>
+										<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+											<th scope="col" class="py-2 pr-3">Event</th>
+											<th scope="col" class="py-2 pr-3 whitespace-nowrap">Date</th>
+											<th scope="col" class="py-2 pr-3">Rota</th>
+											<th scope="col" class="py-2 pr-3 text-center">Filled</th>
+											<th scope="col" class="py-2 pl-3 w-10"></th>
+										</tr>
+									</thead>
+									<tbody class="divide-y divide-gray-100">
+										{#each rotaGapsSlice as gap}
+											<tr class="border-b border-gray-50 last:border-0">
+												<td class="py-1.5 pr-3 font-medium text-gray-900 truncate max-w-[140px]" title={gap.eventTitle}>{gap.eventTitle}</td>
+												<td class="py-1.5 pr-3 text-gray-600 whitespace-nowrap">{formatRotaGapDate(gap.date)}</td>
+												<td class="py-1.5 pr-3 text-gray-900 truncate max-w-[120px]" title={gap.rotaName}>{gap.rotaName}</td>
+												<td class="py-1.5 pr-3 text-center">
+													<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium {gap.priority === 'critical' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}">
+														{gap.positionsFilled}/{gap.positionsRequired}
+													</span>
+												</td>
+												<td class="py-1.5 pl-3">
+													<a href="/hub/rotas/{gap.rotaId}" class="inline-flex items-center justify-center w-8 h-8 rounded text-gray-500 hover:text-theme-button-1 hover:bg-gray-100" title="View rota" aria-label="View {gap.rotaName}">
+														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+														</svg>
+													</a>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+							{#if rotaGapsTotalPages > 1}
+								<div class="mt-2 flex items-center justify-between">
+									<button
+										type="button"
+										class="text-xs font-medium text-theme-button-1 hover:underline disabled:opacity-50 disabled:pointer-events-none"
+										disabled={rotaGapsCurrentPage <= 1}
+										on:click={() => (rotaGapsPage -= 1)}
+									>
+										Previous
+									</button>
+									<span class="text-xs text-gray-500">Page {rotaGapsCurrentPage} of {rotaGapsTotalPages}</span>
+									<button
+										type="button"
+										class="text-xs font-medium text-theme-button-1 hover:underline disabled:opacity-50 disabled:pointer-events-none"
+										disabled={rotaGapsCurrentPage >= rotaGapsTotalPages}
+										on:click={() => (rotaGapsPage += 1)}
+									>
+										Next
+									</button>
+								</div>
 							{/if}
-						{/each}
-					</ul>
-				{/if}
-			</div>
-		{/if}
-
-	<!-- Latest Rotas -->
-	{#if canAccessRotas}
-		<div class="bg-white shadow rounded-lg p-6 border-t-4 border-hub-yellow-500">
-			<div class="flex justify-between items-center mb-4">
-				<h3 class="text-lg font-semibold text-gray-900">Recently Edited Rotas</h3>
-				<span class="text-sm flex gap-1">
-					<a href="/hub/rotas" class="p-1.5 rounded text-hub-yellow-600 hover:text-hub-yellow-800 hover:bg-hub-yellow-50 transition-colors" title="View all">
-						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-					</a>
-					<a href="/hub/rotas/new" class="p-1.5 rounded text-hub-yellow-600 hover:text-hub-yellow-800 hover:bg-hub-yellow-50 transition-colors" title="Add new">
-						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-					</a>
-				</span>
-			</div>
-			{#if latestRotas.length === 0}
-				<p class="text-sm text-gray-500">No rotas yet</p>
-			{:else}
-				<ul class="space-y-3">
-					{#each latestRotas as rota}
-						{#if rota}
-						<li class="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
-							<a 
-								href="/hub/rotas/{rota.id}" 
-								class="block hover:text-hub-green-600 transition-colors"
-							>
-								<div class="flex justify-between items-start">
-									<div class="flex-1">
-										<div class="font-medium text-gray-900">{rota.role || 'Untitled'}</div>
-										<div class="text-xs text-gray-500 mt-1">
-											{rota.eventTitle || 'Unknown Event'} • {Array.isArray(rota.assignees) ? rota.assignees.length : 0} assigned
-										</div>
-										<div class="text-xs text-gray-400 mt-1">
-											{formatDateUK(rota.updatedAt || rota.createdAt || Date.now())}
-										</div>
-									</div>
-								</div>
-							</a>
-						</li>
+							<div class="mt-2 flex flex-wrap gap-1.5">
+								<a href="/hub/rotas/invite" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium">Send request</a>
+								<a href="/hub/rotas" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium">Copy sign-up link</a>
+							</div>
 						{/if}
-					{/each}
-				</ul>
-			{/if}
-		</div>
-	{/if}
-
-	<!-- Latest Events -->
-	{#if canAccessEvents}
-		<div class="bg-white shadow rounded-lg p-6 border-t-4 border-hub-blue-500">
-			<div class="flex justify-between items-center mb-4">
-				<h3 class="text-lg font-semibold text-gray-900">Recently Edited Events</h3>
-				<span class="text-sm flex gap-1">
-					<a href="/hub/events" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="View all">
-						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-					</a>
-					<a href="/hub/events/new" class="p-1.5 rounded text-hub-blue-600 hover:text-hub-blue-800 hover:bg-hub-blue-50 transition-colors" title="Add new">
-						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-					</a>
-				</span>
-			</div>
-			{#if latestEvents.length === 0}
-				<p class="text-sm text-gray-500">No events yet</p>
-			{:else}
-				<ul class="space-y-3">
-					{#each latestEvents as event}
-						{#if event}
-						<li class="border-b border-gray-200 pb-3 last:border-0 last:pb-0">
-							<a 
-								href="/hub/events/{event.id}" 
-								class="block hover:text-hub-blue-600 transition-colors"
+					</div>
+				</div>
+					{:else if panelId === 'leaderboard'}
+				<div class="dashboard-panel h-full flex flex-col">
+					<header class="dashboard-panel-header">
+						<div class="dashboard-panel-header-row">
+							<div
+								class="dashboard-panel-drag-handle"
+								draggable="true"
+								role="button"
+								tabindex="0"
+								aria-label="Drag to reorder panel"
+								on:dragstart={(e) => handlePanelDragStart(e, panelId)}
+								on:dragend={handlePanelDragEnd}
 							>
-								<div class="flex justify-between items-start">
-									<div class="flex-1">
-										<div class="font-medium text-gray-900">{event.title || 'Untitled'}</div>
-										{#if event.location}
-											<div class="text-xs text-gray-500 mt-1">
-												{event.location}
-											</div>
-										{/if}
-										<div class="text-xs text-gray-400 mt-1">
-											{formatDateUK(event.updatedAt || event.createdAt || Date.now())}
-										</div>
-									</div>
-								</div>
-							</a>
-						</li>
+								<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M8 6a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zM5 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+								</svg>
+							</div>
+							<h2 class="dashboard-panel-title">Volunteer Leaderboard</h2>
+							<a href="/hub/contacts" class="dashboard-panel-link">View contacts</a>
+							<button
+								type="button"
+								class="dashboard-panel-width-toggle"
+								class:dashboard-panel-width-toggle--wide={widePanelIds.has(panelId)}
+								aria-label={widePanelIds.has(panelId) ? 'Make panel 1 column wide' : 'Make panel 2 columns wide'}
+								title={widePanelIds.has(panelId) ? 'Normal width' : '2 columns wide'}
+								on:click={() => togglePanelWide(panelId)}
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M5 12h14M13 5l7 7-7 7" />
+								</svg>
+							</button>
+						</div>
+					</header>
+					<div class="dashboard-panel-body">
+						{#if volunteerLeaderboard.length === 0}
+							<p class="text-sm text-gray-500">Participation data will appear here as volunteers sign up.</p>
+						{:else}
+							<div class="overflow-x-auto">
+								<table class="min-w-full text-sm">
+									<thead>
+										<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+											<th scope="col" class="py-2 pr-3">Name</th>
+											<th scope="col" class="py-2 pr-3 text-center">Rotas</th>
+											<th scope="col" class="py-2 pl-3 text-center whitespace-nowrap">Last 30 days</th>
+										</tr>
+									</thead>
+									<tbody class="divide-y divide-gray-100">
+										{#each volunteerLeaderboard as person}
+											<tr class="border-b border-gray-50 last:border-0">
+												<td class="py-2 pr-3 font-medium text-gray-900">{person.name}</td>
+												<td class="py-2 pr-3 text-center text-gray-600">{person.rotaCount}</td>
+												<td class="py-2 pl-3 text-center text-gray-600">{person.servingLast30Days}</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
 						{/if}
-					{/each}
-				</ul>
-			{/if}
+					</div>
+				</div>
+					{:else if panelId === 'engagement'}
+				<div class="dashboard-panel h-full flex flex-col">
+					<header class="dashboard-panel-header">
+						<div class="dashboard-panel-header-row">
+							<div
+								class="dashboard-panel-drag-handle"
+								draggable="true"
+								role="button"
+								tabindex="0"
+								aria-label="Drag to reorder panel"
+								on:dragstart={(e) => handlePanelDragStart(e, panelId)}
+								on:dragend={handlePanelDragEnd}
+							>
+								<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M8 6a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zM5 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+								</svg>
+							</div>
+							<h2 class="dashboard-panel-title">Current engagement state</h2>
+							<span class="dashboard-panel-link-spacer"></span>
+							<button
+								type="button"
+								class="dashboard-panel-width-toggle"
+								class:dashboard-panel-width-toggle--wide={widePanelIds.has(panelId)}
+								aria-label={widePanelIds.has(panelId) ? 'Make panel 1 column wide' : 'Make panel 2 columns wide'}
+								title={widePanelIds.has(panelId) ? 'Normal width' : '2 columns wide'}
+								on:click={() => togglePanelWide(panelId)}
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M5 12h14M13 5l7 7-7 7" />
+								</svg>
+							</button>
+						</div>
+					</header>
+					<p class="dashboard-panel-subtitle">Contacts by rota participation</p>
+					<div class="dashboard-panel-body flex flex-col sm:flex-row items-center gap-6">
+						{#if engagementState.total === 0}
+							<p class="text-sm text-gray-500">No contacts yet. Add contacts to see engagement.</p>
+						{:else}
+							<div
+								class="engagement-pie flex-shrink-0 w-40 h-40 rounded-full border-4 border-white shadow-inner"
+								style="background: conic-gradient(var(--color-button-1, #4A97D2) 0% {engagementStateEngagedPct}%, #e5e7eb {engagementStateEngagedPct}% 100%);"
+								role="img"
+								aria-label="Pie chart: {engagementState.engaged} engaged, {engagementState.notEngaged} not yet engaged"
+							></div>
+							<div class="flex-1 min-w-0 space-y-2">
+								<div class="flex items-center gap-2 text-sm">
+									<span class="w-3 h-3 rounded-full flex-shrink-0" style="background: var(--color-button-1, #4A97D2);"></span>
+									<span class="text-gray-700">Engaged</span>
+									<span class="font-medium text-gray-900">{engagementState.engaged}</span>
+									<span class="text-gray-500">({engagementState.total ? Math.round(engagementStateEngagedPct) : 0}%)</span>
+								</div>
+								<div class="flex items-center gap-2 text-sm">
+									<span class="w-3 h-3 rounded-full flex-shrink-0 bg-gray-200"></span>
+									<span class="text-gray-700">Not yet engaged</span>
+									<span class="font-medium text-gray-900">{engagementState.notEngaged}</span>
+									<span class="text-gray-500">({engagementState.total ? Math.round(100 - engagementStateEngagedPct) : 0}%)</span>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+					{:else if panelId === 'suggested'}
+				<div class="dashboard-panel h-full flex flex-col">
+					<header class="dashboard-panel-header">
+						<div class="dashboard-panel-header-row">
+							<div
+								class="dashboard-panel-drag-handle"
+								draggable="true"
+								role="button"
+								tabindex="0"
+								aria-label="Drag to reorder panel"
+								on:dragstart={(e) => handlePanelDragStart(e, panelId)}
+								on:dragend={handlePanelDragEnd}
+							>
+								<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M8 6a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zM5 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+								</svg>
+							</div>
+							<h2 class="dashboard-panel-title">Suggested to invite</h2>
+							{#if suggestedPeopleTotal > 0}
+								<a href="/hub/suggested-to-invite" class="dashboard-panel-link">View full list ({suggestedPeopleTotal})</a>
+							{:else}
+								<span class="dashboard-panel-link-spacer"></span>
+							{/if}
+							<button
+								type="button"
+								class="dashboard-panel-width-toggle"
+								class:dashboard-panel-width-toggle--wide={widePanelIds.has(panelId)}
+								aria-label={widePanelIds.has(panelId) ? 'Make panel 1 column wide' : 'Make panel 2 columns wide'}
+								title={widePanelIds.has(panelId) ? 'Normal width' : '2 columns wide'}
+								on:click={() => togglePanelWide(panelId)}
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M5 12h14M13 5l7 7-7 7" />
+								</svg>
+							</button>
+						</div>
+					</header>
+					<p class="dashboard-panel-subtitle">Registered but not yet participating</p>
+					<div class="dashboard-panel-body">
+						{#if suggestedPeople.length === 0}
+							<p class="text-sm text-gray-500">Everyone in your contacts has participated recently, or you have no contacts yet.</p>
+						{:else}
+							<ul class="space-y-3">
+								{#each suggestedPeople as person}
+									<li class="flex items-center justify-between gap-3">
+										<div class="min-w-0 flex-1">
+											<p class="font-medium text-gray-900 truncate">{person.name}</p>
+											{#if person.lastActivity}
+												<p class="text-xs text-gray-500">Last activity: {formatRotaGapDate(person.lastActivity)}</p>
+											{/if}
+										</div>
+										<a href="/hub/contacts/{person.id}" class="hub-btn flex-shrink-0 bg-theme-button-2 text-white">Invite</a>
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				</div>
+					{/if}
+				</div>
+			{/each}
 		</div>
-	{/if}
-</div>
-
+	</div>
 {/if}
 
 <style>
-	/* Dashboard cards: 1 column on small screens, then N columns (N = module count) to use full width */
-	.hub-dashboard-cards {
-		grid-template-columns: 1fr;
+	/* Dashboard panel headers: same layout, padding, and typography for all panels */
+	.dashboard-panel-header {
+		padding: 0.5rem 1rem;
+		border-bottom: 1px solid #f3f4f6;
 	}
-	@media (min-width: 640px) {
-		.hub-dashboard-cards {
-			grid-template-columns: repeat(var(--hub-module-count), minmax(min(180px, 100%), 1fr));
-		}
+	.dashboard-panel-header-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 0;
+		height: 2rem;
 	}
-
-	/* Recent panels: 1 column on small screens, then N columns to use full width */
-	.hub-recent-panels {
-		grid-template-columns: 1fr;
+	.dashboard-panel-drag-handle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		flex-shrink: 0;
+		border-radius: 0.5rem;
+		color: #9ca3af;
+		cursor: grab;
+		touch-action: none;
 	}
-	@media (min-width: 1024px) {
-		.hub-recent-panels {
-			grid-template-columns: repeat(var(--hub-recent-count), minmax(min(260px, 100%), 1fr));
-		}
+	.dashboard-panel-drag-handle:hover {
+		color: #4b5563;
+		background: #f3f4f6;
+	}
+	.dashboard-panel-drag-handle:active {
+		cursor: grabbing;
+	}
+	.dashboard-panel-width-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		flex-shrink: 0;
+		border: none;
+		border-radius: 0.5rem;
+		background: transparent;
+		color: #9ca3af;
+		cursor: pointer;
+	}
+	.dashboard-panel-width-toggle:hover {
+		color: #4b5563;
+		background: #f3f4f6;
+	}
+	.dashboard-panel-width-toggle:focus-visible {
+		outline: 2px solid var(--color-button-1, #4A97D2);
+		outline-offset: 2px;
+	}
+	.dashboard-panel-width-toggle--wide svg {
+		transform: rotate(180deg);
+	}
+	.dashboard-panel-title {
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 2rem;
+		color: #111827;
+		flex: 1;
+		min-width: 0;
+		margin: 10px 0px 0px 0px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.dashboard-panel-link {
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 2rem;
+		flex-shrink: 0;
+		margin-left: auto;
+		color: var(--color-button-1, #4A97D2);
+		text-decoration: none;
+	}
+	.dashboard-panel-link:hover {
+		text-decoration: underline;
+	}
+	.dashboard-panel-link-spacer {
+		flex-shrink: 0;
+		width: 1px;
+		margin-left: auto;
+	}
+	.dashboard-panel-subtitle {
+		font-size: 0.8125rem;
+		color: #6b7280;
+		margin: 0;
+		padding: 0.375rem 1rem 0;
+		line-height: 1.25;
+	}
+	.dashboard-panel-body {
+		padding: 1rem;
 	}
 </style>
