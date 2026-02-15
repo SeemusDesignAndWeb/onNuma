@@ -1,95 +1,69 @@
 <script>
+	import '$lib/crm/hub.css';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import MultiOrgShell from '$lib/crm/components/MultiOrgShell.svelte';
 
 	export let data;
 	$: multiOrgAdmin = data?.multiOrgAdmin || null;
-	
-	// Always use /multi-org/* paths for links - reroute() only works server-side
+
 	const base = '/multi-org';
-	
-	// Normalise pathname to handle both /multi-org/* and /* (admin subdomain initial load)
-	$: rawPath = $page.url.pathname;
-	$: path = rawPath.startsWith('/multi-org') ? rawPath.slice('/multi-org'.length) || '/' : rawPath;
-	
-	// Active state checks use normalised path
-	$: isOrganisations = path === '/organisations' || path.startsWith('/organisations/');
-	$: isHubSuperAdmins = path === '/hub-super-admins' || path.startsWith('/hub-super-admins/');
-	$: isPlans = path === '/plans' || path.startsWith('/plans/');
-	$: isBilling = path === '/billing' || path.startsWith('/billing/');
-	$: isMarketing = path === '/marketing' || path.startsWith('/marketing/');
-	$: isSettings = path.startsWith('/settings');
+
+	// Peach theme: set CSS variables so hub.css (headings, buttons, panel) uses peach instead of blue
+	function applyPeachTheme() {
+		if (typeof document === 'undefined') return;
+		const root = document.documentElement;
+		const peach = {
+			primary: '#EB9486',
+			brand: '#e08070',
+			navbar: '#5c4033',
+			b1: '#EB9486',
+			b2: '#e08070',
+			b3: '#475569',
+			b4: '#c75a4a',
+			b5: '#f59e0b',
+			p1: '#c75a4a',
+			p2: '#b85a4a',
+			p3: '#4a3728',
+			panel: '#fdf8f6'
+		};
+		root.style.setProperty('--color-primary', peach.primary);
+		root.style.setProperty('--color-brand', peach.brand);
+		root.style.setProperty('--color-navbar-bg', peach.navbar);
+		root.style.setProperty('--color-button-1', peach.b1);
+		root.style.setProperty('--color-button-2', peach.b2);
+		root.style.setProperty('--color-button-3', peach.b3);
+		root.style.setProperty('--color-button-4', peach.b4);
+		root.style.setProperty('--color-button-5', peach.b5);
+		root.style.setProperty('--color-panel-head-1', peach.p1);
+		root.style.setProperty('--color-panel-head-2', peach.p2);
+		root.style.setProperty('--color-panel-head-3', peach.p3);
+		root.style.setProperty('--color-panel-bg', peach.panel);
+	}
+
+	function clearPeachTheme() {
+		if (typeof document === 'undefined') return;
+		const root = document.documentElement;
+		root.style.removeProperty('--color-primary');
+		root.style.removeProperty('--color-brand');
+		root.style.removeProperty('--color-navbar-bg');
+		root.style.removeProperty('--color-button-1');
+		root.style.removeProperty('--color-button-2');
+		root.style.removeProperty('--color-button-3');
+		root.style.removeProperty('--color-button-4');
+		root.style.removeProperty('--color-button-5');
+		root.style.removeProperty('--color-panel-head-1');
+		root.style.removeProperty('--color-panel-head-2');
+		root.style.removeProperty('--color-panel-head-3');
+		root.style.removeProperty('--color-panel-bg');
+	}
+
+	onMount(() => {
+		applyPeachTheme();
+		return () => clearPeachTheme();
+	});
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-[#f8f8fa] via-white to-[#F3DE8A]/20 flex flex-col">
-	{#if multiOrgAdmin}
-		<!-- Top bar: logo, nav items, user/sign out -->
-		<header class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
-			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-				<div class="flex items-center justify-between gap-4">
-					<div class="flex items-center gap-6">
-						<a href="{base}/organisations" class="flex-shrink-0">
-							<img src="/assets/onnuma-logo.png" alt="OnNuma" class="h-9 w-auto object-contain" />
-						</a>
-						<nav class="flex items-center gap-1">
-							<a
-								href="{base}/organisations"
-								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isOrganisations ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
-							>
-								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-								Organisations
-							</a>
-							<a
-								href="{base}/hub-super-admins"
-								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isHubSuperAdmins ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
-							>
-								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-								Users
-							</a>
-							<a
-								href="{base}/plans"
-								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isPlans ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
-							>
-								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-								Plans
-							</a>
-							<a
-								href="{base}/billing"
-								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isBilling ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
-							>
-								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-								Billing
-							</a>
-						<a
-							href="{base}/marketing"
-							class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isMarketing ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
-						>
-							<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-							Marketing
-						</a>
-						<a
-							href="{base}/settings"
-								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {isSettings ? 'bg-[#EB9486]/15 text-[#c75a4a]' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
-							>
-								<svg class="w-4 h-4 mr-2 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-								Settings
-							</a>
-						</nav>
-					</div>
-					<div class="flex items-center gap-3 text-sm">
-
-						<a
-							href="{base}/auth/logout"
-							class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
-						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-							Sign out
-						</a>
-					</div>
-				</div>
-			</div>
-		</header>
-	{/if}
-	<main class="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-0">
-		<slot />
-	</main>
-</div>
+<MultiOrgShell base={base}>
+	<slot />
+</MultiOrgShell>
