@@ -16,7 +16,7 @@ export async function load({ cookies }) {
 			}
 		};
 	} catch (err) {
-		console.error('[my/preferences] load failed:', err?.message || err);
+		console.error('[myhub/preferences] load failed:', err?.message || err);
 		return { preferences: null };
 	}
 }
@@ -58,7 +58,7 @@ export const actions = {
 				}
 			};
 		} catch (err) {
-			console.error('[my/preferences] update failed:', err?.message || err);
+			console.error('[myhub/preferences] update failed:', err?.message || err);
 			return fail(500, { error: err?.message || 'Something went wrong. Please try again.' });
 		}
 	}

@@ -28,7 +28,7 @@ export async function load({ cookies }) {
 			}
 		};
 	} catch (err) {
-		console.error('[my/profile] load failed:', err?.message || err);
+		console.error('[myhub/profile] load failed:', err?.message || err);
 		return { contact: null };
 	}
 }
@@ -99,7 +99,7 @@ export const actions = {
 				}
 			};
 		} catch (err) {
-			console.error('[my/profile] update failed:', err?.message || err);
+			console.error('[myhub/profile] update failed:', err?.message || err);
 			return fail(500, { error: err?.message || 'Something went wrong. Please try again.' });
 		}
 	}

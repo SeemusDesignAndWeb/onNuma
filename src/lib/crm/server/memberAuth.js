@@ -7,7 +7,7 @@ import { createHmac } from 'crypto';
 
 const COOKIE_NAME = 'my_member';
 const COOKIE_MAX_AGE_DAYS = 30;
-const COOKIE_PATH = '/my';
+const COOKIE_PATH = '/myhub';
 
 function getSecret() {
 	return (typeof process !== 'undefined' && process.env?.MEMBER_SESSION_SECRET?.trim()) || 'my-member-fallback-secret-change-in-production';

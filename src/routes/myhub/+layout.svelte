@@ -30,7 +30,7 @@
 			formData.set('name', loginName.trim());
 			formData.set('email', loginEmail.trim());
 			formData.set('_csrf', csrfToken);
-			const res = await fetch('/my/login', {
+			const res = await fetch('/myhub/login', {
 				method: 'POST',
 				body: formData,
 				credentials: 'same-origin'
@@ -38,7 +38,7 @@
 			if (res.ok) {
 				const body = await res.json().catch(() => ({}));
 				await invalidateAll();
-				goto(body.redirectTo || '/my');
+				goto(body.redirectTo || '/myhub');
 				return;
 			}
 			const body = await res.json().catch(() => ({}));
@@ -78,7 +78,7 @@
 			{/if}
 			<!-- Content -->
 			<div class="my-login-screen-content">
-				<a href="/my" class="my-login-screen-logo flex items-center gap-2 mb-8" aria-label="myHub home">
+				<a href="/myhub" class="my-login-screen-logo flex items-center gap-2 mb-8" aria-label="myHub home">
 					<img src={logoPath} alt="" class="h-12 w-12 object-contain" width="48" height="48" />
 					<span class="text-xl font-bold text-white drop-shadow-sm">myHub</span>
 				</a>
@@ -145,7 +145,7 @@
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
 						</svg>
 					</button>
-					<a href="/my" class="flex items-center gap-2 shrink-0" aria-label="myHub volunteering home">
+					<a href="/myhub" class="flex items-center gap-2 shrink-0" aria-label="myHub volunteering home">
 						<img src={logoPath} alt="" class="h-8 w-8 object-contain" width="32" height="32" />
 						<span class="text-lg font-bold text-gray-900 hover:text-gray-700">myHub</span>
 					</a>
@@ -154,13 +154,13 @@
 				{#if mobileMenuOpen}
 					<div class="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50">
 						<nav class="flex flex-col gap-1" aria-label="Main">
-							<a href="/my" class="my-mobile-nav-link" class:active={path === '/my'} on:click={() => (mobileMenuOpen = false)}>Overview</a>
-							<a href="/my/rotas" class="my-mobile-nav-link" class:active={path === '/my/rotas'} on:click={() => (mobileMenuOpen = false)}>My rotas</a>
-							<a href="/my/opportunities" class="my-mobile-nav-link" class:active={path === '/my/opportunities'} on:click={() => (mobileMenuOpen = false)}>Sign up</a>
-							<a href="/my/profile" class="my-mobile-nav-link" class:active={path === '/my/profile'} on:click={() => (mobileMenuOpen = false)}>My details</a>
-							<a href="/my/availability" class="my-mobile-nav-link" class:active={path === '/my/availability'} on:click={() => (mobileMenuOpen = false)}>Availability</a>
-							<a href="/my/preferences" class="my-mobile-nav-link" class:active={path === '/my/preferences'} on:click={() => (mobileMenuOpen = false)}>Preferences</a>
-							<a href="/my/logout" class="my-mobile-nav-link" on:click={() => (mobileMenuOpen = false)}>Sign out</a>
+							<a href="/myhub" class="my-mobile-nav-link" class:active={path === '/myhub'} on:click={() => (mobileMenuOpen = false)}>Overview</a>
+							<a href="/myhub/rotas" class="my-mobile-nav-link" class:active={path === '/myhub/rotas'} on:click={() => (mobileMenuOpen = false)}>My rotas</a>
+							<a href="/myhub/opportunities" class="my-mobile-nav-link" class:active={path === '/myhub/opportunities'} on:click={() => (mobileMenuOpen = false)}>Sign up</a>
+							<a href="/myhub/profile" class="my-mobile-nav-link" class:active={path === '/myhub/profile'} on:click={() => (mobileMenuOpen = false)}>My details</a>
+							<a href="/myhub/availability" class="my-mobile-nav-link" class:active={path === '/myhub/availability'} on:click={() => (mobileMenuOpen = false)}>Availability</a>
+							<a href="/myhub/preferences" class="my-mobile-nav-link" class:active={path === '/myhub/preferences'} on:click={() => (mobileMenuOpen = false)}>Preferences</a>
+							<a href="/myhub/logout" class="my-mobile-nav-link" on:click={() => (mobileMenuOpen = false)}>Sign out</a>
 						</nav>
 					</div>
 				{/if}

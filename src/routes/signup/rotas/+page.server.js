@@ -7,8 +7,8 @@ import { validateRota } from '$lib/crm/server/validators.js';
 import { filterUpcomingOccurrences } from '$lib/crm/utils/occurrenceFilters.js';
 
 export async function load() {
-	// Redirect to My volunteering – same functionality at /my/opportunities
-	throw redirect(302, '/my/opportunities');
+	// Redirect to My volunteering – same functionality at /myhub/opportunities
+	throw redirect(302, '/myhub/opportunities');
 }
 
 export const actions = {

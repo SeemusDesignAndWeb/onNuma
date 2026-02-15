@@ -22,7 +22,7 @@ export async function load({ cookies }) {
 			.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 		return { holidays: sorted };
 	} catch (err) {
-		console.error('[my/availability] load failed:', err?.message || err);
+		console.error('[myhub/availability] load failed:', err?.message || err);
 		return { holidays: [] };
 	}
 }
@@ -75,7 +75,7 @@ export const actions = {
 
 			return { success: true, message: 'Away dates added.' };
 		} catch (err) {
-			console.error('[my/availability] add failed:', err?.message || err);
+			console.error('[myhub/availability] add failed:', err?.message || err);
 			return fail(500, { error: err?.message || 'Failed to add away dates.' });
 		}
 	},
@@ -103,7 +103,7 @@ export const actions = {
 			await deleteHoliday(holidayId);
 			return { success: true, message: 'Away dates removed.' };
 		} catch (err) {
-			console.error('[my/availability] remove failed:', err?.message || err);
+			console.error('[myhub/availability] remove failed:', err?.message || err);
 			return fail(500, { error: err?.message || 'Failed to remove away dates.' });
 		}
 	}

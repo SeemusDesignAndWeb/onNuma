@@ -184,7 +184,7 @@
 			{/if}
 
 			<div class="my-opp-bottom">
-				<a href="/my/availability" class="my-opp-away">Set away dates</a>
+				<a href="/myhub/availability" class="my-opp-away">Set away dates</a>
 				<button type="submit" disabled={selectedCount === 0} class="my-btn my-btn-primary my-opp-submit">
 					Sign up {selectedCount > 0 ? `(${selectedCount})` : ''}
 				</button>

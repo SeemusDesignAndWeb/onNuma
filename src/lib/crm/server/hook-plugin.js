@@ -118,15 +118,15 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		throw redirect(302, '/signup?hub_subdomain_required=1');
 	}
 
-	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages and static assets) to hub login.
+	// When host is an organisation's hub domain, send non-Hub paths (other than public hub pages, /myhub, and static assets) to hub login.
 	const orgFromHost = await resolveOrganisationFromHost(host);
 	const isPublicAsset = pathname.startsWith('/images/') || pathname.startsWith('/assets/');
-	if (orgFromHost && !pathname.startsWith('/hub') && !isPublicHubPath && !isPublicAsset) {
+	if (orgFromHost && !pathname.startsWith('/hub') && !pathname.startsWith('/myhub') && !isPublicHubPath && !isPublicAsset) {
 		throw redirect(302, '/hub/auth/login');
 	}
 
-	// Run with org context for /hub, public hub pages, and /my so getCurrentOrganisationId() returns the right org.
-	if (!pathname.startsWith('/hub') && !isPublicHubPath && !pathname.startsWith('/my')) {
+	// Run with org context for /hub, public hub pages, and /myhub so getCurrentOrganisationId() returns the right org.
+	if (!pathname.startsWith('/hub') && !isPublicHubPath && !pathname.startsWith('/myhub')) {
 		return resolve(event);
 	}
 
@@ -147,7 +147,7 @@ async function crmHandleHubAndSignup(event, resolve) {
 	const pathname = url.pathname;
 
 	// My (volunteer) routes - no hub admin required; member resolved from cookie in layout
-	if (pathname.startsWith('/my')) {
+	if (pathname.startsWith('/myhub')) {
 		if (request.method === 'GET') {
 			if (!getCsrfToken(cookies)) {
 				const csrfToken = generateCsrfToken();

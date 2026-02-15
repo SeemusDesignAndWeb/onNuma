@@ -4,8 +4,8 @@ import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/
 import { fail } from '@sveltejs/kit';
 
 export async function load() {
-	// Redirect to My volunteering – same functionality lives at /my/rotas
-	throw redirect(302, '/my/rotas');
+	// Redirect to My volunteering – same functionality lives at /myhub/rotas
+	throw redirect(302, '/myhub/rotas');
 }
 
 export const actions = {

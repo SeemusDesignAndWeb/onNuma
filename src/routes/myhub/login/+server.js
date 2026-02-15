@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 
 /** GET: redirect to My home (login form is shown there when not signed in). */
 export function GET() {
-	throw redirect(302, '/my');
+	throw redirect(302, '/myhub');
 }
 import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { readCollection, update } from '$lib/crm/server/fileStore.js';
@@ -18,7 +18,7 @@ function jsonResponse(obj, status = 400) {
 	});
 }
 
-/** POST: name + email form login. Redirects to /my on success. */
+/** POST: name + email form login. Redirects to /myhub on success. */
 export async function POST({ request, cookies, url }) {
 	const data = await request.formData();
 	if (!verifyCsrfToken(cookies, data.get('_csrf'))) {
@@ -93,7 +93,7 @@ export async function POST({ request, cookies, url }) {
 	// Return JSON success so the client can do client-side navigation.
 	// (Using throw redirect() here would produce an opaque-redirect response
 	//  that fetch({redirect:'manual'}) cannot read — status 0, no headers.)
-	const redirectTo = url.searchParams.get('redirectTo') || '/my';
+	const redirectTo = url.searchParams.get('redirectTo') || '/myhub';
 	return new Response(JSON.stringify({ ok: true, redirectTo }), {
 		status: 200,
 		headers: { 'Content-Type': 'application/json' }

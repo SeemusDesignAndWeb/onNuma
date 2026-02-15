@@ -20,7 +20,7 @@
 	$: isAdminArea = $page.url.pathname.startsWith('/admin');
 	$: isHubArea = $page.url.pathname.startsWith('/hub');
 	$: isMultiOrgArea = $page.url.pathname.startsWith('/multi-org');
-	$: isMyArea = $page.url.pathname.startsWith('/my');
+	$: isMyArea = $page.url.pathname.startsWith('/myhub');
 	// On admin subdomain path is /auth/* or /organisations, so we also hide website UI via data from server
 	$: multiOrgAdminDomain = data?.multiOrgAdminDomain ?? false;
 	// My volunteering area: no OnNuma frontend navbar (uses its own layout)

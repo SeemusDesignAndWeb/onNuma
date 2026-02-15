@@ -34,7 +34,7 @@
 				<div class="my-alert my-alert-info" role="status">
 					<p>You don't have any upcoming rotas yet.</p>
 					<p class="mt-4">
-						<a href="/my/opportunities" class="my-link">Sign up for rotas here</a> if you'd like to volunteer.
+						<a href="/myhub/opportunities" class="my-link">Sign up for rotas here</a> if you'd like to volunteer.
 					</p>
 				</div>
 			</div>
@@ -73,7 +73,7 @@
 					{/each}
 				</ul>
 				<p class="mt-6 text-[1.0625rem] text-gray-600">
-					Want to do more? <a href="/my/opportunities" class="my-link">Sign up for more rotas</a>.
+					Want to do more? <a href="/myhub/opportunities" class="my-link">Sign up for more rotas</a>.
 				</p>
 			</div>
 		</div>
