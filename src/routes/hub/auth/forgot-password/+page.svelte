@@ -84,9 +84,6 @@
 			<a href="/hub/auth/login" class="block text-sm text-hub-blue-600 hover:text-hub-blue-600/80">
 				← Back to Login
 			</a>
-			<p class="text-xs text-gray-500 pt-2">
-				No email? From the project root run: <code class="bg-gray-100 px-1 rounded">node scripts/reset-password.js your@email.com "NewPass123!"</code>
-			</p>
 		</div>
 	</div>
 </div>
