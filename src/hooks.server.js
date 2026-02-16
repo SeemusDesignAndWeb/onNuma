@@ -1,4 +1,5 @@
 import { sequence } from '@sveltejs/kit/hooks';
+import { redirect } from '@sveltejs/kit';
 import { crmHandle } from '$lib/crm/server/hook-plugin.js';
 import { cleanupExpiredSessions } from '$lib/crm/server/auth.js';
 import { isMultiOrgAdminDomain } from '$lib/crm/server/hubDomain.js';
@@ -15,6 +16,15 @@ async function multiOrgAdminDomainHandle({ event, resolve }) {
 
 	event.locals.multiOrgAdminDomain = true;
 	return resolve(event);
+}
+
+/** Redirect /organisations to multi-org when not on admin domain (admin domain uses hooks.js reroute). Keeps one source of truth. */
+async function organisationsRedirectHandle({ event, resolve }) {
+	if (event.locals.multiOrgAdminDomain) return resolve(event);
+	const pathname = event.url?.pathname || '';
+	if (pathname !== '/organisations' && !pathname.startsWith('/organisations/')) return resolve(event);
+	const search = event.url?.search || '';
+	throw redirect(302, '/multi-org' + pathname + search);
 }
 
 // Base handle (if you have existing hooks, add them here)
@@ -51,5 +61,5 @@ async function sessionCleanupHandle({ event, resolve }) {
 	return resolve(event);
 }
 
-export const handle = sequence(multiOrgAdminDomainHandle, baseHandle, sessionCleanupHandle, crmHandle);
+export const handle = sequence(multiOrgAdminDomainHandle, organisationsRedirectHandle, baseHandle, sessionCleanupHandle, crmHandle);
 
