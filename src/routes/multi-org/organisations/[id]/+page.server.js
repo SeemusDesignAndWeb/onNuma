@@ -89,7 +89,7 @@ export const actions = {
 		const contactName = form.get('contactName')?.toString()?.trim() || '';
 		const hubDomain = form.get('hubDomain')?.toString()?.trim() || '';
 		const plan = (form.get('plan')?.toString() || 'free').toLowerCase().trim();
-		const existingPlan = org.planId ?? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
+		const existingPlan = (org.planId ?? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions))) || 'free';
 		const targetPlan = VALID_PLANS.has(plan) ? plan : existingPlan;
 		const areaPermissions = await getConfiguredAreaPermissionsForPlan(targetPlan);
 
