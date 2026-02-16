@@ -39,10 +39,10 @@ function getDefaultMeetingPlannerRotas() {
 	return [];
 }
 
-/** Cool, clean default palette: slate + sky/teal. Used when no theme is saved and for fallbacks. Default logos: OnNuma in /assets. */
+/** Cool, clean default palette: slate + sky/teal. Used when no theme is saved and for fallbacks. Navbar/sidebar: OnNuma-Icon.png; login screen: onnuma-logo.png. */
 export function getDefaultTheme() {
 	return {
-		logoPath: '/assets/onnuma-logo.png',
+		logoPath: '/assets/OnNuma-Icon.png',
 		loginLogoPath: '/assets/onnuma-logo.png',
 		primaryColor: '#0d9488',   // teal-500
 		brandColor: '#0284c7',    // sky-600
