@@ -10,8 +10,9 @@
 	$: currentName = data?.currentHubSuperAdminName;
 	$: error = $page.form?.error;
 	$: success = $page.url.searchParams.get('super_admin') === 'set';
+	let submitting = false;
 
-	// Toast on form error
+	// Toast on form error (reactive backup)
 	$: if (error) {
 		notifications.error(error);
 	}
@@ -41,7 +42,12 @@
 	{/if}
 
 	<form method="POST" action="?/set" use:enhance={() => {
+		submitting = true;
 		return async ({ result }) => {
+			submitting = false;
+			if (result.type === 'failure') {
+				notifications.error(result.data?.error || 'Something went wrong. Please try again.');
+			}
 			if (result.type === 'redirect') {
 				notifications.success('Hub super admin has been set successfully.');
 			}
@@ -79,6 +85,7 @@
 					name="password"
 					type="password"
 					autocomplete="new-password"
+					required={!currentEmail}
 					placeholder={currentEmail ? 'Leave blank to keep current password' : 'Required for new account'}
 					class="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
 				/>
@@ -88,9 +95,10 @@
 		<div class="mt-6 flex gap-3">
 			<button
 				type="submit"
-				class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all"
+				disabled={submitting}
+				class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
 			>
-				Set Hub super admin
+				{submitting ? 'Setting…' : 'Set Hub super admin'}
 			</button>
 			<a
 				href="{base}/organisations/{organisation?.id}"

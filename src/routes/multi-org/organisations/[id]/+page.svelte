@@ -26,10 +26,16 @@
 
 	onMount(() => {
 		const url = $page.url;
-		if (url.searchParams.get('organisationsUpdated') === '1') {
+		const params = new URLSearchParams(url.searchParams);
+		if (params.get('super_admin') === 'set') {
+			notifications.success('Hub super admin has been set successfully.');
+			params.delete('super_admin');
+		}
+		if (params.get('organisationsUpdated') === '1') {
 			invalidate('app:organisations');
-			const params = new URLSearchParams(url.searchParams);
 			params.delete('organisationsUpdated');
+		}
+		if (params.toString() !== url.searchParams.toString()) {
 			const clean = params.toString() ? `${url.pathname}?${params}` : url.pathname;
 			window.history.replaceState(window.history.state, '', clean);
 		}

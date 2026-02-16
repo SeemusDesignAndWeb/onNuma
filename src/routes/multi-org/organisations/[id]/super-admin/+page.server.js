@@ -181,6 +181,7 @@ export const actions = {
 		// Set Hub's current org to this one so /hub login uses this org and finds the new super admin
 		await setCurrentOrganisationId(params.id);
 
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?super_admin=set&organisationsUpdated=1', !!locals.multiOrgAdminDomain));
+		// Canonical path so destination page always shows success notification
+		throw redirect(302, '/multi-org/organisations/' + params.id + '?super_admin=set&organisationsUpdated=1');
 	}
 };
