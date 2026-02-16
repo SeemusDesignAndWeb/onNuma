@@ -9,6 +9,10 @@
 	$: form = $page.form;
 	$: anonymisedCreated = data?.anonymisedCreated ?? null;
 	$: demoEventsCreated = data?.demoEventsCreated ?? null;
+	$: demoRotasCreated = data?.demoRotasCreated ?? null;
+	$: demoFormsCreated = data?.demoFormsCreated ?? null;
+	$: demoTemplatesCreated = data?.demoTemplatesCreated ?? null;
+	$: assigneesCount = data?.assigneesCount ?? null;
 	$: error = form?.error ?? null;
 	$: organisationId = form?.organisationId ?? '';
 
@@ -82,6 +86,10 @@
 	let contactCountValue = '30';
 	let createContactsChecked = false;
 	let createEventsChecked = false;
+	let createRotasChecked = false;
+	let createFormsChecked = false;
+	let createEmailTemplatesChecked = false;
+	let assignContactsToRotasChecked = false;
 	$: if (form?.contactCount !== undefined) contactCountValue = String(form.contactCount);
 	$: if (form && typeof form.createContacts !== 'undefined') {
 		createContactsChecked = form.createContacts === true || form.createContacts === 'on';
@@ -89,9 +97,21 @@
 	$: if (form && typeof form.createEvents !== 'undefined') {
 		createEventsChecked = form.createEvents === true || form.createEvents === 'on';
 	}
+	$: if (form && typeof form.createRotas !== 'undefined') {
+		createRotasChecked = form.createRotas === true || form.createRotas === 'on';
+	}
+	$: if (form && typeof form.createForms !== 'undefined') {
+		createFormsChecked = form.createForms === true || form.createForms === 'on';
+	}
+	$: if (form && typeof form.createEmailTemplates !== 'undefined') {
+		createEmailTemplatesChecked = form.createEmailTemplates === true || form.createEmailTemplates === 'on';
+	}
+	$: if (form && typeof form.assignContactsToRotas !== 'undefined') {
+		assignContactsToRotasChecked = form.assignContactsToRotas === true || form.assignContactsToRotas === 'on';
+	}
 
 	// Auto-switch to demo section if there's a demo-related error or success
-	$: if (error || anonymisedCreated || demoEventsCreated) {
+	$: if (error || anonymisedCreated || demoEventsCreated || demoRotasCreated || demoFormsCreated || demoTemplatesCreated || assigneesCount) {
 		activeSection = 'demo';
 	}
 
@@ -112,8 +132,12 @@
 		}
 		const contactsChecked = formEl.querySelector('input[name="createContacts"]')?.checked === true;
 		const eventsChecked = formEl.querySelector('input[name="createEvents"]')?.checked === true;
-		if (!contactsChecked && !eventsChecked) {
-			dialog.alert('Please select at least one option: anonymised contacts and/or demo events.', 'Select an option');
+		const rotasChecked = formEl.querySelector('input[name="createRotas"]')?.checked === true;
+		const formsChecked = formEl.querySelector('input[name="createForms"]')?.checked === true;
+		const templatesChecked = formEl.querySelector('input[name="createEmailTemplates"]')?.checked === true;
+		const assignChecked = formEl.querySelector('input[name="assignContactsToRotas"]')?.checked === true;
+		if (!contactsChecked && !eventsChecked && !rotasChecked && !formsChecked && !templatesChecked && !assignChecked) {
+			dialog.alert('Please select at least one option to generate.', 'Select an option');
 			return;
 		}
 		const parts = [];
@@ -122,10 +146,14 @@
 			parts.push(`${count} anonymised contacts`);
 		}
 		if (eventsChecked) {
-			parts.push('5 demo events (2 occurrences each, a week apart)');
+			parts.push('5 demo events (2 occurrences each)');
 		}
+		if (rotasChecked) parts.push('demo rotas (2 per event)');
+		if (formsChecked) parts.push('3 demo forms');
+		if (templatesChecked) parts.push('3 demo email templates');
+		if (assignChecked) parts.push('assign contacts to rotas');
 		confirmOrgName = orgName;
-		confirmMessage = `This will permanently remove existing data for ${orgName} and create ${parts.join(' and ')}. Rotas and signups may be affected. This cannot be undone.`;
+		confirmMessage = `This will replace existing data for ${orgName} and create ${parts.join(', ')}. This cannot be undone.`;
 		confirmTypedName = '';
 		showConfirmModal = true;
 	}
@@ -280,19 +308,19 @@
 				</div>
 
 				<div class="px-6 sm:px-8 py-6 sm:py-8">
-					{#if (anonymisedCreated !== null && anonymisedCreated > 0) || (demoEventsCreated !== null && demoEventsCreated > 0)}
+					{#if (anonymisedCreated !== null && anonymisedCreated > 0) || (demoEventsCreated !== null && demoEventsCreated > 0) || (demoRotasCreated !== null && demoRotasCreated > 0) || (demoFormsCreated !== null && demoFormsCreated > 0) || (demoTemplatesCreated !== null && demoTemplatesCreated > 0) || (assigneesCount !== null && assigneesCount > 0)}
 						<div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-100 mb-6">
 							<svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
 							</svg>
 							<p class="text-sm font-medium text-emerald-700">
-								{#if anonymisedCreated > 0 && demoEventsCreated > 0}
-									Created {anonymisedCreated} anonymised contact{anonymisedCreated === 1 ? '' : 's'} and {demoEventsCreated} demo event{demoEventsCreated === 1 ? '' : 's'}.
-								{:else if anonymisedCreated > 0}
-									Created {anonymisedCreated} anonymised contact{anonymisedCreated === 1 ? '' : 's'}.
-								{:else}
-									Created {demoEventsCreated} demo event{demoEventsCreated === 1 ? '' : 's'}.
-								{/if}
+								Created:
+								{#if anonymisedCreated > 0}{anonymisedCreated} contact{anonymisedCreated === 1 ? '' : 's'}. {/if}
+								{#if demoEventsCreated > 0}{demoEventsCreated} event{demoEventsCreated === 1 ? '' : 's'}. {/if}
+								{#if demoRotasCreated > 0}{demoRotasCreated} rota{demoRotasCreated === 1 ? '' : 's'}. {/if}
+								{#if demoFormsCreated > 0}{demoFormsCreated} form{demoFormsCreated === 1 ? '' : 's'}. {/if}
+								{#if demoTemplatesCreated > 0}{demoTemplatesCreated} email template{demoTemplatesCreated === 1 ? '' : 's'}. {/if}
+								{#if assigneesCount > 0}{assigneesCount} rota assignment{assigneesCount === 1 ? '' : 's'}.{/if}
 							</p>
 						</div>
 					{/if}
@@ -381,6 +409,74 @@
 										<div class="flex-1 min-w-0">
 											<span class="text-sm font-medium text-slate-800">Demo events</span>
 											<p class="text-xs text-slate-500 mt-0.5">Replaces all events with 5 demo events, each with 2 occurrences a week apart.</p>
+										</div>
+									</label>
+								</div>
+
+								<!-- Rotas option -->
+								<div class="rounded-xl border border-slate-200 p-4 transition-colors {createRotasChecked ? 'bg-[#EB9486]/[0.03] border-[#EB9486]/30' : 'hover:bg-slate-50/50'}">
+									<label class="flex items-start gap-3 cursor-pointer">
+										<input
+											type="checkbox"
+											name="createRotas"
+											value="on"
+											bind:checked={createRotasChecked}
+											class="mt-0.5 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+										/>
+										<div class="flex-1 min-w-0">
+											<span class="text-sm font-medium text-slate-800">Demo rotas</span>
+											<p class="text-xs text-slate-500 mt-0.5">Creates 2 rotas per event (e.g. Host, Setup). Requires demo events.</p>
+										</div>
+									</label>
+								</div>
+
+								<!-- Assign contacts to rotas -->
+								<div class="rounded-xl border border-slate-200 p-4 transition-colors {assignContactsToRotasChecked ? 'bg-[#EB9486]/[0.03] border-[#EB9486]/30' : 'hover:bg-slate-50/50'}">
+									<label class="flex items-start gap-3 cursor-pointer">
+										<input
+											type="checkbox"
+											name="assignContactsToRotas"
+											value="on"
+											bind:checked={assignContactsToRotasChecked}
+											class="mt-0.5 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+										/>
+										<div class="flex-1 min-w-0">
+											<span class="text-sm font-medium text-slate-800">Assign contacts to rotas</span>
+											<p class="text-xs text-slate-500 mt-0.5">Assigns anonymised contacts to rota slots. Enable anonymised contacts and demo rotas.</p>
+										</div>
+									</label>
+								</div>
+
+								<!-- Forms option -->
+								<div class="rounded-xl border border-slate-200 p-4 transition-colors {createFormsChecked ? 'bg-[#EB9486]/[0.03] border-[#EB9486]/30' : 'hover:bg-slate-50/50'}">
+									<label class="flex items-start gap-3 cursor-pointer">
+										<input
+											type="checkbox"
+											name="createForms"
+											value="on"
+											bind:checked={createFormsChecked}
+											class="mt-0.5 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+										/>
+										<div class="flex-1 min-w-0">
+											<span class="text-sm font-medium text-slate-800">Demo forms</span>
+											<p class="text-xs text-slate-500 mt-0.5">Replaces all forms with 3 demo forms (feedback, registration, survey).</p>
+										</div>
+									</label>
+								</div>
+
+								<!-- Email templates option -->
+								<div class="rounded-xl border border-slate-200 p-4 transition-colors {createEmailTemplatesChecked ? 'bg-[#EB9486]/[0.03] border-[#EB9486]/30' : 'hover:bg-slate-50/50'}">
+									<label class="flex items-start gap-3 cursor-pointer">
+										<input
+											type="checkbox"
+											name="createEmailTemplates"
+											value="on"
+											bind:checked={createEmailTemplatesChecked}
+											class="mt-0.5 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+										/>
+										<div class="flex-1 min-w-0">
+											<span class="text-sm font-medium text-slate-800">Demo email templates</span>
+											<p class="text-xs text-slate-500 mt-0.5">Replaces all email templates with 3 demo templates (welcome, weekly update, reminder).</p>
 										</div>
 									</label>
 								</div>

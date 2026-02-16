@@ -1,8 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { findById, updatePartial, readCollection, writeCollection, create } from '$lib/crm/server/fileStore.js';
+import { findById, update, updatePartial, readCollection, writeCollection, create } from '$lib/crm/server/fileStore.js';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
-import { validateContact, validateEvent, validateOccurrence } from '$lib/crm/server/validators.js';
+import { validateContact, validateEvent, validateOccurrence, validateRota, validateForm, validateNewsletterTemplate } from '$lib/crm/server/validators.js';
 import { getSettings, getDefaultTheme } from '$lib/crm/server/settings.js';
 
 export async function load({ locals, url }) {
@@ -18,6 +18,14 @@ export async function load({ locals, url }) {
 	const anonymisedCreated = anonymisedParam ? parseInt(anonymisedParam, 10) : null;
 	const demoEventsParam = url.searchParams.get('demo_events');
 	const demoEventsCreated = demoEventsParam ? parseInt(demoEventsParam, 10) : null;
+	const demoRotasParam = url.searchParams.get('demo_rotas');
+	const demoRotasCreated = demoRotasParam ? parseInt(demoRotasParam, 10) : null;
+	const demoFormsParam = url.searchParams.get('demo_forms');
+	const demoFormsCreated = demoFormsParam ? parseInt(demoFormsParam, 10) : null;
+	const demoTemplatesParam = url.searchParams.get('demo_templates');
+	const demoTemplatesCreated = demoTemplatesParam ? parseInt(demoTemplatesParam, 10) : null;
+	const assigneesParam = url.searchParams.get('assignees');
+	const assigneesCount = assigneesParam ? parseInt(assigneesParam, 10) : null;
 
 	let hubTheme = getDefaultTheme();
 	try {
@@ -32,7 +40,11 @@ export async function load({ locals, url }) {
 		multiOrgAdmin,
 		hubTheme,
 		anonymisedCreated: Number.isNaN(anonymisedCreated) ? null : anonymisedCreated,
-		demoEventsCreated: Number.isNaN(demoEventsCreated) ? null : demoEventsCreated
+		demoEventsCreated: Number.isNaN(demoEventsCreated) ? null : demoEventsCreated,
+		demoRotasCreated: Number.isNaN(demoRotasCreated) ? null : demoRotasCreated,
+		demoFormsCreated: Number.isNaN(demoFormsCreated) ? null : demoFormsCreated,
+		demoTemplatesCreated: Number.isNaN(demoTemplatesCreated) ? null : demoTemplatesCreated,
+		assigneesCount: Number.isNaN(assigneesCount) ? null : assigneesCount
 	};
 }
 
@@ -48,55 +60,78 @@ export const actions = {
 		const countInput = form.get('contactCount')?.toString()?.trim() ?? '30';
 		const count = parseInt(countInput, 10);
 		const createEvents = form.get('createEvents') === 'on' || form.get('createEvents') === 'true';
+		const createRotas = form.get('createRotas') === 'on' || form.get('createRotas') === 'true';
+		const createForms = form.get('createForms') === 'on' || form.get('createForms') === 'true';
+		const createEmailTemplates = form.get('createEmailTemplates') === 'on' || form.get('createEmailTemplates') === 'true';
+		const assignContactsToRotas = form.get('assignContactsToRotas') === 'on' || form.get('assignContactsToRotas') === 'true';
+
+		const formState = {
+			organisationId,
+			organisationNameConfirm,
+			createContacts: !!createContacts,
+			contactCount: countInput,
+			createEvents: !!createEvents,
+			createRotas: !!createRotas,
+			createForms: !!createForms,
+			createEmailTemplates: !!createEmailTemplates,
+			assignContactsToRotas: !!assignContactsToRotas
+		};
 
 		if (!organisationId) {
 			return fail(400, {
 				error: 'Please select an organisation.',
-				organisationId: '',
-				organisationNameConfirm,
-				createContacts: !!createContacts,
-				contactCount: countInput,
-				createEvents: !!createEvents
+				...formState,
+				organisationId: ''
 			});
 		}
 		const org = await findById('organisations', organisationId);
 		if (!org) {
-			return fail(404, { error: 'Organisation not found' });
+			return fail(404, { error: 'Organisation not found', ...formState });
 		}
 		const orgName = (org.name || '').trim();
 		if (organisationNameConfirm !== orgName) {
 			return fail(400, {
 				error: 'The organisation name you entered does not match the selected organisation. Type the exact name to confirm.',
-				organisationId,
-				organisationNameConfirm,
-				createContacts: !!createContacts,
-				contactCount: countInput,
-				createEvents: !!createEvents
+				...formState
 			});
 		}
-		if (!createContacts && !createEvents) {
+		const anyOption = createContacts || createEvents || createRotas || createForms || createEmailTemplates || assignContactsToRotas;
+		if (!anyOption) {
 			return fail(400, {
-				error: 'Select at least one option: anonymised contacts and/or demo events.',
-				organisationId,
-				organisationNameConfirm,
-				createContacts: !!createContacts,
-				contactCount: countInput,
-				createEvents: !!createEvents
+				error: 'Select at least one option to generate (contacts, events, rotas, forms, email templates, or assign contacts to rotas).',
+				...formState
 			});
 		}
 		if (createContacts && (Number.isNaN(count) || count < 1 || count > 1000)) {
 			return fail(400, {
 				error: 'Contact count must be between 1 and 1000.',
-				organisationId,
-				organisationNameConfirm,
-				createContacts: true,
-				contactCount: countInput,
-				createEvents: !!createEvents
+				...formState,
+				createContacts: true
+			});
+		}
+		if (createRotas && !createEvents) {
+			return fail(400, {
+				error: 'Demo rotas require demo events. Enable "Demo events" as well.',
+				...formState
+			});
+		}
+		if (assignContactsToRotas && !(createContacts || createRotas)) {
+			return fail(400, {
+				error: 'Assigning contacts to rotas requires both anonymised contacts and demo rotas (or existing contacts and rotas). Enable "Anonymised contacts" and "Demo rotas".',
+				...formState
 			});
 		}
 
 		let contactsCreated = 0;
 		let eventsCreated = 0;
+		let rotasCreated = 0;
+		let formsCreated = 0;
+		let templatesCreated = 0;
+		let assigneesAdded = 0;
+		/** @type {string[]} */
+		const createdContactIds = [];
+		/** @type {{ eventId: string, occurrenceIds: string[] }[]} */
+		const createdEventsWithOccurrences = [];
 
 		if (createContacts) {
 			const allContacts = await readCollection('contacts');
@@ -150,7 +185,8 @@ export const actions = {
 					subscribed: true,
 					spouseId: null
 				});
-				await create('contacts', withOrganisationId(validated, organisationId));
+				const contact = await create('contacts', withOrganisationId(validated, organisationId));
+				createdContactIds.push(contact.id);
 			}
 			contactsCreated = count;
 		}
@@ -187,6 +223,7 @@ export const actions = {
 			const start = new Date();
 			start.setHours(0, 0, 0, 0);
 
+			const occurrenceIdsByEvent = [];
 			for (let i = 0; i < 5; i++) {
 				const eventData = {
 					title: titles[i],
@@ -209,6 +246,7 @@ export const actions = {
 				};
 				const validatedEvent = await validateEvent(eventData);
 				const event = await create('events', withOrganisationId(validatedEvent, organisationId));
+				const occIds = [];
 
 				// Two occurrences per event, a week apart
 				const hour = hourStarts[i];
@@ -227,15 +265,136 @@ export const actions = {
 						allDay: false
 					};
 					const validatedOcc = validateOccurrence(occurrenceData);
-					await create('occurrences', withOrganisationId(validatedOcc, organisationId));
+					const occRecord = await create('occurrences', withOrganisationId(validatedOcc, organisationId));
+					occIds.push(occRecord.id);
 				}
+				createdEventsWithOccurrences.push({ eventId: event.id, occurrenceIds: occIds });
 			}
 			eventsCreated = 5;
+		}
+
+		// Demo rotas (requires events; use created events or existing org events/occurrences)
+		if (createRotas) {
+			let eventsToUse = createdEventsWithOccurrences;
+			if (eventsToUse.length === 0) {
+				const allEvents = await readCollection('events');
+				const orgEvents = (Array.isArray(allEvents) ? allEvents : []).filter((e) => e.organisationId === organisationId);
+				const allOccurrences = await readCollection('occurrences');
+				for (const ev of orgEvents) {
+					const occs = (Array.isArray(allOccurrences) ? allOccurrences : []).filter((o) => o.eventId === ev.id);
+					eventsToUse.push({ eventId: ev.id, occurrenceIds: occs.map((o) => o.id) });
+				}
+			}
+			const rotaRoles = ['Host', 'Setup', 'Welcome', 'Speaker', 'Tech'];
+			for (const { eventId, occurrenceIds } of eventsToUse) {
+				const firstOccurrenceId = occurrenceIds[0] || null;
+				for (let r = 0; r < 2; r++) {
+					const role = rotaRoles[r % rotaRoles.length];
+					const rotaData = {
+						eventId,
+						occurrenceId: firstOccurrenceId,
+						role: role + ' (demo)',
+						capacity: 2,
+						assignees: [],
+						notes: 'Demo rota for testing.',
+						visibility: 'public'
+					};
+					const validated = validateRota(rotaData);
+					await create('rotas', withOrganisationId(validated, organisationId));
+					rotasCreated++;
+				}
+			}
+		}
+
+		// Assign contacts to rotas (needs contact IDs and org rotas)
+		if (assignContactsToRotas) {
+			let contactIdsToAssign = createdContactIds.length > 0 ? [...createdContactIds] : null;
+			if (!contactIdsToAssign || contactIdsToAssign.length === 0) {
+				const allContacts = await readCollection('contacts');
+				const orgContacts = filterByOrganisation(allContacts, organisationId);
+				contactIdsToAssign = orgContacts.slice(0, 20).map((c) => c.id).filter(Boolean);
+			}
+			const allRotas = await readCollection('rotas');
+			const orgRotas = (Array.isArray(allRotas) ? allRotas : []).filter((r) => r.organisationId === organisationId);
+			for (const rota of orgRotas.slice(0, 15)) {
+				const capacity = rota.capacity ?? 1;
+				const existingAssignees = Array.isArray(rota.assignees) ? rota.assignees : [];
+				const occurrenceId = rota.occurrenceId || (rota.assignees && rota.assignees[0] && typeof rota.assignees[0] === 'object' && rota.assignees[0].occurrenceId) || null;
+				const assigneesForOcc = existingAssignees.filter((a) => {
+					const aOcc = typeof a === 'object' && a && 'occurrenceId' in a ? a.occurrenceId : rota.occurrenceId;
+					return aOcc === occurrenceId;
+				});
+				const existingContactIds = new Set(
+					assigneesForOcc.map((a) => (typeof a === 'string' ? a : a && (a.contactId || a.id) && typeof (a.contactId || a.id) === 'string' ? a.contactId || a.id : null)).filter(Boolean)
+				);
+				const toAdd = Math.min(Math.max(0, capacity - assigneesForOcc.length), 2);
+				let added = 0;
+				for (const cid of contactIdsToAssign) {
+					if (existingContactIds.has(cid)) continue;
+					existingAssignees.push({ contactId: cid, occurrenceId });
+					existingContactIds.add(cid);
+					added++;
+					assigneesAdded++;
+					if (added >= toAdd) break;
+				}
+				if (added > 0) {
+					const updated = { ...rota, assignees: existingAssignees };
+					const validated = validateRota(updated);
+					await update('rotas', rota.id, validated);
+				}
+			}
+		}
+
+		// Demo forms
+		if (createForms) {
+			const allForms = await readCollection('forms');
+			const otherForms = (Array.isArray(allForms) ? allForms : []).filter((f) => f.organisationId !== organisationId);
+			await writeCollection('forms', otherForms);
+
+			const formSpecs = [
+				{ name: 'Demo Feedback Form', description: 'Collect feedback for testing.', fields: [{ type: 'text', label: 'Name', name: 'name', required: true, placeholder: '', options: [] }, { type: 'email', label: 'Email', name: 'email', required: true, placeholder: '', options: [] }, { type: 'textarea', label: 'Comments', name: 'comments', required: false, placeholder: '', options: [] }] },
+				{ name: 'Demo Registration', description: 'Simple registration for demos.', fields: [{ type: 'text', label: 'Full name', name: 'full_name', required: true, placeholder: '', options: [] }, { type: 'email', label: 'Email', name: 'email', required: true, placeholder: '', options: [] }, { type: 'tel', label: 'Phone', name: 'phone', required: false, placeholder: '', options: [] }] },
+				{ name: 'Demo Survey', description: 'Short survey for testing.', fields: [{ type: 'text', label: 'Your name', name: 'name', required: true, placeholder: '', options: [] }, { type: 'select', label: 'How did you hear about us?', name: 'hear_about', required: false, placeholder: '', options: ['Website', 'Friend', 'Social media', 'Other'] }, { type: 'radio', label: 'Would you like updates?', name: 'updates', required: false, placeholder: '', options: ['Yes', 'No'] }] }
+			];
+			for (const spec of formSpecs) {
+				const validated = validateForm({ name: spec.name, description: spec.description, fields: spec.fields, isSafeguarding: false });
+				await create('forms', withOrganisationId(validated, organisationId));
+				formsCreated++;
+			}
+		}
+
+		// Demo email templates
+		if (createEmailTemplates) {
+			const allTemplates = await readCollection('email_templates');
+			const otherTemplates = (Array.isArray(allTemplates) ? allTemplates : []).filter((t) => t.organisationId !== organisationId);
+			await writeCollection('email_templates', otherTemplates);
+
+			const templateSpecs = [
+				{ name: 'Demo Welcome Email', subject: 'Welcome – {{firstName}}', description: 'Demo welcome template', htmlContent: '<p>Hi {{firstName}},</p><p>Welcome! This is a demo email template for testing.</p><p>Best wishes</p>' },
+				{ name: 'Demo Weekly Update', subject: 'Weekly update – {{org_name}}', description: 'Demo weekly template', htmlContent: '<p>Hi {{firstName}},</p><p>Here is your weekly update.</p><p>{{rotaLinks}}</p><p>{{upcomingEvents}}</p><p>Thanks</p>' },
+				{ name: 'Demo Reminder', subject: 'Reminder: {{firstName}}', description: 'Demo reminder template', htmlContent: '<p>Hi {{firstName}},</p><p>This is a friendly reminder.</p><p>Contact us: {{support_email}}</p>' }
+			];
+			for (const spec of templateSpecs) {
+				const textContent = (spec.htmlContent || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+				const validated = validateNewsletterTemplate({
+					name: spec.name,
+					subject: spec.subject,
+					htmlContent: spec.htmlContent,
+					textContent,
+					description: spec.description
+				});
+				await create('email_templates', withOrganisationId(validated, organisationId));
+				templatesCreated++;
+			}
 		}
 
 		const params = new URLSearchParams();
 		if (contactsCreated > 0) params.set('anonymised', String(contactsCreated));
 		if (eventsCreated > 0) params.set('demo_events', String(eventsCreated));
+		if (rotasCreated > 0) params.set('demo_rotas', String(rotasCreated));
+		if (formsCreated > 0) params.set('demo_forms', String(formsCreated));
+		if (templatesCreated > 0) params.set('demo_templates', String(templatesCreated));
+		if (assigneesAdded > 0) params.set('assignees', String(assigneesAdded));
 		params.set('org', organisationId);
 		throw redirect(
 			302,
