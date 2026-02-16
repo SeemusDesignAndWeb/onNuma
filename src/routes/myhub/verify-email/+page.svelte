@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>Verifying your email – myHub</title>
+	<title>Verifying your email – MyHUB</title>
 </svelte:head>
 
 <div class="my-page-content">

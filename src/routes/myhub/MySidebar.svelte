@@ -6,11 +6,11 @@
 	$: logoPath = theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png';
 </script>
 
-<aside class="my-sidebar" role="navigation" aria-label="myHub volunteering">
+<aside class="my-sidebar" role="navigation" aria-label="MyHUB volunteering">
 	<div class="my-sidebar-inner">
-		<a href="/myhub" class="my-sidebar-brand" aria-label="myHub home">
+		<a href="/myhub" class="my-sidebar-brand" aria-label="MyHUB home">
 			<img src={logoPath} alt="" class="my-sidebar-logo" width="32" height="32" />
-			<span class="my-sidebar-brand-text">myHub</span>
+			<span class="my-sidebar-brand-text">MyHUB</span>
 		</a>
 		<nav class="my-sidebar-nav">
 			<a href="/myhub" class="my-sidebar-item" class:active={path === '/myhub'}>

@@ -27,7 +27,7 @@
 </script>
 
 <svelte:head>
-	<title>My rotas – myHub</title>
+	<title>My rotas – MyHUB</title>
 </svelte:head>
 
 <div class="my-page-content">

@@ -113,7 +113,7 @@
 </script>
 
 <svelte:head>
-	<title>My details – myHub</title>
+	<title>My details – MyHUB</title>
 </svelte:head>
 
 <div class="my-page-content">

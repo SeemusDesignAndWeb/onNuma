@@ -80,7 +80,7 @@
 	<div class="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
 		<div class="px-5 py-4 border-b border-gray-100">
 			<h1 class="text-xl font-semibold text-gray-900">Send rota invitation</h1>
-			<p class="text-sm text-gray-500 mt-0.5">Choose rotas and add a message. The email will include signup links and a link to myHub for other rotas.</p>
+			<p class="text-sm text-gray-500 mt-0.5">Choose rotas and add a message. The email will include signup links and a link to MyHUB for other rotas.</p>
 		</div>
 		<div class="p-5 space-y-5">
 			<!-- Contact -->

@@ -43,7 +43,7 @@
 </script>
 
 <svelte:head>
-	<title>Preferences – myHub</title>
+	<title>Preferences – MyHUB</title>
 </svelte:head>
 
 <div class="my-page-content">

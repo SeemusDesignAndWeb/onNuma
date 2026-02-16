@@ -75,7 +75,7 @@
 </script>
 
 <svelte:head>
-	<title>Availability – myHub</title>
+	<title>Availability – MyHUB</title>
 </svelte:head>
 
 <div class="my-page-content">

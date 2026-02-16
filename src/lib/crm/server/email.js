@@ -1206,7 +1206,7 @@ Website: ${baseUrl}
 }
 
 /**
- * Send suggested-to-invite email: one contact, selected rotas, custom message, ends with myHub link.
+ * Send suggested-to-invite email: one contact, selected rotas, custom message, ends with MyHUB link.
  * @param {object} contact - Contact { id, email, firstName, lastName }
  * @param {Array} rotaInvites - Array of { rota, event, signupUrl }
  * @param {string} customMessage - Optional message (supports {{firstname}})
@@ -1251,11 +1251,11 @@ export async function sendSuggestedInviteEmail(contact, rotaInvites, customMessa
 	const myHubSectionHtml = `
 		<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 16px 0; border-left: 4px solid #2563eb;">
 			<p style="margin: 0 0 8px 0; color: #333; font-size: 15px; font-weight: 600;">See all rotas and sign up for more</p>
-			<p style="margin: 0 0 12px 0; color: #666; font-size: 14px;">There are other rotas you can sign up for. Visit myHub to see everything in one place.</p>
-			<a href="${myHubUrl}" style="display: inline-block; background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">Open myHub</a>
+			<p style="margin: 0 0 12px 0; color: #666; font-size: 14px;">There are other rotas you can sign up for. Visit MyHUB to see everything in one place.</p>
+			<a href="${myHubUrl}" style="display: inline-block; background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">Open MyHUB</a>
 		</div>
 	`;
-	const myHubSectionText = `\n\nThere are other rotas you can sign up for. Visit myHub to see everything: ${myHubUrl}`;
+	const myHubSectionText = `\n\nThere are other rotas you can sign up for. Visit MyHUB to see everything: ${myHubUrl}`;
 
 	const branding = await getEmailBranding(event);
 	const html = `

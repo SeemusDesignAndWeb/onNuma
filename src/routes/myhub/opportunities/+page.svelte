@@ -108,7 +108,7 @@
 </script>
 
 <svelte:head>
-	<title>Sign up for rotas – myHub</title>
+	<title>Sign up for rotas – MyHUB</title>
 </svelte:head>
 
 <div class="my-opp">

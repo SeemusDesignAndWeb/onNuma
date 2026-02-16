@@ -4,8 +4,8 @@
 	$: htmlContent = $page.data?.privacyPolicyHtml || '<p>Loading privacy policy...</p>';
 </script>
 
-<div class="flex-1 p-6">
-	<div class="max-w-4xl mx-auto">
+<div class="flex-1 p-6 w-full max-w-full">
+	<div class="w-full max-w-full">
 		<div class="bg-white shadow rounded-lg overflow-hidden">
 			<div class="prose prose-lg max-w-none p-6 md:p-8">
 				{@html htmlContent}

@@ -6,7 +6,7 @@
 </script>
 
 <div class="policy-doc">
-	<div class="max-w-4xl mx-auto">
+	<div class="policy-doc-inner w-full">
 		{#if title}
 			<h1 class="policy-title">{title}</h1>
 		{/if}
@@ -28,6 +28,12 @@
 <style>
 	.policy-doc {
 		padding: 2rem 1rem;
+		width: 100%;
+		max-width: 100%;
+	}
+	.policy-doc-inner {
+		width: 100%;
+		max-width: 100%;
 	}
 
 	.policy-title {
