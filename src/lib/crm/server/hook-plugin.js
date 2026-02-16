@@ -166,8 +166,14 @@ async function crmHandleHubAndSignup(event, resolve) {
 		return resolve(event);
 	}
 
-	// Public signup routes - no auth required (rota, event, member, membership-form, rotas)
-	if (pathname.startsWith('/signup/rota/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member') || pathname.startsWith('/signup/membership-form') || pathname.startsWith('/signup/rotas')) {
+	// Public routes - no auth required (signup, forms, event links, unsubscribe, view-rotas)
+	const isPublicPath =
+		pathname.startsWith('/signup/rota/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member') || pathname.startsWith('/signup/membership-form') || pathname.startsWith('/signup/rotas') ||
+		pathname.startsWith('/forms') ||
+		pathname.startsWith('/event/') ||
+		pathname.startsWith('/unsubscribe/') ||
+		pathname.startsWith('/view-rotas');
+	if (isPublicPath) {
 		// Set CSRF token on GET requests (only if not already set)
 		if (request.method === 'GET') {
 			if (!getCsrfToken(cookies)) {

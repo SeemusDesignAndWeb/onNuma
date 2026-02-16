@@ -210,7 +210,10 @@
 <NotificationPopup />
 
 <style>
-	.my-opp { padding-bottom: 6rem; }
+	.my-opp { padding-bottom: 1rem; }
+	@media (min-width: 1024px) {
+		.my-opp { padding-bottom: 6rem; }
+	}
 	.my-opp-title { font-size: 1.5rem; font-weight: 700; color: #111827; margin-bottom: 0.5rem; }
 	.my-opp-lead { font-size: 1.0625rem; color: #4b5563; margin-bottom: 1.5rem; line-height: 1.5; }
 	.my-opp-form .my-card { margin-bottom: 1.5rem; }

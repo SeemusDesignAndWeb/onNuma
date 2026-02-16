@@ -1621,8 +1621,12 @@ export async function sendPasswordResetEmail({ to, name, resetToken, hubBaseUrl 
 		fullLink: resetLink
 	});
 
-	// Use org's hub URL for logo so default OnNuma logo shows on the correct domain
-	const branding = await getEmailBranding(event, { baseUrlForLogo: hubUrl });
+	// Use theme logo if available; when hubBaseUrl was explicitly provided use that
+	// domain for the logo, otherwise let getEmailBranding resolve from the theme
+	// (falls back to default OnNuma logo when no theme logo is set).
+	const branding = hubBaseUrl
+		? await getEmailBranding(event, { baseUrlForLogo: hubUrl })
+		: await getEmailBranding(event);
 	const html = `
 		<!DOCTYPE html>
 		<html>

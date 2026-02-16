@@ -1,7 +1,5 @@
 import { getCsrfToken, verifyCsrfToken, requestPasswordReset } from '$lib/crm/server/auth.js';
 import { sendPasswordResetEmail } from '$lib/crm/server/email.js';
-import { findById } from '$lib/crm/server/fileStore.js';
-import { env } from '$env/dynamic/private';
 
 export async function load({ cookies }) {
 	const csrfToken = getCsrfToken(cookies) || '';
@@ -41,23 +39,14 @@ export const actions = {
 					expiresAt: admin.passwordResetTokenExpires
 				});
 
-				// Use org's hub subdomain for reset link and logo when available
-				let hubBaseUrl = null;
-				if (admin.organisationId) {
-					const org = await findById('organisations', admin.organisationId);
-					if (org?.hubDomain && String(org.hubDomain).trim().includes('.')) {
-						const appBase = env.APP_BASE_URL || url?.origin || 'https://www.onnuma.com';
-						const protocol = appBase.startsWith('http') ? new URL(appBase).protocol : 'https:';
-						hubBaseUrl = `${protocol}//${String(org.hubDomain).trim()}`;
-					}
-				}
-
+				// Always use the current request origin for the reset link so
+				// the user is sent back to the same domain they submitted from.
+				// This avoids cross-org domain confusion when multiple orgs share the platform.
 				try {
 					await sendPasswordResetEmail({
 						to: admin.email,
 						name: admin.name || admin.email,
-						resetToken: admin.passwordResetToken,
-						hubBaseUrl: hubBaseUrl || undefined
+						resetToken: admin.passwordResetToken
 					}, { url });
 					console.log('[Forgot Password] Reset email sent successfully to:', admin.email);
 				} catch (emailError) {

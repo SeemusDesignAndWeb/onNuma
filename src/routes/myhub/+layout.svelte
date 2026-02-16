@@ -320,18 +320,16 @@
 		margin-left: auto;
 		margin-right: auto;
 		padding: 1.5rem 1.25rem 2rem;
-		padding-bottom: 6rem; /* space above fixed footer */
 	}
 	@media (min-width: 640px) {
 		.my-main-inner {
 			padding: 2rem 1.5rem 3rem;
-			padding-bottom: 6rem;
 		}
 	}
 	@media (min-width: 1024px) {
 		.my-main-inner {
 			padding: 2rem 2rem 3rem;
-			padding-bottom: 6rem;
+			padding-bottom: 6rem; /* space above fixed footer on desktop only */
 			margin-left: 0;
 		}
 	}
@@ -372,15 +370,19 @@
 	.my-mobile-logo img {
 		filter: brightness(0) invert(1);
 	}
-	/* Footer (logged-in) – fixed at bottom of viewport */
+	/* Footer (logged-in) – static on mobile, fixed on desktop */
 	.my-footer {
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		z-index: 10;
 		background: var(--myhub-sidebar-bg);
 		border-top: 1px solid rgba(255, 255, 255, 0.08);
+	}
+	@media (min-width: 1024px) {
+		.my-footer {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			z-index: 10;
+		}
 	}
 	.my-footer-inner {
 		max-width: 42rem;
