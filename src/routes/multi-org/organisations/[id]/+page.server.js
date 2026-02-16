@@ -54,7 +54,8 @@ export async function load({ params, locals, url }) {
 		throw redirect(302, base('/multi-org/organisations'));
 	}
 	const currentPlan = (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
-	const anonymisedCreated = url.searchParams.get('anonymised');
+	const anonymisedParam = url.searchParams.get('anonymised');
+	const anonymisedCreated = anonymisedParam ? parseInt(anonymisedParam, 10) : null;
 
 	// Load sequences for onboarding email assignment
 	const sequences = await readCollection('marketing_sequences');
@@ -65,7 +66,7 @@ export async function load({ params, locals, url }) {
 		multiOrgAdmin,
 		hubPlanTiers: getHubPlanTiers(),
 		currentPlan,
-		anonymisedCreated: anonymisedCreated ? parseInt(anonymisedCreated, 10) : null,
+		anonymisedCreated: Number.isNaN(anonymisedCreated) ? null : anonymisedCreated,
 		sequences: activeSequences
 	};
 }

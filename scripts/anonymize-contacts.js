@@ -18,11 +18,11 @@ const CONTACTS_FILE = join(DATA_DIR, 'contacts.ndjson');
 const firstNames = ['Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia', 'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence', 'Finley', 'Willow', 'Henry', 'Emilia', 'Sophie', 'Ella', 'Jack', 'Grace', 'Thomas', 'Poppy', 'William', 'Charlotte'];
 const lastNames = ['Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies', 'Evans', 'Wilson', 'Thomas', 'Roberts', 'Robinson', 'Wright', 'Thompson', 'White', 'Hughes', 'Edwards', 'Green', 'Hall', 'Martin', 'Wood', 'Clarke', 'Jackson', 'Hill', 'Lewis'];
 const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'example.com', 'test.com'];
-const streets = ['High Street', 'Church Road', 'Main Avenue', 'Park Lane', 'Oak Drive', 'Maple Close', 'Elm Way', 'Victoria Road', 'Church Street', 'Garden Avenue'];
+const streets = ['High Street', 'Station Road', 'Main Avenue', 'Park Lane', 'Oak Drive', 'Maple Close', 'Elm Way', 'Victoria Road', 'Victoria Street', 'Garden Avenue'];
 const cities = ['London', 'Birmingham', 'Manchester', 'Leeds', 'Glasgow', 'Liverpool', 'Bristol', 'Sheffield', 'Edinburgh', 'Cardiff'];
 const counties = ['Greater London', 'West Midlands', 'Greater Manchester', 'West Yorkshire', 'Lancashire', 'Merseyside', 'South Yorkshire', 'Essex', 'Kent', 'Surrey'];
 const membershipStatuses = ['member', 'regular-attender', 'visitor', 'former-member'];
-const smallGroups = ['Weekly Email', 'Alpha Group', 'Evening Group', 'Morning Group', 'Youth Group', 'Women\'s Group', 'Men\'s Group', 'Explorers - Youth Group', 'Adventurers Kids Group', 'Leaders and influencers', 'Elders', 'Worship Team', 'Congregational Leadership Team'];
+const smallGroups = ['Weekly Email', 'Evening Group', 'Morning Group', 'Social Group', 'Youth Group', 'Outreach Group', 'Planning Group', 'Leaders group', 'Support Team', 'Events Team'];
 
 function randomItem(array) {
 	return array[Math.floor(Math.random() * array.length)];

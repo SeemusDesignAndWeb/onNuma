@@ -125,10 +125,15 @@
 		<footer class="crm-shell-footer flex-shrink-0 w-full bg-white border-t border-gray-200 {$hubSidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-[16rem]'}">
 			<div class="max-w-7xl mx-auto px-4 py-6">
 				<div class="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4">
-					<a href="/" class="flex items-center" aria-label="OnNuma home">
+					<a href="/" class="flex items-center flex-shrink-0" aria-label="OnNuma home">
 						<img src="/assets/onnuma-logo.png" alt="OnNuma" class="h-8 w-auto" />
 					</a>
-					<div class="text-sm text-gray-500 flex flex-wrap justify-center gap-2 md:gap-4">
+					{#if currentOrganisation?.name}
+						<p class="text-sm font-light text-gray-500 md:flex-1 md:text-center">
+							{currentOrganisation.name}
+						</p>
+					{/if}
+					<div class="text-sm text-gray-500 flex flex-wrap justify-center gap-2 md:gap-4 flex-shrink-0">
 						<a href="/hub/privacy" class="text-gray-600 hover:text-theme-button-1 transition-colors">Privacy Policy</a>
 						<a href="https://www.onnuma.com" class="text-theme-button-1 hover:opacity-80 transition-colors" target="_blank" rel="noopener noreferrer">Visit Website</a>
 					</div>

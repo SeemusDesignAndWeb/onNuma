@@ -416,71 +416,77 @@
 						</div>
 					</header>
 					<div class="dashboard-panel-body" class:hidden={collapsedPanelIds.has(panelId)}>
-						{#if rotaGaps.length === 0}
-							<p class="text-sm text-gray-500 py-1">No shortages at the moment. Well done!</p>
-						{:else}
-							<div class="overflow-x-auto">
-								<table class="min-w-full text-sm">
-									<thead>
-										<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											<th scope="col" class="py-2 pr-3">Event</th>
-											<th scope="col" class="py-2 pr-3 whitespace-nowrap">Date</th>
-											<th scope="col" class="py-2 pr-3">Rota</th>
-											<th scope="col" class="py-2 pr-3 text-center">Filled</th>
-											<th scope="col" class="py-2 pl-3 w-10"></th>
-										</tr>
-									</thead>
-									<tbody class="divide-y divide-gray-100">
-										{#each rotaGapsSlice as gap}
-											<tr class="border-b border-gray-50 last:border-0">
-												<td class="py-1.5 pr-3 font-medium text-gray-900 truncate max-w-[140px]" title={gap.eventTitle}>{gap.eventTitle}</td>
-												<td class="py-1.5 pr-3 text-gray-600 whitespace-nowrap">{formatRotaGapDate(gap.date)}</td>
-												<td class="py-1.5 pr-3 text-gray-900 truncate max-w-[120px]" title={gap.rotaName}>{gap.rotaName}</td>
-												<td class="py-1.5 pr-3 text-center">
-													<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium {gap.priority === 'critical' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}">
-														{gap.positionsFilled}/{gap.positionsRequired}
-													</span>
-												</td>
-												<td class="py-1.5 pl-3">
-													<a href="/hub/rotas/{gap.rotaId}" class="inline-flex items-center justify-center w-8 h-8 rounded text-gray-500 hover:text-theme-button-1 hover:bg-gray-100" title="View rota" aria-label="View {gap.rotaName}">
-														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-														</svg>
-													</a>
-												</td>
+						<div class="dashboard-panel-body-content">
+							{#if rotaGaps.length === 0}
+								<p class="text-sm text-gray-500 py-1">No shortages at the moment. Well done!</p>
+							{:else}
+								<div class="overflow-x-auto">
+									<table class="min-w-full text-sm">
+										<thead>
+											<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+												<th scope="col" class="py-2 pr-3">Event</th>
+												<th scope="col" class="py-2 pr-3 whitespace-nowrap">Date</th>
+												<th scope="col" class="py-2 pr-3">Rota</th>
+												<th scope="col" class="py-2 pr-3 text-center">Filled</th>
+												<th scope="col" class="py-2 pl-3 w-10"></th>
 											</tr>
-										{/each}
-									</tbody>
-								</table>
-							</div>
-							{#if rotaGapsTotalPages > 1}
-								<div class="mt-2 flex items-center justify-between">
-									<button
-										type="button"
-										class="text-xs font-medium text-theme-button-1 hover:underline disabled:opacity-50 disabled:pointer-events-none"
-										disabled={rotaGapsCurrentPage <= 1}
-										on:click={() => (rotaGapsPage -= 1)}
-									>
-										Previous
-									</button>
-									<span class="text-xs text-gray-500">Page {rotaGapsCurrentPage} of {rotaGapsTotalPages}</span>
-									<button
-										type="button"
-										class="text-xs font-medium text-theme-button-1 hover:underline disabled:opacity-50 disabled:pointer-events-none"
-										disabled={rotaGapsCurrentPage >= rotaGapsTotalPages}
-										on:click={() => (rotaGapsPage += 1)}
-									>
-										Next
-									</button>
+										</thead>
+										<tbody class="divide-y divide-gray-100">
+											{#each rotaGapsSlice as gap}
+												<tr class="border-b border-gray-50 last:border-0">
+													<td class="py-1.5 pr-3 font-medium text-gray-900 truncate max-w-[140px]" title={gap.eventTitle}>{gap.eventTitle}</td>
+													<td class="py-1.5 pr-3 text-gray-600 whitespace-nowrap">{formatRotaGapDate(gap.date)}</td>
+													<td class="py-1.5 pr-3 text-gray-900 truncate max-w-[120px]" title={gap.rotaName}>{gap.rotaName}</td>
+													<td class="py-1.5 pr-3 text-center">
+														<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium {gap.priority === 'critical' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}">
+															{gap.positionsFilled}/{gap.positionsRequired}
+														</span>
+													</td>
+													<td class="py-1.5 pl-3">
+														<a href="/hub/rotas/{gap.rotaId}" class="inline-flex items-center justify-center w-8 h-8 rounded text-gray-500 hover:text-theme-button-1 hover:bg-gray-100" title="View rota" aria-label="View {gap.rotaName}">
+															<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+															</svg>
+														</a>
+													</td>
+												</tr>
+											{/each}
+										</tbody>
+									</table>
 								</div>
+								{#if rotaGapsTotalPages > 1}
+									<div class="mt-2 flex items-center justify-between">
+										<button
+											type="button"
+											class="text-xs font-medium text-theme-button-1 hover:underline disabled:opacity-50 disabled:pointer-events-none"
+											disabled={rotaGapsCurrentPage <= 1}
+											on:click={() => (rotaGapsPage -= 1)}
+										>
+											Previous
+										</button>
+										<span class="text-xs text-gray-500">Page {rotaGapsCurrentPage} of {rotaGapsTotalPages}</span>
+										<button
+											type="button"
+											class="text-xs font-medium text-theme-button-1 hover:underline disabled:opacity-50 disabled:pointer-events-none"
+											disabled={rotaGapsCurrentPage >= rotaGapsTotalPages}
+											on:click={() => (rotaGapsPage += 1)}
+										>
+											Next
+										</button>
+									</div>
+								{/if}
 							{/if}
-							<div class="mt-2 flex flex-wrap gap-1.5">
-								<a href="/hub/rotas/invite" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium">Send request</a>
-								<a href="/hub/rotas" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium">Copy sign-up link</a>
-							</div>
-						{/if}
-						<a href="/hub/rotas" class="dashboard-panel-link mt-4 block">View your rotas</a>
+						</div>
+						<div class="dashboard-panel-footer flex items-center justify-between gap-2 flex-wrap">
+							<a href="/hub/rotas" class="dashboard-panel-link dashboard-panel-link--left">View your rotas</a>
+							<a href="/hub/rotas/invite" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium">
+								<svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+								</svg>
+								Send request
+							</a>
+						</div>
 					</div>
 				</div>
 					{:else if panelId === 'leaderboard'}
@@ -534,31 +540,35 @@
 						</div>
 					</header>
 					<div class="dashboard-panel-body" class:hidden={collapsedPanelIds.has(panelId)}>
-						{#if volunteerLeaderboard.length === 0}
-							<p class="text-sm text-gray-500">Participation data will appear here as volunteers sign up.</p>
-						{:else}
-							<div class="overflow-x-auto">
-								<table class="min-w-full text-sm">
-									<thead>
-										<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-											<th scope="col" class="py-2 pr-3">Name</th>
-											<th scope="col" class="py-2 pr-3 text-center">Rotas</th>
-											<th scope="col" class="py-2 pl-3 text-center whitespace-nowrap">Last 30 days</th>
-										</tr>
-									</thead>
-									<tbody class="divide-y divide-gray-100">
-										{#each volunteerLeaderboard as person}
-											<tr class="border-b border-gray-50 last:border-0">
-												<td class="py-2 pr-3 font-medium text-gray-900">{person.name}</td>
-												<td class="py-2 pr-3 text-center text-gray-600">{person.rotaCount}</td>
-												<td class="py-2 pl-3 text-center text-gray-600">{person.servingLast30Days}</td>
+						<div class="dashboard-panel-body-content">
+							{#if volunteerLeaderboard.length === 0}
+								<p class="text-sm text-gray-500">Participation data will appear here as volunteers sign up.</p>
+							{:else}
+								<div class="overflow-x-auto">
+									<table class="min-w-full text-sm">
+										<thead>
+											<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+												<th scope="col" class="py-2 pr-3">Name</th>
+												<th scope="col" class="py-2 pr-3 text-center">Rotas</th>
+												<th scope="col" class="py-2 pl-3 text-center whitespace-nowrap">Last 30 days</th>
 											</tr>
-										{/each}
-									</tbody>
-								</table>
-							</div>
-						{/if}
-						<a href="/hub/contacts" class="dashboard-panel-link mt-4 block">View contacts</a>
+										</thead>
+										<tbody class="divide-y divide-gray-100">
+											{#each volunteerLeaderboard as person}
+												<tr class="border-b border-gray-50 last:border-0">
+													<td class="py-2 pr-3 font-medium text-gray-900">{person.name}</td>
+													<td class="py-2 pr-3 text-center text-gray-600">{person.rotaCount}</td>
+													<td class="py-2 pl-3 text-center text-gray-600">{person.servingLast30Days}</td>
+												</tr>
+											{/each}
+										</tbody>
+									</table>
+								</div>
+							{/if}
+						</div>
+						<div class="dashboard-panel-footer">
+							<a href="/hub/contacts" class="dashboard-panel-link block">View contacts</a>
+						</div>
 					</div>
 				</div>
 					{:else if panelId === 'bookings'}
@@ -613,48 +623,52 @@
 					</header>
 					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>Events with signups</p>
 					<div class="dashboard-panel-body" class:hidden={collapsedPanelIds.has(panelId)}>
-						{#if eventBookings.length === 0}
-							<p class="text-sm text-gray-500">No events with signups yet. Enable signup on an event to see bookings here.</p>
-						{:else}
-							<div class="bookings-chart space-y-3" role="list" aria-label="Bar chart of bookings per event">
-								{#each eventBookings as row}
-									{#if row.eventId}
-										<button
-											type="button"
-											class="bookings-chart-row min-w-0 w-full block rounded-md -mx-1 px-1 py-0.5 hover:bg-gray-50 transition-colors cursor-pointer group text-left border-0 bg-transparent"
-											title="View bookings for {row.eventName}"
-											aria-label="View event: {row.eventName}"
-											on:click={() => goToEvent(row.eventId)}
-										>
-											<div class="flex items-center justify-between gap-2 mb-0.5">
-												<span class="text-sm font-medium text-gray-900 truncate flex-shrink-0 max-w-[60%] group-hover:text-theme-button-1" title={row.eventName}>{row.eventName}</span>
-												<span class="text-sm text-gray-600 tabular-nums flex-shrink-0">{row.bookings}</span>
+						<div class="dashboard-panel-body-content">
+							{#if eventBookings.length === 0}
+								<p class="text-sm text-gray-500">No events with signups yet. Enable signup on an event to see bookings here.</p>
+							{:else}
+								<div class="bookings-chart space-y-3" role="list" aria-label="Bar chart of bookings per event">
+									{#each eventBookings as row}
+										{#if row.eventId}
+											<button
+												type="button"
+												class="bookings-chart-row min-w-0 w-full block rounded-md -mx-1 px-1 py-0.5 hover:bg-gray-50 transition-colors cursor-pointer group text-left border-0 bg-transparent"
+												title="View bookings for {row.eventName}"
+												aria-label="View event: {row.eventName}"
+												on:click={() => goToEvent(row.eventId)}
+											>
+												<div class="flex items-center justify-between gap-2 mb-0.5">
+													<span class="text-sm font-medium text-gray-900 truncate flex-shrink-0 max-w-[60%] group-hover:text-theme-button-1" title={row.eventName}>{row.eventName}</span>
+													<span class="text-sm text-gray-600 tabular-nums flex-shrink-0">{row.bookings}</span>
+												</div>
+												<div class="h-6 rounded-md bg-gray-100 overflow-hidden pointer-events-none" aria-hidden="true">
+													<div
+														class="h-full rounded-md bg-theme-button-1 transition-[width] duration-300 min-w-0 group-hover:opacity-90"
+														style="width: {(row.bookings / eventBookingsMax) * 100}%"
+													></div>
+												</div>
+											</button>
+										{:else}
+											<div class="min-w-0">
+												<div class="flex items-center justify-between gap-2 mb-0.5">
+													<span class="text-sm font-medium text-gray-900 truncate flex-shrink-0 max-w-[60%]" title={row.eventName}>{row.eventName}</span>
+													<span class="text-sm text-gray-600 tabular-nums flex-shrink-0">{row.bookings}</span>
+												</div>
+												<div class="h-6 rounded-md bg-gray-100 overflow-hidden" aria-hidden="true">
+													<div
+														class="h-full rounded-md bg-theme-button-1 transition-[width] duration-300 min-w-0"
+														style="width: {(row.bookings / eventBookingsMax) * 100}%"
+													></div>
+												</div>
 											</div>
-											<div class="h-6 rounded-md bg-gray-100 overflow-hidden pointer-events-none" aria-hidden="true">
-												<div
-													class="h-full rounded-md bg-theme-button-1 transition-[width] duration-300 min-w-0 group-hover:opacity-90"
-													style="width: {(row.bookings / eventBookingsMax) * 100}%"
-												></div>
-											</div>
-										</button>
-									{:else}
-										<div class="min-w-0">
-											<div class="flex items-center justify-between gap-2 mb-0.5">
-												<span class="text-sm font-medium text-gray-900 truncate flex-shrink-0 max-w-[60%]" title={row.eventName}>{row.eventName}</span>
-												<span class="text-sm text-gray-600 tabular-nums flex-shrink-0">{row.bookings}</span>
-											</div>
-											<div class="h-6 rounded-md bg-gray-100 overflow-hidden" aria-hidden="true">
-												<div
-													class="h-full rounded-md bg-theme-button-1 transition-[width] duration-300 min-w-0"
-													style="width: {(row.bookings / eventBookingsMax) * 100}%"
-												></div>
-											</div>
-										</div>
-									{/if}
-								{/each}
-							</div>
-						{/if}
-						<a href="/hub/events" class="dashboard-panel-link mt-4 block">View events</a>
+										{/if}
+									{/each}
+								</div>
+							{/if}
+						</div>
+						<div class="dashboard-panel-footer">
+							<a href="/hub/events" class="dashboard-panel-link block">View events</a>
+						</div>
 					</div>
 				</div>
 					{:else if panelId === 'engagement'}
@@ -789,25 +803,29 @@
 					</header>
 					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>Registered but not yet participating</p>
 					<div class="dashboard-panel-body" class:hidden={collapsedPanelIds.has(panelId)}>
-						{#if suggestedPeople.length === 0}
-							<p class="text-sm text-gray-500">Everyone in your contacts has participated recently, or you have no contacts yet.</p>
-						{:else}
-							<ul class="space-y-3">
-								{#each suggestedPeople as person}
-									<li class="flex items-center justify-between gap-3">
-										<div class="min-w-0 flex-1">
-											<p class="font-medium text-gray-900 truncate">{person.name}</p>
-											{#if person.lastActivity}
-												<p class="text-xs text-gray-500">Last activity: {formatRotaGapDate(person.lastActivity)}</p>
-											{/if}
-										</div>
-										<a href="/hub/suggested-to-invite/invite/{person.id}" class="hub-btn flex-shrink-0 bg-theme-button-2 text-white">Invite</a>
-									</li>
-								{/each}
-							</ul>
-						{/if}
+						<div class="dashboard-panel-body-content">
+							{#if suggestedPeople.length === 0}
+								<p class="text-sm text-gray-500">Everyone in your contacts has participated recently, or you have no contacts yet.</p>
+							{:else}
+								<ul class="space-y-3">
+									{#each suggestedPeople as person}
+										<li class="flex items-center justify-between gap-3">
+											<div class="min-w-0 flex-1">
+												<p class="font-medium text-gray-900 truncate">{person.name}</p>
+												{#if person.lastActivity}
+													<p class="text-xs text-gray-500">Last activity: {formatRotaGapDate(person.lastActivity)}</p>
+												{/if}
+											</div>
+											<a href="/hub/suggested-to-invite/invite/{person.id}" class="hub-btn flex-shrink-0 bg-theme-button-2 text-white">Invite</a>
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
 						{#if suggestedPeopleTotal > 0}
-							<a href="/hub/suggested-to-invite" class="dashboard-panel-link mt-4 block">View full list ({suggestedPeopleTotal})</a>
+							<div class="dashboard-panel-footer">
+								<a href="/hub/suggested-to-invite" class="dashboard-panel-link block">View full list ({suggestedPeopleTotal})</a>
+							</div>
 						{/if}
 					</div>
 				</div>
@@ -823,7 +841,7 @@
 	.dashboard-panel {
 		min-width: 0;
 	}
-	.dashboard-panel-body > .overflow-x-auto {
+	.dashboard-panel-body-content .overflow-x-auto {
 		-webkit-overflow-scrolling: touch;
 	}
 	/* Dashboard panel headers: same layout, padding, and typography for all panels */
@@ -923,6 +941,9 @@
 	.dashboard-panel-link:hover {
 		text-decoration: underline;
 	}
+	.dashboard-panel-link--left {
+		margin-left: 0;
+	}
 	.dashboard-panel-link-spacer {
 		flex-shrink: 0;
 		width: 1px;
@@ -952,8 +973,21 @@
 	}
 
 	.dashboard-panel-body {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
 		padding: 0.75rem 1rem;
 		min-width: 0;
+	}
+	.dashboard-panel-body .dashboard-panel-body-content {
+		flex: 1;
+		min-height: 0;
+	}
+	.dashboard-panel-footer {
+		margin-top: auto;
+		flex-shrink: 0;
+		padding-top: 0.5rem;
 	}
 	@media (max-width: 639px) {
 		.dashboard-panel-body {

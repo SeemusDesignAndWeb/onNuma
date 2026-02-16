@@ -1,13 +1,18 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { create } from '$lib/crm/server/fileStore.js';
+import { create, readCollection } from '$lib/crm/server/fileStore.js';
 import { validateList } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { getCurrentOrganisationId, withOrganisationId } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId, withOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
-export async function load({ cookies }) {
+export async function load({ cookies, parent }) {
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { csrfToken };
+	const organisationId = await getCurrentOrganisationId();
+	const { plan } = await parent();
+	const allContacts = await readCollection('contacts');
+	const orgContacts = filterByOrganisation(allContacts, organisationId);
+	const contacts = contactsWithinPlanLimit(orgContacts, plan);
+	return { csrfToken, contacts };
 }
 
 export const actions = {
@@ -19,10 +24,21 @@ export const actions = {
 			return fail(403, { error: 'CSRF token validation failed' });
 		}
 
+		const contactIdsRaw = data.get('contactIds');
+		let contactIds = [];
+		if (contactIdsRaw) {
+			try {
+				contactIds = JSON.parse(contactIdsRaw);
+				if (!Array.isArray(contactIds)) contactIds = [];
+			} catch (_) {
+				contactIds = [];
+			}
+		}
+
 		const listData = {
 			name: data.get('name'),
 			description: data.get('description'),
-			contactIds: []
+			contactIds
 		};
 
 		try {
@@ -34,17 +50,15 @@ export const actions = {
 			const adminId = locals?.admin?.id || null;
 			const event = { getClientAddress: () => 'unknown', request };
 			await logDataChange(adminId, 'create', 'list', list.id, {
-				name: list.name
+				name: list.name,
+				contactCount: contactIds.length
 			}, event);
 
-			// Redirect after successful creation - don't wrap in try-catch
 			throw redirect(302, `/hub/lists/${list.id}?created=true`);
 		} catch (error) {
-			// Don't treat redirects as errors - check for redirect status code
 			if (error?.status === 302 || error?.status === 301 || (error?.status >= 300 && error?.status < 400)) {
-				throw error; // Re-throw redirects
+				throw error;
 			}
-			// Also check if it's a redirect by looking for location header
 			if (error?.location) {
 				throw error;
 			}
@@ -53,4 +67,3 @@ export const actions = {
 		}
 	}
 };
-

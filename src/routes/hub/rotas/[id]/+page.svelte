@@ -676,35 +676,6 @@
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
 			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">{rota.role || 'Unknown'} rota</h2>
 			<div class="flex flex-wrap gap-2">
-				{#if signupLink && (rota.visibility || 'public') === 'public'}
-					<button
-						on:click={copySignupLink}
-						class="bg-theme-button-1 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 flex items-center gap-2 text-xs"
-					>
-						{#if linkCopied}
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-							</svg>
-							Copied!
-						{:else}
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-							</svg>
-							Copy link
-						{/if}
-					</button>
-					<a
-						href={signupLink}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 flex items-center gap-2 text-xs"
-					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-						</svg>
-						Open Signup
-					</a>
-				{/if}
 				{#if editing}
 					<button
 						type="submit"
@@ -721,16 +692,6 @@
 						Back
 					</button>
 				{:else}
-					<a
-						href="/hub/rotas/{rota.id}/export-pdf"
-						target="_blank"
-						class="hub-btn bg-theme-button-1 text-white"
-					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-						</svg>
-						Export PDF
-					</a>
 					<button
 						on:click={() => editing = true}
 						class="hub-btn bg-theme-button-2 text-white"

@@ -131,13 +131,13 @@ function generateContacts() {
 	const firstNames = ['Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia', 'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence', 'Finley', 'Willow', 'Henry', 'Emilia', 'Charlie', 'Sophie', 'Jack', 'Ella', 'Thomas', 'Grace', 'William', 'Poppy'];
 	const lastNames = ['Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies', 'Evans', 'Wilson', 'Thomas', 'Roberts', 'Robinson', 'Wright', 'Thompson', 'White', 'Hughes', 'Edwards', 'Green', 'Hall', 'Martin', 'Wood', 'Clarke', 'Jackson', 'Hill', 'Lewis'];
 	const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'example.com'];
-	const streets = ['High Street', 'Church Road', 'Main Avenue', 'Park Lane', 'Oak Drive', 'Maple Close', 'Elm Way'];
+	const streets = ['High Street', 'Station Road', 'Main Avenue', 'Park Lane', 'Oak Drive', 'Maple Close', 'Elm Way'];
 	const cities = ['London', 'Birmingham', 'Manchester', 'Leeds', 'Glasgow', 'Liverpool', 'Bristol'];
 	const counties = ['Greater London', 'West Midlands', 'Greater Manchester', 'West Yorkshire', 'Lancashire', 'Merseyside'];
 	const membershipStatuses = ['member', 'regular-attender', 'visitor', 'former-member'];
-	const servingAreas = ['Worship', 'Children\'s Ministry', 'Youth', 'Welcome Team', 'Prayer', 'Sound', 'Setup', 'Small Groups'];
-	const giftings = ['Teaching', 'Pastoral Care', 'Administration', 'Music', 'Evangelism', 'Hospitality', 'Leadership'];
-	const smallGroups = ['Alpha Group', 'Evening Group', 'Morning Group', 'Youth Group', 'Women\'s Group', 'Men\'s Group'];
+	const servingAreas = ['Events', 'Outreach', 'Youth', 'Welcome Team', 'Support', 'Sound', 'Setup', 'Small Groups'];
+	const giftings = ['Teaching', 'Support', 'Administration', 'Music', 'Outreach', 'Hospitality', 'Leadership'];
+	const smallGroups = ['Evening Group', 'Morning Group', 'Social Group', 'Youth Group', 'Outreach Group', 'Planning Group'];
 	
 	const contacts = [];
 	for (let i = 0; i < 25; i++) {
@@ -177,7 +177,7 @@ function generateContacts() {
 
 // Generate dummy lists
 function generateLists(contacts) {
-	const listNames = ['Newsletter Subscribers', 'Volunteers', 'Event Attendees', 'Youth Group', 'Small Groups', 'Prayer Team'];
+	const listNames = ['Newsletter Subscribers', 'Volunteers', 'Event Attendees', 'Youth Group', 'Small Groups', 'Outreach Team'];
 	const lists = [];
 	
 	for (let i = 0; i < listNames.length; i++) {
@@ -203,22 +203,22 @@ function generateLists(contacts) {
 // Generate dummy events
 function generateEvents() {
 	const eventTitles = [
-		'Sunday Service',
+		'Weekly meeting',
 		'Youth Group Meeting',
-		'Prayer Meeting',
+		'Planning meeting',
 		'Community Outreach',
-		'Bible Study',
-		'Women\'s Fellowship',
-		'Men\'s Breakfast',
-		'Children\'s Church',
-		'Worship Night',
-		'Alpha Course'
+		'Intro session',
+		'Social evening',
+		'Breakfast meet-up',
+		'Kids group',
+		'Social night',
+		'Intro course'
 	];
 	
 	const locations = [
 		'Main Hall',
 		'Community Centre',
-		'Church Building',
+		'Main Building',
 		'Online',
 		'Park',
 		'Café',
@@ -273,7 +273,7 @@ function generateOccurrences(events) {
 // Generate dummy rotas (assignees use real contact IDs so participation and "suggested to invite" work)
 // Only ~90% of contacts are assigned to rotas so some remain "not engaged" for testing Suggested to invite
 function generateRotas(events, occurrences, contacts) {
-	const roles = ['Worship Leader', 'Sound Technician', 'Usher', 'Children\'s Worker', 'Preacher', 'Prayer Team', 'Setup Team', 'Welcome Team'];
+	const roles = ['Session lead', 'Sound Technician', 'Usher', 'Facilitator', 'Host', 'Support Team', 'Setup Team', 'Welcome Team'];
 	const rotas = [];
 	const shuffled = [...(contacts || [])].sort(() => 0.5 - Math.random());
 	const eligibleCount = Math.max(1, Math.floor(shuffled.length * 0.9));
@@ -415,7 +415,7 @@ function generateForms() {
 				{ id: '1', type: 'text', label: 'Full Name', name: 'full_name', required: true },
 				{ id: '2', type: 'email', label: 'Email', name: 'email', required: true },
 				{ id: '3', type: 'tel', label: 'Phone', name: 'phone', required: true },
-				{ id: '4', type: 'select', label: 'Area of Interest', name: 'area', required: true, options: ['Children\'s Work', 'Youth', 'Worship', 'Welcome Team', 'Administration', 'Other'] },
+				{ id: '4', type: 'select', label: 'Area of Interest', name: 'area', required: true, options: ['Events', 'Youth', 'Outreach', 'Welcome Team', 'Administration', 'Other'] },
 				{ id: '5', type: 'textarea', label: 'Why do you want to volunteer?', name: 'motivation', required: true },
 				{ id: '6', type: 'radio', label: 'Availability', name: 'availability', required: true, options: ['Weekdays', 'Weekends', 'Both', 'Flexible'] }
 			]

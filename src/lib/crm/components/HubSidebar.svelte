@@ -62,7 +62,8 @@
 	}
 
 	$: isDashboard = $page.url.pathname === '/hub' || $page.url.pathname === '/hub/';
-	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/lists') || $page.url.pathname.startsWith('/hub/members');
+	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/members');
+	$: isListsActive = $page.url.pathname.startsWith('/hub/lists');
 	$: isEventsActive = $page.url.pathname.startsWith('/hub/events') || $page.url.pathname.startsWith('/hub/meeting-planners');
 	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/billing') || $page.url.pathname.startsWith('/hub/audit-logs') || $page.url.pathname.startsWith('/hub/settings') || $page.url.pathname.startsWith('/hub/images') || $page.url.pathname.startsWith('/hub/videos');
 </script>
@@ -146,6 +147,15 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
 					</svg>
 				{#if !collapsed || onClose}<span class="hub-sidebar-label">Contacts</span>{/if}
+				</a>
+			{/if}
+
+			{#if canAccessLists}
+				<a href="/hub/lists" class="hub-sidebar-item" class:active={isListsActive} title="Lists" on:click={handleNavClick}>
+					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+					</svg>
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Lists</span>{/if}
 				</a>
 			{/if}
 

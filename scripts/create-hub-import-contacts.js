@@ -80,7 +80,7 @@ function generateContacts() {
 	const cities = ['London', 'Birmingham', 'Manchester', 'Leeds', 'Glasgow', 'Liverpool', 'Bristol', 'Eltham', 'Greenwich', 'Bexley', 'Bromley'];
 	const counties = ['Greater London', 'West Midlands', 'Greater Manchester', 'West Yorkshire', 'Lancashire', 'Merseyside', 'Kent', 'Essex'];
 	const membershipStatuses = ['member', 'regular-attender', 'visitor', 'former-member'];
-	const servingAreas = ['Worship', 'Children\'s Ministry', 'Youth', 'Welcome Team', 'Prayer', 'Sound', 'Setup', 'Small Groups'];
+	const servingAreas = ['Events', 'Outreach', 'Youth', 'Welcome Team', 'Support', 'Sound', 'Setup', 'Small Groups'];
 	const giftings = ['Teaching', 'Pastoral Care', 'Administration', 'Music', 'Evangelism', 'Hospitality', 'Leadership'];
 
 	const usedEmails = new Set();

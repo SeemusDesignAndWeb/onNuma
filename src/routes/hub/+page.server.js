@@ -3,7 +3,7 @@ import { readCollection, readCollectionCount, readLatestFromCollection, findById
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { getConfiguredPlanMaxContacts } from '$lib/crm/server/permissions.js';
 
-/** Build rota gaps: upcoming occurrences with zero or insufficient volunteers, sorted by urgency. */
+/** Build rota gaps: upcoming occurrences with zero or insufficient volunteers, sorted by urgency (no volunteers first, then by date). */
 async function getRotaGaps(organisationId) {
 	const [rotas, occurrences, events] = await Promise.all([
 		readCollection('rotas'),
@@ -18,39 +18,75 @@ async function getRotaGaps(organisationId) {
 		? rotas.filter(r => r.organisationId === organisationId || (r.eventId && orgEventIds.has(r.eventId)))
 		: rotas;
 	const now = new Date();
-	const gaps = [];
+
+	// Group rotas by event, then by role to find all distinct roles per event
+	const rotasByEvent = new Map();
 	for (const rota of orgRotas) {
-		const event = eventsMap.get(rota.eventId);
+		if (!rotasByEvent.has(rota.eventId)) rotasByEvent.set(rota.eventId, []);
+		rotasByEvent.get(rota.eventId).push(rota);
+	}
+
+	// For each event with rotas, identify every (role, future occurrence) pair and check coverage
+	const gaps = [];
+	for (const [eventId, eventRotas] of rotasByEvent) {
+		const event = eventsMap.get(eventId);
 		if (!event) continue;
-		const eventOccs = occurrences.filter(o => o.eventId === rota.eventId && new Date(o.startsAt) >= now);
-		const relevantOccs = rota.occurrenceId
-			? eventOccs.filter(o => o.id === rota.occurrenceId)
-			: eventOccs;
-		for (const occ of relevantOccs.slice(0, 12)) {
-			const assigneesForOcc = (rota.assignees || []).filter(a => {
-				const assigneeOccId = typeof a === 'object' && a != null && a.occurrenceId != null ? a.occurrenceId : null;
-				if (assigneeOccId != null) return assigneeOccId === occ.id;
-				if (rota.occurrenceId != null) return occ.id === rota.occurrenceId;
-				return true;
-			});
-			const filled = assigneesForOcc.length;
-			const required = rota.slots != null ? Number(rota.slots) : 1;
-			if (filled < required) {
-				gaps.push({
-					rotaId: rota.id,
-					rotaName: rota.role || 'Rota',
-					eventTitle: event.title,
-					occurrenceId: occ.id,
-					date: occ.startsAt,
-					positionsRequired: required,
-					positionsFilled: filled,
-					priority: filled === 0 ? 'critical' : 'low'
-				});
+		const futureOccs = occurrences
+			.filter(o => o.eventId === eventId && new Date(o.startsAt) >= now)
+			.sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
+			.slice(0, 12);
+		if (futureOccs.length === 0) continue;
+
+		// Collect distinct roles with their capacity (take the max capacity across rotas for the same role)
+		const roleMap = new Map();
+		for (const rota of eventRotas) {
+			const role = rota.role || 'Rota';
+			const cap = rota.capacity != null ? Number(rota.capacity) : (rota.slots != null ? Number(rota.slots) : 1);
+			if (!roleMap.has(role) || cap > roleMap.get(role)) {
+				roleMap.set(role, cap);
+			}
+		}
+
+		for (const occ of futureOccs) {
+			for (const [role, capacity] of roleMap) {
+				const requiredEffective = Math.max(1, capacity);
+				// All rotas for this role on this event
+				const roleRotas = eventRotas.filter(r => (r.role || 'Rota') === role);
+				// Count assignees from ALL rotas for this role whose assignee.occurrenceId matches this occurrence.
+				// Assignees can be spread across rotas that have a different rota.occurrenceId — what matters
+				// is the occurrenceId on each individual assignee object.
+				let filled = 0;
+				for (const rota of roleRotas) {
+					filled += (rota.assignees || []).filter(a => {
+						const assigneeOccId = typeof a === 'object' && a != null && a.occurrenceId != null ? a.occurrenceId : null;
+						if (assigneeOccId != null) return assigneeOccId === occ.id;
+						// Legacy string assignees: only count if rota is scoped to this specific occurrence
+						if (rota.occurrenceId != null) return occ.id === rota.occurrenceId;
+						return false;
+					}).length;
+				}
+				if (filled < requiredEffective) {
+					const linkRota = roleRotas.find(r => !r.occurrenceId || r.occurrenceId === occ.id) || roleRotas[0];
+					gaps.push({
+						rotaId: linkRota?.id,
+						rotaName: role,
+						eventTitle: event.title,
+						occurrenceId: occ.id,
+						date: occ.startsAt,
+						positionsRequired: requiredEffective,
+						positionsFilled: filled,
+						priority: filled === 0 ? 'critical' : 'low'
+					});
+				}
 			}
 		}
 	}
-	gaps.sort((a, b) => new Date(a.date) - new Date(b.date));
-	return gaps.slice(0, 10);
+	// Sort: occurrences with no volunteers first (critical), then by date
+	gaps.sort((a, b) => {
+		if (a.priority !== b.priority) return a.priority === 'critical' ? -1 : 1;
+		return new Date(a.date) - new Date(b.date);
+	});
+	return gaps.slice(0, 20);
 }
 
 /** Contact display name: firstName + lastName (or name/email fallback). */

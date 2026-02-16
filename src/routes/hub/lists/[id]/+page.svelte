@@ -210,7 +210,7 @@
 				<input type="hidden" name="_csrf" value={csrfToken} />
 				<FormField label="Name" name="name" bind:value={formData.name} required />
 				<FormField label="Description" name="description" type="textarea" rows="3" bind:value={formData.description} />
-				<button type="submit" class="bg-theme-button-2 text-white px-[18px] py-2.5 rounded-md hover:opacity-90">
+				<button type="submit" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
 					Save Changes
 				</button>
 			</form>
@@ -237,14 +237,14 @@
 
 	<div class="bg-white shadow rounded-lg p-6 mb-6">
 		<div class="flex justify-between items-center mb-4">
-			<h3 class="text-xl font-bold text-gray-900">Contacts in List ({contacts.length})</h3>
+			<h3 class="text-base font-semibold text-gray-900">Contacts in List ({contacts.length})</h3>
 			<button
 				on:click={() => {
 					showAddContacts = !showAddContacts;
 					selectedContactIds = new Set();
 					searchTerm = '';
 				}}
-				class="bg-theme-button-2 text-white px-[18px] py-2.5 rounded-md hover:opacity-90"
+				class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
 			>
 				{showAddContacts ? 'Cancel' : '+ Add Contacts'}
 			</button>
@@ -252,14 +252,14 @@
 		
 		{#if showAddContacts}
 			<div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-				<h4 class="text-lg font-semibold text-gray-900 mb-3">Add Contacts to List</h4>
+				<h4 class="text-sm font-semibold text-gray-900 mb-3">Add Contacts to List</h4>
 				
-				<div class="mb-4">
+				<div class="mb-3">
 					<input
 						type="text"
 						bind:value={searchTerm}
 						placeholder="Search contacts by name or email..."
-						class="w-full px-[18px] py-2.5 border border-gray-500 rounded-md focus:border-theme-button-2 focus:ring-theme-button-2"
+						class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:border-theme-button-2 focus:ring-theme-button-2"
 					/>
 				</div>
 				
@@ -272,7 +272,7 @@
 						<table class="min-w-full divide-y divide-gray-200">
 							<thead class="bg-gray-50 sticky top-0">
 								<tr>
-									<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase">
+									<th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-10">
 										<input
 											type="checkbox"
 											checked={selectedContactIds.size === filteredAvailableContacts.length && filteredAvailableContacts.length > 0}
@@ -286,41 +286,42 @@
 											class="rounded border-gray-300 text-hub-green-600 focus:ring-theme-button-2"
 										/>
 									</th>
-									<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase">First Name</th>
-									<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Last Name</th>
-									<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+									<th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">First Name</th>
+									<th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Last Name</th>
+									<th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Email</th>
 								</tr>
 							</thead>
 							<tbody class="bg-white divide-y divide-gray-200">
 								{#each filteredAvailableContacts as contact}
-									<tr class="hover:bg-gray-50">
-										<td class="px-[18px] py-2.5">
+									<tr class="hover:bg-gray-50 cursor-pointer" on:click={() => toggleContactSelection(contact.id)}>
+										<td class="px-3 py-2">
 											<input
 												type="checkbox"
 												checked={selectedContactIds.has(contact.id)}
 												on:change={() => toggleContactSelection(contact.id)}
+												on:click|stopPropagation
 												class="rounded border-gray-300 text-hub-green-600 focus:ring-theme-button-2"
 											/>
 										</td>
-										<td class="px-[18px] py-2.5 text-sm text-gray-900">{contact.firstName || '-'}</td>
-										<td class="px-[18px] py-2.5 text-sm text-gray-900">{contact.lastName || '-'}</td>
-										<td class="px-[18px] py-2.5 text-sm text-gray-900">{contact.email || '-'}</td>
+										<td class="px-3 py-2 text-sm text-gray-900">{contact.firstName || '-'}</td>
+										<td class="px-3 py-2 text-sm text-gray-900">{contact.lastName || '-'}</td>
+										<td class="px-3 py-2 text-sm text-gray-500 hidden sm:table-cell">{contact.email || '-'}</td>
 									</tr>
 								{/each}
 							</tbody>
 						</table>
 					</div>
 					
-					<div class="mt-4 flex justify-between items-center">
-						<p class="text-sm text-gray-600">
-							{selectedContactIds.size} contact{selectedContactIds.size !== 1 ? 's' : ''} selected
+					<div class="mt-3 flex justify-between items-center">
+						<p class="text-xs text-gray-500">
+							{selectedContactIds.size} selected
 						</p>
 						<button
 							on:click={handleAddContacts}
 							disabled={selectedContactIds.size === 0}
-							class="bg-theme-button-2 text-white px-[18px] py-2.5 rounded-md hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed"
+							class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs disabled:bg-gray-300 disabled:cursor-not-allowed"
 						>
-							Add Selected Contacts
+							Add Selected
 						</button>
 					</div>
 				{/if}

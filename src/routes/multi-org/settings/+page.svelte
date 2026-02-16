@@ -13,6 +13,7 @@
 	$: demoFormsCreated = data?.demoFormsCreated ?? null;
 	$: demoTemplatesCreated = data?.demoTemplatesCreated ?? null;
 	$: assigneesCount = data?.assigneesCount ?? null;
+	$: demoBookingsCreated = data?.demoBookingsCreated ?? null;
 	$: error = form?.error ?? null;
 	$: organisationId = form?.organisationId ?? '';
 
@@ -25,21 +26,16 @@
 		panelBackgroundColor: '#f1f5f9'
 	};
 	$: hubTheme = data?.hubTheme ?? defaultTheme;
-	let themePrimary = hubTheme.primaryColor ?? defaultTheme.primaryColor;
-	let themeBrand = hubTheme.brandColor ?? defaultTheme.brandColor;
-	let themeNavbar = hubTheme.navbarBackgroundColor ?? defaultTheme.navbarBackgroundColor;
-	let themeButtons = [...(hubTheme.buttonColors ?? defaultTheme.buttonColors)].slice(0, 5);
-	let themePanelHeads = [...(hubTheme.panelHeadColors ?? defaultTheme.panelHeadColors)].slice(0, 3);
-	let themePanelBg = hubTheme.panelBackgroundColor ?? defaultTheme.panelBackgroundColor;
+	$: safeTheme = hubTheme ?? defaultTheme;
+	$: themePrimary = safeTheme?.primaryColor ?? defaultTheme.primaryColor;
+	$: themeBrand = safeTheme?.brandColor ?? defaultTheme.brandColor;
+	$: themeNavbar = safeTheme?.navbarBackgroundColor ?? defaultTheme.navbarBackgroundColor;
+	$: themeButtons = [...(safeTheme?.buttonColors ?? defaultTheme.buttonColors)].slice(0, 5);
+	$: themePanelHeads = [...(safeTheme?.panelHeadColors ?? defaultTheme.panelHeadColors)].slice(0, 3);
+	$: themePanelBg = safeTheme?.panelBackgroundColor ?? defaultTheme.panelBackgroundColor;
 	let lastSyncedTheme = null;
 	$: if (data?.hubTheme && data.hubTheme !== lastSyncedTheme) {
 		lastSyncedTheme = data.hubTheme;
-		themePrimary = data.hubTheme.primaryColor ?? defaultTheme.primaryColor;
-		themeBrand = data.hubTheme.brandColor ?? defaultTheme.brandColor;
-		themeNavbar = data.hubTheme.navbarBackgroundColor ?? defaultTheme.navbarBackgroundColor;
-		themeButtons = [...(data.hubTheme.buttonColors ?? defaultTheme.buttonColors)].slice(0, 5);
-		themePanelHeads = [...(data.hubTheme.panelHeadColors ?? defaultTheme.panelHeadColors)].slice(0, 3);
-		themePanelBg = data.hubTheme.panelBackgroundColor ?? defaultTheme.panelBackgroundColor;
 	}
 	let themeSaving = false;
 
@@ -111,7 +107,7 @@
 	}
 
 	// Auto-switch to demo section if there's a demo-related error or success
-	$: if (error || anonymisedCreated || demoEventsCreated || demoRotasCreated || demoFormsCreated || demoTemplatesCreated || assigneesCount) {
+	$: if (error || anonymisedCreated || demoEventsCreated || demoRotasCreated || demoFormsCreated || demoTemplatesCreated || assigneesCount || demoBookingsCreated) {
 		activeSection = 'demo';
 	}
 
@@ -308,7 +304,7 @@
 				</div>
 
 				<div class="px-6 sm:px-8 py-6 sm:py-8">
-					{#if (anonymisedCreated !== null && anonymisedCreated > 0) || (demoEventsCreated !== null && demoEventsCreated > 0) || (demoRotasCreated !== null && demoRotasCreated > 0) || (demoFormsCreated !== null && demoFormsCreated > 0) || (demoTemplatesCreated !== null && demoTemplatesCreated > 0) || (assigneesCount !== null && assigneesCount > 0)}
+					{#if (anonymisedCreated !== null && anonymisedCreated > 0) || (demoEventsCreated !== null && demoEventsCreated > 0) || (demoRotasCreated !== null && demoRotasCreated > 0) || (demoFormsCreated !== null && demoFormsCreated > 0) || (demoTemplatesCreated !== null && demoTemplatesCreated > 0) || (assigneesCount !== null && assigneesCount > 0) || (demoBookingsCreated !== null && demoBookingsCreated > 0)}
 						<div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-100 mb-6">
 							<svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -320,7 +316,8 @@
 								{#if demoRotasCreated > 0}{demoRotasCreated} rota{demoRotasCreated === 1 ? '' : 's'}. {/if}
 								{#if demoFormsCreated > 0}{demoFormsCreated} form{demoFormsCreated === 1 ? '' : 's'}. {/if}
 								{#if demoTemplatesCreated > 0}{demoTemplatesCreated} email template{demoTemplatesCreated === 1 ? '' : 's'}. {/if}
-								{#if assigneesCount > 0}{assigneesCount} rota assignment{assigneesCount === 1 ? '' : 's'}.{/if}
+								{#if assigneesCount > 0}{assigneesCount} rota assignment{assigneesCount === 1 ? '' : 's'}. {/if}
+								{#if demoBookingsCreated > 0}{demoBookingsCreated} booking{demoBookingsCreated === 1 ? '' : 's'}.{/if}
 							</p>
 						</div>
 					{/if}
