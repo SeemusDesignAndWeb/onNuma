@@ -193,6 +193,7 @@ export const actions = {
 		invalidateHubDomainCache();
 		invalidateOrganisationsCache();
 		await invalidateAllSessions();
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations?organisationsUpdated=1', !!locals.multiOrgAdminDomain));
+		// Redirect to canonical multi-org path so we always get the sidebar layout and avoid cached /organisations (old top-nav) response
+		throw redirect(302, '/multi-org/organisations?organisationsUpdated=1');
 	}
 };
