@@ -60,7 +60,7 @@
 	$: theme = $page.data?.theme ?? null;
 	// Organisation name: from custom domain (hub.egcc.co.uk) or from Hub's current organisation, never hardcoded
 	$: organisationName = orgFromDomain?.name ?? currentOrganisation?.name ?? 'The HUB';
-	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/assets/OnNuma-Icon.png';
+	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/assets/onnuma-logo.png';
 
 	onMount(() => {
 		document.addEventListener('keydown', handleEscapeKey);
