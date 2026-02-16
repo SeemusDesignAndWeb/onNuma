@@ -1,5 +1,4 @@
 import { fail, redirect, isRedirect } from '@sveltejs/kit';
-import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import {
 	authenticateMultiOrgAdmin,
 	createMultiOrgSession,
@@ -55,7 +54,8 @@ export const actions = {
 				!!locals.multiOrgAdminDomain
 			);
 
-			throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations', !!locals.multiOrgAdminDomain));
+			// Use canonical path so we always get multi-org layout (avoid cached /organisations)
+			throw redirect(302, '/multi-org/organisations');
 		} catch (err) {
 			if (isRedirect(err)) throw err;
 			console.error('[multi-org login] unexpected error:', err?.message || err);

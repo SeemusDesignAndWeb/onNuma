@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
-import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 
-export async function load({ locals }) {
-	throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations', !!locals.multiOrgAdminDomain));
+export async function load() {
+	// Canonical path so we always get multi-org layout (avoid cached /organisations on admin domain)
+	throw redirect(302, '/multi-org/organisations');
 }
