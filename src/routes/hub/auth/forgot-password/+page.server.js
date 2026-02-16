@@ -1,5 +1,7 @@
 import { getCsrfToken, verifyCsrfToken, requestPasswordReset } from '$lib/crm/server/auth.js';
 import { sendPasswordResetEmail } from '$lib/crm/server/email.js';
+import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
+import { findById } from '$lib/crm/server/fileStore.js';
 
 export async function load({ cookies }) {
 	const csrfToken = getCsrfToken(cookies) || '';
@@ -7,7 +9,7 @@ export async function load({ cookies }) {
 }
 
 export const actions = {
-	requestReset: async ({ request, cookies, url }) => {
+	requestReset: async ({ request, cookies, url, locals }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
@@ -39,15 +41,20 @@ export const actions = {
 					expiresAt: admin.passwordResetTokenExpires
 				});
 
-				// Always use the current request origin for the reset link so
-				// the user is sent back to the same domain they submitted from.
-				// This avoids cross-org domain confusion when multiple orgs share the platform.
+				// Use request origin for reset link and logo so the user gets the same domain they submitted from.
+				const hubBaseUrl = url?.origin || '';
+				const orgFromDomain = locals?.hubOrganisationFromDomain?.name;
+				const orgId = locals?.hubOrganisationFromDomain?.id ?? admin.organisationId ?? (await getCurrentOrganisationId());
+				const org = orgId ? await findById('organisations', orgId) : null;
+				const orgName = orgFromDomain || org?.name || null;
 				try {
 					await sendPasswordResetEmail({
 						to: admin.email,
 						name: admin.name || admin.email,
-						resetToken: admin.passwordResetToken
-					}, { url });
+						resetToken: admin.passwordResetToken,
+						hubBaseUrl,
+						orgName
+					}, { url, locals });
 					console.log('[Forgot Password] Reset email sent successfully to:', admin.email);
 				} catch (emailError) {
 					// Log error but don't reveal it to user

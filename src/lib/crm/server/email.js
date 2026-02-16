@@ -1607,10 +1607,11 @@ Log in to your Hub: ${hubLoginLink}
  * @param {string} options.name - Admin name
  * @param {string} options.resetToken - Password reset token
  * @param {string} [options.hubBaseUrl] - Base URL for this org's hub (e.g. https://orgslug.onnuma.com). When set, reset link and logo use this so the user resets on their org's URL.
+ * @param {string} [options.orgName] - Organisation name for the email (e.g. "River Church"). When not set, uses "The HUB".
  * @param {object} event - SvelteKit event object (for base URL when hubBaseUrl not set)
  * @returns {Promise<object>} Resend API response
  */
-export async function sendPasswordResetEmail({ to, name, resetToken, hubBaseUrl }, event) {
+export async function sendPasswordResetEmail({ to, name, resetToken, hubBaseUrl, orgName }, event) {
 	const baseUrl = getBaseUrl(event);
 	const hubUrl = (hubBaseUrl && String(hubBaseUrl).trim()) ? String(hubBaseUrl).replace(/\/$/, '') : baseUrl;
 	const fromEmail = fromEmailDefault();
@@ -1631,32 +1632,32 @@ export async function sendPasswordResetEmail({ to, name, resetToken, hubBaseUrl 
 		fullLink: resetLink
 	});
 
-	// Use theme logo if available; when hubBaseUrl was explicitly provided use that
-	// domain for the logo, otherwise let getEmailBranding resolve from the theme
-	// (falls back to default OnNuma logo when no theme logo is set).
+	// Use request origin for logo when hubBaseUrl is set so the image loads (default OnNuma logo).
+	// When hubBaseUrl is not set, getEmailBranding uses theme logo or default from event base URL.
 	const branding = hubBaseUrl
 		? await getEmailBranding(event, { baseUrlForLogo: hubUrl })
 		: await getEmailBranding(event);
+	const organisationName = (orgName && String(orgName).trim()) || 'The HUB';
 	const html = `
 		<!DOCTYPE html>
 		<html>
 		<head>
 			<meta charset="utf-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Reset Your Password - TheHUB</title>
+			<title>Reset Your Password - ${organisationName}</title>
 		</head>
 		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
 			<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
 				${branding}
 				<div style="background: linear-gradient(135deg, #4A97D2 0%, #3a7ab8 100%); padding: 20px 15px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
 					<h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Reset Your Password</h1>
-					<p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">TheHUB - Eltham Green Community Church</p>
+					<p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">${organisationName}</p>
 				</div>
 				
 				<div style="padding: 0;">
 				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hello ${name},</p>
 				
-				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">We received a request to reset your password for your TheHUB admin account.</p>
+				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">We received a request to reset your password for your ${organisationName} admin account.</p>
 
 				<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #4A97D2;">
 					<p style="color: #333; font-size: 13px; margin: 0 0 15px 0;">Click the button below to reset your password. This link will expire in 24 hours.</p>
@@ -1678,7 +1679,7 @@ export async function sendPasswordResetEmail({ to, name, resetToken, hubBaseUrl 
 				<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
 					<p style="margin: 0;">If you have any questions or need assistance, please contact the system administrator.</p>
 					<p style="margin: 8px 0 0 0;">
-						<a href="${hubUrl}" style="color: #4A97D2; text-decoration: none;">Visit TheHUB</a>
+						<a href="${hubUrl}" style="color: #4A97D2; text-decoration: none;">Visit ${organisationName}</a>
 					</p>
 				</div>
 				</div>
@@ -1688,11 +1689,11 @@ export async function sendPasswordResetEmail({ to, name, resetToken, hubBaseUrl 
 	`;
 
 	const text = `
-Reset Your Password - TheHUB
+Reset Your Password - ${organisationName}
 
 Hello ${name},
 
-We received a request to reset your password for your TheHUB admin account.
+We received a request to reset your password for your ${organisationName} admin account.
 
 Click the link below to reset your password. This link will expire in 24 hours.
 
@@ -1713,7 +1714,7 @@ Visit: ${hubUrl}
 		const result = await rateLimitedSend(() => sendEmail({
 			from: fromEmail,
 			to: [to],
-			subject: 'Reset Your Password - TheHUB',
+			subject: `Reset Your Password - ${organisationName}`,
 			html: html,
 			text: text
 		}));
