@@ -124,15 +124,29 @@ export const actions = {
 					permissions: FULL_PERMISSIONS,
 					organisationId: params.id
 				});
-				targetAdminId = created.id;
+				targetAdminId = created?.id ?? null;
+				// If createAdmin returned an existing admin (e.g. race), ensure they're linked to this org and have full permissions
+				if (targetAdminId) {
+					const createdRecord = await getAdminById(targetAdminId);
+					if (createdRecord && createdRecord.organisationId !== params.id) {
+						await update('admins', targetAdminId, {
+							organisationId: params.id,
+							permissions: FULL_PERMISSIONS,
+							name,
+							failedLoginAttempts: 0,
+							accountLockedUntil: null
+						});
+					}
+				}
 			} catch (err) {
 				return fail(400, { error: err.message || 'Failed to create admin' });
 			}
 		}
 
-		// For unverified accounts, ensure they get a fresh verification email.
+		// Send welcome email only for new/unverified accounts.
 		try {
 			const targetAdmin = targetAdminId ? await getAdminById(targetAdminId) : null;
+			const hubBaseUrl = org.hubDomain ? `https://${String(org.hubDomain).trim()}` : undefined;
 			if (targetAdmin && !targetAdmin.emailVerified) {
 				let verificationToken = targetAdmin.emailVerificationToken || null;
 				const tokenExpired = !targetAdmin.emailVerificationTokenExpires
@@ -140,7 +154,6 @@ export const actions = {
 				if (!verificationToken || tokenExpired) {
 					verificationToken = await regenerateVerificationToken(targetAdmin.id);
 				}
-				const hubBaseUrl = org.hubDomain ? `https://${String(org.hubDomain).trim()}` : undefined;
 				await sendAdminWelcomeEmail({
 					to: normalizedEmail,
 					name,
