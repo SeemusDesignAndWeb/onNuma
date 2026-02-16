@@ -43,7 +43,7 @@ function getDefaultMeetingPlannerRotas() {
 export function getDefaultTheme() {
 	return {
 		logoPath: '/assets/onnuma-logo.png',
-		loginLogoPath: '/assets/onnuma-icon.png',
+		loginLogoPath: '/assets/OnNuma-Icon.png',
 		primaryColor: '#0d9488',   // teal-500
 		brandColor: '#0284c7',    // sky-600
 		navbarBackgroundColor: '#0f172a', // slate-900
