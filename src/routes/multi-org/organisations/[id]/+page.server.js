@@ -53,7 +53,7 @@ export async function load({ params, locals, url }) {
 	if (!org) {
 		throw redirect(302, base('/multi-org/organisations'));
 	}
-	const currentPlan = org.planId ?? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
+	const currentPlan = (org.planId ?? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions))) || 'free';
 	const anonymisedParam = url.searchParams.get('anonymised');
 	const anonymisedCreated = anonymisedParam ? parseInt(anonymisedParam, 10) : null;
 
