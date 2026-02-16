@@ -52,7 +52,7 @@ export const GET = async ({ url, request }) => {
 
 		const podcastAuthor = settings.podcastAuthor || 'Eltham Green Community Church';
 		const podcastEmail = settings.podcastEmail || 'johnawatson72@gmail.com';
-		const podcastImage = settings.podcastImage || `${baseUrl}/assets/egcc-logo.png`;
+		const podcastImage = settings.podcastImage || `${baseUrl}/assets/onnuma-logo.png`;
 		const podcastDescription = settings.podcastDescription || 'Latest sermons from Eltham Green Community Church';
 		const siteName = settings.siteName || 'Eltham Green Community Church';
 

@@ -16,8 +16,12 @@ function getBaseUrl(event) {
 	return env.APP_BASE_URL || event?.url?.origin || 'http://localhost:5173';
 }
 
+/** Default logo path when no theme logo is set (must exist in static/assets). */
+const DEFAULT_ONNUMA_LOGO_PATH = '/assets/onnuma-logo.png';
+
 /**
- * Resolve logo URL for emails: use Hub theme logo if set, otherwise OnNuma logo.
+ * Resolve logo URL for emails: use Hub theme logo if set and valid, otherwise OnNuma logo.
+ * When no theme exists or theme has no logo (empty, legacy Cloudinary, etc.), always use OnNuma logo.
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<{ logoUrl: string, alt: string }>}
  */
@@ -25,17 +29,21 @@ async function getEmailLogo(event) {
 	const baseUrl = getBaseUrl(event);
 	const settings = await getSettings();
 	const theme = settings?.theme || {};
-	const logoPath = typeof theme.logoPath === 'string' ? theme.logoPath.trim() : '';
-	if (logoPath && logoPath.startsWith('http')) {
+	let logoPath = typeof theme.logoPath === 'string' ? theme.logoPath.trim() : '';
+	// Strip legacy Cloudinary URLs (broken in emails); treat as no theme logo
+	if (logoPath && logoPath.includes('cloudinary.com')) {
+		logoPath = '';
+	}
+	if (!logoPath) {
+		return { logoUrl: `${baseUrl}${DEFAULT_ONNUMA_LOGO_PATH}`, alt: 'OnNuma' };
+	}
+	if (logoPath.startsWith('http')) {
 		return { logoUrl: logoPath, alt: 'Logo' };
 	}
-	if (logoPath && logoPath.startsWith('/')) {
+	if (logoPath.startsWith('/')) {
 		return { logoUrl: `${baseUrl}${logoPath}`, alt: 'Logo' };
 	}
-	if (logoPath) {
-		return { logoUrl: `${baseUrl}/${logoPath.replace(/^\//, '')}`, alt: 'Logo' };
-	}
-	return { logoUrl: `${baseUrl}/assets/onnuma-logo.png`, alt: 'OnNuma' };
+	return { logoUrl: `${baseUrl}/${logoPath.replace(/^\//, '')}`, alt: 'Logo' };
 }
 
 /**
@@ -50,7 +58,7 @@ async function getEmailBranding(event, options = {}) {
 	let logoUrl, alt, linkUrl;
 	if (options?.baseUrlForLogo && String(options.baseUrlForLogo).trim()) {
 		const logoBase = String(options.baseUrlForLogo).replace(/\/$/, '');
-		logoUrl = `${logoBase}/assets/onnuma-logo.png`;
+		logoUrl = `${logoBase}${DEFAULT_ONNUMA_LOGO_PATH}`;
 		alt = 'OnNuma';
 		linkUrl = logoBase;
 	} else {
@@ -878,7 +886,7 @@ export async function sendRotaInvite({ to, name, token }, rotaData, contact, eve
 		upcomingRotasHtml += '</div>';
 	}
 
-	const onnumaLogoUrl = `${baseUrl}/assets/onnuma-logo.png`;
+	const onnumaLogoUrl = `${baseUrl}${DEFAULT_ONNUMA_LOGO_PATH}`;
 	const html = `
 		<!DOCTYPE html>
 		<html>
@@ -1733,7 +1741,7 @@ export async function sendMultiOrgPasswordResetEmail({ to, name, resetToken }, e
 	const resetLink = `${baseUrl}${path}?token=${encodedToken}&email=${encodedEmail}`;
 
 	const fromEmail = fromEmailDefault();
-	const logoUrl = `${baseUrl}/assets/onnuma-logo.png`;
+	const logoUrl = `${baseUrl}${DEFAULT_ONNUMA_LOGO_PATH}`;
 	const html = `
 		<!DOCTYPE html>
 		<html>

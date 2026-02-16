@@ -1310,7 +1310,7 @@
 										if (!editing.sections) editing.sections = [];
 										editing.sections = [...editing.sections, { 
 											type: 'mlg', 
-											logo: '/assets/egcc-logo.png',
+											logo: '/assets/onnuma-logo.png',
 											label: 'Partnership',
 											title: 'Part of the MissionLifeGrace Network',
 											content: '<p>Our aim is to see the Kingdom of God come, where broken lives are restored, the lost are found and communities transformed. We believe every church exists to be part of God\'s mission to show the world Christ and that we are better equipped to do this in partnership with other churches.</p><p>As a network our focus is to encourage each other through sharing our hearts, ideas and lessons learned along the way, to challenge one another to stay true to the course and to invest in helping people fulfil their God given calling. We believe that by journeying together we can see God do great things in our nation and around the world.</p>',
@@ -1462,7 +1462,7 @@
 										if (!editing.sections) editing.sections = [];
 										editing.sections = [...editing.sections, { 
 											type: 'mlg', 
-											logo: '/assets/egcc-logo.png',
+											logo: '/assets/onnuma-logo.png',
 											label: 'Partnership',
 											title: 'Part of the MissionLifeGrace Network',
 											content: '<p>Our aim is to see the Kingdom of God come, where broken lives are restored, the lost are found and communities transformed. We believe every church exists to be part of God\'s mission to show the world Christ and that we are better equipped to do this in partnership with other churches.</p><p>As a network our focus is to encourage each other through sharing our hearts, ideas and lessons learned along the way, to challenge one another to stay true to the course and to invest in helping people fulfil their God given calling. We believe that by journeying together we can see God do great things in our nation and around the world.</p>',

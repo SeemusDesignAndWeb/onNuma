@@ -19,8 +19,8 @@
 			<div class="text-center md:text-left">
 				<a href="/" class="inline-block mb-6">
 					<img
-						src="/assets/egcc-logo-text.png"
-						alt="Eltham Green Community Church"
+						src="/assets/onnuma-logo.png"
+						alt="OnNuma"
 						class="h-12 w-auto mx-auto md:mx-0"
 					/>
 				</a>

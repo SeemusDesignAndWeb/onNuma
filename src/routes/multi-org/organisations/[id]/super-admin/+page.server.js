@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { findById, update } from '$lib/crm/server/fileStore.js';
 import { getAdminByEmail, getAdminById, createAdmin, updateAdminPassword, regenerateVerificationToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
-import { setHubSuperAdminEmail, getHubSuperAdminEmail } from '$lib/crm/server/settings.js';
+import { setHubSuperAdminEmail, getHubSuperAdminEmail, setCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
 
@@ -162,6 +162,8 @@ export const actions = {
 			updatedAt: new Date().toISOString()
 		});
 		invalidateOrganisationsCache();
+		// Set Hub's current org to this one so /hub login uses this org and finds the new super admin
+		await setCurrentOrganisationId(params.id);
 
 		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?super_admin=set&organisationsUpdated=1', !!locals.multiOrgAdminDomain));
 	}

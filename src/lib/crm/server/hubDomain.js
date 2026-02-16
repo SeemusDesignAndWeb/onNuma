@@ -20,6 +20,9 @@ export function normaliseHost(host) {
 /** Valid hostname: letters, digits, hyphens, dots; not too long. */
 const HOSTNAME_REGEX = /^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$/i;
 
+/** Base domain for hub subdomains (e.g. onnuma.com). Used to resolve org from host like acme.onnuma.com. */
+const HUB_BASE_DOMAIN = (process.env.HUB_BASE_DOMAIN || 'onnuma.com').toLowerCase().trim().replace(/^\.+|\.+$/g, '');
+
 export function isValidHubDomain(value) {
 	if (!value || typeof value !== 'string') return false;
 	const n = value.toLowerCase().trim();
@@ -44,8 +47,10 @@ async function getOrganisationsWithHubDomain() {
 }
 
 /**
- * Resolve organisation id from request host.
- * @param {string} host - Request Host header (e.g. "hub.egcc.co.uk" or "localhost:5173")
+ * Resolve organisation from request host.
+ * Organisation ID is always derived from the domain: when e.g. acme.onnuma.com is called,
+ * the site looks up the organisation whose hubDomain matches that host (full host or subdomain).
+ * @param {string} host - Request Host header (e.g. "acme.onnuma.com" or "hub.egcc.co.uk")
  * @returns {Promise<{ id: string, name: string } | null>} Organisation or null if no match
  */
 export async function resolveOrganisationFromHost(host) {
@@ -53,10 +58,25 @@ export async function resolveOrganisationFromHost(host) {
 	if (!normalised) return null;
 
 	const orgs = await getOrganisationsWithHubDomain();
+	// 1) Exact match: org.hubDomain === host (e.g. "acme.onnuma.com" === "acme.onnuma.com")
 	for (const org of orgs) {
 		const domain = org.hubDomain && normaliseHost(String(org.hubDomain).trim());
 		if (domain && domain === normalised) {
 			return { id: org.id, name: org.name || 'Hub' };
+		}
+	}
+	// 2) Subdomain match: host is subdomain.onnuma.com and org.hubDomain is "subdomain" or "subdomain.onnuma.com"
+	if (HUB_BASE_DOMAIN && (normalised === HUB_BASE_DOMAIN || normalised.endsWith('.' + HUB_BASE_DOMAIN))) {
+		const subdomain = normalised === HUB_BASE_DOMAIN ? '' : normalised.slice(0, -HUB_BASE_DOMAIN.length - 1);
+		if (subdomain) {
+			for (const org of orgs) {
+				const domain = org.hubDomain && normaliseHost(String(org.hubDomain).trim());
+				if (!domain) continue;
+				// Match full host (acme.onnuma.com) or subdomain-only (acme)
+				if (domain === normalised || domain === subdomain) {
+					return { id: org.id, name: org.name || 'Hub' };
+				}
+			}
 		}
 	}
 	return null;
@@ -71,8 +91,6 @@ export function invalidateHubDomainCache() {
 }
 
 // --- Main app domain (www.onnuma.com) — Hub must not be served here ---
-
-const HUB_BASE_DOMAIN = (process.env.HUB_BASE_DOMAIN || 'onnuma.com').toLowerCase().trim().replace(/^\.+|\.+$/g, '');
 
 /**
  * Whether the request host is the main public site (www.onnuma.com or onnuma.com).
