@@ -30,33 +30,34 @@
 
 <div class="crm-shell min-h-screen bg-theme-panel flex flex-col">
 	{#if !isAuthPage}
-		<div class="crm-shell-desktop flex flex-1 min-h-0">
-			<div class="hidden lg:block crm-shell-sidebar-wrap">
+		<!-- Mobile: column (header on top, main full width). Desktop: row (sidebar | main). -->
+		<div class="crm-shell-desktop flex flex-col lg:flex-row flex-1 min-h-0 overflow-x-hidden">
+			<div class="hidden lg:block crm-shell-sidebar-wrap flex-shrink-0">
 				<MultiOrgSidebar {base} />
 			</div>
 
-			<div class="lg:hidden crm-shell-mobile-header flex-shrink-0 safe-area-top">
-				<div class="flex items-center justify-between min-h-14 h-14 bg-white border-b border-gray-200 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
-					<button
-						type="button"
-						class="p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100"
-						aria-label="Open menu"
-						on:click={() => (mobileSidebarOpen = true)}
-					>
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-						</svg>
-					</button>
-					<a href="{base}/organisations" class="flex items-center gap-2" aria-label="OnNuma Admin">
-						<img
-							src="/assets/OnNuma-Icon.png"
-							alt=""
-							class="h-8 w-auto"
-							width="32"
-							height="32"
-						/>
-					</a>
-					<div class="w-10" aria-hidden="true"></div>
+			<!-- Mobile: fixed top bar so it does not move when scrolling -->
+			<div class="lg:hidden crm-shell-mobile-header fixed top-0 left-0 right-0 z-20 safe-area-top w-full">
+				<div class="crm-shell-mobile-header-inner flex items-center min-h-14 h-14 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+					<div class="flex items-center flex-shrink-0 w-12">
+						<button
+							type="button"
+							class="multi-org-mobile-menu-btn flex items-center justify-center min-w-12 min-h-12 -ml-1 rounded-xl text-white hover:bg-[#6b5344] touch-manipulation transition-colors"
+							aria-label="Open menu"
+							on:click={() => (mobileSidebarOpen = true)}
+						>
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+							</svg>
+						</button>
+					</div>
+					<div class="absolute left-0 right-0 flex justify-center items-center pointer-events-none">
+						<a href="{base}/organisations" class="multi-org-mobile-brand flex items-center gap-2 pointer-events-auto text-white hover:opacity-90 font-bold no-underline" aria-label="OnNuma Admin">
+							<img src="/assets/OnNuma-Icon.png" alt="" class="h-8 w-auto" width="32" height="32" />
+							<span class="text-lg font-bold">OnNuma</span>
+						</a>
+					</div>
+					<div class="w-12 flex-shrink-0" aria-hidden="true"></div>
 				</div>
 			</div>
 
@@ -72,8 +73,8 @@
 				</div>
 			{/if}
 
-			<main class="crm-shell-main flex-1 flex flex-col min-w-0">
-				<div class="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+			<main class="crm-shell-main flex-1 flex flex-col min-w-0 w-full overflow-x-hidden crm-shell-main-mobile-pt">
+				<div class="flex-1 min-w-0 max-w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 					<slot />
 				</div>
 			</main>
@@ -118,5 +119,20 @@
 		height: 100dvh;
 		max-height: 100dvh;
 		overflow: hidden;
+	}
+	/* Mobile header: same warm gradient as multiorg sidebar */
+	.crm-shell-mobile-header-inner {
+		background: linear-gradient(180deg, #5c4033 0%, #4a3728 100%);
+		border-bottom: 1px solid #6b5344;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+	}
+	.multi-org-mobile-brand {
+		transform: translateX(calc(-1 * (2rem + 0.5rem) / 2));
+	}
+	/* Mobile: reserve space for fixed navbar so content is not hidden */
+	@media (max-width: 1023px) {
+		.crm-shell-main-mobile-pt {
+			padding-top: calc(3.5rem + env(safe-area-inset-top, 0));
+		}
 	}
 </style>

@@ -27,16 +27,17 @@
 		Hub organisation updated. The Hub will show this organisation’s data when you open it.
 	</div>
 {/if}
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+<!-- Page header: title + description; Add button full width on mobile for easy tap -->
+<div class="flex flex-col gap-4 mb-6 sm:mb-8 min-w-0">
 	<div class="min-w-0">
-		<h1 class="text-xl sm:text-2xl font-bold text-slate-800">Organisations</h1>
+		<h1 class="text-xl sm:text-2xl font-bold text-[#c75a4a]">Organisations</h1>
 		<p class="mt-1 text-sm text-slate-500">Create and manage organisations and their Hub access.</p>
 	</div>
 	<a
 		href="{base}/organisations/new"
-		class="inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all shrink-0 min-h-[44px]"
+		class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all min-h-[48px] w-full sm:w-auto sm:self-start sm:shrink-0"
 	>
-		<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+		<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
 		Add organisation
 	</a>
 </div>
@@ -53,9 +54,9 @@
 		</a>
 	</div>
 {:else}
-	<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-		<!-- Mobile: card list; Desktop: table -->
-		<div class="hidden md:block overflow-x-auto">
+	<!-- Desktop: table inside single white card -->
+	<div class="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+		<div class="overflow-x-auto">
 		<table class="min-w-full divide-y divide-slate-200">
 			<thead>
 				<tr class="bg-slate-50/80">
@@ -121,39 +122,45 @@
 			</tbody>
 		</table>
 		</div>
-		<!-- Mobile card layout -->
-		<div class="md:hidden divide-y divide-slate-200">
-			{#each organisations.filter(Boolean) as org (org?.id ?? org?.name)}
-				<a href="{base}/organisations/{org.id}" class="block p-4 hover:bg-slate-50/50 transition-colors {org.archivedAt ? 'bg-slate-50/80' : ''}">
-					<div class="flex items-start justify-between gap-3">
-						<div class="min-w-0 flex-1">
-							<span class="inline-flex items-center gap-2 flex-wrap">
-								{#if currentHubOrganisationId === org.id}
-									<svg class="w-4 h-4 text-[#EB9486] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" title="Current Hub">
-										<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-									</svg>
-								{/if}
-								<span class="font-medium text-slate-900">{org.name || '—'}</span>
-								{#if org.archivedAt}
-									<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Archived</span>
-								{/if}
-							</span>
-							<p class="mt-0.5 text-sm text-slate-500">{org.contactName || '—'}</p>
-							<p class="text-xs text-slate-400 mt-1">
-								{org.plan ? org.plan.charAt(0).toUpperCase() + org.plan.slice(1) : '—'} · {org.contactCount ?? 0} contacts
-								{#if org.superAdminEmailVerified === true}
-									<span class="text-emerald-600">· Verified</span>
-								{:else if org.superAdminEmailVerified === false}
-									<span class="text-amber-600">· Unverified</span>
-								{/if}
-							</p>
+	</div>
+	<!-- Mobile: single-column card list, large tap targets, house icon, Verified/Unverified -->
+	<div class="md:hidden space-y-3">
+		{#each organisations.filter(Boolean) as org (org?.id ?? org?.name)}
+				<a
+					href="{base}/organisations/{org.id}"
+					class="org-card-mobile flex items-start gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md active:bg-slate-50/50 transition-all min-h-[72px] touch-manipulation {org.archivedAt ? 'bg-slate-50/80' : ''}"
+				>
+					<span class="org-card-mobile-icon shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-[#EB9486]/15 text-[#c75a4a]" aria-hidden="true">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+						</svg>
+					</span>
+					<div class="min-w-0 flex-1">
+						<div class="inline-flex items-center gap-2 flex-wrap">
+							{#if currentHubOrganisationId === org.id}
+								<svg class="w-4 h-4 text-[#EB9486] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" title="Current Hub">
+									<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+								</svg>
+							{/if}
+							<span class="font-semibold text-slate-900 break-words">{org.name || '—'}</span>
+							{#if org.archivedAt}
+								<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Archived</span>
+							{/if}
 						</div>
-						<span class="shrink-0 text-slate-400" aria-hidden="true">
-							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-						</span>
+						<p class="mt-0.5 text-sm text-slate-600">{org.contactName || '—'}</p>
+						<p class="text-sm text-slate-500 mt-0.5">
+							{org.plan ? org.plan.charAt(0).toUpperCase() + org.plan.slice(1) : '—'} · {org.contactCount ?? 0} contacts
+							{#if org.superAdminEmailVerified === true}
+								<span class="text-emerald-600 font-medium">· Verified</span>
+							{:else if org.superAdminEmailVerified === false}
+								<span class="text-amber-600 font-medium">· Unverified</span>
+							{/if}
+						</p>
 					</div>
+					<span class="shrink-0 text-slate-400 mt-1" aria-hidden="true">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+					</span>
 				</a>
-			{/each}
-		</div>
+		{/each}
 	</div>
 {/if}

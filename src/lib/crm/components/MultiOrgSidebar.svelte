@@ -60,6 +60,7 @@
 <aside
 	class="multi-org-sidebar"
 	class:collapsed={collapsed && !onClose}
+	class:multi-org-sidebar-drawer={!!onClose}
 	role="navigation"
 	aria-label="Main navigation"
 >
@@ -76,21 +77,21 @@
 				if (onClose) onClose();
 			}}
 		>
-			<!-- Small navbar: icon only -->
+			<!-- Small navbar: icon only (desktop collapsed; never in mobile drawer) -->
 			<img
 				src="/assets/OnNuma-Icon.png"
-				alt="OnNuma"
+				alt=""
 				class="multi-org-sidebar-logo multi-org-sidebar-logo-white multi-org-sidebar-logo-icon"
-				class:multi-org-sidebar-logo-icon-visible={collapsed}
+				class:multi-org-sidebar-logo-icon-visible={collapsed && !onClose}
 				width="32"
 				height="32"
 			/>
-			<!-- Large navbar: full logo in white -->
+			<!-- Full OnNuma logo: desktop expanded or mobile drawer (always white) -->
 			<img
 				src="/assets/onnuma-logo.png"
 				alt="OnNuma"
 				class="multi-org-sidebar-logo multi-org-sidebar-logo-white multi-org-sidebar-logo-full"
-				class:multi-org-sidebar-logo-full-visible={!collapsed}
+				class:multi-org-sidebar-logo-full-visible={!collapsed || onClose}
 				width="120"
 				height="32"
 			/>
@@ -130,34 +131,34 @@
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
 			</svg>
-			{#if !collapsed}<span class="multi-org-sidebar-label">Organisations</span>{/if}
+			{#if !collapsed || onClose}<span class="multi-org-sidebar-label">Organisations</span>{/if}
 		</a>
 		<a href="{base}/hub-super-admins" class="multi-org-sidebar-item" class:active={isHubSuperAdmins} title="Users" on:click={handleNavClick}>
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
 			</svg>
-			{#if !collapsed}<span class="multi-org-sidebar-label">Users</span>{/if}
+			{#if !collapsed || onClose}<span class="multi-org-sidebar-label">Users</span>{/if}
 		</a>
 		<a href="{base}/plans" class="multi-org-sidebar-item" class:active={isPlans} title="Plans" on:click={handleNavClick}>
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
 			</svg>
-			{#if !collapsed}<span class="multi-org-sidebar-label">Plans</span>{/if}
+			{#if !collapsed || onClose}<span class="multi-org-sidebar-label">Plans</span>{/if}
 		</a>
 		<a href="{base}/billing" class="multi-org-sidebar-item" class:active={isBilling} title="Billing" on:click={handleNavClick}>
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
 			</svg>
-			{#if !collapsed}<span class="multi-org-sidebar-label">Billing</span>{/if}
+			{#if !collapsed || onClose}<span class="multi-org-sidebar-label">Billing</span>{/if}
 		</a>
 		<!-- Marketing: parent link; sub-menu revealed when Marketing is selected -->
 		<a href="{base}/marketing" class="multi-org-sidebar-item" class:active={isMarketing} title="Marketing" on:click={handleNavClick}>
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
 			</svg>
-			{#if !collapsed}<span class="multi-org-sidebar-label">Marketing</span>{/if}
+			{#if !collapsed || onClose}<span class="multi-org-sidebar-label">Marketing</span>{/if}
 		</a>
-		{#if isMarketing && !collapsed}
+		{#if isMarketing && (!collapsed || onClose)}
 			<div class="multi-org-sidebar-sub">
 				{#each marketingSections as sec}
 					{@const subActive = sec.match(marketingPath)}
@@ -178,7 +179,7 @@
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 			</svg>
-			{#if !collapsed}<span class="multi-org-sidebar-label">Settings</span>{/if}
+			{#if !collapsed || onClose}<span class="multi-org-sidebar-label">Settings</span>{/if}
 		</a>
 	</nav>
 
@@ -187,7 +188,7 @@
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
 			</svg>
-			{#if !collapsed}<span class="multi-org-sidebar-label">Log out</span>{/if}
+			{#if !collapsed || onClose}<span class="multi-org-sidebar-label">Log out</span>{/if}
 		</a>
 	</div>
 </aside>
@@ -198,8 +199,8 @@
 		--mo-sidebar-bg-start: #5c4033;
 		--mo-sidebar-bg-end: #4a3728;
 		--mo-sidebar-border: #6b5344;
-		--mo-sidebar-text: #e8d5cf;
-		--mo-sidebar-brand: #f4c4b8;
+		--mo-sidebar-text: #ffffff;
+		--mo-sidebar-brand: #ffffff;
 		--mo-sidebar-hover-bg: #6b5344;
 		--mo-sidebar-active-bg: #c75a4a;
 		--mo-sidebar-avatar: #EB9486;
@@ -235,6 +236,17 @@
 		border: 0;
 		position: absolute;
 	}
+	/* In mobile drawer always show labels and keep text white */
+	.multi-org-sidebar-drawer.collapsed .multi-org-sidebar-label,
+	.multi-org-sidebar-drawer .multi-org-sidebar-label {
+		opacity: 1 !important;
+		visibility: visible !important;
+		width: auto;
+		padding: 0;
+		margin: 0;
+		border: 0;
+		position: static;
+	}
 	.multi-org-sidebar-top {
 		display: flex;
 		align-items: center;
@@ -249,7 +261,7 @@
 		align-items: center;
 		gap: 0.75rem;
 		text-decoration: none;
-		color: var(--mo-sidebar-brand);
+		color: #ffffff !important;
 		font-weight: 700;
 		font-size: 1.125rem;
 		min-height: 2.75rem;
@@ -262,6 +274,19 @@
 		transition: opacity 0.2s, visibility 0.2s;
 	}
 	.multi-org-sidebar-logo-white {
+		filter: brightness(0) invert(1);
+	}
+	/* Mobile drawer: always show full logo in white */
+	.multi-org-sidebar-drawer .multi-org-sidebar-logo-full {
+		opacity: 1 !important;
+		visibility: visible !important;
+		position: static;
+	}
+	.multi-org-sidebar-drawer .multi-org-sidebar-logo-icon {
+		opacity: 0 !important;
+		visibility: hidden !important;
+	}
+	.multi-org-sidebar-drawer .multi-org-sidebar-logo {
 		filter: brightness(0) invert(1);
 	}
 	.multi-org-sidebar-logo-icon {
@@ -299,7 +324,7 @@
 		height: 2.75rem;
 		border: none;
 		background: transparent;
-		color: var(--mo-sidebar-text);
+		color: #ffffff !important;
 		border-radius: 0.5rem;
 		cursor: pointer;
 		transition: background 0.15s, color 0.15s;
@@ -307,7 +332,7 @@
 	.multi-org-sidebar-toggle:hover,
 	.multi-org-sidebar-toggle:focus-visible {
 		background: var(--mo-sidebar-hover-bg);
-		color: #f1f5f9;
+		color: #ffffff !important;
 	}
 	.multi-org-sidebar-close {
 		min-width: 2.75rem;
@@ -328,7 +353,7 @@
 		padding: 0.75rem 1rem;
 		min-height: 2.75rem;
 		border-radius: 0.5rem;
-		color: var(--mo-sidebar-text);
+		color: #ffffff !important;
 		text-decoration: none;
 		font-size: 0.9375rem;
 		font-weight: 500;
@@ -337,11 +362,11 @@
 	}
 	.multi-org-sidebar-item:hover {
 		background: var(--mo-sidebar-hover-bg);
-		color: #f1f5f9;
+		color: #ffffff;
 	}
 	.multi-org-sidebar-item.active {
 		background: var(--mo-sidebar-active-bg);
-		color: #f1f5f9;
+		color: #ffffff;
 	}
 	.multi-org-sidebar-item:focus-visible {
 		outline: 2px solid var(--mo-sidebar-avatar);
@@ -352,6 +377,7 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		transition: opacity 0.2s, visibility 0.2s;
+		color: #ffffff !important;
 	}
 	.multi-org-sidebar-sub {
 		display: flex;
@@ -369,7 +395,7 @@
 		padding: 0.5rem 0.75rem;
 		min-height: 2.25rem;
 		border-radius: 0.375rem;
-		color: var(--mo-sidebar-text);
+		color: #ffffff !important;
 		text-decoration: none;
 		font-size: 0.875rem;
 		font-weight: 500;
@@ -377,11 +403,11 @@
 	}
 	.multi-org-sidebar-sub-item:hover {
 		background: var(--mo-sidebar-hover-bg);
-		color: #f1f5f9;
+		color: #ffffff;
 	}
 	.multi-org-sidebar-sub-item.active {
 		background: var(--mo-sidebar-active-bg);
-		color: #f1f5f9;
+		color: #ffffff;
 	}
 	.multi-org-sidebar-bottom {
 		padding: 0.5rem;
@@ -391,11 +417,11 @@
 		gap: 0.125rem;
 	}
 	.multi-org-sidebar-logout {
-		color: #c4a99e;
+		color: #ffffff;
 	}
 	.multi-org-sidebar-logout:hover {
 		background: var(--mo-sidebar-logout-hover);
-		color: #fecaca;
+		color: #ffffff;
 	}
 	@media (max-width: 1023px) {
 		.multi-org-sidebar {
@@ -405,5 +431,14 @@
 			z-index: 40;
 			box-shadow: 4px 0 12px rgba(0,0,0,0.3);
 		}
+	}
+	/* Mobile drawer: larger touch targets for finger taps */
+	.multi-org-sidebar-drawer .multi-org-sidebar-item {
+		min-height: 3rem;
+		padding: 0.875rem 1rem;
+	}
+	.multi-org-sidebar-drawer .multi-org-sidebar-sub-item {
+		min-height: 2.75rem;
+		padding: 0.625rem 0.75rem;
 	}
 </style>
