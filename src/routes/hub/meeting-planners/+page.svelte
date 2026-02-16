@@ -10,7 +10,7 @@
 	$: currentPage = data.currentPage || 1;
 	$: totalPages = data.totalPages || 1;
 	$: search = data.search || '';
-	$: sundayPlannersLabel = data.sundayPlannersLabel ?? 'Sunday Planners';
+	$: sundayPlannersLabel = data.sundayPlannersLabel ?? 'Meeting Planners';
 	$: singularLabel = sundayPlannersLabel.endsWith('s') ? sundayPlannersLabel.slice(0, -1) : sundayPlannersLabel;
 
 	let searchInput = search;

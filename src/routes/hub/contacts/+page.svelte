@@ -92,6 +92,12 @@
 			render: (val) => val ? formatDateUK(val) : ''
 		}
 	];
+	/** Mobile card view: only first name, last name, telephone */
+	$: mobileColumns = [
+		{ key: 'firstName', label: 'First name', render: (val) => val || '—' },
+		{ key: 'lastName', label: 'Last name', render: (val) => val || '—' },
+		{ key: 'phone', label: 'Telephone', render: (val) => val || '—' }
+	];
 
 	$: formResult = $page.form;
 	
@@ -179,7 +185,7 @@
 {/if}
 
 <div role="region" aria-label="Contacts table">
-	<Table {columns} rows={contacts} emptyMessage="No contacts yet. Add your first contact above." onRowClick={(row) => goto(`/hub/contacts/${row.id}`)} />
+	<Table {columns} {mobileColumns} rows={contacts} emptyMessage="No contacts yet. Add your first contact above." onRowClick={(row) => goto(`/hub/contacts/${row.id}`)} />
 </div>
 
 <Pager {currentPage} {totalPages} onPageChange={handlePageChange} />

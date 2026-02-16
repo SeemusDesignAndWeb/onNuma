@@ -73,7 +73,7 @@ function getDefaultSettings() {
 		theme: getDefaultTheme(),
 		rotaReminderDaysAhead: 3,
 		sundayPlannerEventId: null,
-		sundayPlannersLabel: 'Sunday Planners',
+		sundayPlannersLabel: 'Meeting Planners',
 		planSetup: null
 	};
 }
@@ -205,7 +205,7 @@ export async function writeSettings(settings) {
 		hubSuperAdminEmail: existing?.hubSuperAdminEmail ?? settings.hubSuperAdminEmail ?? null,
 		currentOrganisationId: existing?.currentOrganisationId ?? settings.currentOrganisationId ?? null,
 		sundayPlannerEventId: settings.sundayPlannerEventId ?? existing?.sundayPlannerEventId ?? null,
-		sundayPlannersLabel: settings.sundayPlannersLabel ?? existing?.sundayPlannersLabel ?? 'Sunday Planners',
+		sundayPlannersLabel: settings.sundayPlannersLabel ?? existing?.sundayPlannersLabel ?? 'Meeting Planners',
 		planSetup: existing?.planSetup ?? settings.planSetup ?? null,
 		createdAt: existing?.createdAt ?? now,
 		updatedAt: now

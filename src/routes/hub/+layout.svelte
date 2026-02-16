@@ -1,6 +1,7 @@
 <script>
 	import '$lib/crm/hub.css';
 	import CrmShell from '$lib/crm/components/CrmShell.svelte';
+	import OnboardingRouteBar from '$lib/crm/components/OnboardingRouteBar.svelte';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 	import { invalidateAll, goto } from '$app/navigation';
@@ -23,6 +24,8 @@
 	$: organisationAreaPermissions = data?.organisationAreaPermissions ?? null;
 	$: currentOrgId = data?.organisationId ?? null;
 	$: trialStatus = data?.trialStatus ?? { inTrial: false, expired: false, daysRemaining: 0, trialPlan: null };
+	$: isSuperAdmin = data?.isSuperAdmin ?? false;
+	$: privacyContactSet = data?.privacyContactSet ?? true;
 
 	// Track organisation changes to refresh store data
 	let previousOrgId = null;
@@ -159,12 +162,19 @@
 	{theme}
 	superAdminEmail={superAdminEmail}
 	organisationAreaPermissions={organisationAreaPermissions}
-	sundayPlannersLabel={data?.sundayPlannersLabel ?? 'Sunday Planners'}
+	sundayPlannersLabel={data?.sundayPlannersLabel ?? 'Meeting Planners'}
 	showBilling={data?.showBilling ?? false}
 	showBillingPortal={data?.showBillingPortal ?? false}
 	organisations={data?.organisations ?? []}
 	currentOrganisation={data?.currentOrganisation ?? null}
 >
+	<svelte:fragment slot="top">
+		<OnboardingRouteBar
+			{admin}
+			{superAdminEmail}
+			{organisationAreaPermissions}
+		/>
+	</svelte:fragment>
 	<slot />
 </CrmShell>
 {#if !$page.url.pathname.startsWith('/hub/auth/') && admin && showOnboarding && OnboardingComponent}

@@ -117,7 +117,7 @@
 	.my-welcome-heading {
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: #111827;
+		color: var(--myhub-primary);
 		margin-bottom: 0.5rem;
 	}
 	@media (min-width: 640px) {
@@ -142,20 +142,21 @@
 		gap: 1rem;
 		padding: 1.25rem;
 		background: #fff;
-		border: 1px solid #e5e7eb;
+		border: 1px solid var(--myhub-card-border, #e2e8f0);
 		border-radius: 1rem;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 		text-decoration: none;
 		color: inherit;
-		transition: border-color 0.15s, box-shadow 0.15s;
+		transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 		min-height: 4rem;
 	}
 	.my-quicklink:hover {
-		border-color: #93c5fd;
-		box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+		border-color: var(--myhub-primary);
+		box-shadow: 0 4px 12px var(--myhub-card-hover, rgba(37, 99, 168, 0.08));
+		background: #fff;
 	}
 	.my-quicklink:focus-visible {
-		outline: 2px solid #2563eb;
+		outline: 2px solid var(--myhub-primary);
 		outline-offset: 2px;
 	}
 	.my-ql-icon {
@@ -168,20 +169,20 @@
 		flex-shrink: 0;
 	}
 	.my-ql-icon-blue {
-		background: #eff6ff;
-		color: #2563eb;
+		background: #e8f1fa;
+		color: var(--myhub-primary);
 	}
 	.my-ql-icon-green {
-		background: #ecfdf5;
-		color: #059669;
+		background: #e8f5ef;
+		color: #0d9668;
 	}
 	.my-ql-icon-purple {
-		background: #f5f3ff;
-		color: #7c3aed;
+		background: #f0edf9;
+		color: #6d5bb8;
 	}
 	.my-ql-icon-amber {
-		background: #fffbeb;
-		color: #d97706;
+		background: #fef6e8;
+		color: #c7760a;
 	}
 	.my-ql-icon-slate {
 		background: #f1f5f9;
@@ -217,8 +218,8 @@
 		line-height: 1.5;
 	}
 	.my-alert-info {
-		background: #fffbeb;
-		border-color: #fde68a;
-		color: #92400e;
+		background: #fef9eb;
+		border-color: #f5e6b8;
+		color: #7c5a0a;
 	}
 </style>

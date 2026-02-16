@@ -123,6 +123,11 @@
 			}
 		}
 	];
+
+	/** Mobile card view: only rota name */
+	const mobileColumns = [
+		{ key: 'role', label: 'Rota', render: (val) => val || '—' }
+	];
 </script>
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -159,7 +164,8 @@
 
 <div bind:this={tableContainer}>
 	<Table 
-		{columns} 
+		{columns}
+		{mobileColumns}
 		rows={rotas}
 		emptyMessage="No rotas yet. Create an event first, then add rotas from the event page."
 		onRowClick={(row) => goto(`/hub/rotas/${row.id}`)}

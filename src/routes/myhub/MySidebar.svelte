@@ -64,8 +64,8 @@
 		width: 14rem;
 		min-height: 100vh;
 		height: 100%;
-		background: linear-gradient(180deg, #1e3a5f 0%, #1a1d24 100%);
-		border-right: 1px solid #2d3239;
+		background: var(--myhub-sidebar-bg, linear-gradient(180deg, #1e4976 0%, #0f2840 100%));
+		border-right: 1px solid rgba(255, 255, 255, 0.08);
 		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
@@ -86,7 +86,7 @@
 		padding: 0.75rem 1rem;
 		font-size: 1.125rem;
 		font-weight: 700;
-		color: #93c5fd;
+		color: rgba(255, 255, 255, 0.95);
 		text-decoration: none;
 		border-radius: 0.75rem;
 	}
@@ -118,7 +118,7 @@
 		padding: 0.875rem 1rem;
 		min-height: 3rem;
 		border-radius: 0.75rem;
-		color: rgba(255, 255, 255, 0.9);
+		color: rgba(255, 255, 255, 0.88);
 		text-decoration: none;
 		font-size: 1rem;
 		font-weight: 500;
@@ -129,7 +129,7 @@
 		color: #fff;
 	}
 	.my-sidebar-item.active {
-		background: #1e40af;
+		background: var(--myhub-sidebar-active, #2563a8);
 		color: #fff;
 	}
 	.my-sidebar-item:focus-visible {
@@ -140,7 +140,7 @@
 		width: 1.5rem;
 		height: 1.5rem;
 		flex-shrink: 0;
-		color: #fff;
+		color: inherit;
 	}
 	.my-sidebar-label {
 		word-break: break-word;

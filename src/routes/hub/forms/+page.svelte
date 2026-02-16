@@ -186,6 +186,10 @@
 			render: (val) => val ? formatDateUK(val) : ''
 		}
 	];
+	/** Mobile view: only form name */
+	const mobileColumns = [
+		{ key: 'name', label: 'Form', render: (val) => val || '—' }
+	];
 </script>
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -223,14 +227,14 @@
 	</form>
 </div>
 
-<Table {columns} rows={forms} emptyMessage="No forms yet. Create your first form above." onRowClick={(row) => goto(`/hub/forms/${row.id}`)} />
+<Table {columns} {mobileColumns} rows={forms} emptyMessage="No forms yet. Create your first form above." onRowClick={(row) => goto(`/hub/forms/${row.id}`)} />
 
 <Pager {currentPage} {totalPages} onPageChange={handlePageChange} />
 
-<!-- Latest Form Submissions -->
-<div class="mt-8 bg-white shadow rounded-lg p-6">
-	<div class="flex justify-between items-center mb-4">
-		<h3 class="text-lg font-semibold text-gray-900">Latest Form Submissions</h3>
+<!-- Latest Form Submissions: tighter spacing on mobile -->
+<div class="mt-4 md:mt-8 bg-white shadow rounded-lg p-4 md:p-6">
+	<div class="flex justify-between items-center mb-3 md:mb-4">
+		<h3 class="text-base md:text-lg font-semibold text-gray-900">Latest Form Submissions</h3>
 	</div>
 	{#if latestSubmissions.length === 0}
 		<p class="text-sm text-gray-500">No form submissions yet</p>
@@ -239,11 +243,11 @@
 			<table class="min-w-full divide-y divide-gray-200">
 				<thead class="bg-gray-50">
 					<tr>
-						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
-						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
-						<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
+						<th class="px-3 py-2 md:px-[18px] md:py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
+						<th class="px-3 py-2 md:px-[18px] md:py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+						<th class="px-3 py-2 md:px-[18px] md:py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
 						{#if canDelete}
-							<th class="px-[18px] py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"></th>
+							<th class="px-3 py-2 md:px-[18px] md:py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-14 md:w-20"></th>
 						{/if}
 					</tr>
 				</thead>
@@ -258,13 +262,13 @@
 								}
 							}}
 						>
-							<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+							<td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
 								{submission.formName}
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+							<td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">
 								{submission.submittedAt ? formatDateTimeUK(submission.submittedAt) : '-'}
 							</td>
-							<td class="px-6 py-4 text-sm text-gray-500">
+							<td class="px-3 py-2 md:px-6 md:py-4 text-sm text-gray-500">
 								{#if submission.encryptedData}
 									<span class="text-hub-yellow-600 font-medium">🔒 Encrypted (Safeguarding)</span>
 								{:else if submission.data && typeof submission.data === 'object'}
@@ -281,7 +285,7 @@
 								{/if}
 							</td>
 							{#if canDelete}
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+								<td class="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-500">
 									<button
 										class="text-red-600 hover:text-red-800 font-bold text-lg w-6 h-6 flex items-center justify-center"
 										data-delete-submission={submission.id}

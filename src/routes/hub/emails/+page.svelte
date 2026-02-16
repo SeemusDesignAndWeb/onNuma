@@ -93,7 +93,7 @@
 	</form>
 </div>
 
-<Table {columns} rows={newsletters} emptyMessage="No emails yet. Create your first email above." onRowClick={(row) => goto(`/hub/emails/${row.id}`)} />
+<Table {columns} mobileHideLabels rows={newsletters} emptyMessage="No emails yet. Create your first email above." onRowClick={(row) => goto(`/hub/emails/${row.id}`)} />
 
 <Pager {currentPage} {totalPages} onPageChange={handlePageChange} />
 

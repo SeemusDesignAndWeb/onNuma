@@ -11,7 +11,7 @@
 	$: eventId = $page.data?.eventId || '';
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
-	$: sundayPlannersLabel = $page.data?.sundayPlannersLabel ?? 'Sunday Planners';
+	$: sundayPlannersLabel = $page.data?.sundayPlannersLabel ?? 'Meeting Planners';
 	$: singularLabel = sundayPlannersLabel.endsWith('s') ? sundayPlannersLabel.slice(0, -1) : sundayPlannersLabel;
 	
 	// Show notifications from form results

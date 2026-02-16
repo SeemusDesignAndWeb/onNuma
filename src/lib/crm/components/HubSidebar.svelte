@@ -2,21 +2,24 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { hasRouteAccess, isSuperAdmin } from '$lib/crm/permissions.js';
+	import { hubSidebarCollapsed, HUB_SIDEBAR_COLLAPSED_KEY } from '$lib/crm/stores/sidebar.js';
 
 	export let admin = null;
 	/** @type {{ logoPath?: string } | null} */
 	export let theme = null;
 	export let superAdminEmail = null;
 	export let organisationAreaPermissions = null;
-	export let sundayPlannersLabel = 'Sunday Planners';
+	export let sundayPlannersLabel = 'Meeting Planners';
 	export let showBilling = false;
 	/** Multi-org: list of { id, name } to switch org; empty = single org */
 	export let organisations = [];
 	export let currentOrganisation = null;
 	/** Callback when user selects another org (e.g. navigate to multi-org with org id) */
 	export let onOrganisationSwitch = null;
+	/** When set (e.g. mobile overlay), show close button and call on nav/close */
+	export let onClose = null;
 
-	const SIDEBAR_COLLAPSED_KEY = 'hub_sidebar_collapsed';
+	const SIDEBAR_COLLAPSED_KEY = HUB_SIDEBAR_COLLAPSED_KEY;
 
 	$: accessDenied = $page.url.searchParams.get('error') === 'access_denied';
 
@@ -36,12 +39,16 @@
 	onMount(() => {
 		try {
 			const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-			if (stored !== null) collapsed = stored === 'true';
+			if (stored !== null) {
+				collapsed = stored === 'true';
+				hubSidebarCollapsed.set(collapsed);
+			}
 		} catch (_) {}
 	});
 
 	function setCollapsed(value) {
 		collapsed = value;
+		hubSidebarCollapsed.set(value);
 		try {
 			localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(value));
 		} catch (_) {}
@@ -49,6 +56,9 @@
 
 	function toggleCollapsed() {
 		setCollapsed(!collapsed);
+	}
+	function handleNavClick() {
+		if (onClose) onClose();
 	}
 
 	$: isDashboard = $page.url.pathname === '/hub' || $page.url.pathname === '/hub/';
@@ -59,11 +69,11 @@
 
 <aside
 	class="hub-sidebar"
-	class:collapsed
+	class:collapsed={collapsed && !onClose}
 	role="navigation"
 	aria-label="Main navigation"
 >
-	<!-- Top: logo + collapse -->
+	<!-- Top: logo + collapse (or close when mobile overlay) -->
 	<div class="hub-sidebar-top">
 		<a
 			href="/hub"
@@ -74,6 +84,7 @@
 					e.preventDefault();
 					toggleCollapsed();
 				}
+				if (onClose) onClose();
 			}}
 		>
 			<img
@@ -83,99 +94,111 @@
 				width="32"
 				height="32"
 			/>
-			{#if !collapsed}
+			{#if !collapsed || onClose}
 				<span class="hub-sidebar-brand-text">TheHUB</span>
 			{/if}
 		</a>
-		<button
-			type="button"
-			class="hub-sidebar-toggle"
-			on:click={() => {
-				// Only collapse from here; expand only via logo click
-				if (!collapsed) setCollapsed(true);
-			}}
-			aria-label={collapsed ? 'Sidebar collapsed; click logo to expand' : 'Collapse sidebar'}
-			aria-expanded={!collapsed}
-		>
-			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-				{#if collapsed}
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 12h14" />
-				{:else}
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
-				{/if}
-			</svg>
-		</button>
+		{#if onClose}
+			<button
+				type="button"
+				class="hub-sidebar-toggle hub-sidebar-close"
+				aria-label="Close menu"
+				on:click={onClose}
+			>
+				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+		{:else}
+			<button
+				type="button"
+				class="hub-sidebar-toggle"
+				on:click={() => {
+					if (!collapsed) setCollapsed(true);
+				}}
+				aria-label={collapsed ? 'Sidebar collapsed; click logo to expand' : 'Collapse sidebar'}
+				aria-expanded={!collapsed}
+			>
+				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					{#if collapsed}
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 12h14" />
+					{:else}
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
+					{/if}
+				</svg>
+			</button>
+		{/if}
 	</div>
 
 	<!-- Main nav -->
 	{#if !accessDenied}
 		<nav class="hub-sidebar-nav">
-		<a href="/hub" class="hub-sidebar-item" class:active={isDashboard} title="Dashboard">
+		<a href="/hub" class="hub-sidebar-item" class:active={isDashboard} title="Dashboard" on:click={handleNavClick}>
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
 			</svg>
-			{#if !collapsed}<span class="hub-sidebar-label">Dashboard</span>{/if}
+			{#if !collapsed || onClose}<span class="hub-sidebar-label">Dashboard</span>{/if}
 		</a>
 
 			{#if canAccessContacts || canAccessLists || canAccessMembers}
-				<a href="/hub/contacts" class="hub-sidebar-item" class:active={isContactsActive} title="Contacts">
+				<a href="/hub/contacts" class="hub-sidebar-item" class:active={isContactsActive} title="Contacts" on:click={handleNavClick}>
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
 					</svg>
-				{#if !collapsed}<span class="hub-sidebar-label">Contacts</span>{/if}
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Contacts</span>{/if}
 				</a>
 			{/if}
 
 			{#if canAccessRotas}
-				<a href="/hub/rotas" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/rotas')} title="Rotas">
+				<a href="/hub/rotas" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/rotas')} title="Rotas" on:click={handleNavClick}>
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
 					</svg>
-				{#if !collapsed}<span class="hub-sidebar-label">Rotas</span>{/if}
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Rotas</span>{/if}
 				</a>
 			{/if}
 
 			{#if canAccessEvents || canAccessMeetingPlanners}
-				<a href="/hub/events/calendar" class="hub-sidebar-item" class:active={isEventsActive} title="Events">
+				<a href="/hub/events" class="hub-sidebar-item" class:active={isEventsActive} title="Events" on:click={handleNavClick}>
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 					</svg>
-				{#if !collapsed}<span class="hub-sidebar-label">Events</span>{/if}
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Events</span>{/if}
 				</a>
 			{/if}
 
 			{#if canAccessNewsletters}
-				<a href="/hub/emails" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/emails')} title="Messages">
+				<a href="/hub/emails" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/emails')} title="Messages" on:click={handleNavClick}>
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 					</svg>
-				{#if !collapsed}<span class="hub-sidebar-label">Messages</span>{/if}
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Messages</span>{/if}
 				</a>
 			{/if}
 
 			{#if canAccessForms}
-				<a href="/hub/forms" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/forms')} title="Forms">
+				<a href="/hub/forms" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/forms')} title="Forms" on:click={handleNavClick}>
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 					</svg>
-				{#if !collapsed}<span class="hub-sidebar-label">Forms</span>{/if}
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Forms</span>{/if}
 				</a>
 			{/if}
 
-			<a href="/hub/help" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/help')} title="Help">
+			<a href="/hub/help" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/help')} title="Help" on:click={handleNavClick}>
 				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 				</svg>
-			{#if !collapsed}<span class="hub-sidebar-label">Help</span>{/if}
+			{#if !collapsed || onClose}<span class="hub-sidebar-label">Help</span>{/if}
 			</a>
 
 			<!-- Settings (Organisation Settings) -->
-			<a href="/hub/settings" class="hub-sidebar-item" class:active={isSettingsActive} title="Settings">
+			<a href="/hub/settings" class="hub-sidebar-item" class:active={isSettingsActive} title="Settings" on:click={handleNavClick}>
 				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 				</svg>
-			{#if !collapsed}<span class="hub-sidebar-label">Settings</span>{/if}
+			{#if !collapsed || onClose}<span class="hub-sidebar-label">Settings</span>{/if}
 			</a>
 		</nav>
 	{/if}
@@ -183,26 +206,26 @@
 	<!-- Bottom: profile, logout -->
 	<div class="hub-sidebar-bottom">
 		{#if admin}
-			<a href="/hub/profile" class="hub-sidebar-item hub-sidebar-profile" class:active={$page.url.pathname.startsWith('/hub/profile')} title="Profile">
+			<a href="/hub/profile" class="hub-sidebar-item hub-sidebar-profile" class:active={$page.url.pathname.startsWith('/hub/profile')} title="Profile" on:click={handleNavClick}>
 				<div class="hub-sidebar-avatar" aria-hidden="true">
 					{((admin.name || admin.email || '?').charAt(0).toUpperCase())}
 				</div>
-			{#if !collapsed}
+			{#if !collapsed || onClose}
 				<span class="hub-sidebar-label truncate">Profile</span>
 			{/if}
 			</a>
 			{#if showBilling}
-				<a href="/hub/billing" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/billing')} title="Billing">
+				<a href="/hub/billing" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/billing')} title="Billing" on:click={handleNavClick}>
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-				{#if !collapsed}<span class="hub-sidebar-label">Billing</span>{/if}
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Billing</span>{/if}
 				</a>
 			{/if}
 		{/if}
-		<a href="/hub/auth/logout" class="hub-sidebar-item hub-sidebar-logout" title="Log out">
+		<a href="/hub/auth/logout" class="hub-sidebar-item hub-sidebar-logout" title="Log out" on:click={handleNavClick}>
 			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
 			</svg>
-		{#if !collapsed}<span class="hub-sidebar-label">Log out</span>{/if}
+		{#if !collapsed || onClose}<span class="hub-sidebar-label">Log out</span>{/if}
 		</a>
 	</div>
 </aside>
@@ -213,16 +236,14 @@
 		--sidebar-width-collapsed: 4.5rem;
 		width: var(--sidebar-width);
 		max-width: var(--sidebar-width);
-		height: 100vh;
-		min-height: 100vh;
+		height: 100%;
+		min-height: 100%;
 		background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
 		border-right: 1px solid #334155;
 		display: flex;
 		flex-direction: column;
 		flex-shrink: 0;
 		transition: width 0.25s ease, max-width 0.25s ease;
-		position: sticky;
-		top: 0;
 		overflow: clip;
 	}
 	.hub-sidebar.collapsed {
@@ -255,11 +276,15 @@
 		align-items: center;
 		gap: 0.75rem;
 		text-decoration: none;
-		color: #93c5fd;
+		color: #fff;
 		font-weight: 700;
 		font-size: 1.125rem;
 		min-height: 2.75rem;
 		min-width: 2.75rem;
+	}
+	.hub-sidebar-brand:hover {
+		color: #fff;
+		opacity: 0.95;
 	}
 	.hub-sidebar-logo {
 		width: 2rem;
@@ -289,6 +314,10 @@
 		background: #334155;
 		color: #f1f5f9;
 	}
+	.hub-sidebar-close {
+		min-width: 2.75rem;
+		min-height: 2.75rem;
+	}
 	.hub-sidebar-nav {
 		flex: 1;
 		overflow-y: auto;
@@ -316,7 +345,7 @@
 		color: #f1f5f9;
 	}
 	.hub-sidebar-item.active {
-		background: #1e40af;
+		background: #4A97D2;
 		color: #f1f5f9;
 	}
 	.hub-sidebar-item:focus-visible {

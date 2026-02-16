@@ -1206,6 +1206,131 @@ Website: ${baseUrl}
 }
 
 /**
+ * Send suggested-to-invite email: one contact, selected rotas, custom message, ends with myHub link.
+ * @param {object} contact - Contact { id, email, firstName, lastName }
+ * @param {Array} rotaInvites - Array of { rota, event, signupUrl }
+ * @param {string} customMessage - Optional message (supports {{firstname}})
+ * @param {object} event - SvelteKit event object
+ * @returns {Promise<{ email: string, status: string, error?: string }>}
+ */
+export async function sendSuggestedInviteEmail(contact, rotaInvites, customMessage, event) {
+	const baseUrl = getBaseUrl(event);
+	const fromEmail = fromEmailDefault();
+	const to = contact?.email;
+	if (!to) {
+		return { email: to || 'unknown', status: 'error', error: 'No email address' };
+	}
+
+	const firstName = contact.firstName || '';
+	const personalizedMessage = customMessage
+		? String(customMessage).replace(/\{\{firstname\}\}/gi, firstName).trim()
+		: '';
+
+	let rotasHtml = '';
+	let rotasText = '';
+	for (const { rota, event: eventData, signupUrl } of rotaInvites) {
+		if (!rota || !signupUrl) continue;
+		const role = rota.role || 'Volunteer';
+		const capacity = rota.capacity ?? 1;
+		const eventTitle = eventData?.title || 'Event';
+
+		rotasHtml += `
+			<div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #2d7a32;">
+				<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">${eventTitle}</p>
+				<p style="margin: 0 0 8px 0; color: #333; font-size: 16px; font-weight: 600;">${role}</p>
+				<p style="margin: 0 0 10px 0; color: #666; font-size: 13px;">Capacity: ${capacity} ${capacity === 1 ? 'person is' : 'people are'} ideal for this rota</p>
+				<div style="text-align: center; margin-top: 10px;">
+					<a href="${signupUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 8px 16px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 13px;">Select date for ${role}</a>
+				</div>
+			</div>
+		`;
+		rotasText += `\n${eventTitle} – ${role} (Capacity: ${capacity})\nSelect date: ${signupUrl}\n`;
+	}
+
+	const myHubUrl = `${baseUrl}/myhub`;
+	const myHubSectionHtml = `
+		<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 16px 0; border-left: 4px solid #2563eb;">
+			<p style="margin: 0 0 8px 0; color: #333; font-size: 15px; font-weight: 600;">See all rotas and sign up for more</p>
+			<p style="margin: 0 0 12px 0; color: #666; font-size: 14px;">There are other rotas you can sign up for. Visit myHub to see everything in one place.</p>
+			<a href="${myHubUrl}" style="display: inline-block; background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">Open myHub</a>
+		</div>
+	`;
+	const myHubSectionText = `\n\nThere are other rotas you can sign up for. Visit myHub to see everything: ${myHubUrl}`;
+
+	const branding = await getEmailBranding(event);
+	const html = `
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Volunteer Rota Invitations</title>
+		</head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
+			<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+				${branding}
+				<div style="background: linear-gradient(135deg, #2d7a32 0%, #1e5a22 100%); padding: 20px 15px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
+					<h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Volunteer Rota Invitations</h1>
+				</div>
+				<div style="padding: 0;">
+					<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hi ${firstName || 'there'},</p>
+					${personalizedMessage ? `<p style="color: #333; font-size: 15px; margin: 0 0 15px 0; white-space: pre-wrap;">${personalizedMessage}</p>` : ''}
+					${rotasHtml}
+					${myHubSectionHtml}
+					<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+						<div style="text-align: center; margin-bottom: 15px;">
+							<p style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">Eltham Green Community Church</p>
+							<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">542 Westhorne Avenue, Eltham, London, SE9 6RR</p>
+							<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">
+								<a href="tel:02088501331" style="color: #2d7a32; text-decoration: none;">020 8850 1331</a> |
+								<a href="mailto:enquiries@egcc.co.uk" style="color: #2d7a32; text-decoration: none;">enquiries@egcc.co.uk</a>
+							</p>
+							<p style="margin: 10px 0 0 0;">
+								<a href="${baseUrl}" style="color: #2d7a32; text-decoration: none; font-size: 12px; font-weight: 500;">Visit our website</a>
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Volunteer Rota Invitations
+
+Hi ${firstName || 'there'},
+
+${personalizedMessage ? personalizedMessage + '\n\n' : ''}${rotasText}${myHubSectionText}
+
+---
+Eltham Green Community Church
+542 Westhorne Avenue, Eltham, London, SE9 6RR
+Phone: 020 8850 1331
+Email: enquiries@egcc.co.uk
+Website: ${baseUrl}
+	`.trim();
+
+	const subject = `Can you help? Sign up for these rotas`;
+
+	try {
+		await rateLimitedSend(() =>
+			sendEmail({
+				from: fromEmail,
+				to: [to],
+				subject,
+				html,
+				text
+			})
+		);
+		return { email: to, status: 'sent' };
+	} catch (err) {
+		console.error('Error sending suggested invite email:', err);
+		return { email: to, status: 'error', error: err?.message || 'Send failed' };
+	}
+}
+
+/**
  * Send batch of rota invite emails using Resend batch API
  * @param {Array} emailDataArray - Array of {email, emailData} or {email, status, error}
  * @returns {Promise<Array>} Results array with status for each email

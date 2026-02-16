@@ -47,6 +47,11 @@
 			render: (val) => val ? formatDateUK(val) : ''
 		}
 	];
+	/** Mobile list view: only event name and date */
+	const mobileColumns = [
+		{ key: 'title', label: 'Event', render: (val) => val || '—' },
+		{ key: 'createdAt', label: 'Date', render: (val) => val ? formatDateUK(val) : '—' }
+	];
 </script>
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -75,7 +80,7 @@
 	</form>
 </div>
 
-<Table {columns} rows={events} emptyMessage="No events yet. Add your first event above." onRowClick={(row) => goto(`/hub/events/${row.id}`)} />
+<Table {columns} {mobileColumns} rows={events} emptyMessage="No events yet. Add your first event above." onRowClick={(row) => goto(`/hub/events/${row.id}`)} />
 
 <Pager {currentPage} {totalPages} onPageChange={handlePageChange} />
 

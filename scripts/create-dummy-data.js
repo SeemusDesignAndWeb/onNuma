@@ -228,11 +228,14 @@ function generateEvents() {
 	const events = [];
 	for (let i = 0; i < eventTitles.length; i++) {
 		const title = eventTitles[i];
+		// Enable signup for first 5 events so the Hub Bookings panel has data to display and test
+		const enableSignup = i < 5;
 		events.push(createRecord({
 			title,
 			description: `<p>Description for ${title}. This is a sample event description.</p>`,
 			location: locations[Math.floor(Math.random() * locations.length)],
 			visibility: Math.random() > 0.3 ? 'public' : 'private',
+			enableSignup: enableSignup,
 			meta: {}
 		}));
 	}
@@ -316,6 +319,36 @@ function generateRotas(events, occurrences, contacts) {
 		}
 	}
 	return rotas;
+}
+
+// Generate dummy event signups (for events with enableSignup so Hub Bookings panel shows data)
+function generateEventSignups(events, occurrences, contacts) {
+	const signups = [];
+	const signupEvents = events.filter(e => e.enableSignup === true);
+	const firstNames = ['Oliver', 'Amelia', 'George', 'Isla', 'Arthur', 'Ava', 'Noah', 'Mia', 'Leo', 'Ivy', 'Oscar', 'Freya', 'Theo', 'Florence'];
+	const lastNames = ['Patel', 'Khan', 'Smith', 'Jones', 'Williams', 'Taylor', 'Brown', 'Davies'];
+	const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'example.com'];
+
+	for (const event of signupEvents) {
+		const eventOccurrences = occurrences.filter(o => o.eventId === event.id);
+		if (eventOccurrences.length === 0) continue;
+		// Vary signup count per event so the bookings bar chart has different bar lengths (e.g. 5–25)
+		const numSignups = Math.floor(Math.random() * 21) + 5;
+		for (let i = 0; i < numSignups; i++) {
+			const occurrence = eventOccurrences[i % eventOccurrences.length];
+			const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+			const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+			const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${i}@${domains[Math.floor(Math.random() * domains.length)]}`;
+			signups.push(createRecord({
+				eventId: event.id,
+				occurrenceId: occurrence.id,
+				name: `${firstName} ${lastName}`,
+				email,
+				guestCount: Math.random() > 0.7 ? Math.floor(Math.random() * 3) : 0
+			}));
+		}
+	}
+	return signups;
 }
 
 // Generate dummy newsletters
@@ -598,6 +631,9 @@ async function main() {
 	const rotas = generateRotas(events, occurrences, contacts);
 	console.log(`✅ Created ${rotas.length} rotas (assignees linked to contacts)`);
 
+	const eventSignups = generateEventSignups(events, occurrences, contacts);
+	console.log(`✅ Created ${eventSignups.length} event signups (for Bookings panel)`);
+
 	const newsletters = generateNewsletters();
 	console.log(`✅ Created ${newsletters.length} newsletters`);
 
@@ -614,6 +650,7 @@ async function main() {
 		for (const r of events) r.organisationId = organisationId;
 		for (const r of occurrences) r.organisationId = organisationId;
 		for (const r of rotas) r.organisationId = organisationId;
+		for (const r of eventSignups) r.organisationId = organisationId;
 		for (const r of newsletters) r.organisationId = organisationId;
 		for (const r of forms) r.organisationId = organisationId;
 		for (const r of registers) r.organisationId = organisationId;
@@ -626,6 +663,7 @@ async function main() {
 			await writeCollectionToDb(pool, 'events', events);
 			await writeCollectionToDb(pool, 'occurrences', occurrences);
 			await writeCollectionToDb(pool, 'rotas', rotas);
+			await writeCollectionToDb(pool, 'event_signups', eventSignups);
 			await writeCollectionToDb(pool, 'newsletters', newsletters);
 			await writeCollectionToDb(pool, 'forms', forms);
 			await writeCollectionToDb(pool, 'registers', registers);
@@ -639,12 +677,13 @@ async function main() {
 		await writeCollectionToFile('events', events);
 		await writeCollectionToFile('occurrences', occurrences);
 		await writeCollectionToFile('rotas', rotas);
+		await writeCollectionToFile('event_signups', eventSignups);
 		await writeCollectionToFile('newsletters', newsletters);
 		await writeCollectionToFile('forms', forms);
 		await writeCollectionToFile('registers', registers);
 		console.log('\n✨ Dummy data created successfully!');
 	}
-	console.log('\nYou can now view the data in The HUB at /hub (Events, Rotas, Suggested to invite).');
+	console.log('\nYou can now view the data in The HUB at /hub (Events, Rotas, Bookings panel, Suggested to invite).');
 }
 
 main().catch(error => {

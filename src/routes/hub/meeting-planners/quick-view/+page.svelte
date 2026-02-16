@@ -6,7 +6,7 @@
 	$: data = $page.data || {};
 	$: meetingPlanners = data.meetingPlanners || [];
 	$: otherRotaRoles = data.otherRotaRoles || [];
-	$: sundayPlannersLabel = data.sundayPlannersLabel ?? 'Sunday Planners';
+	$: sundayPlannersLabel = data.sundayPlannersLabel ?? 'Meeting Planners';
 	$: singularLabel = sundayPlannersLabel.endsWith('s') ? sundayPlannersLabel.slice(0, -1) : sundayPlannersLabel;
 
 	let isFullscreen = false;

@@ -57,10 +57,11 @@ export async function load({ cookies, locals }) {
 	const sundayPlannersLabel =
 		typeof settings?.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== ''
 			? settings.sundayPlannersLabel.trim()
-			: 'Sunday Planners';
+			: 'Meeting Planners';
 	const showBilling =
 		!!(env.PADDLE_API_KEY && (env.PADDLE_PRICE_ID_PROFESSIONAL || env.PADDLE_PRICE_ID_ENTERPRISE));
 	const showBillingPortal = !!(env.BOATHOUSE_PORTAL_ID && env.BOATHOUSE_SECRET);
+	const privacyContactSet = !!(org?.privacyContactName || org?.privacyContactEmail || org?.privacyContactPhone);
 	return {
 		csrfToken,
 		admin: locals.admin || null,
@@ -77,7 +78,8 @@ export async function load({ cookies, locals }) {
 		sundayPlannersLabel,
 		showBilling: !!showBilling,
 		showBillingPortal: !!showBillingPortal,
-		isSuperAdmin: locals.admin ? isSuperAdmin(locals.admin) : false
+		isSuperAdmin: locals.admin ? isSuperAdmin(locals.admin) : false,
+		privacyContactSet
 	};
 }
 

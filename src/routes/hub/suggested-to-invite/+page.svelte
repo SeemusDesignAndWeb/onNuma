@@ -33,7 +33,7 @@
 									<p class="text-sm text-gray-500 truncate">{person.email}</p>
 								{/if}
 							</div>
-							<a href="/hub/contacts/{person.id}" class="hub-btn flex-shrink-0 bg-theme-button-2 text-white">Invite</a>
+							<a href="/hub/suggested-to-invite/invite/{person.id}" class="hub-btn flex-shrink-0 bg-theme-button-2 text-white">Invite</a>
 						</li>
 					{/each}
 				</ul>

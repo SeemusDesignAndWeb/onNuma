@@ -33,10 +33,29 @@ export async function load({ url, cookies }) {
 		});
 	}
 
-	const total = filtered.length;
+	// Deduplicate: one row per (eventId, role); each rota is unique but attached to many events/occurrences
+	const seen = new Map();
+	for (const rota of filtered) {
+		const key = `${rota.eventId ?? ''}\0${rota.role ?? ''}`;
+		if (!seen.has(key)) {
+			seen.set(key, {
+				...rota,
+				assignees: Array.isArray(rota.assignees) ? [...rota.assignees] : [],
+				// Merged row represents all occurrences for this event+role
+				occurrenceId: null
+			});
+		} else {
+			const merged = seen.get(key);
+			const add = Array.isArray(rota.assignees) ? rota.assignees : [];
+			merged.assignees.push(...add);
+		}
+	}
+	const deduped = Array.from(seen.values());
+
+	const total = deduped.length;
 	const start = (page - 1) * ITEMS_PER_PAGE;
 	const end = start + ITEMS_PER_PAGE;
-	const paginated = filtered.slice(start, end);
+	const paginated = deduped.slice(start, end);
 
 	// Enrich with event data and filter assignees to only upcoming occurrences
 	const enriched = paginated.map(rota => {

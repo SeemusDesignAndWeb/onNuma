@@ -1,91 +1,65 @@
 # Hub Privacy Policy
 
-**Eltham Green Community Church (EGCC) Hub System**  
+**Organisation Hub System**  
 **Last Updated:** January 12, 2025
 
 ## Introduction
 
-This Privacy Policy explains how personal information is collected, stored, used, and protected within the Hub, Eltham Green Community Church's church management system. This policy applies to all data stored in the Hub and is intended for Hub administrators, church members, and anyone whose information is stored in the system.
+This Privacy Policy explains how personal information is collected, stored, used, and protected within the Hub, your organisation's management system. This policy applies to all data stored in the Hub and is intended for Hub administrators and anyone whose information is stored in the system.
 
 ## Who We Are
 
-**Eltham Green Community Church**  
-542 Westhorne Avenue  
-Eltham, London  
-SE9 6DH  
-United Kingdom
+[Your organisation name and contact details should be inserted here by the organisation operating the Hub.]
 
 **Contact:**  
-Email: enquiries@egcc.co.uk  
-Phone: 020 8850 1331
+[Email and phone for privacy enquiries]
 
 ## Why We Store Your Information
 
-We store personal information in the Hub to support the church's mission and operations. Here are the specific purposes for which we collect and store data:
+We store personal information in the Hub to support the organisation's operations. Here are the specific purposes for which we collect and store data:
 
 ### Contact Management and Communication
-**Why we store this**: To maintain accurate contact information so we can communicate with church members, visitors, and volunteers about church activities, events, and important updates.
+**Why we store this**: To maintain accurate contact information so we can communicate with contacts and volunteers about activities, events, and important updates.
 
 **What this enables**:
-- Sending newsletters and church communications
+- Sending newsletters and communications
 - Coordinating events and activities
-- Facilitating pastoral care and support
-- Managing contact lists for different groups and ministries
-
-### Membership Administration
-**Why we store this**: To maintain accurate membership records and understand the church community, enabling us to provide appropriate pastoral care and support.
-
-**What this enables**:
-- Tracking membership status and church involvement
-- Understanding when people joined the church
-- Managing membership records and statistics
-- Facilitating membership processes
-
-### Member Information and Faith Journey
-**Why we store this**: To support members in their faith journey, facilitate appropriate pastoral care, coordinate serving opportunities, and help members connect with the church community.
-
-**What this enables**:
-- Understanding members' faith journey and spiritual needs
-- Coordinating serving opportunities and ministry involvement
-- Facilitating community group connections
-- Planning pastoral care and support
-- Scheduling meetings with church leadership
+- Managing contact lists for different groups and teams
 
 ### Event and Volunteer Coordination
-**Why we store this**: To organise church events, manage volunteer rotas, and coordinate participation in church activities.
+**Why we store this**: To organise events, manage volunteer rotas, and coordinate participation in activities.
 
 **What this enables**:
-- Planning and organising church events and activities
+- Planning and organising events and activities
 - Managing event signups and attendance
 - Creating and managing volunteer rotas for services and events
 - Sending event invitations and reminders
-- Coordinating volunteers for church services
+- Coordinating volunteers
 
 ### Meeting Planning
-**Why we store this**: To plan church services, coordinate speakers and worship teams, and maintain service planning information.
+**Why we store this**: To plan meetings, coordinate participants, and maintain planning information.
 
 **What this enables**:
-- Planning church services and meetings
-- Coordinating speakers, worship leaders, and service participants
-- Maintaining service planning notes and information
+- Planning meetings and sessions
+- Coordinating speakers and participants
+- Maintaining planning notes and information
 - Managing meeting-related rotas
 
 ### Form Submissions and Safeguarding
-**Why we store this**: To process inquiries, manage membership applications, and handle safeguarding concerns in a secure and confidential manner.
+**Why we store this**: To process inquiries and handle safeguarding concerns in a secure and confidential manner.
 
 **What this enables**:
 - Processing general inquiries and requests
-- Managing membership applications
 - Handling safeguarding concerns and reports (with special encryption)
 - Collecting information through dynamic forms
 
 ### Newsletter and Communication Preferences
-**Why we store this**: To respect your communication preferences and track the effectiveness of church communications.
+**Why we store this**: To respect your communication preferences and track the effectiveness of communications.
 
 **What this enables**:
 - Managing newsletter subscriptions
 - Tracking communication preferences
-- Measuring engagement with church communications
+- Measuring engagement with communications
 
 ### Admin User Accounts and Security
 **Why we store this**: To manage Hub access securely, maintain accountability, and protect the system and data.
@@ -115,31 +89,31 @@ We store personal information in the Hub to support the church's mission and ope
 Access to personal information in the Hub is strictly controlled based on role-based permissions. Here's who can access what:
 
 ### Super Admin
-**Who**: Lead Pastor (john.watson@egcc.co.uk)
+**Who**: Designated lead administrator(s)
 
 **Access**: Full access to all data and system functions
 
-**Why they need access**: To oversee all church operations, manage the Hub system, and ensure proper administration of church activities.
+**Why they need access**: To oversee all operations, manage the Hub system, and ensure proper administration of activities.
 
 **What they can do**: View, edit, and delete all records; manage admin users; access all areas including safeguarding forms; configure system settings.
 
 ### Administrators with Full Access
-**Who**: Designated church leaders and senior administrators
+**Who**: Designated leaders and senior administrators
 
-**Access**: Contacts, lists, members, rotas, events, meeting planners, newsletters, and forms
+**Access**: Contacts, lists, rotas, events, meeting planners, newsletters, and forms
 
-**Why they need access**: To manage church operations, coordinate activities, and communicate with the church community.
+**Why they need access**: To manage operations, coordinate activities, and communicate with the community.
 
-**What they can do**: Manage contacts and members, create rotas, plan events, send newsletters, view form submissions, coordinate ministries.
+**What they can do**: Manage contacts, create rotas, plan events, send newsletters, view form submissions, coordinate teams.
 
 ### Administrators with Limited Access
-**Who**: Ministry leaders and coordinators
+**Who**: Team leaders and coordinators
 
 **Access**: Specific areas based on their role (e.g., rotas only, events only, contacts only)
 
-**Why they need access**: To fulfill their specific ministry responsibilities without accessing unnecessary information.
+**Why they need access**: To fulfill their specific responsibilities without accessing unnecessary information.
 
-**What they can do**: Access only the areas they need for their specific ministry responsibilities (e.g., rota coordinators can manage rotas but not access newsletters).
+**What they can do**: Access only the areas they need for their specific responsibilities (e.g., rota coordinators can manage rotas but not access newsletters).
 
 ### Safeguarding Officers
 **Who**: Designated safeguarding officers
@@ -151,16 +125,16 @@ Access to personal information in the Hub is strictly controlled based on role-b
 **What they can do**: View and manage safeguarding form submissions (encrypted data); cannot access other sensitive information unless specifically authorised.
 
 ### General Administrators
-**Who**: General church administrators
+**Who**: General administrators
 
 **Access**: Contacts, lists, rotas, events, and meeting planners
 
-**Why they need access**: To support general church administration and coordination.
+**Why they need access**: To support general administration and coordination.
 
-**What they cannot access**: Newsletters, forms, safeguarding data, or member detailed information.
+**What they cannot access**: Newsletters, forms, safeguarding data.
 
 ### Public Access (Token-Based)
-**Who**: Church members and volunteers
+**Who**: Volunteers and participants
 
 **Access**: Limited access via secure tokens for specific purposes
 
@@ -172,19 +146,19 @@ Access to personal information in the Hub is strictly controlled based on role-b
 
 ## How Your Information Is Used
 
-Personal information in the Hub is used exclusively for church operations and ministry purposes:
+Personal information in the Hub is used exclusively for organisation operations:
 
-### Church Administration
-- Maintaining accurate membership and contact records
-- Organising and managing the church contact database
-- Facilitating church community connections
-- Coordinating serving opportunities and volunteer assignments
+### Administration
+- Maintaining accurate contact records
+- Organising and managing the contact database
+- Facilitating community connections
+- Coordinating volunteer assignments
 
 ### Event Management
-- Planning and organising church events and activities
+- Planning and organising events and activities
 - Managing event registrations and attendance
-- Maintaining church calendar and event schedules
-- Displaying public events on the church website
+- Maintaining calendar and event schedules
+- Displaying public events on the organisation website
 
 ### Volunteer Coordination
 - Creating and managing volunteer rotas for services and events
@@ -193,42 +167,31 @@ Personal information in the Hub is used exclusively for church operations and mi
 - Sending invitations to volunteers for rota signups
 
 ### Communication
-- Creating and sending church newsletters and updates
+- Creating and sending newsletters and updates
 - Inviting people to events and activities
 - Reminding volunteers of their upcoming commitments
-- Facilitating pastoral care and support communications
 
 ### Meeting Planning
-- Planning church services and meetings
+- Planning meetings and sessions
 - Coordinating speakers and topics
-- Planning worship and music for services
 - Maintaining notes and planning information
 
 ### Form Management
 - Collecting and managing form submissions
 - Processing safeguarding concerns and reports (encrypted)
-- Processing membership applications
 - Managing general inquiries and requests
-
-### Member Support
-- Understanding members' faith journey and spiritual needs
-- Coordinating serving opportunities based on interests and availability
-- Facilitating community group connections
-- Planning pastoral care and support
-- Scheduling meetings with church leadership
 
 ### Reporting and Analytics
 - Tracking event attendance and participation
 - Reporting on volunteer participation and rotas
-- Generating membership and growth statistics
 - Tracking newsletter engagement
 
-## Data Sharing Within the Church
+## Data Sharing Within the Organisation
 
-Personal information may be shared within the church in the following ways:
+Personal information may be shared within the organisation in the following ways:
 
 ### Contact Lists
-- Contact information may be included in lists for specific groups (e.g., small groups, ministry teams)
+- Contact information may be included in lists for specific groups (e.g., teams, activity groups)
 - Lists are used for targeted communication and coordination
 - List membership is managed by authorised administrators
 
@@ -237,15 +200,10 @@ Personal information may be shared within the church in the following ways:
 - This enables coordination and communication between volunteers
 - Rota information is shared only with those who need it for coordination
 
-### Ministry Teams
-- Contact information may be shared within ministry teams for coordination purposes
+### Teams
+- Contact information may be shared within teams for coordination purposes
 - Team leaders may have access to team member contact information
-- Information is shared only for legitimate ministry purposes
-
-### Church Directory
-- Contact information may be included in internal church directories (with consent)
-- Directories are used to facilitate church community connections
-- You can opt out of being included in directories by contacting the church office
+- Information is shared only for legitimate operational purposes
 
 ## Data Security
 
@@ -285,7 +243,7 @@ We take data security seriously and have implemented multiple security measures:
 Under UK GDPR and Data Protection Act 2018, you have the following rights regarding your personal information:
 
 ### Right to Access
-You can request a copy of the personal information we hold about you in the Hub by contacting enquiries@egcc.co.uk.
+You can request a copy of the personal information we hold about you in the Hub by contacting the organisation using the details in the "Who We Are" section.
 
 ### Right to Rectification
 You can request that we correct any inaccurate or incomplete information about you.
@@ -300,19 +258,19 @@ You can request that we limit how we use your personal information in certain ci
 You can request a copy of your data in a structured, machine-readable format.
 
 ### Right to Object
-You can object to certain types of processing, such as inclusion in church directories or certain communications.
+You can object to certain types of processing, such as inclusion in directories or certain communications.
 
 ### Right to Withdraw Consent
 Where we process your data based on consent, you can withdraw that consent at any time.
 
-To exercise any of these rights, please contact enquiries@egcc.co.uk. We will respond to your request within one month.
+To exercise any of these rights, please contact the organisation using the details in the "Who We Are" section. We will respond to your request within one month.
 
 ## Data Retention
 
 We retain personal information for as long as necessary to fulfill the purposes outlined in this policy:
 
-- **Active members**: Data is retained while you are an active member or regular attender
-- **Former members**: Basic contact information may be retained for historical records and reconnection purposes
+- **Active contacts**: Data is retained while you are an active contact or regular participant
+- **Former contacts**: Basic contact information may be retained for historical records and reconnection purposes
 - **Safeguarding records**: Retained in accordance with legal requirements and safeguarding policies
 - **Audit logs**: Retained for security and accountability purposes (including IP addresses and user agent information)
 - **Event records**: Retained for historical records and planning purposes
@@ -351,20 +309,11 @@ All service providers are required to protect your data and use it only for the 
 
 ## Changes to This Policy
 
-We may update this Privacy Policy from time to time. The "Last Updated" date at the top indicates when changes were made. Significant changes will be communicated to Hub administrators and, where appropriate, to church members.
+We may update this Privacy Policy from time to time. The "Last Updated" date at the top indicates when changes were made. Significant changes will be communicated to Hub administrators and, where appropriate, to contacts.
 
 ## Contact Us
 
-If you have questions, concerns, or wish to exercise your rights regarding this Privacy Policy or your personal data, please contact us:
-
-**Eltham Green Community Church**  
-542 Westhorne Avenue  
-Eltham, London  
-SE9 6DH  
-United Kingdom
-
-**Email:** enquiries@egcc.co.uk  
-**Phone:** 020 8850 1331
+If you have questions, concerns, or wish to exercise your rights regarding this Privacy Policy or your personal data, please contact your organisation using the details in the "Who We Are" section.
 
 ## Complaints
 
@@ -386,10 +335,10 @@ Cheshire SK9 5AF
 As a Hub administrator, you have a responsibility to:
 
 - **Protect data**: Keep login credentials secure and never share your account
-- **Use data appropriately**: Only access and use data for legitimate church purposes
-- **Respect privacy**: Respect the privacy of church members and their information
+- **Use data appropriately**: Only access and use data for legitimate organisation purposes
+- **Respect privacy**: Respect the privacy of contacts and their information
 - **Report concerns**: Report any security concerns or data breaches immediately
-- **Follow policies**: Follow church policies and procedures for data handling
+- **Follow policies**: Follow organisation policies and procedures for data handling
 
 ### Access Logging
 

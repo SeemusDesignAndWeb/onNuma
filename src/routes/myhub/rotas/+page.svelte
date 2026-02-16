@@ -73,7 +73,8 @@
 					{/each}
 				</ul>
 				<p class="mt-6 text-[1.0625rem] text-gray-600">
-					Want to do more? <a href="/myhub/opportunities" class="my-link">Sign up for more rotas</a>.
+					Want to do more?
+					<a href="/myhub/opportunities" class="my-btn my-btn-primary my-rota-signup-btn">Sign up for more rotas</a>
 				</p>
 			</div>
 		</div>
@@ -177,5 +178,17 @@
 	}
 	.my-link:hover {
 		color: #1d4ed8;
+	}
+	.my-rota-signup-btn {
+		display: inline-flex;
+		align-items: center;
+		margin-top: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 0.75rem;
+		font-size: 1rem;
+		text-decoration: none;
+	}
+	.my-rota-signup-btn:hover {
+		text-decoration: none;
 	}
 </style>

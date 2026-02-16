@@ -35,8 +35,8 @@
 				<MultiOrgSidebar {base} />
 			</div>
 
-			<div class="lg:hidden crm-shell-mobile-header flex-shrink-0">
-				<div class="flex items-center justify-between h-14 px-4 bg-white border-b border-gray-200">
+			<div class="lg:hidden crm-shell-mobile-header flex-shrink-0 safe-area-top">
+				<div class="flex items-center justify-between min-h-14 h-14 bg-white border-b border-gray-200 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
 					<button
 						type="button"
 						class="p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100"
@@ -67,8 +67,8 @@
 					aria-label="Close menu"
 					on:click={closeMobileSidebar}
 				></button>
-				<div class="lg:hidden fixed inset-y-0 left-0 z-40 w-[16rem] max-w-[85vw] shadow-xl">
-					<MultiOrgSidebar {base} />
+				<div class="lg:hidden fixed inset-y-0 left-0 z-40 w-[16rem] max-w-[85vw] shadow-xl crm-shell-mobile-drawer safe-area-left">
+					<MultiOrgSidebar {base} onClose={closeMobileSidebar} />
 				</div>
 			{/if}
 
@@ -104,5 +104,19 @@
 		width: 100%;
 		min-width: 0;
 		box-sizing: border-box;
+	}
+	.safe-area-top {
+		padding-top: env(safe-area-inset-top, 0);
+	}
+	.safe-area-left {
+		padding-left: env(safe-area-inset-left, 0);
+	}
+	.crm-shell-mobile-drawer {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		height: 100dvh;
+		max-height: 100dvh;
+		overflow: hidden;
 	}
 </style>

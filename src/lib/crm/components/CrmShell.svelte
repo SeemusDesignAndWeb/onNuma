@@ -2,13 +2,14 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import HubSidebar from './HubSidebar.svelte';
+	import { hubSidebarCollapsed, HUB_SIDEBAR_COLLAPSED_KEY } from '$lib/crm/stores/sidebar.js';
 
 	export let admin = null;
 	/** @type {{ logoPath?: string; primaryColor?: string; brandColor?: string } | null} */
 	export let theme = null;
 	export let superAdminEmail = null;
 	export let organisationAreaPermissions = null;
-	export let sundayPlannersLabel = 'Sunday Planners';
+	export let sundayPlannersLabel = 'Meeting Planners';
 	export let showBilling = false;
 	export let showBillingPortal = false;
 	/** For multi-org: list of { id, name }; empty = single org (no switcher). */
@@ -30,6 +31,10 @@
 	}
 
 	onMount(() => {
+		try {
+			const stored = localStorage.getItem(HUB_SIDEBAR_COLLAPSED_KEY);
+			if (stored !== null) hubSidebarCollapsed.set(stored === 'true');
+		} catch (_) {}
 		function handleResize() {
 			if (window.innerWidth >= 1024) mobileSidebarOpen = false;
 		}
@@ -40,9 +45,9 @@
 
 <div class="crm-shell min-h-screen bg-theme-panel flex flex-col">
 	{#if !isAuthPage}
-		<!-- Desktop: sidebar always visible -->
-		<div class="crm-shell-desktop flex flex-1 min-h-0">
-			<div class="hidden lg:block crm-shell-sidebar-wrap">
+		<!-- Mobile: column (header on top, main full width). Desktop: row (sidebar | main). Sidebar fixed full height on desktop. -->
+		<div class="crm-shell-desktop flex flex-col lg:flex-row flex-1 min-h-0 overflow-x-hidden {$hubSidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-[16rem]'}">
+			<div class="hidden lg:block crm-shell-sidebar-wrap crm-shell-sidebar-fixed" class:crm-shell-sidebar-fixed--collapsed={$hubSidebarCollapsed}>
 				<HubSidebar
 					{admin}
 					{theme}
@@ -55,30 +60,34 @@
 				/>
 			</div>
 
-			<!-- Mobile: top bar + overlay sidebar -->
-			<div class="lg:hidden crm-shell-mobile-header flex-shrink-0">
-				<div class="flex items-center justify-between h-14 px-4 bg-white border-b border-gray-200">
-					<button
-						type="button"
-						class="p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100"
-						aria-label="Open menu"
-						on:click={() => (mobileSidebarOpen = true)}
-					>
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-						</svg>
-					</button>
-					<a href="/hub" class="flex items-center gap-2">
-						<img
-							src={theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png'}
-							alt=""
-							class="h-8 w-auto"
-							width="32"
-							height="32"
-						/>
-						<span class="text-lg font-bold text-gray-900">TheHUB</span>
-					</a>
-					<div class="w-10" aria-hidden="true"></div>
+			<!-- Mobile: top bar full width when in column (same blue as sidebar) -->
+			<div class="lg:hidden crm-shell-mobile-header sticky top-0 z-10 flex-shrink-0 safe-area-top w-full">
+				<div class="crm-shell-mobile-header-inner relative flex items-center min-h-14 h-14 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+					<div class="flex items-center w-12 flex-shrink-0">
+						<button
+							type="button"
+							class="crm-mobile-menu-btn flex items-center justify-center min-w-12 min-h-12 -ml-1 rounded-lg text-[#94a3b8] hover:bg-[#334155] hover:text-[#f1f5f9] touch-manipulation transition-colors"
+							aria-label="Open menu"
+							on:click={() => (mobileSidebarOpen = true)}
+						>
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+							</svg>
+						</button>
+					</div>
+					<div class="absolute left-0 right-0 flex justify-center items-center pointer-events-none">
+						<a href="/hub" class="crm-mobile-brand flex items-center gap-2 pointer-events-auto text-white hover:opacity-90 font-bold" aria-label="TheHUB home">
+							<img
+								src={theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png'}
+								alt=""
+								class="h-8 w-auto"
+								width="32"
+								height="32"
+							/>
+							<span class="text-lg font-bold">TheHUB</span>
+						</a>
+					</div>
+					<div class="w-12 flex-shrink-0" aria-hidden="true"></div>
 				</div>
 			</div>
 
@@ -89,7 +98,7 @@
 					aria-label="Close menu"
 					on:click={closeMobileSidebar}
 				></button>
-				<div class="lg:hidden fixed inset-y-0 left-0 z-40 w-[16rem] max-w-[85vw] shadow-xl">
+				<div class="lg:hidden fixed inset-y-0 left-0 z-40 w-[16rem] max-w-[85vw] shadow-xl crm-shell-mobile-drawer safe-area-left">
 					<HubSidebar
 						{admin}
 						{theme}
@@ -99,19 +108,21 @@
 						{showBilling}
 						organisations={organisations || []}
 						currentOrganisation={currentOrganisation}
+						onClose={closeMobileSidebar}
 					/>
 				</div>
 			{/if}
 
-			<!-- Main content area -->
-			<main class="crm-shell-main flex-1 flex flex-col min-w-0">
-				<div class="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+			<!-- Main content area: full width on mobile (column), min-w-0 + overflow-x-hidden -->
+			<main class="crm-shell-main flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
+				<slot name="top" />
+				<div class="flex-1 min-w-0 max-w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 					<slot />
 				</div>
 			</main>
 		</div>
 
-		<footer class="crm-shell-footer flex-shrink-0 w-full bg-white border-t border-gray-200">
+		<footer class="crm-shell-footer flex-shrink-0 w-full bg-white border-t border-gray-200 {$hubSidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-[16rem]'}">
 			<div class="max-w-7xl mx-auto px-4 py-6">
 				<div class="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4">
 					<a href="/" class="flex items-center" aria-label="OnNuma home">
@@ -133,9 +144,52 @@
 </div>
 
 <style>
+	/* Desktop: sidebar fixed from top to bottom of viewport */
+	@media (min-width: 1024px) {
+		.crm-shell-sidebar-fixed {
+			position: fixed;
+			top: 0;
+			left: 0;
+			bottom: 0;
+			width: 16rem;
+			height: 100vh;
+			height: 100dvh;
+			z-index: 20;
+			flex-shrink: 0;
+			display: flex;
+			flex-direction: column;
+			transition: width 0.25s ease;
+		}
+		.crm-shell-sidebar-fixed.crm-shell-sidebar-fixed--collapsed {
+			width: 4.5rem;
+		}
+	}
 	.crm-shell-main {
 		width: 100%;
 		min-width: 0;
 		box-sizing: border-box;
+	}
+	.safe-area-top {
+		padding-top: env(safe-area-inset-top, 0);
+	}
+	/* Mobile top bar: same blue as hub sidebar */
+	.crm-shell-mobile-header-inner {
+		background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
+		border-bottom: 1px solid #334155;
+	}
+	.safe-area-left {
+		padding-left: env(safe-area-inset-left, 0);
+	}
+	.crm-shell-mobile-drawer {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		height: 100dvh;
+		max-height: 100dvh;
+		overflow: hidden;
+	}
+	/* Shift logo+text left by half the icon (and gap) so the text "TheHUB" sits in the true center */
+	.crm-mobile-brand {
+		transform: translateX(calc(-1 * (2rem + 0.5rem) / 2));
 	}
 </style>

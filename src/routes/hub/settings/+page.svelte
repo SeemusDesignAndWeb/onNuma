@@ -37,8 +37,8 @@
 	let showAddColour = false;
 	// Set to true to show Email Rate Limiting and Data store tabs (code kept for later use)
 	const SHOW_EMAIL_AND_DATA_STORE_TABS = false;
-	const validTabs = ['theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', 'advanced'];
-	let activeTab = 'theme'; // 'theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', or 'advanced'
+	const validTabs = ['theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', 'privacy', 'advanced'];
+	let activeTab = 'theme'; // 'theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', 'privacy', or 'advanced'
 	// Deep link: open specific tab from URL (e.g. /hub/settings?tab=billing for plan confirmation link)
 	onMount(() => {
 		const params = typeof window !== 'undefined' && window.location?.search ? new URLSearchParams(window.location.search) : null;
@@ -47,6 +47,21 @@
 		if (!SHOW_EMAIL_AND_DATA_STORE_TABS && (activeTab === 'email' || activeTab === 'data-store')) activeTab = 'theme';
 	});
 	$: if (!SHOW_EMAIL_AND_DATA_STORE_TABS && (activeTab === 'email' || activeTab === 'data-store')) activeTab = 'theme';
+	// Tab options for mobile dropdown (only visible tabs)
+	$: mobileTabOptions = (() => {
+		const opts = [
+			{ value: 'theme', label: 'Branding' },
+			{ value: 'colours', label: 'Calendar Colours' },
+			{ value: 'meeting-planner', label: 'Meeting Planner' }
+		];
+		if (SHOW_EMAIL_AND_DATA_STORE_TABS) {
+			opts.push({ value: 'email', label: 'Email Rate Limiting' }, { value: 'data-store', label: 'Data store' });
+		}
+		if (showBilling || showBillingPortal) opts.push({ value: 'billing', label: 'Billing' });
+		opts.push({ value: 'privacy', label: 'Privacy' });
+		opts.push({ value: 'advanced', label: 'Advanced' });
+		return opts;
+	})();
 	// Billing data from server
 	$: plan = data?.plan ?? 'free';
 	$: subscriptionStatus = data?.subscriptionStatus ?? null;
@@ -64,6 +79,104 @@
 	$: storeMode = storeModeOverride ?? data?.storeMode ?? 'file';
 	$: currentOrganisationId = data?.currentOrganisationId ?? null;
 	$: currentOrganisation = data?.currentOrganisation ?? null;
+
+	// Privacy policy contact (shown in Hub Privacy Policy "Who We Are"; fallback = Super admin)
+	let privacyContactName = currentOrganisation?.privacyContactName ?? '';
+	let privacyContactEmail = currentOrganisation?.privacyContactEmail ?? '';
+	let privacyContactPhone = currentOrganisation?.privacyContactPhone ?? '';
+	let savingPrivacyContact = false;
+
+	// Contact data (GDPR): download / delete all data for a contact (Super admin only)
+	let contactLookupQuery = '';
+	let lookedUpContact = null; // { id, firstName, lastName, email } or null
+	let contactLookupLoading = false;
+	let contactLookupError = '';
+	let contactDownloading = false;
+	let contactDeleteConfirm = false; // show confirm before delete
+	let contactDeleting = false;
+
+	async function lookupContact() {
+		const q = (contactLookupQuery || '').trim();
+		if (!q) {
+			contactLookupError = 'Enter an email or contact ID';
+			lookedUpContact = null;
+			return;
+		}
+		contactLookupLoading = true;
+		contactLookupError = '';
+		lookedUpContact = null;
+		try {
+			const res = await fetch(`/hub/settings/contact-data/lookup?q=${encodeURIComponent(q)}`);
+			const data = await res.json();
+			if (data.contact) {
+				lookedUpContact = data.contact;
+			} else {
+				contactLookupError = 'Contact not found';
+			}
+		} catch (err) {
+			contactLookupError = err.message || 'Lookup failed';
+		} finally {
+			contactLookupLoading = false;
+		}
+	}
+
+	function contactDisplayName() {
+		if (!lookedUpContact) return '';
+		const n = [lookedUpContact.firstName, lookedUpContact.lastName].filter(Boolean).join(' ').trim();
+		return n || lookedUpContact.email || lookedUpContact.id;
+	}
+
+	async function downloadContactData() {
+		if (!lookedUpContact?.id) return;
+		contactDownloading = true;
+		try {
+			const res = await fetch(`/hub/settings/contact-data/export?contactId=${encodeURIComponent(lookedUpContact.id)}`);
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: res.statusText }));
+				throw new Error(err.message || 'Download failed');
+			}
+			const blob = await res.blob();
+			const disposition = res.headers.get('Content-Disposition');
+			const match = disposition && disposition.match(/filename="([^"]+)"/);
+			const filename = match ? match[1] : `contact-data-${lookedUpContact.id}.json`;
+			const a = document.createElement('a');
+			a.href = URL.createObjectURL(blob);
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(a.href);
+			notifications.success('Download started');
+		} catch (err) {
+			notifications.error(err.message || 'Download failed');
+		} finally {
+			contactDownloading = false;
+		}
+	}
+
+	async function deleteContactData() {
+		if (!lookedUpContact?.id) return;
+		contactDeleting = true;
+		try {
+			const res = await fetch('/hub/settings/contact-data/delete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ contactId: lookedUpContact.id })
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				throw new Error(data?.error || data?.message || res.statusText || 'Delete failed');
+			}
+			notifications.success('Contact and all related data have been deleted.');
+			contactDeleteConfirm = false;
+			lookedUpContact = null;
+			contactLookupQuery = '';
+			contactLookupError = '';
+			await invalidateAll();
+		} catch (err) {
+			notifications.error(err.message || 'Delete failed');
+		} finally {
+			contactDeleting = false;
+		}
+	}
 	
 	// Meeting Planner Rota state
 	let editingRotaIndex = null;
@@ -71,10 +184,10 @@
 	let showAddRota = false;
 	let newRota = { role: '' };
 
-	// Sunday planner–specific settings
+	// Meeting planner–specific settings
 	$: events = data?.events || [];
 	let sundayPlannerEventId = data?.settings?.sundayPlannerEventId ?? null;
-	let sundayPlannersLabel = data?.settings?.sundayPlannersLabel ?? 'Sunday Planners';
+	let sundayPlannersLabel = data?.settings?.sundayPlannersLabel ?? 'Meeting Planners';
 	let savingSundayPlanner = false;
 
 	// Theme logo image browser ('navbar' | 'login')
@@ -163,7 +276,12 @@
 			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'hub';
 		}
 		sundayPlannerEventId = settings.sundayPlannerEventId ?? null;
-		sundayPlannersLabel = (typeof settings.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== '') ? settings.sundayPlannersLabel.trim() : 'Sunday Planners';
+		sundayPlannersLabel = (typeof settings.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== '') ? settings.sundayPlannersLabel.trim() : 'Meeting Planners';
+		if (data.currentOrganisation) {
+			privacyContactName = data.currentOrganisation.privacyContactName ?? '';
+			privacyContactEmail = data.currentOrganisation.privacyContactEmail ?? '';
+			privacyContactPhone = data.currentOrganisation.privacyContactPhone ?? '';
+		}
 	}
 	
 	$: availableRoles = data?.availableRoles || [];
@@ -252,14 +370,14 @@
 				})
 			});
 			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Failed to save theme' }));
-				throw new Error(errorData.message || 'Failed to save theme');
+				const errorData = await response.json().catch(() => ({ message: 'Failed to save branding' }));
+				throw new Error(errorData.message || 'Failed to save branding');
 			}
-			notifications.success('Theme saved successfully!');
+			notifications.success('Branding saved successfully.');
 			await invalidateAll();
 		} catch (err) {
-			notifications.error(err.message || 'Failed to save theme');
-			console.error('Error saving theme:', err);
+			notifications.error(err.message || 'Failed to save branding');
+			console.error('Error saving branding:', err);
 		} finally {
 			saving = false;
 		}
@@ -442,6 +560,31 @@
 		}
 	}
 
+	async function savePrivacyContact() {
+		savingPrivacyContact = true;
+		try {
+			const response = await fetch('/hub/settings', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					privacyContactName: (privacyContactName || '').trim() || null,
+					privacyContactEmail: (privacyContactEmail || '').trim() || null,
+					privacyContactPhone: (privacyContactPhone || '').trim() || null
+				})
+			});
+			if (!response.ok) {
+				const err = await response.json().catch(() => ({}));
+				throw new Error(err.message || 'Failed to save');
+			}
+			notifications.success('Privacy policy contact saved.');
+			await invalidateAll();
+		} catch (err) {
+			notifications.error(err.message || 'Failed to save privacy contact');
+		} finally {
+			savingPrivacyContact = false;
+		}
+	}
+
 	async function addRota() {
 		if (!newRota.role.trim()) {
 			notifications.error('Please select a rota');
@@ -471,17 +614,17 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					sundayPlannerEventId: sundayPlannerEventId || null,
-					sundayPlannersLabel: (typeof sundayPlannersLabel === 'string' && sundayPlannersLabel.trim() !== '') ? sundayPlannersLabel.trim() : 'Sunday Planners'
+					sundayPlannersLabel: (typeof sundayPlannersLabel === 'string' && sundayPlannersLabel.trim() !== '') ? sundayPlannersLabel.trim() : 'Meeting Planners'
 				})
 			});
 			if (!response.ok) {
 				const err = await response.json().catch(() => ({}));
 				throw new Error(err.message || 'Failed to save');
 			}
-			notifications.success('Sunday planner settings saved.');
+			notifications.success('Meeting planner settings saved.');
 			await invalidateAll();
 		} catch (err) {
-			notifications.error(err.message || 'Failed to save Sunday planner settings');
+			notifications.error(err.message || 'Failed to save Meeting planner settings');
 		} finally {
 			savingSundayPlanner = false;
 		}
@@ -681,19 +824,34 @@
 	<title>Settings - TheHUB</title>
 </svelte:head>
 
-<div class="w-full px-4 py-8">
-	<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-		<h1 class="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-		<p class="text-gray-600 mb-6">Manage system settings (Superadmin only)</p>
+<div class="w-full min-w-0 max-w-full px-3 py-4 sm:px-4 sm:py-8">
+	<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+		<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Settings</h1>
+		<p class="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Manage system settings (Superadmin only)</p>
 
-		<!-- Tabs -->
-		<div class="border-b border-gray-200 mb-6">
+		<!-- Mobile: dropdown submenu so all tabs fit on one screen -->
+		<div class="md:hidden mb-4">
+			<label for="settings-tab-select" class="sr-only">Settings section</label>
+			<select
+				id="settings-tab-select"
+				class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-3 pr-8 text-base text-gray-900 focus:border-theme-button-1 focus:ring-theme-button-1"
+				bind:value={activeTab}
+				aria-label="Choose settings section"
+			>
+				{#each mobileTabOptions as opt}
+					<option value={opt.value}>{opt.label}</option>
+				{/each}
+			</select>
+		</div>
+
+		<!-- Desktop: horizontal tabs -->
+		<div class="hidden md:block border-b border-gray-200 mb-6">
 			<nav class="-mb-px flex space-x-8" aria-label="Tabs">
 				<button
 					on:click={() => activeTab = 'theme'}
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'theme' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 				>
-					Theme
+					Branding
 				</button>
 				<button
 					on:click={() => activeTab = 'colours'}
@@ -730,6 +888,12 @@
 				</button>
 				{/if}
 				<button
+					on:click={() => activeTab = 'privacy'}
+					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'privacy' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+				>
+					Privacy
+				</button>
+				<button
 					on:click={() => activeTab = 'advanced'}
 					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'advanced' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 				>
@@ -738,12 +902,12 @@
 			</nav>
 		</div>
 		
-		<!-- Theme Settings (logos only; colours set in multi-org Settings) -->
+		<!-- Branding (logos only; colours set in multi-org Settings) -->
 		{#if activeTab === 'theme'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-4">Theme</h2>
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Branding</h2>
 			<p class="text-sm text-gray-600 mb-4">
-				Set logos used in the Hub and on public pages (e.g. signup). Theme colours are set in <a href="/multi-org/settings" class="text-theme-button-1 hover:underline">multi-org Settings</a>.
+				Set logos used in the Hub and on public pages (e.g. signup). Branding colours are set in <a href="/multi-org/settings" class="text-theme-button-1 hover:underline">multi-org Settings</a>.
 			</p>
 			<div class="space-y-4 max-w-xl">
 				<div>
@@ -843,7 +1007,7 @@
 					disabled={saving}
 					class="px-4 py-2 text-sm font-medium btn-theme-1 rounded-md disabled:opacity-50"
 				>
-					{saving ? 'Saving…' : 'Save theme'}
+					{saving ? 'Saving…' : 'Save branding'}
 				</button>
 			</div>
 		</div>
@@ -1007,15 +1171,15 @@
 
 		<!-- Meeting Planner Settings -->
 		{#if activeTab === 'meeting-planner'}
-		<!-- Sunday planner–specific settings -->
+		<!-- Meeting planner–specific settings -->
 		<div class="border-b border-gray-200 pb-6 mb-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-4">Sunday planner</h2>
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Meeting planner</h2>
 			<p class="text-sm text-gray-600 mb-4">
-				Choose which event to use as the &quot;Sunday planner&quot; event and the label shown in the Hub (e.g. &quot;Sunday Planners&quot;). Use singular form for one item (e.g. &quot;Sunday Planner&quot;).
+				Choose which event to use as the &quot;Meeting planner&quot; event and the label shown in the Hub (e.g. &quot;Meeting Planners&quot;). Use singular form for one item (e.g. &quot;Meeting Planner&quot;).
 			</p>
 			<div class="space-y-4 max-w-xl mb-4">
 				<div>
-					<label for="sunday-planner-event" class="block text-sm font-medium text-gray-700 mb-1">Sunday planner event</label>
+					<label for="sunday-planner-event" class="block text-sm font-medium text-gray-700 mb-1">Meeting planner event</label>
 					<select
 						id="sunday-planner-event"
 						bind:value={sundayPlannerEventId}
@@ -1026,7 +1190,7 @@
 							<option value={ev.id}>{ev.title || 'Untitled'}</option>
 						{/each}
 					</select>
-					<p class="mt-1 text-xs text-gray-500">Event whose occurrences are used for the Sunday planner section. Leave as &quot;None&quot; to disable.</p>
+					<p class="mt-1 text-xs text-gray-500">Event whose occurrences are used for the Meeting planner section. Leave as &quot;None&quot; to disable.</p>
 				</div>
 				<div>
 					<label for="sunday-planners-label" class="block text-sm font-medium text-gray-700 mb-1">Section name</label>
@@ -1034,10 +1198,10 @@
 						id="sunday-planners-label"
 						type="text"
 						bind:value={sundayPlannersLabel}
-						placeholder="Sunday Planners"
+						placeholder="Meeting Planners"
 						class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-theme-button-1 focus:border-theme-button-1 py-2 px-3 text-sm"
 					/>
-					<p class="mt-1 text-xs text-gray-500">Label used in the Hub nav and headings (e.g. &quot;Sunday Planners&quot;). Use singular &quot;Sunday Planner&quot; for one item where needed.</p>
+					<p class="mt-1 text-xs text-gray-500">Label used in the Hub nav and headings (e.g. &quot;Meeting Planners&quot;). Use singular &quot;Meeting Planner&quot; for one item where needed.</p>
 				</div>
 				<button
 					type="button"
@@ -1368,6 +1532,145 @@
 		</div>
 		{/if}
 
+		<!-- Privacy (GDPR & privacy policy contact) -->
+		{#if activeTab === 'privacy'}
+		<div class="border-b border-gray-200 pb-6 mb-6">
+			<h2 class="text-xl font-semibold text-gray-900 mb-4">Privacy</h2>
+			<p class="text-sm text-gray-600 mb-4">
+				Privacy policy contact details and GDPR-related tools (subject access requests and right to erasure).
+			</p>
+
+			<!-- Privacy policy contact -->
+			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200 mb-4">
+				<h3 class="text-sm font-semibold text-gray-700 mb-2">Privacy policy contact</h3>
+				<p class="text-sm text-gray-600 mb-3">
+					These details appear in the <strong>Who We Are</strong> section of your <a href="/hub/privacy" class="text-theme-button-1 hover:underline" target="_blank" rel="noopener">Privacy policy</a>. Use them for data protection or privacy enquiries. If left blank, the Super admin's name and email are shown.
+				</p>
+				<div class="space-y-3">
+					<div>
+						<label for="privacy-contact-name" class="block text-xs font-medium text-gray-700 mb-1">Contact name</label>
+						<input
+							id="privacy-contact-name"
+							type="text"
+							bind:value={privacyContactName}
+							placeholder="e.g. Data Protection Officer"
+							class="w-full max-w-md px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
+						/>
+					</div>
+					<div>
+						<label for="privacy-contact-email" class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+						<input
+							id="privacy-contact-email"
+							type="email"
+							bind:value={privacyContactEmail}
+							placeholder="privacy@yourorg.org"
+							class="w-full max-w-md px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
+						/>
+					</div>
+					<div>
+						<label for="privacy-contact-phone" class="block text-xs font-medium text-gray-700 mb-1">Phone (optional)</label>
+						<input
+							id="privacy-contact-phone"
+							type="text"
+							bind:value={privacyContactPhone}
+							placeholder=""
+							class="w-full max-w-md px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
+						/>
+					</div>
+					<button
+						type="button"
+						on:click={savePrivacyContact}
+						disabled={savingPrivacyContact}
+						class="px-3 py-1.5 text-sm btn-theme-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{savingPrivacyContact ? 'Saving...' : 'Save'}
+					</button>
+				</div>
+			</div>
+
+			<!-- Contact data (GDPR): download or delete all data for a contact -->
+			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200 mb-4">
+				<h3 class="text-sm font-semibold text-gray-700 mb-2">Contact data (GDPR)</h3>
+				<p class="text-sm text-gray-600 mb-3">
+					Download all information stored for a contact (e.g. for a subject access request) or permanently delete that contact and all related data (right to erasure). Use the contact's email or their contact ID from <a href="/hub/contacts" class="text-theme-button-1 hover:underline">Contacts</a>.
+				</p>
+				<div class="space-y-3">
+					<div class="flex flex-wrap items-end gap-2">
+						<div class="min-w-0 flex-1 max-w-md">
+							<label for="contact-data-lookup" class="block text-xs font-medium text-gray-700 mb-1">Email or contact ID</label>
+							<input
+								id="contact-data-lookup"
+								type="text"
+								bind:value={contactLookupQuery}
+								placeholder="e.g. john@example.org or contact ID"
+								class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
+								on:keydown={(e) => e.key === 'Enter' && lookupContact()}
+							/>
+						</div>
+						<button
+							type="button"
+							on:click={lookupContact}
+							disabled={contactLookupLoading}
+							class="px-3 py-1.5 text-sm btn-theme-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{contactLookupLoading ? 'Looking up...' : 'Look up'}
+						</button>
+					</div>
+					{#if contactLookupError}
+						<p class="text-sm text-red-600">{contactLookupError}</p>
+					{/if}
+					{#if lookedUpContact}
+						<div class="p-3 bg-white border border-gray-200 rounded-md">
+							<p class="text-sm font-medium text-gray-900 mb-2">
+								Contact: {contactDisplayName()}
+								{#if lookedUpContact.email}
+									<span class="text-gray-500 font-normal">({lookedUpContact.email})</span>
+								{/if}
+							</p>
+							<div class="flex flex-wrap gap-2">
+								<button
+									type="button"
+									on:click={downloadContactData}
+									disabled={contactDownloading}
+									class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									{contactDownloading ? 'Downloading...' : 'Download all data'}
+								</button>
+								{#if !contactDeleteConfirm}
+									<button
+										type="button"
+										on:click={() => contactDeleteConfirm = true}
+										class="px-3 py-1.5 text-sm font-medium text-red-700 border border-red-300 rounded-md hover:bg-red-50"
+									>
+										Delete contact and all data
+									</button>
+								{:else}
+									<span class="text-sm text-gray-600">Permanently delete this contact and all related data (rotas, lists, events, etc.)?</span>
+									<button
+										type="button"
+										on:click={deleteContactData}
+										disabled={contactDeleting}
+										class="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+									>
+										{contactDeleting ? 'Deleting...' : 'Yes, delete'}
+									</button>
+									<button
+										type="button"
+										on:click={() => contactDeleteConfirm = false}
+										disabled={contactDeleting}
+										class="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+									>
+										Cancel
+									</button>
+								{/if}
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+		{/if}
+
 		<!-- Advanced -->
 		{#if activeTab === 'advanced'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
@@ -1377,7 +1680,7 @@
 			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200 mb-4">
 				<h3 class="text-sm font-semibold text-gray-700 mb-2">Rota reminder emails</h3>
 				<p class="text-sm text-gray-600 mb-3">
-					Contacts on the rota receive an email reminder a set number of days before the event. Run the reminder job automatically (e.g. daily) on Railway using a cron job that calls <code class="bg-white px-1 rounded text-xs">/api/cron/rota-reminders?secret=YOUR_SECRET</code>.
+					Contacts on the rota receive an email reminder a set number of days before the event.
 				</p>
 				<div class="flex flex-wrap items-end gap-3">
 					<div>
@@ -1437,7 +1740,7 @@
 		</div>
 		{/if}
 
-		<!-- Image browser modal for Theme logo -->
+		<!-- Image browser modal for Branding logo -->
 		{#if showImageBrowser}
 			<div
 				class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"

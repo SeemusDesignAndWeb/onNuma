@@ -26,7 +26,7 @@ export async function load({ cookies }) {
 		? await findById('organisations', currentOrganisationId)
 		: null;
 
-	// Org-filtered events for Sunday planner dropdown
+	// Org-filtered events for Meeting planner dropdown
 	const eventsRaw = await readCollection('events');
 	const events = currentOrganisationId ? filterByOrganisation(eventsRaw, currentOrganisationId) : eventsRaw;
 

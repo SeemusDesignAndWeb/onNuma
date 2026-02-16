@@ -173,6 +173,31 @@ async function getEngagementState(organisationId) {
 
 import { getSuggestedPeople } from '$lib/crm/server/suggestedToInvite.js';
 
+/** Events with signups enabled: event name and total booking count. */
+async function getEventBookings(organisationId) {
+	const [events, signups] = await Promise.all([
+		readCollection('events'),
+		readCollection('event_signups')
+	]);
+	const orgEvents = organisationId
+		? events.filter(e => e && e.organisationId === organisationId && e.enableSignup === true)
+		: events.filter(e => e && e.enableSignup === true);
+	const eventsMap = new Map(orgEvents.map(e => [e.id, { id: e.id, title: e.title || 'Untitled Event' }]));
+	const countByEventId = new Map();
+	for (const s of signups || []) {
+		if (!s.eventId || !eventsMap.has(s.eventId)) continue;
+		countByEventId.set(s.eventId, (countByEventId.get(s.eventId) || 0) + 1);
+	}
+	const rows = orgEvents.map(e => ({
+		eventId: e.id,
+		eventName: e.title || 'Untitled Event',
+		bookings: countByEventId.get(e.id) || 0
+	})).filter(r => r.bookings > 0);
+	// Sort by bookings descending, then by name
+	rows.sort((a, b) => b.bookings - a.bookings || (a.eventName || '').localeCompare(b.eventName || ''));
+	return rows;
+}
+
 export async function load({ locals, parent }) {
 	const emailModuleEnabled = !!(env.MAILGUN_API_KEY && env.MAILGUN_DOMAIN);
 	const organisationId = await getCurrentOrganisationId();
@@ -190,7 +215,8 @@ export async function load({ locals, parent }) {
 		rotaGaps,
 		volunteerLeaderboard,
 		engagementState,
-		suggestedPeople
+		suggestedPeople,
+		eventBookings
 	] = await Promise.all([
 		readCollectionCount('contacts', { organisationId }),
 		readCollectionCount('lists', { organisationId }),
@@ -202,7 +228,8 @@ export async function load({ locals, parent }) {
 		getRotaGaps(organisationId),
 		getVolunteerLeaderboard(organisationId, 5),
 		getEngagementState(organisationId),
-		getSuggestedPeople(organisationId)
+		getSuggestedPeople(organisationId),
+		getEventBookings(organisationId)
 	]);
 	const suggestedPeopleAll = suggestedPeople || [];
 	const suggestedPeopleTotal = suggestedPeopleAll.length;
@@ -232,7 +259,8 @@ export async function load({ locals, parent }) {
 		volunteerLeaderboard: volunteerLeaderboard || [],
 		engagementState: engagementState || { engaged: 0, notEngaged: 0, total: 0 },
 		suggestedPeople: suggestedPeopleAll.slice(0, 5),
-		suggestedPeopleTotal
+		suggestedPeopleTotal,
+		eventBookings: eventBookings || []
 	};
 }
 

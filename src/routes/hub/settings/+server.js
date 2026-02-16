@@ -1,7 +1,8 @@
 import { json, error } from '@sveltejs/kit';
 import { getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
-import { getSettings, writeSettings } from '$lib/crm/server/settings.js';
+import { getSettings, writeSettings, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
+import { updatePartial } from '$lib/crm/server/fileStore.js';
 
 export async function POST({ request, cookies }) {
 	console.log('[settings POST] Checking auth...');
@@ -26,7 +27,10 @@ export async function POST({ request, cookies }) {
 		theme: themeUpdate,
 		rotaReminderDaysAhead: rotaReminderDaysAheadUpdate,
 		sundayPlannerEventId: sundayPlannerEventIdUpdate,
-		sundayPlannersLabel: sundayPlannersLabelUpdate
+		sundayPlannersLabel: sundayPlannersLabelUpdate,
+		privacyContactName: privacyContactNameUpdate,
+		privacyContactEmail: privacyContactEmailUpdate,
+		privacyContactPhone: privacyContactPhoneUpdate
 	} = data; // Support both for backward compatibility
 
 	const settings = await getSettings();
@@ -175,7 +179,7 @@ export async function POST({ request, cookies }) {
 		}
 	}
 
-	// Sunday planner event (dropdown: which event to use as "Sunday planner")
+	// Meeting planner event (dropdown: which event to use as "Meeting planner")
 	if (sundayPlannerEventIdUpdate !== undefined) {
 		settings.sundayPlannerEventId =
 			sundayPlannerEventIdUpdate === null || sundayPlannerEventIdUpdate === ''
@@ -184,10 +188,20 @@ export async function POST({ request, cookies }) {
 	}
 	if (sundayPlannersLabelUpdate !== undefined) {
 		const v = String(sundayPlannersLabelUpdate ?? '').trim();
-		settings.sundayPlannersLabel = v || 'Sunday Planners';
+		settings.sundayPlannersLabel = v || 'Meeting Planners';
+	}
+
+	// Privacy policy contact (stored on current organisation for multi-org)
+	const organisationId = await getCurrentOrganisationId();
+	if (organisationId && (privacyContactNameUpdate !== undefined || privacyContactEmailUpdate !== undefined || privacyContactPhoneUpdate !== undefined)) {
+		const updates = {};
+		if (privacyContactNameUpdate !== undefined) updates.privacyContactName = String(privacyContactNameUpdate ?? '').trim() || null;
+		if (privacyContactEmailUpdate !== undefined) updates.privacyContactEmail = String(privacyContactEmailUpdate ?? '').trim() || null;
+		if (privacyContactPhoneUpdate !== undefined) updates.privacyContactPhone = String(privacyContactPhoneUpdate ?? '').trim() || null;
+		await updatePartial('organisations', organisationId, updates);
 	}
 
 	await writeSettings(settings);
-	
+
 	return json({ success: true, settings });
 }
