@@ -6,7 +6,7 @@
 
 import { readCollection } from './fileStore.js';
 
-const CACHE_TTL_MS = 120 * 1000; // 120 seconds (increased from 30s for better performance)
+const CACHE_TTL_MS = 30 * 1000; // 30 seconds — keep short so multi-org/hub updates appear quickly
 
 let cache = null;
 let cacheTimestamp = 0;

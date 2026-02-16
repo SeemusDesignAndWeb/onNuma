@@ -5,13 +5,13 @@ import { readCollection, findById } from '$lib/crm/server/fileStore.js';
 import { filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { env } from '$env/dynamic/private';
 
-/** Strip Cloudinary logo URLs for consistent display (same as hub layout). */
+/** Strip legacy Cloudinary logo URLs (we use volume/disk image storage now) for consistent display. */
 function sanitizeThemeLogoUrls(theme) {
 	if (!theme || typeof theme !== 'object') return theme;
-	const isCloudinary = (u) => typeof u === 'string' && u.includes('cloudinary.com');
+	const isLegacyCloudinary = (u) => typeof u === 'string' && u.includes('cloudinary.com');
 	const t = { ...theme };
-	if (isCloudinary(t.logoPath)) t.logoPath = '';
-	if (isCloudinary(t.loginLogoPath)) t.loginLogoPath = '';
+	if (isLegacyCloudinary(t.logoPath)) t.logoPath = '';
+	if (isLegacyCloudinary(t.loginLogoPath)) t.loginLogoPath = '';
 	return t;
 }
 

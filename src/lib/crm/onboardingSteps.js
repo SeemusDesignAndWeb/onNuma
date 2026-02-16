@@ -154,3 +154,4 @@ export function getOnboardingStepById(stepId, admin, superAdminEmail = null, org
 }
 
 export const ONBOARDING_ROUTE_STORAGE_KEY = 'showOnboardingRoute';
+export const ONBOARDING_SEEN_STEPS_KEY = 'onboardingSeenSteps';

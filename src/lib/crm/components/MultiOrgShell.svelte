@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import MultiOrgSidebar from './MultiOrgSidebar.svelte';
+	import { multiOrgSidebarCollapsed, MULTI_ORG_SIDEBAR_COLLAPSED_KEY } from '$lib/crm/stores/sidebar.js';
 
 	export let base = '/multi-org';
 
@@ -20,6 +21,10 @@
 	}
 
 	onMount(() => {
+		try {
+			const stored = localStorage.getItem(MULTI_ORG_SIDEBAR_COLLAPSED_KEY);
+			if (stored !== null) multiOrgSidebarCollapsed.set(stored === 'true');
+		} catch (_) {}
 		function handleResize() {
 			if (window.innerWidth >= 1024) mobileSidebarOpen = false;
 		}
@@ -30,9 +35,9 @@
 
 <div class="crm-shell min-h-screen bg-theme-panel flex flex-col">
 	{#if !isAuthPage}
-		<!-- Mobile: column (header on top, main full width). Desktop: row (sidebar | main). -->
-		<div class="crm-shell-desktop flex flex-col lg:flex-row flex-1 min-h-0 overflow-x-hidden">
-			<div class="hidden lg:block crm-shell-sidebar-wrap flex-shrink-0">
+		<!-- Mobile: column (header on top, main full width). Desktop: fixed sidebar full height, then main + footer with pl. -->
+		<div class="crm-shell-desktop flex flex-col lg:flex-row flex-1 min-h-0 overflow-x-hidden {$multiOrgSidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-[16rem]'}">
+			<div class="hidden lg:block crm-shell-sidebar-wrap crm-shell-multiorg-sidebar-fixed" class:crm-shell-multiorg-sidebar-fixed--collapsed={$multiOrgSidebarCollapsed}>
 				<MultiOrgSidebar {base} />
 			</div>
 
@@ -73,15 +78,15 @@
 				</div>
 			{/if}
 
-			<main class="crm-shell-main flex-1 flex flex-col min-w-0 w-full overflow-x-hidden crm-shell-main-mobile-pt">
-				<div class="flex-1 min-w-0 max-w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+			<main class="crm-shell-main flex-1 flex flex-col min-w-0 w-full overflow-x-hidden crm-shell-main-mobile-pt" class:crm-shell-main--sidebar-collapsed={$multiOrgSidebarCollapsed}>
+				<div class="crm-shell-main-inner flex-1 min-w-0 max-w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 					<slot />
 				</div>
 			</main>
 		</div>
 
-		<footer class="crm-shell-footer flex-shrink-0 w-full bg-white border-t border-gray-200">
-			<div class="max-w-7xl mx-auto px-4 py-6">
+		<footer class="crm-shell-footer flex-shrink-0 w-full bg-white border-t border-gray-200 {$multiOrgSidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-[16rem]'}">
+			<div class="crm-shell-footer-inner max-w-7xl mx-auto px-4 py-6" class:crm-shell-footer-inner--full-width={$multiOrgSidebarCollapsed}>
 				<div class="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4">
 					<a href="/" class="flex items-center" aria-label="OnNuma home">
 						<img src="/assets/onnuma-logo.png" alt="OnNuma" class="h-8 w-auto" />
@@ -101,10 +106,38 @@
 </div>
 
 <style>
+	/* Desktop: multiorg sidebar fixed from top to bottom of viewport */
+	@media (min-width: 1024px) {
+		.crm-shell-multiorg-sidebar-fixed {
+			position: fixed;
+			top: 0;
+			left: 0;
+			bottom: 0;
+			width: 16rem;
+			height: 100vh;
+			height: 100dvh;
+			z-index: 20;
+			display: flex;
+			flex-direction: column;
+		}
+		.crm-shell-multiorg-sidebar-fixed.crm-shell-multiorg-sidebar-fixed--collapsed {
+			width: 4.5rem;
+		}
+	}
 	.crm-shell-main {
 		width: 100%;
 		min-width: 0;
 		box-sizing: border-box;
+	}
+	/* Wide screens with collapsed sidebar: main content and footer use full available width */
+	@media (min-width: 1024px) {
+		.crm-shell-main.crm-shell-main--sidebar-collapsed .crm-shell-main-inner {
+			max-width: none;
+			width: 100%;
+		}
+		.crm-shell-footer-inner.crm-shell-footer-inner--full-width {
+			max-width: none;
+		}
 	}
 	.safe-area-top {
 		padding-top: env(safe-area-inset-top, 0);

@@ -1,6 +1,7 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
+	import { extractStyleFromHtml, getBodyWithoutStyleTags, buildHtmlWithStyles } from './htmlEditorEmailUtils.js';
 
 	export let value = '';
 	export let name = 'content';
@@ -26,8 +27,10 @@
 	let isUpdatingFromExternal = false; // Track if we're updating from external source (reactive statement)
 	let ResizableImageClass = null; // Store ResizableImage class for resize functionality
 	let showSourceView = false;
+	let showPreviewView = false;
 	let sourceContent = value || '';
 	let sourceTextarea = null;
+	let emailStyleEl = null;
 
 	const defaultPlaceholders = [
 		{ value: '{{firstName}}', label: 'First Name' },
@@ -43,8 +46,94 @@
 		? customPlaceholders
 		: defaultPlaceholders;
 
+	/** Scope CSS selectors to .html-editor .ql-editor so styles apply only in the editor */
+	function scopeCssToEditor(css) {
+		if (!css || !css.trim()) return '';
+		const scope = '.html-editor .ql-editor';
+		// Match rule blocks; handle @media by scoping inner rules
+		let out = '';
+		let i = 0;
+		const s = css;
+		while (i < s.length) {
+			const atMedia = s.slice(i).match(/^(\s*@(?:media|supports|keyframes)[^{]*\{)/i);
+			if (atMedia) {
+				const full = atMedia[1];
+				// For @keyframes don't scope; for @media/@supports recurse into content
+				if (/@keyframes/i.test(full)) {
+					out += full;
+					i += full.length;
+					let depth = 1;
+					while (i < s.length && depth) {
+						if (s[i] === '{') depth++;
+						else if (s[i] === '}') depth--;
+						out += s[i];
+						i++;
+					}
+					continue;
+				}
+				out += full;
+				i += full.length;
+				let depth = 1;
+				let inner = '';
+				while (i < s.length && depth) {
+					if (s[i] === '{') depth++;
+					else if (s[i] === '}') depth--;
+					inner += s[i];
+					i++;
+				}
+				out += scopeCssToEditor(inner);
+				continue;
+			}
+			const rule = s.slice(i).match(/^([^{]+)\{([^}]*)\}/);
+			if (rule) {
+				const [, sel, decl] = rule;
+				const scoped = sel
+					.split(',')
+					.map((part) => part.trim())
+					.filter(Boolean)
+					.map((part) => `${scope} ${part}`)
+					.join(', ');
+				out += scoped + ' { ' + decl.trim() + ' }\n';
+				i += rule[0].length;
+				continue;
+			}
+			out += s[i];
+			i++;
+		}
+		return out;
+	}
+
+	/** Build full email document for preview iframe (matches sent email wrapper) */
+	function getPreviewFullHtml(bodyHtml) {
+		const raw = bodyHtml || '';
+		// Use same wrapper as email.js prepareNewsletterEmail; body is safe (editor content)
+		return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Preview</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
+<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+<div style="color: #333;">${raw}</div>
+</div>
+</body>
+</html>`;
+	}
+
+	// Apply extracted email CSS to editor when value changes (so visual editor shows styles)
+	$: if (browser && value) {
+		const rawCss = extractStyleFromHtml(value);
+		const scopedCss = rawCss ? scopeCssToEditor(rawCss) : '';
+		if (emailStyleEl) {
+			emailStyleEl.textContent = scopedCss;
+		}
+	}
+
 	onMount(async () => {
 		if (!quillContainer || !browser) return;
+		
+		// Create style element for email template CSS (scoped to editor)
+		emailStyleEl = document.createElement('style');
+		emailStyleEl.setAttribute('data-email-styles', '');
+		quillContainer.parentElement?.insertBefore(emailStyleEl, quillContainer);
 		
 		// Add click outside handler
 		document.addEventListener('click', handleClickOutside);
@@ -189,8 +278,9 @@
 			});
 
 			if (initialValue) {
-				// Use Quill's clipboard to properly parse HTML
-				const delta = quill.clipboard.convert({ html: initialValue });
+				// Strip style tags for Quill (we apply them separately so editor shows styled content)
+				const bodyOnly = getBodyWithoutStyleTags(initialValue) || initialValue;
+				const delta = quill.clipboard.convert({ html: bodyOnly });
 				quill.setContents(delta);
 				
 				// Convert any existing images to resizable format
@@ -223,15 +313,17 @@
 					// Use setTimeout to avoid blocking the UI thread
 					setTimeout(() => {
 						if (quill && !isUpdatingFromExternal) {
-							const html = quill.root.innerHTML;
-							// Only update if content actually changed
-							if (html !== value) {
-								value = html;
+							const bodyHtml = quill.root.innerHTML;
+							// Preserve style block from current value when merging
+							const existingStyles = extractStyleFromHtml(value);
+							const newValue = buildHtmlWithStyles(bodyHtml, existingStyles);
+							if (newValue !== value) {
+								value = newValue;
 								
 								// Update hidden input directly to ensure form submission works
 								const hiddenInput = quillContainer.parentElement?.querySelector(`input[name="${name}"]`);
 								if (hiddenInput) {
-									hiddenInput.value = html;
+									hiddenInput.value = newValue;
 								}
 								
 								// Dispatch custom event
@@ -247,9 +339,13 @@
 			const form = quillContainer.closest('form');
 			if (form) {
 				form.addEventListener('submit', () => {
-					const html = quill.root.innerHTML;
-					// Sanitize on submit (not on every keystroke to avoid delays)
-					const sanitized = DOMPurify.default.sanitize(html, {
+					const bodyHtml = quill.root.innerHTML;
+					const existingStyles = extractStyleFromHtml(value);
+					const fullHtml = buildHtmlWithStyles(bodyHtml, existingStyles);
+					// Sanitize on submit (allow style tag for email CSS)
+					const sanitized = DOMPurify.default.sanitize(fullHtml, {
+						ADD_TAGS: ['style'],
+						ADD_ATTR: ['type'],
 						ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style', 'width', 'height'],
 						ALLOWED_CLASSES: {
 							'*': ['ql-align-center', 'ql-align-right', 'ql-align-justify', 'ql-align-left', 'ql-resizable-image']
@@ -285,8 +381,9 @@
 		// Only update if the value is actually different
 		if (current !== newValue) {
 			isUpdatingFromExternal = true;
-			// Use Quill's clipboard to properly parse HTML and preserve image attributes
-			const delta = quill.clipboard.convert({ html: newValue });
+			// Strip style tags for Quill; we apply styles separately
+			const bodyOnly = getBodyWithoutStyleTags(newValue) || newValue;
+			const delta = quill.clipboard.convert({ html: bodyOnly });
 			quill.setContents(delta);
 			initialValue = newValue;
 			
@@ -690,8 +787,9 @@
 			if (!quill) return;
 			
 			const html = sourceContent;
+			const bodyOnly = getBodyWithoutStyleTags(html) || html;
 			isUpdatingFromExternal = true;
-			const delta = quill.clipboard.convert({ html });
+			const delta = quill.clipboard.convert({ html: bodyOnly });
 			quill.setContents(delta);
 			value = html;
 			initialValue = html;
@@ -790,28 +888,55 @@
 		</div>
 	{/if}
 	<div class="html-editor-wrapper">
-		<!-- View Source Button - Floating Right on Toolbar -->
-		<button
-			type="button"
-			on:click={toggleSourceView}
-			class="view-source-btn"
-			title={showSourceView ? 'Switch to Visual Editor' : 'View Source'}
-		>
-			{#if showSourceView}
+		<!-- View: Visual | Source | Preview -->
+		<div class="view-toggle-group">
+			<button
+				type="button"
+				class="view-toggle-btn"
+				class:active={!showSourceView && !showPreviewView}
+				title="Visual editor"
+				on:click={() => {
+					if (showSourceView) toggleSourceView();
+					showPreviewView = false;
+				}}
+			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
 				</svg>
 				<span>Visual</span>
-			{:else}
+			</button>
+			<button
+				type="button"
+				class="view-toggle-btn"
+				class:active={showSourceView}
+				title="HTML source"
+				on:click={() => { showSourceView = true; showPreviewView = false; }}
+			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
 				</svg>
 				<span>Source</span>
-			{/if}
-		</button>
+			</button>
+			<button
+				type="button"
+				class="view-toggle-btn"
+				class:active={showPreviewView}
+				title="Email preview"
+				on:click={() => {
+					if (showSourceView && sourceTextarea) value = sourceContent;
+					showSourceView = false;
+					showPreviewView = true;
+				}}
+			>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+				</svg>
+				<span>Preview</span>
+			</button>
+		</div>
 		
-		<div bind:this={quillContainer} class="bg-white quill-wrapper" dir="ltr" class:source-view-mode={showSourceView}></div>
+		<div bind:this={quillContainer} class="bg-white quill-wrapper" dir="ltr" class:source-view-mode={showSourceView} class:preview-view-mode={showPreviewView}></div>
 		<div class="source-view-container" class:hidden={!showSourceView}>
 			<div class="source-view-toolbar">
 				<button
@@ -834,6 +959,15 @@
 				placeholder="Enter HTML source code..."
 				spellcheck="false"
 			></textarea>
+		</div>
+		<!-- Email preview iframe (same wrapper as sent emails) -->
+		<div class="preview-view-container" class:hidden={!showPreviewView}>
+			<div class="preview-view-toolbar">How the email will look when sent</div>
+			<iframe
+				title="Email preview"
+				class="preview-iframe"
+				srcdoc={getPreviewFullHtml(value)}
+			></iframe>
 		</div>
 	</div>
 	<input type="hidden" name={name} value={value} />
@@ -930,6 +1064,7 @@
 {/if}
 
 <style>
+	/* email editor layout */
 	.html-editor-wrapper {
 		position: relative;
 	}
@@ -938,9 +1073,52 @@
 		position: relative;
 	}
 
+	.view-toggle-group {
+		position: absolute;
+		top: 8px;
+		right: 12px;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		background: white;
+		border-radius: 4px;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		overflow: hidden;
+	}
+
+	.view-toggle-btn {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		font-size: 13px;
+		color: #374151;
+		background: white;
+		border: none;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.view-toggle-btn:hover {
+		background: #f9fafb;
+		color: #111827;
+	}
+
+	.view-toggle-btn.active {
+		background: #e5e7eb;
+		color: #111827;
+		font-weight: 500;
+	}
+
 	/* Hide the container element itself when it has source-view-mode class */
 	:global(.ql-container.source-view-mode),
 	:global(.ql-snow.source-view-mode) {
+		display: none !important;
+	}
+
+	/* Hide entire Quill area when in preview mode so preview iframe takes space */
+	.quill-wrapper.preview-view-mode {
 		display: none !important;
 	}
 
@@ -962,29 +1140,35 @@
 		border-bottom: 1px solid #d1d5db;
 	}
 
-	.view-source-btn {
-		position: absolute;
-		top: 8px;
-		right: 12px;
-		z-index: 10;
+	.preview-view-container {
+		position: relative;
+		border: 1px solid #d1d5db;
+		border-top: none;
+		border-radius: 0 0 4px 4px;
+		overflow: hidden;
+		margin-top: -1px;
 		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 12px;
-		font-size: 13px;
-		color: #374151;
-		background: white;
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		transition: all 0.2s;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		flex-direction: column;
+		height: calc(100vh - 300px);
+		min-height: 400px;
+		max-height: calc(100vh - 150px);
+		background: #f9fafb;
 	}
 
-	.view-source-btn:hover {
-		background: #f9fafb;
-		color: #111827;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	.preview-view-toolbar {
+		padding: 8px 12px;
+		font-size: 12px;
+		color: #6b7280;
+		background: #f3f4f6;
+		border-bottom: 1px solid #e5e7eb;
+	}
+
+	.preview-iframe {
+		flex: 1;
+		width: 100%;
+		min-height: 400px;
+		border: none;
+		background: white;
 	}
 
 	.hidden {

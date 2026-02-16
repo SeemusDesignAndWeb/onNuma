@@ -15,8 +15,7 @@ try {
 	
 	// Write recovered database
 	writeFileSync(dbPath, gitDb, 'utf-8');
-	console.log(`✅ Database recovered to: ${dbPath}`);
-	console.log('📋 Now run: npm run sync-cloudinary-images\n');
+	console.log(`✅ Database recovered to: ${dbPath}\n`);
 } catch (error) {
 	console.error('❌ Error recovering database:', error.message);
 	console.log('\n💡 You can manually recover by running:');

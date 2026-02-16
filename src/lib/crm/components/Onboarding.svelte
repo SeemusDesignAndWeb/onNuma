@@ -46,7 +46,7 @@
 	{#if inline}
 		<div class="space-y-6" aria-labelledby="onboarding-title">
 			<div>
-				<h1 id="onboarding-title" class="font-bold text-gray-900" style="font-size: 1.25rem">Welcome to TheHUB</h1>
+				<h1 id="onboarding-title" class="text-xl sm:text-2xl font-bold text-gray-900 break-words">Welcome to TheHUB</h1>
 				<p class="mt-1 text-sm text-gray-600">Follow the route below to get the most out of your site.</p>
 			</div>
 			<ol class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">

@@ -233,6 +233,7 @@ export async function load({ locals, parent }) {
 	]);
 	const suggestedPeopleAll = suggestedPeople || [];
 	const suggestedPeopleTotal = suggestedPeopleAll.length;
+	const DASHBOARD_SUGGESTED_MIN = 5;
 
 	const planLimit = await getConfiguredPlanMaxContacts(plan || 'free');
 	const contactsDisplayCount = Math.min(contactsCount, planLimit);
@@ -258,7 +259,7 @@ export async function load({ locals, parent }) {
 		rotaGaps: rotaGaps || [],
 		volunteerLeaderboard: volunteerLeaderboard || [],
 		engagementState: engagementState || { engaged: 0, notEngaged: 0, total: 0 },
-		suggestedPeople: suggestedPeopleAll.slice(0, 5),
+		suggestedPeople: suggestedPeopleAll.slice(0, DASHBOARD_SUGGESTED_MIN),
 		suggestedPeopleTotal,
 		eventBookings: eventBookings || []
 	};

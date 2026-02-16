@@ -10,13 +10,13 @@ import {
 } from '$lib/crm/server/permissions.js';
 import { env } from '$env/dynamic/private';
 
-/** Strip Cloudinary logo URLs so Hub shows default logo until settings are updated. */
+/** Strip legacy Cloudinary logo URLs (we use volume/disk image storage now) so Hub shows default until settings are updated. */
 function sanitizeThemeLogoUrls(theme) {
 	if (!theme || typeof theme !== 'object') return theme;
-	const isCloudinary = (u) => typeof u === 'string' && u.includes('cloudinary.com');
+	const isLegacyCloudinary = (u) => typeof u === 'string' && u.includes('cloudinary.com');
 	const t = { ...theme };
-	if (isCloudinary(t.logoPath)) t.logoPath = '';
-	if (isCloudinary(t.loginLogoPath)) t.loginLogoPath = '';
+	if (isLegacyCloudinary(t.logoPath)) t.logoPath = '';
+	if (isLegacyCloudinary(t.loginLogoPath)) t.loginLogoPath = '';
 	return t;
 }
 

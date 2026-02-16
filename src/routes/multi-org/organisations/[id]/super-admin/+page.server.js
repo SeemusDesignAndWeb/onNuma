@@ -163,6 +163,6 @@ export const actions = {
 		});
 		invalidateOrganisationsCache();
 
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?super_admin=set', !!locals.multiOrgAdminDomain));
+		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?super_admin=set&organisationsUpdated=1', !!locals.multiOrgAdminDomain));
 	}
 };

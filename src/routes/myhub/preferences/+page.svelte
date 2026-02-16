@@ -119,7 +119,7 @@
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 				</svg>
 				<p>
-					If you unsubscribe from newsletters, you'll still receive essential rota reminders so you know when you're scheduled. To change your email address, visit <a href="/myhub/profile" class="my-link">My details</a>.
+					If you unsubscribe from newsletters, you'll still receive essential rota reminders so you know when you're scheduled. To change your email address, visit <a href="/myhub/profile" class="my-link">My details</a>; we'll send a link to your new address to confirm it's yours.
 				</p>
 			</div>
 
@@ -147,7 +147,7 @@
 	.my-page-content {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 2.25rem;
 	}
 	.my-heading {
 		font-size: 1.5rem;
@@ -172,6 +172,7 @@
 		box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 		border: 1px solid #e5e7eb;
 		overflow: hidden;
+		margin-bottom: 20px;
 	}
 	.my-card-body {
 		padding: 1.5rem;
@@ -304,6 +305,7 @@
 		font-size: 0.9375rem;
 		color: #0c4a6e;
 		line-height: 1.5;
+		margin-bottom: 20px;
 	}
 	.my-info-icon {
 		width: 1.25rem;
@@ -324,6 +326,7 @@
 	.my-submit-wrap {
 		display: flex;
 		justify-content: flex-start;
+		margin-top: 1.5rem;
 	}
 	.my-btn {
 		display: inline-flex;

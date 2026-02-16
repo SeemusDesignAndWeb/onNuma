@@ -4,7 +4,7 @@ export default {
 	theme: {
 		extend: {
 			fontFamily: {
-				sans: ['Montserrat', 'sans-serif']
+				sans: ['Inter', 'sans-serif']
 			},
 			colors: {
 				// Theme colours: set by Hub/multi-org theme (CSS vars in hub layout). Fallbacks = default cool palette.

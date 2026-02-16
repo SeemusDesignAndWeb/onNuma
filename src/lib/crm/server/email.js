@@ -2188,6 +2188,155 @@ View the rota: ${hubUrl}
 }
 
 /**
+ * Send notification when a volunteer says they can no longer volunteer on a date.
+ * Recipient is the rota owner or super admin.
+ * @param {object} options - Recipient options
+ * @param {string} options.to - Recipient email address
+ * @param {string} options.name - Recipient name
+ * @param {object} payload - { volunteerName, volunteerEmail, role, eventTitle, dateDisplay }
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<object>} Resend API response
+ */
+export async function sendVolunteerCannotAttendNotification({ to, name }, payload, event) {
+	const { volunteerName, volunteerEmail, role, eventTitle, dateDisplay } = payload;
+	const baseUrl = getBaseUrl(event);
+	const fromEmail = fromEmailDefault();
+
+	const branding = await getEmailBranding(event);
+	const html = `
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Volunteer can no longer attend</title>
+		</head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
+			<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+				${branding}
+				<div style="background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%); padding: 20px 15px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
+					<h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Volunteer can no longer attend</h1>
+				</div>
+				<div style="padding: 0;">
+					<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hello ${name || 'there'},</p>
+					<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">
+						<strong>${volunteerName || volunteerEmail || 'A volunteer'}</strong>${volunteerEmail ? ` (${volunteerEmail})` : ''} has let you know they can no longer volunteer on this date.
+					</p>
+					<div style="background: #fef2f2; padding: 15px; border-radius: 6px; margin: 15px 0; border: 1px solid #fecaca;">
+						<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Role:</strong> ${role || '—'}</p>
+						<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Event:</strong> ${eventTitle || '—'}</p>
+						<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Date:</strong> ${dateDisplay || '—'}</p>
+					</div>
+					<p style="color: #666; font-size: 14px; margin: 15px 0 0 0;">
+						Please update the rota in the Hub and find a replacement if needed.
+					</p>
+				</div>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Volunteer can no longer attend
+
+Hello ${name || 'there'},
+
+${volunteerName || volunteerEmail || 'A volunteer'}${volunteerEmail ? ` (${volunteerEmail})` : ''} has let you know they can no longer volunteer on this date.
+
+Details:
+Role: ${role || '—'}
+Event: ${eventTitle || '—'}
+Date: ${dateDisplay || '—'}
+
+Please update the rota in the Hub and find a replacement if needed.
+	`.trim();
+
+	try {
+		const result = await rateLimitedSend(() => sendEmail({
+			from: fromEmail,
+			to: [to],
+			subject: `Volunteer can no longer attend: ${role || 'Rota'} – ${dateDisplay || eventTitle || 'Date'}`,
+			html,
+			text
+		}));
+		return result;
+	} catch (error) {
+		console.error('Failed to send volunteer cannot attend notification:', error);
+		throw error;
+	}
+}
+
+/**
+ * Send email change verification to a member's new address.
+ * @param {object} options - { to: new email, name, verificationLink, currentEmail }
+ * @param {object} event - SvelteKit event object (for base URL)
+ * @returns {Promise<object>} Resend API response
+ */
+export async function sendMemberEmailChangeVerification({ to, name, verificationLink, currentEmail }, event) {
+	const baseUrl = getBaseUrl(event);
+	const fromEmail = fromEmailDefault();
+	const branding = await getEmailBranding(event);
+	const html = `
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Confirm your new email address</title>
+		</head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
+			<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+				${branding}
+				<div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 20px 15px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
+					<h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Confirm your new email address</h1>
+				</div>
+				<div style="padding: 0;">
+					<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hello ${name || 'there'},</p>
+					<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">
+						You requested to change the email address for your volunteering account from <strong>${currentEmail || 'your current email'}</strong> to <strong>${to}</strong>.
+					</p>
+					<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">
+						Click the button below to confirm that this email address is yours. The link will expire in 24 hours.
+					</p>
+					<div style="text-align: center; margin: 24px 0;">
+						<a href="${verificationLink}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Confirm email address</a>
+					</div>
+					<p style="color: #666; font-size: 14px; margin: 15px 0 0 0;">
+						If you didn't request this change, you can ignore this email. Your address will stay the same.
+					</p>
+				</div>
+			</div>
+		</body>
+		</html>
+	`;
+	const text = `
+Confirm your new email address
+
+Hello ${name || 'there'},
+
+You requested to change the email address for your volunteering account from ${currentEmail || 'your current email'} to ${to}.
+
+Confirm that this email address is yours by visiting this link (expires in 24 hours):
+
+${verificationLink}
+
+If you didn't request this change, you can ignore this email. Your address will stay the same.
+	`.trim();
+	try {
+		return await rateLimitedSend(() => sendEmail({
+			from: fromEmail,
+			to: [to],
+			subject: 'Confirm your new email address',
+			html,
+			text
+		}));
+	} catch (error) {
+		console.error('Failed to send member email change verification:', error);
+		throw error;
+	}
+}
+
+/**
  * Send upcoming rota reminder email to a contact
  * @param {object} options - Email options
  * @param {string} options.to - Contact email address

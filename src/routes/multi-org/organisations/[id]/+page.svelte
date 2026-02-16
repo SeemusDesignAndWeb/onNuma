@@ -1,6 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { invalidate } from '$app/navigation';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 
 	export let data;
@@ -21,7 +23,6 @@
 	} : {});
 	$: errors = form?.errors || {};
 	$: multiOrgAdmin = data?.multiOrgAdmin || null;
-	$: canSetSuperAdmin = multiOrgAdmin?.role === 'super_admin';
 	$: anonymisedCreated = data?.anonymisedCreated ?? null;
 	$: anonymisedError = form?.anonymisedError ?? null;
 	$: anonymisedCount = form?.anonymisedCount ?? '';
@@ -36,6 +37,17 @@
 			formEl.requestSubmit();
 		}
 	}
+
+	onMount(() => {
+		const url = $page.url;
+		if (url.searchParams.get('organisationsUpdated') === '1') {
+			invalidate('app:organisations');
+			const params = new URLSearchParams(url.searchParams);
+			params.delete('organisationsUpdated');
+			const clean = params.toString() ? `${url.pathname}?${params}` : url.pathname;
+			window.history.replaceState(window.history.state, '', clean);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -167,7 +179,7 @@
 			</div>
 		</div>
 
-		<!-- Panel 2: Hub domain + Set Hub super admin -->
+		<!-- Panel 2: Hub domain -->
 		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
 			<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Hub & domain</h2>
 			<div>
@@ -185,17 +197,6 @@
 					<p class="mt-1.5 text-sm text-red-600">{errors.hubDomain}</p>
 				{/if}
 			</div>
-			{#if canSetSuperAdmin}
-				<div>
-					<a
-						href="{base}/organisations/{organisation?.id}/super-admin"
-						class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-all"
-					>
-						Set Hub super admin
-					</a>
-					<p class="mt-1 text-xs text-slate-500">Assign the user who has full access to this organisation’s Hub.</p>
-				</div>
-			{/if}
 		</div>
 
 		<!-- Panel 3: Plan (Free, Professional, Enterprise) -->

@@ -81,7 +81,7 @@
 					</div>
 					<FormField label="Phone" name="phone" bind:value={formData.phone} />
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-1">Spouse</label>
+						<label class="block text-sm font-medium text-gray-700 mb-1">Partner</label>
 						<select name="spouseId" bind:value={formData.spouseId} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-1 focus:ring-theme-button-1 py-3 px-4">
 							<option value="">None</option>
 							{#each contacts as contact}

@@ -1,5 +1,10 @@
-import { readCollection } from '$lib/crm/server/fileStore.js';
+import { fail } from '@sveltejs/kit';
+import { readCollection, findById } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getMemberContactIdFromCookie } from '$lib/crm/server/memberAuth.js';
+import { verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { getHubSuperAdminEmailForOrganisation } from '$lib/crm/server/settings.js';
+import { sendVolunteerCannotAttendNotification } from '$lib/crm/server/email.js';
 
 /**
  * Automatically load rotas for the logged-in member (contact).
@@ -136,3 +141,127 @@ export async function load({ parent }) {
 		return { rotas: [], error: 'Could not load your rotas. Please try again.' };
 	}
 }
+
+export const actions = {
+	cannotVolunteer: async ({ request, cookies }) => {
+		const data = await request.formData();
+		const csrfToken = data.get('_csrf');
+		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+			return fail(403, { error: 'Invalid request. Please refresh and try again.' });
+		}
+
+		const contactId = getMemberContactIdFromCookie(cookies);
+		if (!contactId) {
+			return fail(401, { error: 'You must be signed in. Please refresh and try again.' });
+		}
+
+		const rotaId = data.get('rotaId');
+		const occurrenceId = data.get('occurrenceId') || null;
+		if (!rotaId || typeof rotaId !== 'string') {
+			return fail(400, { error: 'Invalid rota. Please refresh and try again.' });
+		}
+
+		const organisationId = await getCurrentOrganisationId();
+		const [rotasRaw, eventsRaw, occurrencesRaw, contactsRaw] = await Promise.all([
+			readCollection('rotas'),
+			readCollection('events'),
+			readCollection('occurrences'),
+			readCollection('contacts')
+		]);
+		const rotas = organisationId ? filterByOrganisation(rotasRaw, organisationId) : rotasRaw;
+		const contacts = organisationId ? filterByOrganisation(contactsRaw, organisationId) : contactsRaw;
+		const events = organisationId ? filterByOrganisation(eventsRaw, organisationId) : eventsRaw;
+		const occurrences = organisationId ? filterByOrganisation(occurrencesRaw, organisationId) : occurrencesRaw;
+		const eventsMap = new Map(events.map((e) => [e.id, e]));
+		const occurrencesMap = new Map(occurrences.map((o) => [o.id, o]));
+
+		const rota = rotas.find((r) => r.id === rotaId);
+		if (!rota) {
+			return fail(404, { error: 'Rota not found.' });
+		}
+
+		const contact = contacts.find((c) => c.id === contactId);
+		if (!contact) {
+			return fail(400, { error: 'Your account could not be found. Please sign in again.' });
+		}
+		const memberEmail = (contact.email || '').toLowerCase();
+
+		// Check this member is assigned to this rota for this occurrence
+		const assignees = rota.assignees || [];
+		const isAssigned = assignees.some((a) => {
+			let aContactId, aOccId;
+			if (typeof a === 'string') {
+				aContactId = a;
+				aOccId = rota.occurrenceId || null;
+			} else if (a && typeof a === 'object') {
+				aContactId = a.contactId || a.id;
+				aOccId = a.occurrenceId ?? rota.occurrenceId ?? null;
+			} else return false;
+			const matchContact = aContactId === contactId || (contact.email && typeof a === 'object' && (a.email || '').toLowerCase() === memberEmail);
+			// Same occurrence, or both unspecific, or rota is for all occurrences and assignee has no specific occurrence (they're on every date)
+			const matchOcc =
+				(aOccId === null && occurrenceId === null) ||
+				aOccId === occurrenceId ||
+				(rota.occurrenceId === null && aOccId === null && occurrenceId !== null);
+			return matchContact && matchOcc;
+		});
+		if (!isAssigned) {
+			return fail(403, { error: "You are not assigned to this rota for this date, so you don't need to report that you can't volunteer." });
+		}
+
+		const occurrence = occurrenceId ? occurrencesMap.get(occurrenceId) : null;
+		const event = eventsMap.get(rota.eventId);
+		const dateDisplay = occurrence
+			? new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
+					weekday: 'long',
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
+				})
+			: 'Date to be confirmed';
+
+		let toEmail = null;
+		let toName = null;
+
+		if (rota.ownerId) {
+			const owner = await findById('contacts', rota.ownerId);
+			if (owner && owner.email) {
+				toEmail = owner.email;
+				toName = [owner.firstName, owner.lastName].filter(Boolean).join(' ').trim() || owner.email;
+			}
+		}
+		if (!toEmail) {
+			toEmail = await getHubSuperAdminEmailForOrganisation(organisationId);
+			toName = toName || 'Administrator';
+		}
+		if (!toEmail) {
+			return fail(500, { error: 'No rota owner or administrator is set. Please contact your organisation to report that you cannot volunteer.' });
+		}
+
+		const volunteerName = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || contact.email || 'A volunteer';
+
+		try {
+			await sendVolunteerCannotAttendNotification(
+				{ to: toEmail, name: toName },
+				{
+					volunteerName,
+					volunteerEmail: contact.email || '',
+					role: rota.role,
+					eventTitle: event?.title || 'Event',
+					dateDisplay
+				},
+				{ url: { origin: process.env.APP_BASE_URL || 'https://onnuma.com' } }
+			);
+		} catch (err) {
+			console.error('[my rotas] cannotVolunteer email failed:', err);
+			return fail(500, { error: 'We could not send the notification. Please try again or contact the rota owner directly.' });
+		}
+
+		return {
+			success: true,
+			message: "We've emailed the rota owner to let them know you can no longer volunteer on this date."
+		};
+	}
+};

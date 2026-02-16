@@ -105,7 +105,10 @@
 {#if form && register}
 	<div class="bg-white shadow rounded-lg p-6">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-			<h2 class="text-2xl font-bold text-gray-900">Form Submission</h2>
+			<div>
+				<h1 class="text-2xl font-bold text-gray-900 break-words">{form.name || 'Form'}</h1>
+				<p class="text-sm text-gray-500 mt-0.5">Form submission</p>
+			</div>
 			<div class="flex flex-wrap gap-2 items-center">
 				<a href="/hub/forms/{form.id}" class="text-sm font-medium text-hub-green-600 hover:text-hub-green-800 hover:underline">
 					← Back to Form
@@ -138,10 +141,6 @@
 
 		<div class="mb-6">
 			<dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<div>
-					<dt class="text-sm font-medium text-gray-500">Form</dt>
-					<dd class="mt-1 text-sm text-gray-900">{form.name}</dd>
-				</div>
 				<div>
 					<dt class="text-sm font-medium text-gray-500">Submitted</dt>
 					<dd class="mt-1 text-sm text-gray-900">

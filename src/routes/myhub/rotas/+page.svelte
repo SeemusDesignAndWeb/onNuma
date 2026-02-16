@@ -1,4 +1,5 @@
 <script>
+	import { page } from '$app/stores';
 	import { formatDateLongUK, formatTimeUK } from '$lib/crm/utils/dateFormat.js';
 
 	export let data = {};
@@ -6,6 +7,8 @@
 	$: memberName = member ? `${member.firstName || ''} ${member.lastName || ''}`.trim() : '';
 	$: rotas = data?.rotas ?? [];
 	$: loadError = data?.error ?? '';
+	$: csrfToken = data?.csrfToken ?? '';
+	$: formResult = $page.form;
 
 	$: sortedRotas = [...rotas].sort((a, b) => {
 		if (!a.date && !b.date) return 0;
@@ -13,6 +16,14 @@
 		if (!b.date) return -1;
 		return new Date(a.date) - new Date(b.date);
 	});
+
+	let confirmingRotaKey = null; // 'rotaId:occurrenceId' when showing confirm for that item
+	function openConfirm(rotaId, occurrenceId) {
+		confirmingRotaKey = occurrenceId ? `${rotaId}:${occurrenceId}` : `${rotaId}:`;
+	}
+	function closeConfirm() {
+		confirmingRotaKey = null;
+	}
 </script>
 
 <svelte:head>
@@ -25,6 +36,16 @@
 	{#if loadError}
 		<div class="my-alert my-alert-error" role="alert">
 			<p>{loadError}</p>
+		</div>
+	{/if}
+	{#if formResult?.error}
+		<div class="my-alert my-alert-error" role="alert">
+			<p>{formResult.error}</p>
+		</div>
+	{/if}
+	{#if formResult?.success}
+		<div class="my-alert my-alert-success" role="status">
+			<p>{formResult.message}</p>
 		</div>
 	{/if}
 
@@ -48,6 +69,7 @@
 			<div class="my-card-body">
 				<ul class="my-rota-list" role="list">
 					{#each sortedRotas as rota}
+						{@const confirmKey = (rota.occurrenceId ? `${rota.rotaId}:${rota.occurrenceId}` : `${rota.rotaId}:`)}
 						<li class="my-rota-item">
 							<span class="my-rota-role">{rota.role}</span>
 							<span class="my-rota-event">{rota.eventTitle}</span>
@@ -69,6 +91,25 @@
 							{#if rota.location}
 								<p class="my-rota-location">{rota.location}</p>
 							{/if}
+							<div class="my-rota-cannot-attend">
+								{#if confirmingRotaKey === confirmKey}
+									<form method="POST" action="?/cannotVolunteer" class="my-cannot-form">
+										<input type="hidden" name="_csrf" value={csrfToken} />
+										<input type="hidden" name="rotaId" value={rota.rotaId} />
+										<input type="hidden" name="occurrenceId" value={rota.occurrenceId ?? ''} />
+										<p class="my-cannot-confirm-text">We'll email the rota owner so they can find a replacement. Are you sure?</p>
+										<div class="my-cannot-buttons">
+											<button type="button" class="my-btn my-btn-secondary" on:click={closeConfirm}>Cancel</button>
+											<button type="submit" class="my-btn my-btn-primary">Notify owner</button>
+										</div>
+									</form>
+								{:else}
+									<label class="my-cannot-label">
+										<input type="checkbox" on:change={(e) => e.target.checked && openConfirm(rota.rotaId, rota.occurrenceId)} />
+										<span>I can no longer volunteer on this date</span>
+									</label>
+								{/if}
+							</div>
 						</li>
 					{/each}
 				</ul>
@@ -131,6 +172,61 @@
 		border-color: #fde68a;
 		color: #92400e;
 	}
+	.my-alert-success {
+		background: #f0fdf4;
+		border-color: #bbf7d0;
+		color: #166534;
+	}
+	.my-rota-cannot-attend {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid #e5e7eb;
+	}
+	.my-cannot-label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.9375rem;
+		color: #6b7280;
+		cursor: pointer;
+	}
+	.my-cannot-label input { width: auto; }
+	.my-cannot-form { margin-top: 0.5rem; }
+	.my-cannot-confirm-text {
+		font-size: 0.9375rem;
+		color: #4b5563;
+		margin-bottom: 0.75rem;
+	}
+	.my-cannot-buttons {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.my-btn {
+		padding: 0.375rem 0.75rem;
+		border-radius: 0.5rem;
+		font-size: 0.9375rem;
+		font-weight: 500;
+		cursor: pointer;
+		border: 2px solid transparent;
+	}
+	.my-btn-primary {
+		background: #2563eb;
+		color: #fff;
+		border-color: #2563eb;
+	}
+	.my-btn-primary:hover {
+		background: #1d4ed8;
+		border-color: #1d4ed8;
+	}
+	.my-btn-secondary {
+		background: #f3f4f6;
+		color: #374151;
+		border-color: #e5e7eb;
+	}
+	.my-btn-secondary:hover {
+		background: #e5e7eb;
+	}
 	.my-muted {
 		font-size: 1rem;
 		color: #6b7280;
@@ -187,8 +283,10 @@
 		border-radius: 0.75rem;
 		font-size: 1rem;
 		text-decoration: none;
+		color: #fff;
 	}
 	.my-rota-signup-btn:hover {
 		text-decoration: none;
+		color: #fff;
 	}
 </style>

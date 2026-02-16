@@ -98,13 +98,13 @@
 			<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
 				<div class="flex-1">
 					<div class="flex items-center gap-3 mb-2">
-						<div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-							<svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="w-16 h-16 bg-theme-panel-bg rounded-full flex items-center justify-center">
+							<svg class="w-8 h-8 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 							</svg>
 						</div>
 						<div>
-							<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+							<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 crm-shell-main">
 								{contact.firstName || ''} {contact.lastName || ''}
 								{#if !contact.firstName && !contact.lastName}
 									Contact
@@ -131,14 +131,14 @@
 						<button
 							type="button"
 							on:click={() => editing = false}
-							class="hub-btn border border-gray-300 text-gray-700 hover:bg-gray-50"
+							class="hub-btn border border-gray-300 text-gray-700 hover:bg-theme-panel-bg"
 						>
 							Cancel
 						</button>
 					{:else}
 						<a
 							href="/hub/contacts"
-							class="hub-btn border border-gray-300 text-gray-700 hover:bg-gray-50"
+							class="hub-btn border border-gray-300 text-gray-700 hover:bg-theme-panel-bg"
 						>
 							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -209,7 +209,7 @@
 							</div>
 							<FormField label="Phone" name="phone" bind:value={formData.phone} />
 							<div>
-								<label class="block text-sm font-semibold text-gray-700 mb-2">Spouse</label>
+								<label class="block text-sm font-semibold text-gray-700 mb-2">Partner</label>
 								<select name="spouseId" bind:value={formData.spouseId} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-1 focus:ring-2 focus:ring-theme-button-1 py-2.5 px-4 text-gray-900 transition-all">
 									<option value="">None</option>
 									{#each contacts as contactOption}
@@ -219,23 +219,12 @@
 									{/each}
 								</select>
 							</div>
-							<div class="pt-2">
-								<label class="flex items-center cursor-pointer group">
-									<input
-										type="checkbox"
-										name="subscribed"
-										bind:checked={formData.subscribed}
-										class="w-5 h-5 rounded border-gray-300 text-theme-button-2 shadow-sm focus:border-theme-button-2 focus:ring-2 focus:ring-theme-button-2 cursor-pointer transition-all"
-									/>
-									<span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-gray-900">Subscribed to newsletters</span>
-								</label>
-							</div>
 						</div>
 					</div>
 
 					<!-- Address Card -->
 					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-						<div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+						<div class="bg-theme-panel-head-2 px-6 py-4">
 							<div class="flex items-center gap-3">
 								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
 									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,24 +251,26 @@
 
 					<!-- Church Membership Card -->
 					<div class="hub-top-panel overflow-hidden">
-						<div class="hub-top-panel-header flex items-center gap-3">
-							<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-								<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
 								</svg>
 							</div>
-							<h3 class="text-lg font-bold text-gray-900">Status</h3>
+							<h3 class="text-lg font-bold text-gray-900 crm-shell-main">Status</h3>
 						</div>
 						<div class="p-6 space-y-5">
-							<div>
-								<label class="block text-sm font-semibold text-gray-700 mb-2">Membership Status</label>
-								<select name="membershipStatus" bind:value={formData.membershipStatus} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-2 focus:ring-theme-button-2 py-2.5 px-4 text-gray-900 transition-all">
-									<option value="">Select status</option>
-									<option value="member">Member</option>
-									<option value="regular-attender">Regular Attender</option>
-									<option value="visitor">Visitor</option>
-									<option value="former-member">Former Member</option>
-								</select>
+							<input type="hidden" name="membershipStatus" value={formData.membershipStatus} />
+							<div class="pt-2">
+								<label class="flex items-center cursor-pointer group">
+									<input
+										type="checkbox"
+										name="subscribed"
+										bind:checked={formData.subscribed}
+										class="w-5 h-5 rounded border-gray-300 text-theme-button-2 shadow-sm focus:border-theme-button-2 focus:ring-2 focus:ring-theme-button-2 cursor-pointer transition-all"
+									/>
+									<span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-gray-900">Subscribed to newsletters</span>
+								</label>
 							</div>
 							<FormField label="Date Joined" name="dateJoined" type="date" bind:value={formData.dateJoined} />
 						</div>
@@ -287,13 +278,13 @@
 
 					<!-- Additional Information Card -->
 					<div class="hub-top-panel overflow-hidden">
-						<div class="hub-top-panel-header flex items-center gap-3">
-							<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-								<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 								</svg>
 							</div>
-							<h3 class="text-lg font-bold text-gray-900">Additional Information</h3>
+							<h3 class="text-lg font-bold text-gray-900 crm-shell-main">Additional Information</h3>
 						</div>
 						<div class="p-6">
 							<FormField label="Notes" name="notes" type="textarea" rows="6" bind:value={formData.notes} />
@@ -308,13 +299,13 @@
 				<div class="lg:col-span-2 space-y-6">
 					<!-- Personal Information Card -->
 					<div class="hub-top-panel overflow-hidden">
-						<div class="hub-top-panel-header flex items-center gap-3">
-							<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-								<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 								</svg>
 							</div>
-							<h2 class="text-xl font-bold text-gray-900">Personal Information</h2>
+							<h2 class="text-xl font-bold text-gray-900 crm-shell-main">Personal Information</h2>
 						</div>
 						<div class="p-6">
 							<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -346,7 +337,7 @@
 								{/if}
 								{#if spouse}
 									<div>
-										<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Spouse</dt>
+										<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Partner</dt>
 										<dd class="text-base text-gray-900">
 											<a href="/hub/contacts/{spouse.id}" class="inline-flex items-center gap-2 text-theme-button-1 hover:opacity-90 hover:underline group">
 												<span>{spouse.firstName || ''} {spouse.lastName || ''}</span>
@@ -364,14 +355,14 @@
 					<!-- Address Card -->
 					{#if contact.addressLine1 || contact.city || contact.postcode}
 						<div class="hub-top-panel overflow-hidden">
-							<div class="hub-top-panel-header flex items-center gap-3">
-								<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-									<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+								<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
 									</svg>
 								</div>
-								<h2 class="text-xl font-bold text-gray-900">Address</h2>
+								<h2 class="text-xl font-bold text-gray-900 crm-shell-main">Address</h2>
 							</div>
 							<div class="p-6">
 								<div class="space-y-1">
@@ -407,13 +398,13 @@
 					<!-- Notes Card -->
 					{#if contact.notes}
 						<div class="hub-top-panel overflow-hidden">
-							<div class="hub-top-panel-header flex items-center gap-3">
-								<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-									<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+								<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 									</svg>
 								</div>
-								<h2 class="text-xl font-bold text-gray-900">Notes</h2>
+								<h2 class="text-xl font-bold text-gray-900 crm-shell-main">Notes</h2>
 							</div>
 							<div class="p-6">
 								<p class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{contact.notes}</p>
@@ -426,31 +417,19 @@
 				<div class="space-y-6">
 					<!-- Church Membership Card -->
 					<div class="hub-top-panel overflow-hidden">
-						<div class="hub-top-panel-header flex items-center gap-3">
-							<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-								<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
 								</svg>
 							</div>
-							<h2 class="text-xl font-bold text-gray-900">Membership</h2>
+							<h2 class="text-xl font-bold text-gray-900 crm-shell-main">Membership</h2>
 						</div>
 						<div class="p-6 space-y-5">
-							{#if contact.membershipStatus}
-								<div>
-									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Status</dt>
-									<dd>
-										<span class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-theme-button-2 capitalize shadow-sm">
-											{contact.membershipStatus.replace('-', ' ')}
-										</span>
-									</dd>
-								</div>
-							{/if}
-							{#if contact.dateJoined}
-								<div>
-									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Date Joined</dt>
-									<dd class="text-base font-medium text-gray-900">{formatDateUK(contact.dateJoined)}</dd>
-								</div>
-							{/if}
+							<div>
+								<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Date Joined</dt>
+								<dd class="text-base font-medium text-gray-900">{contact.dateJoined ? formatDateUK(contact.dateJoined) : '—'}</dd>
+							</div>
 							<div>
 								<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Newsletter</dt>
 								<dd>

@@ -290,20 +290,15 @@ Safeguarding form submissions receive special protection:
 
 We use the following third-party services that may process your data:
 
-### Resend (Email Service)
+### Mailgun (Email Service)
 - **Purpose**: Sending newsletters and transactional emails
 - **Data shared**: Email addresses and names only
-- **Privacy Policy**: https://resend.com/privacy
+- **Privacy Policy**: https://www.mailgun.com/legal/privacy-policy/
 
 ### Railway (Hosting Provider)
 - **Purpose**: Hosting the Hub system and data storage
-- **Data stored**: All Hub data files
-- **Privacy Policy**: https://railway.app/privacy
-
-### Cloudinary (Image Storage)
-- **Purpose**: Storing and serving images uploaded to the Hub
-- **Data stored**: Images uploaded to the system
-- **Privacy Policy**: https://cloudinary.com/privacy
+- **Data stored**: All Hub data files (including uploaded images)
+- **Privacy Policy**: https://railway.com/legal/privacy
 
 All service providers are required to protect your data and use it only for the purposes we specify.
 

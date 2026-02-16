@@ -138,13 +138,6 @@
 			<span class="hidden sm:inline">Public Signup Form</span>
 			<span class="sm:hidden">Signup Form</span>
 		</a>
-		<a href="/signup/membership-form" target="_blank" rel="noopener noreferrer" class="bg-hub-yellow-600 text-white px-2.5 py-1.5 rounded-md hover:bg-hub-yellow-700 inline-flex items-center gap-1.5 text-xs">
-			<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-			</svg>
-			<span class="hidden sm:inline">Membership Form</span>
-			<span class="sm:hidden">Membership</span>
-		</a>
 		<a href="/hub/contacts/import" class="bg-theme-button-1 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
 			Import
 		</a>

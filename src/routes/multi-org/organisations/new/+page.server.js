@@ -88,6 +88,6 @@ export const actions = {
 		});
 
 		invalidateHubDomainCache();
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + org.id, !!locals.multiOrgAdminDomain));
+		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + org.id + '?organisationsUpdated=1', !!locals.multiOrgAdminDomain));
 	}
 };

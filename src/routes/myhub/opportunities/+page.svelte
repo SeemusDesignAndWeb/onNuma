@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
@@ -19,17 +20,29 @@
 	$: selectedCount = selectedRotas.size;
 	$: totalRotas = eventsWithRotas.reduce((sum, { rotas }) => sum + rotas.length, 0);
 
-	$: selectedRotasJson = JSON.stringify(
-		Array.from(selectedRotas).map(key => {
-			const parts = key.split(':');
-			return { rotaId: parts[0], occurrenceId: parts.length > 1 ? parts[1] : null };
-		})
-	);
+	// Only submit selections where the user is not already signed up (allows adding more without re-submitting existing)
+	$: newSelectionsForSubmit = (() => {
+		const out = [];
+		for (const { rotas, occurrences } of eventsWithRotas) {
+			for (const rota of rotas) {
+				for (const occ of occurrences || []) {
+					const key = occ.id ? `${rota.id}:${occ.id}` : rota.id;
+					if (selectedRotas.has(key) && !isEmailAlreadySignedUp(rota, occ.id)) {
+						out.push({ rotaId: rota.id, occurrenceId: occ.id || null });
+					}
+				}
+			}
+		}
+		return out;
+	})();
+	$: newSelectionsCount = newSelectionsForSubmit.length;
+	$: submittedRotasJson = JSON.stringify(newSelectionsForSubmit);
 
 	function handleEnhance() {
 		return async ({ update, result }) => {
 			if (result.type === 'success') {
 				notifications.success(result.data?.message || 'You\u2019re signed up. Thank you!');
+				await invalidateAll();
 			} else if (result.type === 'failure') {
 				notifications.error(result.data?.error || 'Something went wrong. Please try again.');
 			}
@@ -70,7 +83,7 @@
 	function syncHiddenInput(node) {
 		hiddenInputNode = node;
 		function update() {
-			node.value = selectedRotasJson;
+			node.value = submittedRotasJson;
 		}
 		update();
 		const form = node.closest('form');
@@ -84,7 +97,7 @@
 		};
 	}
 	$: if (hiddenInputNode) {
-		hiddenInputNode.value = selectedRotasJson;
+		hiddenInputNode.value = submittedRotasJson;
 	}
 
 	let expandedEventId = null;
@@ -92,12 +105,6 @@
 		expandedEventId = expandedEventId === id ? null : id;
 	}
 
-	// Auto-expand first event for convenience
-	let didExpandFirst = false;
-	$: if (eventsWithRotas.length > 0 && !didExpandFirst) {
-		didExpandFirst = true;
-		expandedEventId = eventsWithRotas[0].event.id;
-	}
 </script>
 
 <svelte:head>
@@ -106,7 +113,7 @@
 
 <div class="my-opp">
 	<h1 class="my-opp-title">Sign up for rotas</h1>
-	<p class="my-opp-lead">Tick the dates you can do, then hit sign up.</p>
+	<p class="my-opp-lead">Select the rota, tick each date you would like to volunteer for.</p>
 
 	{#if totalRotas === 0}
 		<div class="my-card my-card-body">
@@ -115,7 +122,7 @@
 	{:else}
 		<form method="POST" action="?/signup" use:enhance={handleEnhance} class="my-opp-form">
 			<input type="hidden" name="_csrf" value={csrfToken} />
-			<input type="hidden" name="selectedRotas" value={selectedRotasJson} use:syncHiddenInput />
+			<input type="hidden" name="selectedRotas" value={submittedRotasJson} use:syncHiddenInput />
 
 			{#if spouse}
 				<div class="my-card my-card-body">
@@ -128,7 +135,6 @@
 
 			<!-- Available rotas -->
 			<div class="my-opp-rotas">
-				<p class="my-opp-rotas-intro">Tick each date you can do. You can choose more than one.</p>
 				{#each eventsWithRotas as { event, rotas, occurrences }}
 					{#if rotas.length > 0}
 						<div class="my-card my-event-card">
@@ -184,9 +190,17 @@
 			{/if}
 
 			<div class="my-opp-bottom">
-				<a href="/myhub/availability" class="my-opp-away">Set away dates</a>
-				<button type="submit" disabled={selectedCount === 0} class="my-btn my-btn-primary my-opp-submit">
-					Sign up {selectedCount > 0 ? `(${selectedCount})` : ''}
+				<a href="/myhub/availability" class="my-btn my-opp-away-btn">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+					</svg>
+					Set away dates
+				</a>
+				<button type="submit" disabled={newSelectionsCount === 0} class="my-btn my-btn-primary my-opp-submit">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+					Sign up {newSelectionsCount > 0 ? `(${newSelectionsCount})` : ''}
 				</button>
 			</div>
 		</form>
@@ -200,7 +214,6 @@
 	.my-opp-title { font-size: 1.5rem; font-weight: 700; color: #111827; margin-bottom: 0.5rem; }
 	.my-opp-lead { font-size: 1.0625rem; color: #4b5563; margin-bottom: 1.5rem; line-height: 1.5; }
 	.my-opp-form .my-card { margin-bottom: 1.5rem; }
-	.my-opp-rotas-intro { font-size: 1rem; color: #4b5563; margin-bottom: 1rem; }
 	.my-event-card { padding: 0; overflow: hidden; }
 	.my-event-head {
 		width: 100%;
@@ -264,15 +277,26 @@
 		gap: 1rem;
 		box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
 	}
-	.my-opp-away {
+	.my-opp-away-btn {
 		font-size: 1rem;
 		font-weight: 600;
 		color: #2563eb;
-		text-decoration: underline;
-		padding: 0.75rem 1rem;
-		min-height: 3rem;
+		background: #eff6ff;
+		border: 2px solid #2563eb;
+		text-decoration: none;
+		padding: 0.75rem 1.25rem;
+		min-height: 3.5rem;
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		border-radius: 0.75rem;
+		transition: background 0.2s, border-color 0.2s;
+	}
+	.my-opp-away-btn:hover {
+		background: #dbeafe;
+		border-color: #1d4ed8;
+		color: #1d4ed8;
 	}
 	.my-opp-submit {
 		min-height: 3.5rem;

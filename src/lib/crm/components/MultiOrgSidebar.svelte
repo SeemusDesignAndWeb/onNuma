@@ -1,12 +1,13 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { multiOrgSidebarCollapsed, MULTI_ORG_SIDEBAR_COLLAPSED_KEY } from '$lib/crm/stores/sidebar.js';
 
 	export let base = '/multi-org';
 	/** When set (e.g. mobile overlay), show close button and call on nav/close */
 	export let onClose = null;
 
-	const SIDEBAR_COLLAPSED_KEY = 'multi_org_sidebar_collapsed';
+	const SIDEBAR_COLLAPSED_KEY = MULTI_ORG_SIDEBAR_COLLAPSED_KEY;
 
 	function handleNavClick() {
 		if (onClose) onClose();
@@ -41,12 +42,16 @@
 	onMount(() => {
 		try {
 			const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-			if (stored !== null) collapsed = stored === 'true';
+			if (stored !== null) {
+				collapsed = stored === 'true';
+				multiOrgSidebarCollapsed.set(collapsed);
+			}
 		} catch (_) {}
 	});
 
 	function setCollapsed(value) {
 		collapsed = value;
+		multiOrgSidebarCollapsed.set(value);
 		try {
 			localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(value));
 		} catch (_) {}
@@ -209,8 +214,8 @@
 		--sidebar-width-collapsed: 4.5rem;
 		width: var(--sidebar-width);
 		max-width: var(--sidebar-width);
-		height: 100vh;
-		min-height: 100vh;
+		min-height: 100%;
+		flex: 1 1 0;
 		background: linear-gradient(180deg, var(--mo-sidebar-bg-start) 0%, var(--mo-sidebar-bg-end) 100%);
 		border-right: 1px solid var(--mo-sidebar-border);
 		display: flex;
@@ -428,8 +433,11 @@
 			position: fixed;
 			left: 0;
 			top: 0;
+			bottom: 0;
 			z-index: 40;
 			box-shadow: 4px 0 12px rgba(0,0,0,0.3);
+			height: 100%;
+			min-height: 100dvh;
 		}
 	}
 	/* Mobile drawer: larger touch targets for finger taps */

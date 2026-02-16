@@ -1,6 +1,7 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { invalidate } from '$app/navigation';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 
 	export let data;
@@ -10,9 +11,17 @@
 	$: currentHubOrganisationId = data?.currentHubOrganisationId ?? null;
 	$: hubSet = typeof $page !== 'undefined' && $page.url?.searchParams?.get('hub_set') === '1';
 
-	// Toast when returning from "Set as Hub" (once on load)
 	onMount(() => {
-		if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('hub_set') === '1') {
+		if (typeof window === 'undefined') return;
+		const url = $page.url;
+		if (url.searchParams.get('organisationsUpdated') === '1') {
+			invalidate('app:organisations');
+			const params = new URLSearchParams(url.searchParams);
+			params.delete('organisationsUpdated');
+			const clean = params.toString() ? `${url.pathname}?${params}` : url.pathname;
+			window.history.replaceState(window.history.state, '', clean);
+		}
+		if (new URLSearchParams(window.location.search).get('hub_set') === '1') {
 			notifications.success('Hub organisation updated. The Hub will show this organisation\'s data.');
 		}
 	});

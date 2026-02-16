@@ -16,6 +16,7 @@
 		firstName: '',
 		lastName: '',
 		phone: '',
+		newEmail: '',
 		addressLine1: '',
 		addressLine2: '',
 		city: '',
@@ -31,6 +32,7 @@
 			firstName: c.firstName || '',
 			lastName: c.lastName || '',
 			phone: c.phone || '',
+			newEmail: '',
 			addressLine1: c.addressLine1 || '',
 			addressLine2: c.addressLine2 || '',
 			city: c.city || '',
@@ -42,13 +44,20 @@
 		editing = false;
 	}
 
+	$: emailVerifyStatus = data?.emailVerifyStatus ?? null;
+
 	// Handle form result from action
 	let lastProcessed = null;
 	$: if (formResult && formResult !== lastProcessed) {
 		lastProcessed = formResult;
 		if (formResult?.success) {
-			notifications.success('Your details have been updated.');
+			if (formResult.emailVerificationSent) {
+				notifications.success("We've sent a verification link to your new email address. Click the link to complete the change.");
+			} else {
+				notifications.success('Your details have been updated.');
+			}
 			editing = false;
+			form.newEmail = '';
 			// Re-initialize form from returned contact
 			if (formResult.contact) {
 				const c = formResult.contact;
@@ -56,6 +65,7 @@
 					firstName: c.firstName || '',
 					lastName: c.lastName || '',
 					phone: c.phone || '',
+					newEmail: '',
 					addressLine1: c.addressLine1 || '',
 					addressLine2: c.addressLine2 || '',
 					city: c.city || '',
@@ -81,6 +91,7 @@
 				firstName: c.firstName || '',
 				lastName: c.lastName || '',
 				phone: c.phone || '',
+				newEmail: '',
 				addressLine1: c.addressLine1 || '',
 				addressLine2: c.addressLine2 || '',
 				city: c.city || '',
@@ -107,7 +118,28 @@
 
 <div class="my-page-content">
 	<h1 class="my-heading">My details</h1>
-	<p class="my-lead">View and update your personal information. Your email address is used to sign in and cannot be changed here.</p>
+	<p class="my-lead">View and update your personal information. You can change your email address here; we'll send a verification link to confirm it's yours.</p>
+
+	{#if emailVerifyStatus === '1'}
+		<div class="my-alert my-alert-success" role="status">
+			<p>Your email address has been updated. Use your new email next time you sign in.</p>
+		</div>
+	{/if}
+	{#if emailVerifyStatus === 'expired'}
+		<div class="my-alert my-alert-error" role="alert">
+			<p>The verification link has expired. Please enter your new email again and we'll send a fresh link.</p>
+		</div>
+	{/if}
+	{#if emailVerifyStatus === 'invalid' || emailVerifyStatus === 'missing'}
+		<div class="my-alert my-alert-error" role="alert">
+			<p>That verification link was invalid or has already been used. To change your email, enter the new address below and save.</p>
+		</div>
+	{/if}
+	{#if emailVerifyStatus === 'error'}
+		<div class="my-alert my-alert-error" role="alert">
+			<p>Something went wrong. Please try again or contact your organiser.</p>
+		</div>
+	{/if}
 
 	{#if !data.contact}
 		<div class="my-alert my-alert-info">
@@ -168,7 +200,7 @@
 						<input type="hidden" name="_csrf" value={csrfToken} />
 
 						<div class="my-field">
-							<label class="my-label" for="profile-email">Email</label>
+							<label class="my-label" for="profile-email">Current email</label>
 							<input
 								type="email"
 								id="profile-email"
@@ -177,7 +209,20 @@
 								class="my-input my-input-disabled"
 								aria-describedby="email-help"
 							/>
-							<p id="email-help" class="my-help">Your email address is used to sign in and cannot be changed here. Contact your organiser if you need to update it.</p>
+						</div>
+						<div class="my-field">
+							<label class="my-label" for="profile-newEmail">New email address <span class="my-optional">(optional)</span></label>
+							<input
+								type="email"
+								id="profile-newEmail"
+								name="newEmail"
+								bind:value={form.newEmail}
+								autocomplete="email"
+								class="my-input"
+								placeholder="Enter new email to change it"
+								aria-describedby="new-email-help"
+							/>
+							<p id="new-email-help" class="my-help">To change your email, enter the new address here and save. We'll send a verification link to that address; the change will apply once you click it. The new address must not already be in use.</p>
 						</div>
 
 						<div class="my-field-row">
@@ -540,6 +585,20 @@
 		background: #fffbeb;
 		border-color: #fde68a;
 		color: #92400e;
+	}
+	.my-alert-success {
+		background: #f0fdf4;
+		border-color: #bbf7d0;
+		color: #166534;
+	}
+	.my-alert-error {
+		background: #fef2f2;
+		border-color: #fecaca;
+		color: #991b1b;
+	}
+	.my-optional {
+		font-weight: normal;
+		color: #6b7280;
 	}
 	.my-spinner {
 		width: 1.5rem;

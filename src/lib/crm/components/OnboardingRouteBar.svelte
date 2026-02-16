@@ -1,7 +1,7 @@
 <script>
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
-	import { getOnboardingSteps, ONBOARDING_ROUTE_STORAGE_KEY } from '$lib/crm/onboardingSteps.js';
+	import { getOnboardingSteps, ONBOARDING_ROUTE_STORAGE_KEY, ONBOARDING_SEEN_STEPS_KEY } from '$lib/crm/onboardingSteps.js';
 
 	export let admin = null;
 	export let superAdminEmail = null;
@@ -33,6 +33,42 @@
 	$: currentStep = currentIndex >= 0 ? steps[currentIndex] : null;
 	$: prevStep = currentIndex > 0 ? steps[currentIndex - 1] : null;
 	$: nextStep = currentIndex >= 0 && currentIndex < steps.length - 1 ? steps[currentIndex + 1] : null;
+
+	// Track which step indices have been visited (seen); persist in sessionStorage
+	function getSeenStepIndices() {
+		if (!browser || typeof sessionStorage === 'undefined') return new Set();
+		try {
+			const raw = sessionStorage.getItem(ONBOARDING_SEEN_STEPS_KEY);
+			const arr = raw ? JSON.parse(raw) : [];
+			return new Set(Array.isArray(arr) ? arr : []);
+		} catch {
+			return new Set();
+		}
+	}
+	function markStepSeen(index) {
+		if (!browser || typeof sessionStorage === 'undefined' || index < 0) return;
+		const seen = getSeenStepIndices();
+		seen.add(index);
+		sessionStorage.setItem(ONBOARDING_SEEN_STEPS_KEY, JSON.stringify([...seen]));
+	}
+	// When pathname changes, mark the step we left as seen, and the step we're on as seen
+	let prevPathname = '';
+	$: {
+		if (browser && pathname && pathname !== prevPathname) {
+			if (prevPathname) {
+				const prevMatching = steps
+					.map((s, i) => ({ step: s, index: i }))
+					.filter(({ step }) => stepMatchesPath(step, prevPathname));
+				if (prevMatching.length > 0) {
+					const best = prevMatching.reduce((a, b) => (a.step.href.length >= b.step.href.length ? a : b));
+					markStepSeen(best.index);
+				}
+			}
+			if (currentIndex >= 0) markStepSeen(currentIndex);
+			prevPathname = pathname;
+		}
+	}
+	$: seenIndices = (pathname, getSeenStepIndices());
 
 	let hiddenByUser = false;
 	$: visible = browser && !hiddenByUser && typeof sessionStorage !== 'undefined' && sessionStorage.getItem(ONBOARDING_ROUTE_STORAGE_KEY) === 'true';
@@ -67,9 +103,9 @@
 </script>
 
 {#if showBar}
-	<nav class="flex-shrink-0 w-full border-b border-gray-200 bg-white px-4 sm:px-6 lg:px-8 py-3 shadow-sm" aria-label="Onboarding route">
-		<div class="flex flex-wrap items-end gap-3 sm:gap-4">
-			<span class="text-xs font-medium text-gray-500 uppercase tracking-wider self-center mr-1">Route</span>
+	<nav class="flex-shrink-0 w-full border-b border-gray-200 bg-white px-4 sm:px-6 lg:px-8 py-3 shadow-sm" aria-label="Get started">
+		<div class="flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0">
+			<span class="text-xs font-medium text-gray-500 uppercase tracking-wider flex-shrink-0">Get started</span>
 			{#if prevStep}
 				<a
 					href={prevStep.href}
@@ -84,23 +120,26 @@
 			{/if}
 			{#each steps as step, i}
 				{@const isCurrent = matchesStep(step)}
+				{@const isSeen = seenIndices.has(i)}
 				<a
 					href={step.href}
-					class="inline-flex flex-col items-center rounded-lg px-2.5 py-1.5 min-w-[4rem] text-sm font-medium transition-colors {isCurrent
+					class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 min-w-0 flex-shrink-0 text-sm font-medium transition-colors {isCurrent
 						? 'bg-theme-button-1 text-white'
-						: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}"
+						: isSeen
+							? 'bg-emerald-600 text-white hover:bg-emerald-700'
+							: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}"
 					title={step.title}
 				>
-					<span class="flex h-6 w-6 items-center justify-center rounded text-xs font-bold {isCurrent ? 'bg-white/20' : 'bg-gray-200 text-gray-600'}">
+					<span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold {isCurrent ? 'bg-white/20' : isSeen ? 'bg-white/20' : 'bg-gray-200 text-gray-600'}">
 						{i + 1}
 					</span>
-					<span class="mt-1 text-center leading-tight">{step.title}</span>
+					<span class="leading-tight whitespace-nowrap">{step.title}</span>
 				</a>
 			{/each}
 			{#if nextStep}
 				<a
 					href={nextStep.href}
-					class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-theme-button-1 transition-colors"
+					class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-theme-button-1 transition-colors flex-shrink-0"
 					title="Next: {nextStep.title}"
 					aria-label="Next step"
 				>
@@ -109,7 +148,7 @@
 					</svg>
 				</a>
 			{/if}
-			<div class="ml-auto inline-flex items-center gap-2">
+			<div class="ml-auto inline-flex items-center gap-2 flex-shrink-0">
 				{#if stepsWithHelp.length > 0}
 					<button
 						type="button"
@@ -126,9 +165,13 @@
 				<button
 					type="button"
 					on:click={hide}
-					class="inline-flex items-center px-2.5 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+					class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
+					title="Hide Get started bar"
+					aria-label="Hide Get started bar"
 				>
-					Hide
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
 				</button>
 			</div>
 		</div>

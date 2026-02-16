@@ -121,7 +121,7 @@ export const actions = {
 		invalidateOrganisationsCache();
 		await invalidateAllSessions(); // Force re-login so Hub users see plan/org changes
 
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id, !!locals.multiOrgAdminDomain));
+		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?organisationsUpdated=1', !!locals.multiOrgAdminDomain));
 	},
 	archive: async ({ params, locals }) => {
 		if (!locals.multiOrgAdmin) {
@@ -140,7 +140,7 @@ export const actions = {
 			const other = (Array.isArray(all) ? all : []).find((o) => o && o.id !== params.id && !o.archivedAt);
 			await setCurrentOrganisationId(other?.id ?? null);
 		}
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id, !!locals.multiOrgAdminDomain));
+		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?organisationsUpdated=1', !!locals.multiOrgAdminDomain));
 	},
 	unarchive: async ({ params, locals }) => {
 		if (!locals.multiOrgAdmin) {
@@ -153,7 +153,7 @@ export const actions = {
 		await updatePartial('organisations', params.id, { archivedAt: null });
 		invalidateHubDomainCache();
 		invalidateOrganisationsCache();
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id, !!locals.multiOrgAdminDomain));
+		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations/' + params.id + '?organisationsUpdated=1', !!locals.multiOrgAdminDomain));
 	},
 
 	saveOnboarding: async ({ request, params, locals }) => {
@@ -282,6 +282,6 @@ export const actions = {
 		invalidateHubDomainCache();
 		invalidateOrganisationsCache();
 		await invalidateAllSessions();
-		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations', !!locals.multiOrgAdminDomain));
+		throw redirect(302, getMultiOrgPublicPath('/multi-org/organisations?organisationsUpdated=1', !!locals.multiOrgAdminDomain));
 	}
 };

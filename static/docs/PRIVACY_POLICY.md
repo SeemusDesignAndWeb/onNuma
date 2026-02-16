@@ -60,7 +60,7 @@ Where UK GDPR or equivalent law applies, we rely on:
 
 We may share personal data with:
 
-- **Service providers**: Hosting (e.g. Railway), email (e.g. Resend), payment (e.g. Paddle), image storage (e.g. Cloudinary), and similar providers that help us run the Service, under strict confidentiality and data processing terms
+- **Service providers**: Hosting (e.g. Railway), email (e.g. Mailgun), payment (e.g. Paddle), and similar providers that help us run the Service, under strict confidentiality and data processing terms
 - **Your organisation**: If you use the Service as part of an organisation, other authorised users in that organisation may see your account-related data and content as allowed by your role
 - **Legal and safety**: Where required by law, or to protect our rights, users, or the public
 

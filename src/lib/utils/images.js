@@ -20,3 +20,12 @@ export function getImageUrl(path) {
 export function getOptimizedImageUrl(path, _options = {}) {
 	return getImageUrl(path);
 }
+
+/**
+ * Passthrough for OptimizedImage; we no longer use Cloudinary (images are on disk /images/).
+ * @param {string} url - Image URL (any)
+ * @returns {string}
+ */
+export function optimizeCloudinaryUrl(url) {
+	return url || '';
+}

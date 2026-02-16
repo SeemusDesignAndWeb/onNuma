@@ -47,16 +47,17 @@
 	</div>
 {/if}
 
-<div class="space-y-6">
+<!-- Flexy grid: cards wrap and grow evenly; min 280px, max 1fr -->
+<div class="plans-grid">
 	{#each plans as plan}
-		<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-			<div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
-				<h2 class="text-lg font-semibold text-slate-800 capitalize">{plan.label}</h2>
+		<article class="plan-card flex flex-col bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden min-w-0">
+			<header class="px-5 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between gap-3 flex-shrink-0">
+				<h2 class="text-lg font-semibold text-slate-800 capitalize truncate">{plan.label}</h2>
 				{#if editingPlanValue === plan.value}
 					<button
 						type="button"
 						on:click={cancelEdit}
-						class="text-sm text-slate-500 hover:text-slate-700"
+						class="text-sm text-slate-500 hover:text-slate-700 shrink-0"
 					>
 						Cancel
 					</button>
@@ -64,125 +65,129 @@
 					<button
 						type="button"
 						on:click={() => startEdit(plan.value)}
-						class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[#EB9486]/10 text-[#c75a4a] hover:bg-[#EB9486]/20 transition-colors"
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[#EB9486]/10 text-[#c75a4a] hover:bg-[#EB9486]/20 transition-colors shrink-0"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
 						Edit
 					</button>
 				{/if}
-			</div>
+			</header>
 
-			{#if editingPlanValue === plan.value}
-				<form
-					method="POST"
-					action="?/updatePlan"
-					use:enhance={() => async ({ result, update }) => {
-						await update();
-						if (result.type === 'success') await invalidateAll();
-					}}
-					class="px-6 py-5 space-y-4 border-b border-slate-100"
-				>
-					<input type="hidden" name="planValue" value={plan.value} />
-					<div>
-						<label for="plan-desc-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-						<textarea
-							id="plan-desc-{plan.value}"
-							name="description"
-							rows="3"
-							class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
-							placeholder="Plan description shown to admins"
-						>{plan.description}</textarea>
-					</div>
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+			<div class="flex-1 min-w-0 flex flex-col">
+				{#if editingPlanValue === plan.value}
+					<form
+						method="POST"
+						action="?/updatePlan"
+						use:enhance={() => async ({ result, update }) => {
+							await update();
+							if (result.type === 'success') await invalidateAll();
+						}}
+						class="px-5 py-4 space-y-4 flex-1 flex flex-col min-w-0"
+					>
+						<input type="hidden" name="planValue" value={plan.value} />
 						<div>
-							<label for="plan-contacts-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Contacts allowed</label>
-							<input
-								id="plan-contacts-{plan.value}"
-								type="number"
-								name="maxContacts"
-								min="0"
-								step="1"
-								value={plan.maxContacts}
+							<label for="plan-desc-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+							<textarea
+								id="plan-desc-{plan.value}"
+								name="description"
+								rows="3"
 								class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
-							/>
+								placeholder="Plan description shown to admins"
+							>{plan.description}</textarea>
+						</div>
+						<div class="grid grid-cols-2 gap-3">
+							<div>
+								<label for="plan-contacts-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Contacts</label>
+								<input
+									id="plan-contacts-{plan.value}"
+									type="number"
+									name="maxContacts"
+									min="0"
+									step="1"
+									value={plan.maxContacts}
+									class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
+								/>
+							</div>
+							<div>
+								<label for="plan-admins-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Admins</label>
+								<input
+									id="plan-admins-{plan.value}"
+									type="number"
+									name="maxAdmins"
+									min="0"
+									step="1"
+									value={plan.maxAdmins}
+									class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
+								/>
+							</div>
 						</div>
 						<div>
-							<label for="plan-admins-{plan.value}" class="block text-sm font-medium text-slate-700 mb-1">Admins allowed</label>
-							<input
-								id="plan-admins-{plan.value}"
-								type="number"
-								name="maxAdmins"
-								min="0"
-								step="1"
-								value={plan.maxAdmins}
-								class="w-full rounded-lg border border-slate-300 shadow-sm focus:ring-[#EB9486] focus:border-[#c75a4a] py-2 px-3 text-sm"
-							/>
+							<p class="block text-sm font-medium text-slate-700 mb-2">Modules</p>
+							<p class="text-xs text-slate-500 mb-2">Hub areas included in this plan.</p>
+							<div class="flex flex-wrap gap-x-4 gap-y-2">
+								{#each planModules as mod}
+									<label class="inline-flex items-center gap-2 cursor-pointer">
+										<input
+											type="checkbox"
+											name="areaPermissions"
+											value={mod.value}
+											checked={plan.areaPermissions && plan.areaPermissions.includes(mod.value)}
+											class="rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+										/>
+										<span class="text-sm text-slate-700">{mod.label}</span>
+									</label>
+								{/each}
+							</div>
 						</div>
-					</div>
-					<div>
-						<p class="block text-sm font-medium text-slate-700 mb-2">Modules</p>
-						<p class="text-xs text-slate-500 mb-2">Hub areas included in this plan. Organisations on this plan will have access to the selected modules.</p>
-						<div class="flex flex-wrap gap-x-6 gap-y-2">
-							{#each planModules as mod}
-								<label class="inline-flex items-center gap-2 cursor-pointer">
-									<input
-										type="checkbox"
-										name="areaPermissions"
-										value={mod.value}
-										checked={plan.areaPermissions && plan.areaPermissions.includes(mod.value)}
-										class="rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
-									/>
-									<span class="text-sm text-slate-700">{mod.label}</span>
-								</label>
-							{/each}
+						<div class="flex flex-wrap gap-2 mt-auto pt-2">
+							<button
+								type="submit"
+								class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-colors"
+							>
+								Save changes
+							</button>
+							<button
+								type="button"
+								on:click={cancelEdit}
+								class="px-4 py-2 rounded-xl font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+							>
+								Cancel
+							</button>
 						</div>
-					</div>
-					<div class="flex gap-2">
-						<button
-							type="submit"
-							class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white bg-[#EB9486] hover:bg-[#e08070] transition-colors"
-						>
-							Save changes
-						</button>
-						<button
-							type="button"
-							on:click={cancelEdit}
-							class="px-4 py-2 rounded-xl font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
-						>
-							Cancel
-						</button>
-					</div>
-				</form>
-			{:else}
-				<dl class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-					<div class="sm:col-span-2 lg:col-span-3">
-						<dt class="font-medium text-slate-500">Description</dt>
-						<dd class="mt-0.5 text-slate-800">{plan.description}</dd>
-					</div>
-					<div class="sm:col-span-2 lg:col-span-3">
-						<dt class="font-medium text-slate-500">Modules</dt>
-						<dd class="mt-0.5 text-slate-800">
-							{#if plan.areaPermissions && plan.areaPermissions.length > 0}
-								{plan.areaPermissions
-									.map((id) => planModules.find((m) => m.value === id)?.label || id)
-									.filter(Boolean)
-									.join(', ')}
-							{:else}
-								<span class="text-slate-400">None</span>
-							{/if}
-						</dd>
-					</div>
-					<div>
-						<dt class="font-medium text-slate-500">Contacts allowed</dt>
-						<dd class="mt-0.5 text-slate-800 font-mono">{plan.maxContacts.toLocaleString()}</dd>
-					</div>
-					<div>
-						<dt class="font-medium text-slate-500">Admins allowed</dt>
-						<dd class="mt-0.5 text-slate-800 font-mono">{plan.maxAdmins.toLocaleString()}</dd>
-					</div>
-				</dl>
-			{/if}
-		</div>
+					</form>
+				{:else}
+					<dl class="px-5 py-4 space-y-4 text-sm flex-1 min-w-0">
+						<div>
+							<dt class="font-medium text-slate-500">Description</dt>
+							<dd class="mt-0.5 text-slate-800">{plan.description}</dd>
+						</div>
+						<div class="grid grid-cols-2 gap-x-4 gap-y-3">
+							<div>
+								<dt class="font-medium text-slate-500">Contacts allowed</dt>
+								<dd class="mt-0.5 text-slate-800 font-mono">{plan.maxContacts.toLocaleString()}</dd>
+							</div>
+							<div>
+								<dt class="font-medium text-slate-500">Admins allowed</dt>
+								<dd class="mt-0.5 text-slate-800 font-mono">{plan.maxAdmins.toLocaleString()}</dd>
+							</div>
+						</div>
+						<div>
+							<dt class="font-medium text-slate-500">Modules</dt>
+							<dd class="mt-0.5 text-slate-800">
+								{#if plan.areaPermissions && plan.areaPermissions.length > 0}
+									<span class="inline-block">{plan.areaPermissions
+										.map((id) => planModules.find((m) => m.value === id)?.label || id)
+										.filter(Boolean)
+										.join(', ')}</span>
+								{:else}
+									<span class="text-slate-400">None</span>
+								{/if}
+							</dd>
+						</div>
+					</dl>
+				{/if}
+			</div>
+		</article>
 	{/each}
 </div>
 
@@ -240,3 +245,11 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.plans-grid {
+		display: grid;
+		gap: 1.5rem;
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	}
+</style>
