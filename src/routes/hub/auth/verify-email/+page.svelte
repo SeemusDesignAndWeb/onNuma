@@ -8,7 +8,7 @@
 	$: email = $page.data?.email || '';
 	$: expired = $page.data?.expired || false;
 	$: theme = $page.data?.theme ?? null;
-	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/assets/onnuma-logo.png';
+	$: loginLogoSrc = (theme?.loginLogoPath && theme.loginLogoPath.trim()) || (theme?.logoPath && theme.logoPath.trim()) || '/assets/onnuma-icon.png';
 	
 	let redirectTimer;
 	
@@ -33,7 +33,7 @@
 		<div class="text-center">
 			<img
 				src={loginLogoSrc}
-				alt="Eltham Green Community Church"
+				alt="OnNuma"
 				class="w-auto max-w-full max-h-[130px] object-contain mx-auto mb-4"
 			/>
 		</div>

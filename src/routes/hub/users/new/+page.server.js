@@ -145,12 +145,15 @@ export const actions = {
 			let emailSent = false;
 			if (fullAdmin && fullAdmin.emailVerificationToken) {
 				try {
+					const hubBaseUrl = org?.hubDomain ? `https://${String(org.hubDomain).replace(/\/$/, '')}` : undefined;
 					await sendAdminWelcomeEmail({
 						to: email.toString(),
 						name: name.toString(),
 						email: email.toString(),
 						verificationToken: fullAdmin.emailVerificationToken,
-						password: password.toString() // Include password in welcome email
+						password: password.toString(),
+						hubBaseUrl,
+						orgName: org?.name
 					}, { url });
 					emailSent = true;
 				} catch (emailError) {

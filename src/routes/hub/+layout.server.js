@@ -53,7 +53,12 @@ export async function load({ cookies, locals }) {
 	// Get trial status for UI banner
 	const trialStatus = org ? getTrialStatus(org) : { inTrial: false, expired: false, daysRemaining: 0, trialPlan: null };
 	
-	const theme = sanitizeThemeLogoUrls(settings?.theme || getDefaultTheme());
+	// Use this org's theme so each organisation has its own branding; new orgs get default OnNuma logos
+	const defaultTheme = getDefaultTheme();
+	const themeSource = (org?.theme && typeof org.theme === 'object')
+		? { ...defaultTheme, ...org.theme }
+		: defaultTheme;
+	const theme = sanitizeThemeLogoUrls(themeSource);
 	const sundayPlannersLabel =
 		typeof settings?.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== ''
 			? settings.sundayPlannersLabel.trim()

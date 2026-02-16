@@ -1439,11 +1439,13 @@ export async function sendBulkRotaInvites(invites, event) {
  * @param {string} options.verificationToken - Email verification token
  * @param {string} options.password - Temporary password (optional, if provided)
  * @param {string} [options.hubBaseUrl] - Base URL for this org's hub (custom login URL). When set, verification and login links use this so the user logs in at their org's URL.
+ * @param {string} [options.orgName] - Organisation name for the email body (e.g. "River Church"). When not set, uses "your organisation".
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<object>} Resend API response
  */
-export async function sendAdminWelcomeEmail({ to, name, email, verificationToken, password, hubBaseUrl }, event) {
-	console.log('[email] sendAdminWelcomeEmail called:', { to, name, email, hasToken: !!verificationToken, hasPassword: !!password, hubBaseUrl: hubBaseUrl ?? 'none' });
+export async function sendAdminWelcomeEmail({ to, name, email, verificationToken, password, hubBaseUrl, orgName }, event) {
+	const organisationName = (orgName && String(orgName).trim()) || 'your organisation';
+	console.log('[email] sendAdminWelcomeEmail called:', { to, name, email, hasToken: !!verificationToken, hasPassword: !!password, hubBaseUrl: hubBaseUrl ?? 'none', orgName: organisationName });
 	
 	const baseUrl = getBaseUrl(event);
 	const hubUrl = (hubBaseUrl && String(hubBaseUrl).trim()) ? String(hubBaseUrl).replace(/\/$/, '') : baseUrl;
@@ -1465,20 +1467,20 @@ export async function sendAdminWelcomeEmail({ to, name, email, verificationToken
 		<head>
 			<meta charset="utf-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Welcome to TheHUB - Eltham Green Community Church</title>
+			<title>Welcome to TheHUB - ${organisationName}</title>
 		</head>
 		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
 			<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
 				${branding}
 				<div style="background: #ffffff; padding: 20px 15px; border-radius: 6px; text-align: center; margin-bottom: 20px; border: 1px solid #e5e7eb;">
 					<h1 style="color: #333; margin: 0; font-size: 20px; font-weight: 600;">Welcome to TheHUB</h1>
-					<p style="color: #666; margin: 8px 0 0 0; font-size: 14px;">Eltham Green Community Church</p>
+					<p style="color: #666; margin: 8px 0 0 0; font-size: 14px;">${organisationName}</p>
 				</div>
 				
 				<div style="padding: 0;">
 				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hello ${name},</p>
 				
-				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Your admin account has been created for TheHUB, the church management system for Eltham Green Community Church.</p>
+				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Your admin account has been created for TheHUB, the church management system for ${organisationName}.</p>
 
 				<div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #4BB170;">
 					<h2 style="color: #4BB170; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">Your Login Credentials</h2>
@@ -1529,7 +1531,7 @@ export async function sendAdminWelcomeEmail({ to, name, email, verificationToken
 				<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
 					<p style="margin: 0;">If you have any questions or need assistance, please contact the system administrator.</p>
 					<p style="margin: 8px 0 0 0;">
-						<a href="${baseUrl}" style="color: #4A97D2; text-decoration: none;">Visit Eltham Green Community Church Website</a>
+						<a href="${hubUrl}" style="color: #4A97D2; text-decoration: none;">Visit ${organisationName} Hub</a>
 					</p>
 				</div>
 				</div>
@@ -1539,11 +1541,11 @@ export async function sendAdminWelcomeEmail({ to, name, email, verificationToken
 	`;
 
 	const text = `
-Welcome to TheHUB - Eltham Green Community Church
+Welcome to TheHUB - ${organisationName}
 
 Hello ${name},
 
-Your admin account has been created for TheHUB, the church management system for Eltham Green Community Church.
+Your admin account has been created for TheHUB, the church management system for ${organisationName}.
 
 Your Login Credentials:
 Email: ${email}
@@ -1572,7 +1574,7 @@ Security Reminders:
 
 If you have any questions or need assistance, please contact the system administrator.
 
-Visit our website: ${baseUrl}
+Log in to your Hub: ${hubLoginLink}
 	`.trim();
 
 	console.log('[email] Calling rateLimitedSend with from:', fromEmail, 'to:', to);
@@ -1582,7 +1584,7 @@ Visit our website: ${baseUrl}
 			return sendEmail({
 				from: fromEmail,
 				to: [to],
-				subject: 'Welcome to TheHUB - Your Admin Account',
+				subject: `Welcome to TheHUB - ${organisationName}`,
 				html: html,
 				text: text
 			});

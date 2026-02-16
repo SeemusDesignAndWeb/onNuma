@@ -203,5 +203,13 @@ export async function POST({ request, cookies }) {
 
 	await writeSettings(settings);
 
+	// Store theme on current organisation so this org's Hub shows its own branding (not another org's)
+	if (organisationId && themeUpdate !== undefined) {
+		const { updatePartial } = await import('$lib/crm/server/fileStore.js');
+		await updatePartial('organisations', organisationId, { theme: settings.theme });
+		const { invalidateOrganisationsCache } = await import('$lib/crm/server/organisationsCache.js');
+		invalidateOrganisationsCache();
+	}
+
 	return json({ success: true, settings });
 }

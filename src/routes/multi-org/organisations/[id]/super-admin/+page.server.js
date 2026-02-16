@@ -163,7 +163,8 @@ export const actions = {
 					email: normalizedEmail,
 					verificationToken,
 					password: password || null,
-					hubBaseUrl
+					hubBaseUrl,
+					orgName: org.name
 				}, { url });
 			}
 		} catch (err) {

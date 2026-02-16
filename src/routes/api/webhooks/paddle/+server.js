@@ -293,7 +293,8 @@ async function fulfillPendingSignup(pendingSignup, subscriptionData) {
 				email,
 				verificationToken,
 				password,
-				hubBaseUrl: hubBaseUrl || undefined
+				hubBaseUrl: hubBaseUrl || undefined,
+				orgName: org.name
 			}, { url: new URL(appOrigin) });
 			console.log('[paddle webhook] Welcome email sent successfully to:', email);
 		} else {

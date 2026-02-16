@@ -8,7 +8,7 @@ import {
 import { isValidHubDomain, normaliseHost, invalidateHubDomainCache, getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { getCurrentOrganisationId, setCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
-import { invalidateAllSessions } from '$lib/crm/server/auth.js';
+import { getAdminByEmail, invalidateAllSessions, invalidateAdminSessions } from '$lib/crm/server/auth.js';
 
 const VALID_PLANS = new Set(['free', 'professional', 'enterprise', 'freebie']);
 
@@ -188,6 +188,15 @@ export const actions = {
 			const all = await readCollection('organisations');
 			const other = (Array.isArray(all) ? all : []).find((o) => o && o.id !== params.id && !o.archivedAt);
 			await setCurrentOrganisationId(other?.id ?? null);
+		}
+		// Delete this org's Hub super admin so we don't leave an orphaned admin
+		const superAdminEmail = org.hubSuperAdminEmail || org.email;
+		if (superAdminEmail) {
+			const superAdmin = await getAdminByEmail(superAdminEmail, params.id);
+			if (superAdmin) {
+				await invalidateAdminSessions(superAdmin.id);
+				await remove('admins', superAdmin.id);
+			}
 		}
 		await remove('organisations', params.id);
 		invalidateHubDomainCache();

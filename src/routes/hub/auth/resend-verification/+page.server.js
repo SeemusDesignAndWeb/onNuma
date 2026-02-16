@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { getAdminByEmail, regenerateVerificationToken } from '$lib/crm/server/auth.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sendAdminWelcomeEmail } from '$lib/crm/server/email.js';
+import { findById } from '$lib/crm/server/fileStore.js';
 
 // Rate limiting for resend requests (per email)
 const resendAttempts = new Map();
@@ -74,13 +75,17 @@ export const actions = {
 			const verificationToken = await regenerateVerificationToken(admin.id);
 
 			// Send verification email (without password since this is a resend)
+			const org = admin.organisationId ? await findById('organisations', admin.organisationId) : null;
+			const hubBaseUrl = org?.hubDomain ? `https://${String(org.hubDomain).replace(/\/$/, '')}` : undefined;
 			try {
 				await sendAdminWelcomeEmail({
 					to: emailStr,
 					name: admin.name,
 					email: emailStr,
 					verificationToken: verificationToken,
-					password: null // Don't include password in resend
+					password: null,
+					hubBaseUrl,
+					orgName: org?.name
 				}, { url });
 			} catch (emailError) {
 				console.error('Failed to send verification email:', emailError);

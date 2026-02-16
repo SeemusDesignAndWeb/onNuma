@@ -496,7 +496,8 @@ export const actions = {
 					email,
 					verificationToken: fullAdmin.emailVerificationToken,
 					password,
-					hubBaseUrl
+					hubBaseUrl,
+					orgName: org.name
 				}, { url });
 				console.log('[signup] Welcome email sent successfully:', JSON.stringify(emailResult));
 			} catch (emailErr) {
