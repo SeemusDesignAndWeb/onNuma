@@ -3,7 +3,7 @@ import { findById, update, updatePartial, readCollection, writeCollection, creat
 import {
 	getConfiguredAreaPermissionsForPlan,
 	getConfiguredPlanFromAreaPermissions,
-	getHubPlanTiers
+	getHubPlanTiersForMultiOrg
 } from '$lib/crm/server/permissions.js';
 import { isValidHubDomain, normaliseHost, invalidateHubDomainCache, getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { getCurrentOrganisationId, setCurrentOrganisationId } from '$lib/crm/server/settings.js';
@@ -12,7 +12,7 @@ import { validateContact } from '$lib/crm/server/validators.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
 import { invalidateAllSessions } from '$lib/crm/server/auth.js';
 
-const VALID_PLANS = new Set(['free', 'professional', 'enterprise']);
+const VALID_PLANS = new Set(['free', 'professional', 'enterprise', 'freebie']);
 
 function validateOrganisation(data, excludeOrgId = null) {
 	const errors = {};
@@ -28,7 +28,7 @@ function validateOrganisation(data, excludeOrgId = null) {
 	}
 	const plan = data.plan ? String(data.plan).toLowerCase().trim() : 'free';
 	if (!VALID_PLANS.has(plan)) {
-		errors.plan = 'Please select a plan (Free, Professional or Enterprise)';
+		errors.plan = 'Please select a plan (Free, Professional, Enterprise or Freebie)';
 	}
 	return Object.keys(errors).length ? errors : null;
 }
@@ -53,7 +53,7 @@ export async function load({ params, locals, url }) {
 	if (!org) {
 		throw redirect(302, base('/multi-org/organisations'));
 	}
-	const currentPlan = (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
+	const currentPlan = org.planId ?? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
 	const anonymisedParam = url.searchParams.get('anonymised');
 	const anonymisedCreated = anonymisedParam ? parseInt(anonymisedParam, 10) : null;
 
@@ -64,7 +64,7 @@ export async function load({ params, locals, url }) {
 	return {
 		organisation: org,
 		multiOrgAdmin,
-		hubPlanTiers: getHubPlanTiers(),
+		hubPlanTiers: getHubPlanTiersForMultiOrg(),
 		currentPlan,
 		anonymisedCreated: Number.isNaN(anonymisedCreated) ? null : anonymisedCreated,
 		sequences: activeSequences
@@ -89,7 +89,7 @@ export const actions = {
 		const contactName = form.get('contactName')?.toString()?.trim() || '';
 		const hubDomain = form.get('hubDomain')?.toString()?.trim() || '';
 		const plan = (form.get('plan')?.toString() || 'free').toLowerCase().trim();
-		const existingPlan = (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
+		const existingPlan = org.planId ?? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions)) || 'free';
 		const targetPlan = VALID_PLANS.has(plan) ? plan : existingPlan;
 		const areaPermissions = await getConfiguredAreaPermissionsForPlan(targetPlan);
 
@@ -116,7 +116,8 @@ export const actions = {
 			hubDomain: hubDomain || null,
 			areaPermissions,
 			isHubOrganisation: true,
-			archivedAt: org.archivedAt ?? null
+			archivedAt: org.archivedAt ?? null,
+			planId: VALID_PLANS.has(plan) ? plan : null
 		});
 		invalidateHubDomainCache();
 		invalidateOrganisationsCache();

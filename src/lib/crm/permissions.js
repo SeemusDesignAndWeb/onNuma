@@ -257,11 +257,14 @@ const FREE_AREAS = [
 ];
 const PROFESSIONAL_AREAS = [...FREE_AREAS, HUB_AREAS.NEWSLETTERS, HUB_AREAS.FORMS, HUB_AREAS.MEMBERS];
 const ENTERPRISE_AREAS = [...PROFESSIONAL_AREAS, HUB_AREAS.SAFEGUARDING_FORMS];
+/** Freebie: full access, no restrictions. Invite-only (assigned in multi-org when creating/editing organisations). */
+const FREEBIE_AREAS = [...ENTERPRISE_AREAS];
 
 const PLAN_AREAS = {
 	free: FREE_AREAS,
 	professional: PROFESSIONAL_AREAS,
-	enterprise: ENTERPRISE_AREAS
+	enterprise: ENTERPRISE_AREAS,
+	freebie: FREEBIE_AREAS
 };
 
 const VALID_PLANS = new Set(Object.keys(PLAN_AREAS));
@@ -270,14 +273,16 @@ const VALID_PLANS = new Set(Object.keys(PLAN_AREAS));
 export const PLAN_MAX_ADMINS = {
 	free: 1,
 	professional: 5,
-	enterprise: 50
+	enterprise: 50,
+	freebie: 50
 };
 
 /** Maximum contacts accessible per plan (over-the-limit contacts are not shown or deleted). */
 export const PLAN_MAX_CONTACTS = {
 	free: 30,
 	professional: 500,
-	enterprise: 5000
+	enterprise: 5000,
+	freebie: 5000
 };
 
 /** Maximum admins allowed for a plan (free | professional | enterprise). Defaults to free limit if unknown. */
@@ -323,12 +328,20 @@ export const PLAN_MODULE_OPTIONS = [
 	{ value: HUB_AREAS.SAFEGUARDING_FORMS, label: 'Safeguarding Forms' }
 ];
 
-/** Plan options for multi-org admin (select Free, Professional or Enterprise). */
+/** Plan options for public signup (Free, Professional, Enterprise). Freebie is invite-only and not included. */
 export function getHubPlanTiers() {
 	return [
 		{ value: 'free', label: 'Free', description: 'Contacts, Lists, Events, Rotas, Meeting Planners, Email reminders. No forms or email campaigns.' },
 		{ value: 'professional', label: 'Professional', description: 'Everything in Free plus Forms, Email templates and campaigns, Members, your branding.' },
 		{ value: 'enterprise', label: 'Enterprise', description: 'Everything in Professional plus Safeguarding forms. Custom solutions for larger needs.' }
+	];
+}
+
+/** Plan options for multi-org admin (includes Freebie – full access, invite-only for testing). */
+export function getHubPlanTiersForMultiOrg() {
+	return [
+		...getHubPlanTiers(),
+		{ value: 'freebie', label: 'Freebie', description: 'Full access, no restrictions. By invite only – for offering test sites from Organisations.' }
 	];
 }
 
@@ -360,9 +373,10 @@ export function getProfessionalContactTierCap(contactCount) {
 
 /**
  * Full plan setup detail for multi-org admin: description, limits, and modules.
+ * Includes all plans (free, professional, enterprise, freebie) so server config and plan resolution work.
  */
 export function getPlanSetupDetails() {
-	const tiers = getHubPlanTiers();
+	const tiers = getHubPlanTiersForMultiOrg();
 	return tiers.map((t) => {
 		const value = t.value;
 		return {

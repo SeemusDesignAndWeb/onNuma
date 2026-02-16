@@ -32,10 +32,11 @@ export async function load({ locals, depends }) {
 	const organisationsWithCounts = await Promise.all(organisations.map(async (org) => {
 		const superAdminEmail = org?.hubSuperAdminEmail || org?.email;
 		const admin = superAdminEmail ? adminByEmail.get(normalise(superAdminEmail)) : null;
+		const derivedPlan = (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free';
 		return {
 			...org,
 			contactCount: org?.id ? (contactCountByOrg[org.id] ?? 0) : 0,
-			plan: (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free',
+			plan: org?.planId ?? derivedPlan,
 			superAdminEmailVerified: admin ? !!admin.emailVerified : null
 		};
 	}));

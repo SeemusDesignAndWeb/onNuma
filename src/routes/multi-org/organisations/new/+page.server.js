@@ -1,10 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { create, readCollection } from '$lib/crm/server/fileStore.js';
 import { invalidateHubDomainCache, getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
-import { getConfiguredAreaPermissionsForPlan, getHubPlanTiers } from '$lib/crm/server/permissions.js';
+import { getConfiguredAreaPermissionsForPlan, getHubPlanTiersForMultiOrg } from '$lib/crm/server/permissions.js';
 import { isValidHubDomain, normaliseHost } from '$lib/crm/server/hubDomain.js';
 
-const VALID_PLANS = new Set(['free', 'professional', 'enterprise']);
+const VALID_PLANS = new Set(['free', 'professional', 'enterprise', 'freebie']);
 
 function validateOrganisation(data, excludeOrgId = null) {
 	const errors = {};
@@ -20,7 +20,7 @@ function validateOrganisation(data, excludeOrgId = null) {
 	}
 	const plan = data.plan ? String(data.plan).toLowerCase().trim() : 'free';
 	if (!VALID_PLANS.has(plan)) {
-		errors.plan = 'Please select a plan (Free, Professional or Enterprise)';
+		errors.plan = 'Please select a plan (Free, Professional, Enterprise or Freebie)';
 	}
 	return Object.keys(errors).length ? errors : null;
 }
@@ -41,7 +41,7 @@ export async function load({ locals }) {
 	}
 	return {
 		multiOrgAdmin: locals.multiOrgAdmin,
-		hubPlanTiers: getHubPlanTiers()
+		hubPlanTiers: getHubPlanTiersForMultiOrg()
 	};
 }
 
@@ -84,7 +84,8 @@ export const actions = {
 			contactName,
 			hubDomain: hubDomain || null,
 			areaPermissions,
-			isHubOrganisation: true
+			isHubOrganisation: true,
+			planId: VALID_PLANS.has(plan) ? plan : null
 		});
 
 		invalidateHubDomainCache();

@@ -4,7 +4,7 @@ import { getMultiOrgPublicPath } from '$lib/crm/server/hubDomain.js';
 import { getConfiguredPlanSetupDetails, PLAN_MODULE_OPTIONS } from '$lib/crm/server/permissions.js';
 import { updatePlanSetup } from '$lib/crm/server/settings.js';
 
-const VALID_PLAN_IDS = new Set(['free', 'professional', 'enterprise']);
+const VALID_PLAN_IDS = new Set(['free', 'professional', 'enterprise', 'freebie']);
 
 export async function load({ locals }) {
 	const multiOrgAdmin = locals.multiOrgAdmin;

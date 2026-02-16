@@ -17,7 +17,7 @@
 
 <div class="max-w-2xl">
 	<h1 class="text-2xl font-bold text-slate-800 mb-2">New organisation</h1>
-	<p class="text-slate-500 mb-8">Add an organisation and select their plan (Free, Professional or Enterprise).</p>
+	<p class="text-slate-500 mb-8">Add an organisation and select their plan (Free, Professional, Enterprise or Freebie for invite-only testing).</p>
 
 	<form method="POST" action="?/create" use:enhance={() => {
 		return async ({ result }) => {

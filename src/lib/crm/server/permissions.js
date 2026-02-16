@@ -5,7 +5,7 @@
 import * as shared from '$lib/crm/permissions.js';
 import { getSettings } from './settings.js';
 
-const VALID_PLAN_IDS = new Set(['free', 'professional', 'enterprise']);
+const VALID_PLAN_IDS = new Set(['free', 'professional', 'enterprise', 'freebie']);
 
 function normaliseOverrideAreaPermissions(value, fallback) {
 	return Array.isArray(value) ? value.filter((v) => typeof v === 'string' && v.trim()) : fallback;
@@ -90,7 +90,7 @@ export async function getConfiguredAreaPermissionsForPlan(plan) {
  * Derive plan tier from area permissions using configured plan definitions.
  * Returns null for non-standard combinations.
  * @param {string[]} areaPermissions
- * @returns {Promise<'free' | 'professional' | 'enterprise' | null>}
+ * @returns {Promise<'free' | 'professional' | 'enterprise' | 'freebie' | null>}
  */
 export async function getConfiguredPlanFromAreaPermissions(areaPermissions) {
 	if (!Array.isArray(areaPermissions)) return 'free';
@@ -98,7 +98,7 @@ export async function getConfiguredPlanFromAreaPermissions(areaPermissions) {
 	const targetKey = listKey(areaPermissions);
 	for (const plan of configured) {
 		if (listKey(plan.areaPermissions || []) === targetKey) {
-			return /** @type {'free' | 'professional' | 'enterprise'} */ (plan.value);
+			return /** @type {'free' | 'professional' | 'enterprise' | 'freebie'} */ (plan.value);
 		}
 	}
 	return null;
@@ -126,6 +126,7 @@ export const canCreateAdmin = shared.canCreateAdmin;
 export const getAreaPermissionsForPlan = shared.getAreaPermissionsForPlan;
 export const getPlanFromAreaPermissions = shared.getPlanFromAreaPermissions;
 export const getHubPlanTiers = shared.getHubPlanTiers;
+export const getHubPlanTiersForMultiOrg = shared.getHubPlanTiersForMultiOrg;
 export const getPlanSetupDetails = shared.getPlanSetupDetails;
 export const getPlanMaxAdmins = shared.getPlanMaxAdmins;
 export const getPlanMaxContacts = shared.getPlanMaxContacts;

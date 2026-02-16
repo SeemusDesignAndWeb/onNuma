@@ -199,7 +199,7 @@
 			</div>
 		</div>
 
-		<!-- Panel 3: Plan (Free, Professional, Enterprise) -->
+		<!-- Panel 3: Plan (Free, Professional, Enterprise, Freebie) -->
 		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm" role="group" aria-labelledby="plan-panel-heading">
 			<h2 id="plan-panel-heading" class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Plan</h2>
 			<div class="space-y-3">
