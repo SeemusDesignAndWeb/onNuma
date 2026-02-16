@@ -31,18 +31,21 @@ export async function load({ params, locals }) {
 	if (!org) {
 		throw redirect(302, base('/multi-org/organisations/' + params.id));
 	}
-	// This organisation's Hub super admin (per-org)
+	// This organisation's Hub super admin (per-org). When none set, pre-fill from org contact so "create org then set super admin" flow is smooth.
 	const currentHubSuperAdminEmail = org.hubSuperAdminEmail || (await getHubSuperAdminEmail());
 	let currentHubSuperAdminName = null;
 	if (currentHubSuperAdminEmail) {
 		const existing = await getAdminByEmail(currentHubSuperAdminEmail, params.id);
 		if (existing) currentHubSuperAdminName = existing.name || null;
 	}
+	// When no super admin set for this org, pre-fill from org contact (create-org then set-password flow)
+	const emailDefault = org.hubSuperAdminEmail ? currentHubSuperAdminEmail : (org.email || null);
+	const nameDefault = org.hubSuperAdminEmail ? currentHubSuperAdminName : (org.contactName || org.email || null);
 	return {
 		organisation: org,
 		multiOrgAdmin,
-		currentHubSuperAdminEmail: currentHubSuperAdminEmail || null,
-		currentHubSuperAdminName: currentHubSuperAdminName || null
+		currentHubSuperAdminEmail: emailDefault || null,
+		currentHubSuperAdminName: nameDefault || null
 	};
 }
 
