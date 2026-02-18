@@ -2386,11 +2386,12 @@ If you didn't request this change, you can ignore this email. Your address will 
  * @param {string} options.name - Contact name
  * @param {object} rotaData - Rota data { rota, event, occurrence }
  * @param {object} event - SvelteKit event object (for base URL)
+ * @param {object} options - Optional { daysAhead, orgName, coordinatorName, hubBaseUrl }. hubBaseUrl overrides base URL so "View in My Hub" uses the org's subdomain (e.g. for cron).
  * @returns {Promise<object>} Resend API response
  */
-export async function sendUpcomingRotaReminder({ to, name, firstName }, rotaData, event, { daysAhead = 7, orgName = '', coordinatorName = '' } = {}) {
+export async function sendUpcomingRotaReminder({ to, name, firstName }, rotaData, event, { daysAhead = 7, orgName = '', coordinatorName = '', hubBaseUrl = '' } = {}) {
 	const { rota, event: eventData, occurrence } = rotaData;
-	const baseUrl = getBaseUrl(event);
+	const baseUrl = (hubBaseUrl && String(hubBaseUrl).trim()) ? String(hubBaseUrl).replace(/\/$/, '') : getBaseUrl(event);
 	const fromEmail = fromEmailDefault();
 
 	const eventTitle = eventData?.title || 'Event';

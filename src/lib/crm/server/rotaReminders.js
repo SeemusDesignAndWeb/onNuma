@@ -1,8 +1,17 @@
-import { readCollection, create } from './fileStore.js';
+import { readCollection, create, findById } from './fileStore.js';
 import { sendUpcomingRotaReminder } from './email.js';
 import { getSettings } from './settings.js';
 import { getCurrentOrganisationId } from './orgContext.js';
 import { generateId } from './ids.js';
+
+/** Base URL for an org's hub (for "View in My Hub" links). Uses org.hubDomain when set. */
+async function getHubBaseUrlForOrg(organisationId, fallbackOrigin) {
+	if (!organisationId) return fallbackOrigin;
+	const org = await findById('organisations', organisationId);
+	const domain = org?.hubDomain && String(org.hubDomain).trim();
+	if (!domain) return fallbackOrigin;
+	return `https://${domain.replace(/^https?:\/\//, '').replace(/\/$/, '')}`;
+}
 
 // Maps a contact's reminderTiming preference to the daysAhead value(s) it covers
 const TIMING_TO_DAYS = {
@@ -234,13 +243,15 @@ export async function sendMyhubRotaReminders(sveltekitEvent) {
 			}
 
 			const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email;
+			const contactOrgId = contact.organisationId || organisationId;
+			const hubBaseUrl = await getHubBaseUrlForOrg(contactOrgId, sveltekitEvent?.url?.origin);
 
 			try {
 				await sendUpcomingRotaReminder(
 					{ to: contact.email, name: contactName, firstName: contact.firstName || '' },
 					{ rota, event: eventData, occurrence },
 					sveltekitEvent,
-					{ daysAhead, orgName }
+					{ daysAhead, orgName, hubBaseUrl }
 				);
 				await logReminder({
 					contactId: contact.id,
@@ -317,6 +328,8 @@ export async function sendRotaReminders(daysAhead = 3, event) {
 
 		// For now, send one email per assignment
 		// In the future, we could group multiple assignments into one email
+		const contactOrgId = contact.organisationId || null;
+		const hubBaseUrl = await getHubBaseUrlForOrg(contactOrgId, event?.url?.origin);
 		for (const assignment of contactAssignments) {
 			try {
 				await sendUpcomingRotaReminder(
@@ -329,7 +342,8 @@ export async function sendRotaReminders(daysAhead = 3, event) {
 						event: assignment.event,
 						occurrence: assignment.occurrence
 					},
-					event
+					event,
+					{ hubBaseUrl }
 				);
 				results.sent++;
 				console.log(`[Rota Reminders] Sent reminder to ${contact.email} for ${assignment.event.title} - ${assignment.rota.role}`);

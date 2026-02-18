@@ -703,11 +703,14 @@ export const actions = {
 					respondedAt: null
 				});
 
-				// Create a magic link so the volunteer can access their MyHub dashboard
+				// Create a magic link so the volunteer can access their MyHub dashboard (use org's hub domain so link works for their org)
 				const { createMagicLinkToken } = await import('$lib/crm/server/memberAuth.js');
 				const token = await createMagicLinkToken(contactId);
-				const baseUrl = env.APP_BASE_URL || url.origin;
-				const magicLink = `${baseUrl}/myhub/auth/${token}?redirectTo=/myhub`;
+				const org = organisationId ? await findById('organisations', organisationId) : null;
+				const hubBase = org?.hubDomain && String(org.hubDomain).trim()
+					? `https://${String(org.hubDomain).replace(/^https?:\/\//, '').replace(/\/$/, '')}`
+					: (env.APP_BASE_URL || url.origin);
+				const magicLink = `${hubBase}/myhub/auth/${token}?redirectTo=/myhub`;
 
 				const eventRecord = await findById('events', rota.eventId);
 				const occurrence = occurrenceId ? await findById('occurrences', occurrenceId) : null;

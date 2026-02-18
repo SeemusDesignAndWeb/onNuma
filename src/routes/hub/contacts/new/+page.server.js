@@ -84,8 +84,11 @@ export const actions = {
 					const { env } = await import('$env/dynamic/private');
 
 					const token = await createMagicLinkToken(contact.id);
-					const baseUrl = env.APP_BASE_URL || url.origin;
-					const magicLink = `${baseUrl}/myhub/auth/${token}`;
+					// Use org's hub domain so "Go to My Hub" link points to the correct subdomain
+					const hubBase = org?.hubDomain && String(org.hubDomain).trim()
+						? `https://${String(org.hubDomain).replace(/^https?:\/\//, '').replace(/\/$/, '')}`
+						: (env.APP_BASE_URL || url.origin);
+					const magicLink = `${hubBase}/myhub/auth/${token}`;
 
 					const settings = await getSettings();
 					const orgName = settings?.organisationName || settings?.name || '';
