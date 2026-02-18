@@ -144,6 +144,8 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 	if (orgFromHost) {
 		event.locals.hubOrganisationFromHost = orgFromHost.id;
 		event.locals.hubOrganisationFromDomain = { id: orgFromHost.id, name: orgFromHost.name };
+		// So email links and images use the correct domain (e.g. https://hub.egcc.co.uk)
+		event.locals.hubBaseUrl = event.url?.origin || null;
 		return runWithOrganisation(orgFromHost.id, () => crmHandleHubAndSignup(event, resolve));
 	}
 

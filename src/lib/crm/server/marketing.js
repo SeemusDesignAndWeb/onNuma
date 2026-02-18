@@ -45,6 +45,19 @@ const DELAY_UNITS = {
 	weeks: 7 * 24 * 60 * 60 * 1000
 };
 
+/**
+ * Base URL for an organisation: use org's hub domain when set so links and images point to the correct domain.
+ * @param {object} org - Organisation { hubDomain? }
+ * @param {string} fallbackBaseUrl - URL to use when org has no hubDomain
+ * @returns {string}
+ */
+function getOrgBaseUrl(org, fallbackBaseUrl) {
+	const domain = org?.hubDomain && String(org.hubDomain).trim();
+	if (!domain) return fallbackBaseUrl;
+	const host = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+	return `https://${host}`;
+}
+
 // ---------------------------------------------------------------------------
 // Placeholder helpers
 // ---------------------------------------------------------------------------
@@ -650,16 +663,19 @@ export async function processSendQueue(baseUrl) {
 				: {};
 			const links = await resolveLinks(entry.organisation_id);
 
+			// Use org's hub domain when set so links and logo point to the correct domain/subdomain
+			const entryBaseUrl = getOrgBaseUrl(org, baseUrl);
+
 			// Resolve branding
 			const branding = await getOrgBranding(entry.organisation_id);
 
-			// Build data and render
-			const data = buildPlaceholderData(contact, org, baseUrl, links);
+			// Build data and render (login_url, org_logo_url, etc. use entryBaseUrl)
+			const data = buildPlaceholderData(contact, org, entryBaseUrl, links);
 			// Unsubscribe link (token-based).
 			const unsubscribeToken = await ensureUnsubscribeToken(contact.id, contact.email);
 			data.unsubscribe_url = unsubscribeToken?.token
-				? `${baseUrl}/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken.token)}`
-				: `${baseUrl}/marketing/unsubscribe`;
+				? `${entryBaseUrl}/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken.token)}`
+				: `${entryBaseUrl}/marketing/unsubscribe`;
 
 			let bodyHtml = await insertContentBlocks(template.body_html, true);
 			let bodyText = await insertContentBlocks(template.body_text || template.body_html?.replace(/<[^>]*>/g, ''), false);
@@ -671,13 +687,13 @@ export async function processSendQueue(baseUrl) {
 			const fromEmail = branding.sender_email || env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : 'noreply@onnuma.com');
 			const fromName = branding.sender_name || org.name || 'OnNuma';
 
-			// Send
+			// Send (layout logo and footer link use entryBaseUrl)
 			const result = await rateLimitedSend(() =>
 				sendEmail({
 					from: `${fromName} <${fromEmail}>`,
 					to: [contact.email],
 					subject,
-					html: wrapInEmailLayout(bodyHtml, previewText, branding, baseUrl, data.unsubscribe_url),
+					html: wrapInEmailLayout(bodyHtml, previewText, branding, entryBaseUrl, data.unsubscribe_url),
 					text: appendUnsubscribeToText(bodyText, data.unsubscribe_url)
 				})
 			);
@@ -1016,11 +1032,14 @@ export async function sendMarketingBroadcast({ subject, previewText, bodyHtml, b
 			const links = await resolveLinks(organisationId);
 			const branding = await getOrgBranding(organisationId);
 
-			const data = buildPlaceholderData(contact, org, baseUrl, links);
+			// Use org's hub domain when set so links and logo point to the correct domain/subdomain
+			const contactBaseUrl = getOrgBaseUrl(org, baseUrl);
+
+			const data = buildPlaceholderData(contact, org, contactBaseUrl, links);
 			const unsubscribeToken = await ensureUnsubscribeToken(contact.id, contact.email);
 			data.unsubscribe_url = unsubscribeToken?.token
-				? `${baseUrl}/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken.token)}`
-				: `${baseUrl}/marketing/unsubscribe`;
+				? `${contactBaseUrl}/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken.token)}`
+				: `${contactBaseUrl}/marketing/unsubscribe`;
 
 			let renderedHtml = await insertContentBlocks(bodyHtml || '', true);
 			let renderedText = await insertContentBlocks(
@@ -1047,7 +1066,7 @@ export async function sendMarketingBroadcast({ subject, previewText, bodyHtml, b
 						renderedHtml,
 						renderedPreview,
 						branding,
-						baseUrl,
+						contactBaseUrl,
 						data.unsubscribe_url
 					),
 					text: appendUnsubscribeToText(renderedText, data.unsubscribe_url)

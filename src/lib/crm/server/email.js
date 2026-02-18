@@ -2,22 +2,43 @@ import { env } from '$env/dynamic/private';
 import { readCollection, findById, update, findMany } from './fileStore.js';
 import { ensureUnsubscribeToken, ensureEventToken } from './tokens.js';
 import { rateLimitedSend } from './emailRateLimiter.js';
-import { getSettings } from './settings.js';
+import { getSettings, getCurrentOrganisationId } from './settings.js';
 import { sendEmail } from '$lib/server/mailgun.js';
 
 const fromEmailDefault = () => env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `noreply@${env.MAILGUN_DOMAIN}` : '');
 
 /**
- * Get base URL for absolute links in emails
- * @param {object} event - SvelteKit event object
+ * Get base URL for absolute links in emails.
+ * When the request is from a hub custom domain (e.g. hub.egcc.co.uk), uses that origin
+ * so links and images point to the correct domain/subdomain.
+ * @param {object} event - SvelteKit event object (may have locals.hubBaseUrl when on hub domain)
  * @returns {string} Base URL
  */
 function getBaseUrl(event) {
+	if (event?.locals?.hubBaseUrl) return event.locals.hubBaseUrl;
 	return env.APP_BASE_URL || event?.url?.origin || 'http://localhost:5173';
 }
 
 /** Default logo path when no theme logo is set (must exist in static/assets). */
 const DEFAULT_ONNUMA_LOGO_PATH = '/assets/onnuma-logo.png';
+
+/**
+ * Get organisation contact details for email footers (name, address, phone, email).
+ * Uses current Hub organisation so links and contact info match the correct domain/org.
+ * @returns {Promise<{ orgName: string, address: string, phone: string, email: string }>}
+ */
+async function getOrgContactForEmail() {
+	const orgId = await getCurrentOrganisationId();
+	if (!orgId) return { orgName: '', address: '', phone: '', email: '' };
+	const org = await findById('organisations', orgId);
+	if (!org) return { orgName: '', address: '', phone: '', email: '' };
+	return {
+		orgName: String(org.name || '').trim(),
+		address: String(org.address || '').trim(),
+		phone: String(org.telephone || '').trim(),
+		email: String(org.email || '').trim()
+	};
+}
 
 /**
  * Resolve logo URL for emails: use Hub theme logo if set and valid, otherwise OnNuma logo.
@@ -408,7 +429,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 		.replace(/\{\{firstName\}\}/g, contactData.firstName || 'all')
 		.replace(/\{\{lastName\}\}/g, contactData.lastName || '')
 		.replace(/\{\{name\}\}/g, `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim() || contactData.email || 'Church Member')
-		.replace(/\{\{email\}\}/g, contactData.email || 'subscriber@egcc.co.uk')
+		.replace(/\{\{email\}\}/g, contactData.email || '')
 		.replace(/\{\{phone\}\}/g, contactData.phone || '');
 
 	const signupPageUrl = `${baseUrl}/signup/rotas`;
@@ -1004,7 +1025,8 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 	const emailDataArray = [];
 	const baseUrl = getBaseUrl(event);
 	const fromEmail = fromEmailDefault();
-	
+	const orgContact = await getOrgContactForEmail();
+
 	for (const contactInvite of contactInvites) {
 		const { contact, invites } = contactInvite;
 		const name = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email;
@@ -1131,12 +1153,13 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 						<!-- Footer -->
 						<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
 							<div style="text-align: center; margin-bottom: 15px;">
-								<p style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">Eltham Green Community Church</p>
-								<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">542 Westhorne Avenue, Eltham, London, SE9 6RR</p>
-								<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">
-									<a href="tel:02088501331" style="color: #2d7a32; text-decoration: none;">020 8850 1331</a> | 
-									<a href="mailto:enquiries@egcc.co.uk" style="color: #2d7a32; text-decoration: none;">enquiries@egcc.co.uk</a>
-								</p>
+								${orgContact.orgName ? `<p style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">${orgContact.orgName}</p>` : ''}
+								${orgContact.address ? `<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">${orgContact.address}</p>` : ''}
+								${(orgContact.phone || orgContact.email) ? `<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">
+									${orgContact.phone ? `<a href="tel:${orgContact.phone.replace(/\s/g, '')}" style="color: #2d7a32; text-decoration: none;">${orgContact.phone}</a>` : ''}
+									${orgContact.phone && orgContact.email ? ' | ' : ''}
+									${orgContact.email ? `<a href="mailto:${orgContact.email}" style="color: #2d7a32; text-decoration: none;">${orgContact.email}</a>` : ''}
+								</p>` : ''}
 								<p style="margin: 10px 0 0 0;">
 									<a href="${baseUrl}" style="color: #2d7a32; text-decoration: none; font-size: 12px; font-weight: 500;">Visit our website</a>
 								</p>
@@ -1172,6 +1195,12 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 				}
 			}
 
+			const footerText = [
+				orgContact.orgName,
+				orgContact.address,
+				orgContact.phone ? `Phone: ${orgContact.phone}` : '',
+				orgContact.email ? `Email: ${orgContact.email}` : ''
+			].filter(Boolean).join('\n');
 			const text = `
 Volunteer Rota Invitations
 
@@ -1180,12 +1209,7 @@ Hi ${firstName || 'there'},
 ${personalizedMessage ? personalizedMessage + '\n\n' : ''}${rotasText}
 ${eventPageUrl ? `\nView Event Page: ${eventPageUrl}` : ''}
 ${upcomingRotasText}
-
----
-Eltham Green Community Church
-542 Westhorne Avenue, Eltham, London, SE9 6RR
-Phone: 020 8850 1331
-Email: enquiries@egcc.co.uk
+${footerText ? `\n---\n${footerText}\n` : ''}
 Website: ${baseUrl}
 			`.trim();
 
@@ -1229,6 +1253,7 @@ export async function sendSuggestedInviteEmail(contact, rotaInvites, customMessa
 		return { email: to || 'unknown', status: 'error', error: 'No email address' };
 	}
 
+	const orgContact = await getOrgContactForEmail();
 	const firstName = contact.firstName || '';
 	const personalizedMessage = customMessage
 		? String(customMessage).replace(/\{\{firstname\}\}/gi, firstName).trim()
@@ -1287,12 +1312,13 @@ export async function sendSuggestedInviteEmail(contact, rotaInvites, customMessa
 					${myHubSectionHtml}
 					<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
 						<div style="text-align: center; margin-bottom: 15px;">
-							<p style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">Eltham Green Community Church</p>
-							<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">542 Westhorne Avenue, Eltham, London, SE9 6RR</p>
-							<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">
-								<a href="tel:02088501331" style="color: #2d7a32; text-decoration: none;">020 8850 1331</a> |
-								<a href="mailto:enquiries@egcc.co.uk" style="color: #2d7a32; text-decoration: none;">enquiries@egcc.co.uk</a>
-							</p>
+							${orgContact.orgName ? `<p style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">${orgContact.orgName}</p>` : ''}
+							${orgContact.address ? `<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">${orgContact.address}</p>` : ''}
+							${(orgContact.phone || orgContact.email) ? `<p style="margin: 0 0 4px 0; color: #666; font-size: 12px;">
+								${orgContact.phone ? `<a href="tel:${orgContact.phone.replace(/\s/g, '')}" style="color: #2d7a32; text-decoration: none;">${orgContact.phone}</a>` : ''}
+								${orgContact.phone && orgContact.email ? ' | ' : ''}
+								${orgContact.email ? `<a href="mailto:${orgContact.email}" style="color: #2d7a32; text-decoration: none;">${orgContact.email}</a>` : ''}
+							</p>` : ''}
 							<p style="margin: 10px 0 0 0;">
 								<a href="${baseUrl}" style="color: #2d7a32; text-decoration: none; font-size: 12px; font-weight: 500;">Visit our website</a>
 							</p>
@@ -1304,18 +1330,19 @@ export async function sendSuggestedInviteEmail(contact, rotaInvites, customMessa
 		</html>
 	`;
 
+	const footerText = [
+		orgContact.orgName,
+		orgContact.address,
+		orgContact.phone ? `Phone: ${orgContact.phone}` : '',
+		orgContact.email ? `Email: ${orgContact.email}` : ''
+	].filter(Boolean).join('\n');
 	const text = `
 Volunteer Rota Invitations
 
 Hi ${firstName || 'there'},
 
 ${personalizedMessage ? personalizedMessage + '\n\n' : ''}${rotasText}${myHubSectionText}
-
----
-Eltham Green Community Church
-542 Westhorne Avenue, Eltham, London, SE9 6RR
-Phone: 020 8850 1331
-Email: enquiries@egcc.co.uk
+${footerText ? `\n---\n${footerText}\n` : ''}
 Website: ${baseUrl}
 	`.trim();
 
@@ -2521,6 +2548,8 @@ export async function sendMemberSignupConfirmationEmail({ to, name }, event) {
 	const baseUrl = getBaseUrl(event);
 	const branding = await getEmailBranding(event);
 	const contactName = name || to;
+	const orgContact = await getOrgContactForEmail();
+	const orgName = orgContact.orgName || 'your organisation';
 
 	const html = `
 		<!DOCTYPE html>
@@ -2528,7 +2557,7 @@ export async function sendMemberSignupConfirmationEmail({ to, name }, event) {
 		<head>
 			<meta charset="utf-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Welcome to Eltham Green Community Church</title>
+			<title>Welcome to ${orgName}</title>
 		</head>
 		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 			<div style="background: #ffffff; padding: 30px; border-radius: 10px; border: 1px solid #e5e7eb;">
@@ -2540,44 +2569,45 @@ export async function sendMemberSignupConfirmationEmail({ to, name }, event) {
 				<div style="background: #f9fafb; padding: 30px; border-radius: 6px; border: 1px solid #e5e7eb;">
 					<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
 						<p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">
-							Thank you for signing up to become a member of Eltham Green Community Church!
+							Thank you for signing up to become a member of ${orgName}!
 						</p>
 						<p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">
 							We've received your information and are excited to have you join our community. Our team will be in touch with you soon.
 						</p>
-						<p style="color: #666; font-size: 14px; margin: 0;">
-							If you have any questions, please feel free to contact us at <a href="mailto:info@egcc.co.uk" style="color: #2d7a32; text-decoration: none;">info@egcc.co.uk</a> or call us at <a href="tel:02088501331" style="color: #2d7a32; text-decoration: none;">020 8850 1331</a>.
-						</p>
+						${(orgContact.phone || orgContact.email) ? `<p style="color: #666; font-size: 14px; margin: 0;">
+							If you have any questions, please feel free to contact us at ${orgContact.email ? `<a href="mailto:${orgContact.email}" style="color: #2d7a32; text-decoration: none;">${orgContact.email}</a>` : ''}${orgContact.phone && orgContact.email ? ' or call us at ' : ''}${orgContact.phone ? `<a href="tel:${orgContact.phone.replace(/\s/g, '')}" style="color: #2d7a32; text-decoration: none;">${orgContact.phone}</a>` : ''}.
+						</p>` : ''}
 					</div>
 					
-					<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
-						<p style="margin: 0;">Eltham Green Community Church</p>
-						<p style="margin: 5px 0 0 0;">542 Westhorne Avenue, Eltham, London, SE9 6RR</p>
-					</div>
+					${(orgContact.orgName || orgContact.address) ? `<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666; font-size: 12px;">
+						${orgContact.orgName ? `<p style="margin: 0;">${orgContact.orgName}</p>` : ''}
+						${orgContact.address ? `<p style="margin: 5px 0 0 0;">${orgContact.address}</p>` : ''}
+					</div>` : ''}
 				</div>
 			</div>
 		</body>
 		</html>
 	`;
 
+	const contactLine = (orgContact.phone || orgContact.email)
+		? `If you have any questions, please feel free to contact us at ${orgContact.email || ''}${orgContact.phone && orgContact.email ? ' or call us at ' : ''}${orgContact.phone || ''}.`
+		: '';
+	const footerLines = [orgContact.orgName, orgContact.address].filter(Boolean).join('\n');
 	const text = `
 Welcome, ${contactName}!
 
-Thank you for signing up to become a member of Eltham Green Community Church!
+Thank you for signing up to become a member of ${orgName}!
 
 We've received your information and are excited to have you join our community. Our team will be in touch with you soon.
-
-If you have any questions, please feel free to contact us at info@egcc.co.uk or call us at 020 8850 1331.
-
-Eltham Green Community Church
-542 Westhorne Avenue, Eltham, London, SE9 6RR
+${contactLine ? '\n' + contactLine + '\n' : ''}
+${footerLines ? '\n' + footerLines + '\n' : ''}
 	`.trim();
 
 	try {
 		const result = await rateLimitedSend(() => sendEmail({
 			from: fromEmail,
 			to: [to],
-			subject: 'Welcome to Eltham Green Community Church',
+			subject: `Welcome to ${orgName}`,
 			html,
 			text
 		}));
