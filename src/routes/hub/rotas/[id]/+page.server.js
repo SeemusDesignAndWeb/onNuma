@@ -186,19 +186,38 @@ export async function load({ params, cookies, url, parent }) {
 		owner = await findById('contacts', rota.ownerId);
 	}
 
+	// MyHub invitation statuses for this rota (pending / accepted / declined per occurrence)
+	const allInvitations = await readCollection('myhub_invitations').catch(() => []);
+	const rotaInvitations = allInvitations.filter((inv) => inv.rotaId === params.id);
+	const contactsMap = new Map(contacts.map((c) => [c.id, c]));
+	const invitationsByOccurrence = {};
+	for (const inv of rotaInvitations) {
+		const occId = inv.occurrenceId || 'unassigned';
+		if (!invitationsByOccurrence[occId]) invitationsByOccurrence[occId] = [];
+		const contact = contactsMap.get(inv.contactId);
+		const contactName = contact
+			? `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email || 'Unknown'
+			: 'Unknown';
+		invitationsByOccurrence[occId].push({ contactId: inv.contactId, contactName, status: inv.status || 'pending' });
+	}
+
+	// Assignees list is from the rota only. When someone accepts in MyHub we add them to the rota, so they appear.
+	// If the coordinator removes them, they disappear from the list; the UI shows "accepted but removed" in the invitations block.
+
 	const csrfToken = getCsrfToken(cookies) || '';
-	return { 
-		rota: { ...rota, assignees: processedAssignees }, 
+	return {
+		rota: { ...rota, assignees: processedAssignees },
 		rawRota: rota, // Keep raw rota for operations that need original assignees
-		event, 
-		occurrence, 
+		event,
+		occurrence,
 		eventOccurrences,
 		assigneesByOccurrence,
-		availableContacts, 
+		availableContacts,
 		lists,
 		owner,
-		signupLink, 
-		csrfToken 
+		signupLink,
+		csrfToken,
+		invitationsByOccurrence
 	};
 }
 

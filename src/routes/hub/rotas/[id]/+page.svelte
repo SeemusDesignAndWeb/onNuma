@@ -36,6 +36,7 @@
 	$: owner = $page.data?.owner || null;
 	$: signupLink = $page.data?.signupLink || '';
 	$: csrfToken = $page.data?.csrfToken || '';
+	$: invitationsByOccurrence = $page.data?.invitationsByOccurrence || {};
 	$: formResult = $page.form;
 	$: helpFiles = rota?.helpFiles || [];
 	
@@ -947,6 +948,11 @@
 				{#each eventOccurrences as occ}
 					{@const occAssignees = assigneesByOccurrence[occ.id] || []}
 					{@const isFull = occAssignees.length >= rota.capacity}
+					{@const occInvitations = invitationsByOccurrence[occ.id] || []}
+					{@const pendingCount = occInvitations.filter((i) => i.status === 'pending').length}
+					{@const acceptedOnRota = occInvitations.filter((i) => i.status === 'accepted' && occAssignees.some((a) => a.id === i.contactId)).length}
+					{@const acceptedRemovedCount = occInvitations.filter((i) => i.status === 'accepted' && !occAssignees.some((a) => a.id === i.contactId)).length}
+					{@const declinedCount = occInvitations.filter((i) => i.status === 'declined').length}
 					<div class="border border-gray-200 rounded-lg p-3">
 						<div class="flex justify-between items-center mb-2">
 							<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
@@ -989,6 +995,40 @@
 							{/if}
 							</div>
 						</div>
+						{#if occInvitations.length > 0}
+							<div class="mb-2 py-1.5 px-2 bg-gray-50 rounded text-xs border border-gray-100">
+								<p class="font-medium text-gray-700 mb-1">MyHUB invitations</p>
+								<p class="text-gray-600">
+									{#if pendingCount > 0}<span class="text-amber-700">{pendingCount} pending</span>{/if}
+									{#if pendingCount > 0 && (acceptedOnRota > 0 || acceptedRemovedCount > 0 || declinedCount > 0)} · {/if}
+									{#if acceptedOnRota > 0}<span class="text-green-700">{acceptedOnRota} accepted</span>{/if}
+									{#if acceptedRemovedCount > 0}<span class="text-amber-700">{acceptedRemovedCount} accepted but removed</span>{/if}
+									{#if (acceptedOnRota > 0 || acceptedRemovedCount > 0) && declinedCount > 0} · {/if}
+									{#if declinedCount > 0}<span class="text-gray-600">{declinedCount} declined</span>{/if}
+								</p>
+								<div class="mt-1 space-y-0.5">
+									{#each occInvitations as inv}
+										{@const isAcceptedButRemoved = inv.status === 'accepted' && !occAssignees.some((a) => a.id === inv.contactId)}
+										<div class="flex items-center gap-2 flex-wrap">
+											<a href="/hub/contacts/{inv.contactId}" class="text-hub-green-600 hover:underline truncate flex-1 min-w-0">{inv.contactName}</a>
+											<span class="flex-shrink-0 text-gray-500 {isAcceptedButRemoved ? 'text-amber-700' : ''}" class:capitalize={!isAcceptedButRemoved}>
+												{isAcceptedButRemoved ? 'Accepted but removed' : inv.status}
+											</span>
+											{#if isAcceptedButRemoved && !isFull}
+												<form method="POST" action="?/addAssignees" class="inline-flex flex-shrink-0">
+													<input type="hidden" name="_csrf" value={csrfToken} />
+													<input type="hidden" name="contactIds" value={JSON.stringify([inv.contactId])} />
+													<input type="hidden" name="occurrenceId" value={occ.id} />
+													<button type="submit" class="text-xs font-medium text-hub-green-600 hover:text-hub-green-700 hover:underline">
+														Re-add
+													</button>
+												</form>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
 						{#if occAssignees.length > 0}
 							<div class="space-y-1.5 max-h-64 overflow-y-auto">
 								{#each occAssignees as assignee}

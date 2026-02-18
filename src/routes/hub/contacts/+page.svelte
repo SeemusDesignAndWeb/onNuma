@@ -19,32 +19,57 @@
 	// URL-based state (for bookmarkable URLs)
 	$: urlSearch = $page.url?.searchParams?.get('search') || '';
 	$: urlPage = parseInt($page.url?.searchParams?.get('page') || '1', 10);
+	$: urlAvailabilityDay = $page.url?.searchParams?.get('availabilityDay') || '';
+	$: urlAvailabilityTime = $page.url?.searchParams?.get('availabilityTime') || '';
+	$: urlAvailabilityMode = $page.url?.searchParams?.get('availabilityMode') || 'available';
 
 	// Use store data when loaded, otherwise fall back to server data
 	$: useStoreData = $hubDataLoaded && $contactsStore.length > 0;
 	$: allContacts = useStoreData ? $contactsStore : (data.contacts || []);
 
-	// Client-side search and pagination when using store data
+	// Client-side search and pagination when using store data (and optional client-side availability filter)
+	const AVAIL_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+	const AVAIL_TIMES = ['morning', 'afternoon', 'evening'];
+	function isUnavailableForSlot(c, day, time) {
+		return !!(c?.unavailability?.[day]?.[time]);
+	}
 	$: searchLower = urlSearch.toLowerCase();
-	$: filteredContacts = urlSearch
+	$: bySearch = urlSearch
 		? allContacts.filter(c =>
 			c.firstName?.toLowerCase().includes(searchLower) ||
-			c.lastName?.toLowerCase().includes(searchLower)
+			c.lastName?.toLowerCase().includes(searchLower) ||
+			c.email?.toLowerCase().includes(searchLower)
 		)
 		: allContacts;
+	$: hasAvailFilter = urlAvailabilityDay && urlAvailabilityTime &&
+		AVAIL_DAYS.includes(urlAvailabilityDay) && AVAIL_TIMES.includes(urlAvailabilityTime);
+	$: filteredContacts = !hasAvailFilter ? bySearch : bySearch.filter((c) => {
+		const unav = isUnavailableForSlot(c, urlAvailabilityDay, urlAvailabilityTime);
+		return urlAvailabilityMode === 'unavailable' ? unav : !unav;
+	});
 
-	// Calculate pagination
-	$: totalFiltered = filteredContacts.length;
+	// When using server data (no store), use server-provided list and pagination
+	$: totalFiltered = useStoreData ? filteredContacts.length : (data.total ?? 0);
 	$: totalPages = Math.max(1, Math.ceil(totalFiltered / ITEMS_PER_PAGE));
-	$: currentPage = Math.min(urlPage, totalPages);
+	$: currentPage = useStoreData ? Math.min(urlPage, totalPages) : (data.currentPage ?? 1);
 	$: startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-	$: contacts = filteredContacts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+	$: contacts = useStoreData
+		? filteredContacts.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+		: (data.contacts || []);
 
 	// Search input binding (local state for typing)
 	let searchInput = urlSearch;
 	$: if (urlSearch !== searchInput && !searchInput) {
 		searchInput = urlSearch;
 	}
+
+	// Availability filter (sync from URL when not set locally)
+	let availabilityDayInput = urlAvailabilityDay;
+	let availabilityTimeInput = urlAvailabilityTime;
+	let availabilityModeInput = urlAvailabilityMode;
+	$: if (urlAvailabilityDay !== availabilityDayInput && urlAvailabilityDay) availabilityDayInput = urlAvailabilityDay;
+	$: if (urlAvailabilityTime !== availabilityTimeInput && urlAvailabilityTime) availabilityTimeInput = urlAvailabilityTime;
+	$: if (urlAvailabilityMode !== availabilityModeInput) availabilityModeInput = urlAvailabilityMode;
 
 	let showBulkUpdateDialog = false;
 	let bulkUpdateResult = null;
@@ -53,21 +78,42 @@
 	let updateValue = 'member';
 	let filterCondition = 'empty';
 
-	function handleSearch() {
+	function buildParams(overrides = {}) {
 		const params = new URLSearchParams();
-		if (searchInput) {
-			params.set('search', searchInput);
-		}
-		params.set('page', '1');
+		if (urlSearch || overrides.search) params.set('search', overrides.search ?? urlSearch);
+		if (urlAvailabilityDay || overrides.availabilityDay) params.set('availabilityDay', overrides.availabilityDay ?? urlAvailabilityDay);
+		if (urlAvailabilityTime || overrides.availabilityTime) params.set('availabilityTime', overrides.availabilityTime ?? urlAvailabilityTime);
+		if ((urlAvailabilityMode && urlAvailabilityMode !== 'available') || overrides.availabilityMode) params.set('availabilityMode', overrides.availabilityMode ?? urlAvailabilityMode);
+		params.set('page', String(overrides.page ?? 1));
+		return params;
+	}
+
+	function handleSearch() {
+		const params = buildParams({ search: searchInput, page: 1 });
 		goto(`/hub/contacts?${params.toString()}`);
 	}
 
 	function handlePageChange(newPage) {
-		const params = new URLSearchParams();
-		if (urlSearch) {
-			params.set('search', urlSearch);
-		}
-		params.set('page', newPage.toString());
+		const params = buildParams({ page: newPage });
+		goto(`/hub/contacts?${params.toString()}`);
+	}
+
+	function handleAvailabilityFilter() {
+		const params = buildParams({ page: 1 });
+		if (availabilityDayInput) params.set('availabilityDay', availabilityDayInput);
+		if (availabilityTimeInput) params.set('availabilityTime', availabilityTimeInput);
+		params.set('availabilityMode', availabilityModeInput);
+		goto(`/hub/contacts?${params.toString()}`);
+	}
+
+	function clearAvailabilityFilter() {
+		availabilityDayInput = '';
+		availabilityTimeInput = '';
+		availabilityModeInput = 'available';
+		const params = buildParams({ page: 1 });
+		params.delete('availabilityDay');
+		params.delete('availabilityTime');
+		params.delete('availabilityMode');
 		goto(`/hub/contacts?${params.toString()}`);
 	}
 
@@ -159,6 +205,58 @@
 			Search
 		</button>
 	</form>
+</div>
+
+<div class="mb-4 flex flex-wrap items-end gap-2">
+	<span class="text-sm font-medium text-gray-700">Availability:</span>
+	<select
+		bind:value={availabilityDayInput}
+		class="rounded-md border-gray-300 shadow-sm text-sm py-1.5 px-2"
+		aria-label="Day"
+	>
+		<option value="">Any day</option>
+		<option value="monday">Monday</option>
+		<option value="tuesday">Tuesday</option>
+		<option value="wednesday">Wednesday</option>
+		<option value="thursday">Thursday</option>
+		<option value="friday">Friday</option>
+		<option value="saturday">Saturday</option>
+		<option value="sunday">Sunday</option>
+	</select>
+	<select
+		bind:value={availabilityTimeInput}
+		class="rounded-md border-gray-300 shadow-sm text-sm py-1.5 px-2"
+		aria-label="Time of day"
+	>
+		<option value="">Any time</option>
+		<option value="morning">Morning</option>
+		<option value="afternoon">Afternoon</option>
+		<option value="evening">Evening</option>
+	</select>
+	<select
+		bind:value={availabilityModeInput}
+		class="rounded-md border-gray-300 shadow-sm text-sm py-1.5 px-2"
+		aria-label="Show"
+	>
+		<option value="available">Show available</option>
+		<option value="unavailable">Show unavailable</option>
+	</select>
+	<button
+		type="button"
+		on:click={handleAvailabilityFilter}
+		class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs"
+	>
+		Apply
+	</button>
+	{#if hasAvailFilter}
+		<button
+			type="button"
+			on:click={clearAvailabilityFilter}
+			class="text-gray-600 hover:text-gray-800 text-xs underline"
+		>
+			Clear filter
+		</button>
+	{/if}
 </div>
 
 {#if overPlanLimit}

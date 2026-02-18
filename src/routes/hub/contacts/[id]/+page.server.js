@@ -41,7 +41,23 @@ export async function load({ params, cookies, parent }) {
 		.filter((t) => t.contactId === params.id && (!organisationId || !t.organisationId || t.organisationId === organisationId))
 		.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-	return { contact, spouse, contacts, csrfToken, theme: settings?.theme || null, thankyouMessages };
+	// MyHub invitations for this contact (outstanding = pending; also show accepted/declined for context)
+	const allInvitations = await readCollection('myhub_invitations').catch(() => []);
+	const contactInvitations = allInvitations.filter(
+		(inv) => inv.contactId === params.id && (!organisationId || inv.organisationId == null || inv.organisationId === organisationId)
+	);
+	const myhubInvitations = await Promise.all(
+		contactInvitations.map(async (inv) => {
+			const rota = inv.rotaId ? await findById('rotas', inv.rotaId) : null;
+			const event = rota?.eventId ? await findById('events', rota.eventId) : null;
+			const occurrence = inv.occurrenceId ? await findById('occurrences', inv.occurrenceId) : null;
+			return { inv, rota, event, occurrence };
+		})
+	);
+	// Sort by invitedAt descending (most recent first)
+	myhubInvitations.sort((a, b) => new Date((b.inv.invitedAt || 0)) - new Date((a.inv.invitedAt || 0)));
+
+	return { contact, spouse, contacts, csrfToken, theme: settings?.theme || null, thankyouMessages, myhubInvitations };
 }
 
 export const actions = {

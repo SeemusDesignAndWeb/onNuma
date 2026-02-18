@@ -6,52 +6,68 @@ import { logDataChange } from '$lib/crm/server/audit.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
 const ITEMS_PER_PAGE = 10;
+const AVAILABILITY_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const AVAILABILITY_TIMES = ['morning', 'afternoon', 'evening'];
 
 export async function load({ url, cookies, locals, parent }) {
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
 	const search = url.searchParams.get('search') || '';
+	const availabilityDay = url.searchParams.get('availabilityDay') || '';
+	const availabilityTime = url.searchParams.get('availabilityTime') || '';
+	const availabilityMode = url.searchParams.get('availabilityMode') || 'available'; // 'available' | 'unavailable'
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
 	const planLimit = await getConfiguredPlanMaxContacts(plan);
 	const offset = (page - 1) * ITEMS_PER_PAGE;
 
-	// Pass search/limit/offset to readCollection - DB store will use them for efficiency,
-	// file store will ignore them and we'll filter in memory below
-	const allContacts = await readCollection('contacts', { 
+	// Load contacts: DB store filters by org; file store returns all, we filter below
+	const allContacts = await readCollection('contacts', {
 		organisationId,
 		search: search || undefined,
 		limit: ITEMS_PER_PAGE,
 		offset
 	});
-	
+
 	// For file store compatibility: filter by org (DB store already did this)
 	const orgContacts = filterByOrganisation(allContacts, organisationId);
-	
+
 	// Get total count for pagination (efficient for DB store)
 	const totalInOrg = await readCollectionCount('contacts', { organisationId });
-	
+
 	// Apply plan limits
 	let contacts = contactsWithinPlanLimit(orgContacts, plan);
-	
-	// For file store: need to apply search filter and pagination in memory
-	// (DB store already applied these, so this is a no-op for small result sets)
-	let filtered = contacts;
-	if (search && contacts.length > ITEMS_PER_PAGE) {
-		// File store returned all contacts - need to filter
+
+	// When availability filter is active we need full org list to filter (file store may have returned limited set)
+	const hasAvailabilityFilter = availabilityDay && availabilityTime &&
+		AVAILABILITY_DAYS.includes(availabilityDay) && AVAILABILITY_TIMES.includes(availabilityTime);
+	let availabilityFiltered = contacts;
+	if (hasAvailabilityFilter) {
+		// If we got a limited set (DB with limit), we cannot correctly filter by availability without loading all.
+		// For consistency, re-read without limit when availability filter is on (only for this code path).
+		const fullOrg = await readCollection('contacts', { organisationId });
+		const fullPlanLimited = contactsWithinPlanLimit(filterByOrganisation(fullOrg, organisationId), plan);
+		const mode = availabilityMode === 'unavailable' ? 'unavailable' : 'available';
+		availabilityFiltered = fullPlanLimited.filter((c) => {
+			const isUnav = !!(c.unavailability?.[availabilityDay]?.[availabilityTime]);
+			return mode === 'unavailable' ? isUnav : !isUnav;
+		});
+	}
+
+	// Apply search filter
+	let filtered = availabilityFiltered;
+	if (search) {
 		const searchLower = search.toLowerCase();
-		filtered = contacts.filter(c =>
+		filtered = availabilityFiltered.filter(c =>
 			c.firstName?.toLowerCase().includes(searchLower) ||
-			c.lastName?.toLowerCase().includes(searchLower)
+			c.lastName?.toLowerCase().includes(searchLower) ||
+			c.email?.toLowerCase().includes(searchLower)
 		);
 	}
 
-	// Determine total based on whether we did in-memory filtering
-	const totalForPagination = Math.min(
-		search ? filtered.length : totalInOrg,
-		planLimit
-	);
-	
-	// For file store: paginate in memory if we have more than a page
+	// Total for pagination (filtered list is already plan-limited)
+	const totalForPagination = filtered.length;
+
+	// Paginate
 	let paginated = filtered;
 	if (filtered.length > ITEMS_PER_PAGE) {
 		const start = (page - 1) * ITEMS_PER_PAGE;
@@ -69,6 +85,9 @@ export async function load({ url, cookies, locals, parent }) {
 		totalPages: Math.ceil(totalForPagination / ITEMS_PER_PAGE),
 		total: totalForPagination,
 		search,
+		availabilityDay: hasAvailabilityFilter ? availabilityDay : '',
+		availabilityTime: hasAvailabilityFilter ? availabilityTime : '',
+		availabilityMode: hasAvailabilityFilter ? availabilityMode : 'available',
 		csrfToken,
 		isSuperAdmin: isSuperAdminUser,
 		planLimit,
