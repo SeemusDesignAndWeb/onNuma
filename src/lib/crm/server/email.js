@@ -3094,15 +3094,22 @@ ${displayOrg}
 /**
  * Send a personal thank-you message from a coordinator to a volunteer.
  * The message also appears on the volunteer's MyHub history page.
+ * @param {string} [options.fromEmail] - Coordinator email; when set, signature shows first name as mailto link
+ * @param {string} [options.fromFirstName] - Coordinator first name for link text (used when fromEmail is set)
  */
-export async function sendThankyouEmail({ to, firstName, fromName, message, orgName }, event) {
+export async function sendThankyouEmail({ to, firstName, fromName, fromEmail, fromFirstName, message, orgName }, event) {
 	const baseUrl = getBaseUrl(event);
-	const fromEmail = fromEmailDefault();
+	const fromEmailDefaultVal = fromEmailDefault();
 	const branding = await getEmailBranding(event);
 
 	const displayOrg = orgName || 'your coordinator';
 	const myhubUrl = `${baseUrl}/myhub/history`;
 	const subject = orgName ? `A personal note from ${orgName}` : 'A personal note for you';
+
+	// Signature: show first name as clickable mailto when we have coordinator email, else plain fromName
+	const signerDisplay = (fromEmail && (fromFirstName || fromName))
+		? `<a href="mailto:${fromEmail.replace(/"/g, '&quot;')}" style="color:#92400e;text-decoration:underline;">${fromFirstName || (typeof fromName === 'string' ? fromName.split(/\s+/)[0] : '') || fromName}</a>`
+		: (fromName || 'Your coordinator');
 
 	const html = `<!DOCTYPE html>
 <html lang="en">
@@ -3120,7 +3127,7 @@ ${branding}
 <div style="background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);border:1px solid #fde68a;border-radius:12px;padding:24px 28px;margin:0 0 24px 0;">
   <p style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#92400e;margin:0 0 12px 0;">A personal message for you</p>
   <p style="font-size:18px;color:#78350f;line-height:1.7;margin:0 0 16px 0;font-style:italic;">"${message}"</p>
-  <p style="font-size:16px;font-weight:600;color:#92400e;margin:0;">— ${fromName}</p>
+  <p style="font-size:16px;font-weight:600;color:#92400e;margin:0;">— ${signerDisplay}</p>
 </div>
 
 <p style="font-size:16px;color:#374151;margin:0 0 24px 0;">
@@ -3137,13 +3144,14 @@ ${branding}
 </body>
 </html>`;
 
+	const textSigner = fromFirstName || (typeof fromName === 'string' ? fromName.split(/\s+/)[0] : '') || fromName;
 	const text = `Hi ${firstName},
 
 A personal message for you:
 
 "${message}"
 
-— ${fromName}
+— ${textSigner}
 
 This message has been saved on your volunteering history page.
 View your history: ${myhubUrl}
@@ -3153,7 +3161,7 @@ ${displayOrg}`.trim();
 
 	try {
 		return await rateLimitedSend(() =>
-			sendEmail({ from: fromEmail, to: [to], subject, html, text })
+			sendEmail({ from: fromEmailDefaultVal, to: [to], subject, html, text })
 		);
 	} catch (error) {
 		console.error('[email] Failed to send thank-you email:', error);

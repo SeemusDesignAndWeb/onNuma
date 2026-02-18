@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { findById, update, remove, readCollection, create } from '$lib/crm/server/fileStore.js';
+import { getHubBaseUrlFromOrg } from '$lib/crm/server/hubDomain.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange, getAdminIdFromEvent } from '$lib/crm/server/audit.js';
@@ -134,7 +135,7 @@ export const actions = {
 		throw redirect(302, '/hub/contacts');
 	},
 
-	sendThankyou: async ({ request, params, cookies, locals }) => {
+	sendThankyou: async ({ request, params, cookies, locals, url }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
@@ -170,9 +171,24 @@ export const actions = {
 				const { sendThankyouEmail } = await import('$lib/crm/server/email.js');
 				const settings = await getSettings();
 				const orgName = settings?.organisationName || settings?.name || '';
+				const org = organisationId ? await findById('organisations', organisationId) : null;
+				const fallbackOrigin = url?.origin;
+				const hubBaseUrl = getHubBaseUrlFromOrg(org, fallbackOrigin);
+				const eventWithHub = {
+					url: url || { origin: hubBaseUrl },
+					locals: hubBaseUrl && hubBaseUrl !== fallbackOrigin ? { hubBaseUrl } : {}
+				};
 				await sendThankyouEmail(
-					{ to: contact.email, firstName: contact.firstName || contact.email, fromName, message, orgName },
-					{ url: { origin: process.env.APP_BASE_URL || 'https://onnuma.com' } }
+					{
+						to: contact.email,
+						firstName: contact.firstName || contact.email,
+						fromName,
+						fromEmail: admin?.email || null,
+						fromFirstName: admin?.firstName || null,
+						message,
+						orgName
+					},
+					eventWithHub
 				);
 			} catch (err) {
 				console.error('[sendThankyou] Email failed (non-fatal):', err?.message);
