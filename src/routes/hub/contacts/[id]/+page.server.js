@@ -174,9 +174,10 @@ export const actions = {
 				const org = organisationId ? await findById('organisations', organisationId) : null;
 				const fallbackOrigin = url?.origin;
 				const hubBaseUrl = getHubBaseUrlFromOrg(org, fallbackOrigin);
+				// Always pass hubBaseUrl in locals so getBaseUrl() uses it (not APP_BASE_URL) for logo and links
 				const eventWithHub = {
 					url: url || { origin: hubBaseUrl },
-					locals: hubBaseUrl && hubBaseUrl !== fallbackOrigin ? { hubBaseUrl } : {}
+					locals: { hubBaseUrl }
 				};
 				await sendThankyouEmail(
 					{
