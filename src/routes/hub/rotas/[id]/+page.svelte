@@ -1131,7 +1131,30 @@
 				<div class="p-6 border-b border-gray-200">
 					<h3 class="text-xl font-bold text-gray-900 mb-4">Add Assignees</h3>
 					
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 items-end">
+					<!-- Guest option first (Hub only) -->
+					{#if $page.url.pathname.startsWith('/hub/')}
+						<div class="mb-4">
+							<label class="block text-sm font-medium text-gray-700 mb-2">Add Guest (not in contacts)</label>
+							<div class="flex flex-col sm:flex-row gap-2">
+								<input
+									type="text"
+									bind:value={guestName}
+									placeholder="Guest Name *"
+									class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-3 text-sm"
+								/>
+								<button
+									type="button"
+									on:click={handleAddGuest}
+									disabled={!guestName}
+									class="bg-theme-button-1 text-white px-4 py-2 rounded-md hover:opacity-90 disabled:opacity-50 text-sm whitespace-nowrap"
+								>
+									Add Guest
+								</button>
+							</div>
+						</div>
+					{/if}
+					
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end" class:pt-4={$page.url.pathname.startsWith('/hub/')} class:border-t={$page.url.pathname.startsWith('/hub/')} class:border-gray-200={$page.url.pathname.startsWith('/hub/')}>
 						<div>
 							<label for="list-filter" class="block text-sm font-medium text-gray-700 mb-1 text-xs">Filter by List</label>
 							<select id="list-filter" bind:value={selectedListId} class="w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-3 text-sm">
@@ -1152,29 +1175,6 @@
 							/>
 						</div>
 					</div>
-					
-					<!-- Guest option only in Hub admin (hidden on any public signup pages if form is reused) -->
-					{#if $page.url.pathname.startsWith('/hub/')}
-						<div class="mt-4 pt-4 border-t border-gray-200">
-							<label class="block text-sm font-medium text-gray-700 mb-2">Add Guest (not in contacts)</label>
-							<div class="flex flex-col sm:flex-row gap-2">
-								<input
-									type="text"
-									bind:value={guestName}
-									placeholder="Guest Name *"
-									class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-3 text-sm"
-								/>
-								<button
-									type="button"
-									on:click={handleAddGuest}
-									disabled={!guestName}
-									class="bg-theme-button-1 text-white px-4 py-2 rounded-md hover:opacity-90 disabled:opacity-50 text-sm whitespace-nowrap"
-								>
-									Add Guest
-								</button>
-							</div>
-						</div>
-					{/if}
 				</div>
 
 				<!-- Scrollable content area -->

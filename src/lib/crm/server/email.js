@@ -413,7 +413,8 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 
 	const baseUrl = getBaseUrl(event);
 	const contactData = contact || { email: '', firstName: '', lastName: '', phone: '' };
-	
+	const orgContact = await getOrgContactForEmail();
+
 	// Check if contact has any rotas if not provided
 	let hasRotas = contactHasRotas;
 	if (hasRotas === null && contact?.id) {
@@ -423,14 +424,15 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 	if (hasRotas === null) {
 		hasRotas = false;
 	}
-	
-	// Replace contact placeholders with default values
+
+	// Replace contact and org placeholders with default values
 	let personalized = content
 		.replace(/\{\{firstName\}\}/g, contactData.firstName || 'all')
 		.replace(/\{\{lastName\}\}/g, contactData.lastName || '')
 		.replace(/\{\{name\}\}/g, `${contactData.firstName || ''} ${contactData.lastName || ''}`.trim() || contactData.email || 'Church Member')
 		.replace(/\{\{email\}\}/g, contactData.email || '')
-		.replace(/\{\{phone\}\}/g, contactData.phone || '');
+		.replace(/\{\{phone\}\}/g, contactData.phone || '')
+		.replace(/\{\{org_name\}\}/g, orgContact.orgName || '');
 
 	const signupPageUrl = `${baseUrl}/signup/rotas`;
 

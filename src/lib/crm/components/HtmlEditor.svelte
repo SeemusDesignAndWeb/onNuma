@@ -38,6 +38,7 @@
 		{ value: '{{name}}', label: 'Full Name' },
 		{ value: '{{email}}', label: 'Email' },
 		{ value: '{{phone}}', label: 'Phone' },
+		{ value: '{{org_name}}', label: 'Organisation Name' },
 		{ value: '{{rotaLinks}}', label: 'Upcoming Rotas' },
 		{ value: '{{upcomingEvents}}', label: 'Upcoming Events' }
 	];

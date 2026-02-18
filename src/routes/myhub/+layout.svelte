@@ -185,13 +185,11 @@
 				<div class="flex items-center justify-between gap-4 py-3 min-h-[56px] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
 					<button
 						type="button"
-						class="my-mobile-menu-btn p-3 -ml-2 rounded-xl min-h-[48px] min-w-[48px] flex items-center justify-center"
-						aria-label="Open menu"
+						class="my-mobile-menu-btn p-3 -ml-2 rounded-xl min-h-[48px] flex items-center justify-center"
+						aria-label="Menu"
 						on:click={() => (mobileMenuOpen = !mobileMenuOpen)}
 					>
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-						</svg>
+						<span class="text-base font-semibold">Menu</span>
 					</button>
 					<a href="/myhub" class="my-mobile-logo flex items-center gap-2 shrink-0" aria-label="MyHUB volunteering home">
 						<img src={logoPath} alt="" class="h-8 w-8 object-contain" width="32" height="32" />
