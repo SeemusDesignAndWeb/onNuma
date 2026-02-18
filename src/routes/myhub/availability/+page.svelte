@@ -10,6 +10,24 @@
 	$: holidays = data?.holidays || [];
 	$: formResult = $page.form;
 
+	const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+	const DAY_LABELS = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' };
+	const TIMES = ['morning', 'afternoon', 'evening'];
+	const TIME_LABELS = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
+
+	let unavailability = {};
+	let unavailInitialized = false;
+	$: if (data?.unavailability != null && !unavailInitialized) {
+		unavailability = {};
+		for (const day of DAYS) {
+			unavailability[day] = {};
+			for (const time of TIMES) {
+				unavailability[day][time] = !!(data.unavailability[day] && data.unavailability[day][time]);
+			}
+		}
+		unavailInitialized = true;
+	}
+
 	let startDate = '';
 	let endDate = '';
 	let isAdding = false;
@@ -38,9 +56,27 @@
 			startDate = '';
 			endDate = '';
 			showAddForm = false;
+			if (formResult.unavailability) {
+				for (const day of DAYS) {
+					unavailability[day] = {};
+					for (const time of TIMES) {
+						unavailability[day][time] = !!(formResult.unavailability[day] && formResult.unavailability[day][time]);
+					}
+				}
+				unavailability = { ...unavailability };
+			}
 		} else if (formResult?.error) {
 			notifications.error(formResult.error);
 		}
+	}
+
+	let isSavingUnavail = false;
+	function handleUnavailEnhance() {
+		isSavingUnavail = true;
+		return async ({ update }) => {
+			await update({ reset: false });
+			isSavingUnavail = false;
+		};
 	}
 
 	function handleAddEnhance() {
@@ -83,6 +119,57 @@
 	<p class="my-lead">
 		Set the dates when you're away or unavailable. You won't be scheduled for rotas during these periods.
 	</p>
+
+	<!-- Days and times that don't work for me -->
+	<div class="my-section my-card">
+		<div class="my-card-body">
+			<h2 class="my-heading-2">Days and times that don't work for me</h2>
+			<p class="my-lead my-lead-sub">
+				Tick any times that don't work for you — don't worry, you can change this any time.
+			</p>
+			<form method="POST" action="?/updateUnavailability" use:enhance={handleUnavailEnhance} class="my-unavail-form">
+				<input type="hidden" name="_csrf" value={csrfToken} />
+				<div class="my-avail-grid" role="group" aria-label="Availability grid">
+					<div class="my-avail-header-row">
+						<div class="my-avail-day-label" aria-hidden="true"></div>
+						{#each TIMES as time}
+							<div class="my-avail-time-heading">{TIME_LABELS[time]}</div>
+						{/each}
+					</div>
+					{#each DAYS as day}
+						<div class="my-avail-row">
+							<div class="my-avail-day-label">{DAY_LABELS[day]}</div>
+							{#each TIMES as time}
+								<label class="my-avail-cell" title="{DAY_LABELS[day]} {TIME_LABELS[time]} doesn't work for me">
+									<input
+										type="checkbox"
+										name="unavail_{day}_{time}"
+										bind:checked={unavailability[day][time]}
+										class="my-avail-checkbox"
+										aria-label="{DAY_LABELS[day]} {TIME_LABELS[time]}"
+									/>
+									<span class="my-avail-box" class:checked={unavailability[day][time]} aria-hidden="true"></span>
+								</label>
+							{/each}
+						</div>
+					{/each}
+				</div>
+				<div class="my-form-actions my-unavail-actions">
+					<button type="submit" class="my-btn my-btn-primary" disabled={isSavingUnavail}>
+						{#if isSavingUnavail}
+							<svg class="my-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							Saving...
+						{:else}
+							Save days and times
+						{/if}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
 
 	<!-- Add new away period -->
 	{#if !showAddForm}
@@ -261,6 +348,98 @@
 		color: #4b5563;
 		line-height: 1.5;
 		margin-bottom: -0.25rem;
+	}
+	.my-lead-sub {
+		margin-bottom: 1rem;
+	}
+	.my-unavail-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.my-unavail-actions {
+		margin-top: 0.25rem;
+	}
+	/* Days/times grid */
+	.my-avail-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+		border: 1px solid #e5e7eb;
+		border-radius: 0.75rem;
+		overflow: hidden;
+	}
+	.my-avail-header-row,
+	.my-avail-row {
+		display: grid;
+		grid-template-columns: 3.5rem repeat(3, 1fr);
+	}
+	.my-avail-header-row {
+		background: #f9fafb;
+		border-bottom: 1px solid #e5e7eb;
+	}
+	.my-avail-row {
+		border-bottom: 1px solid #f3f4f6;
+	}
+	.my-avail-row:last-child {
+		border-bottom: none;
+	}
+	.my-avail-time-heading {
+		padding: 0.625rem 0.25rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #6b7280;
+		text-align: center;
+	}
+	.my-avail-day-label {
+		padding: 0 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+		display: flex;
+		align-items: center;
+	}
+	.my-avail-cell {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.75rem 0.25rem;
+		cursor: pointer;
+	}
+	.my-avail-checkbox {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+	.my-avail-box {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 0.5rem;
+		border: 2px solid #d1d5db;
+		background: #fff;
+		transition: background 0.15s, border-color 0.15s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.my-avail-box.checked {
+		background: var(--myhub-primary, #2563a8);
+		border-color: var(--myhub-primary, #2563a8);
+	}
+	.my-avail-box.checked::after {
+		content: '';
+		display: block;
+		width: 0.625rem;
+		height: 0.375rem;
+		border-left: 2px solid #fff;
+		border-bottom: 2px solid #fff;
+		transform: rotate(-45deg) translateY(-1px);
+	}
+	.my-avail-checkbox:focus-visible + .my-avail-box {
+		outline: 3px solid var(--myhub-accent, #4A97D2);
+		outline-offset: 2px;
 	}
 	.my-section {
 		display: flex;

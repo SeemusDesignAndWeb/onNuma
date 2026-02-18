@@ -167,10 +167,10 @@ export const actions = {
 		if (!contact) return fail(404, { error: 'Contact not found.', action: 'sendThankyou' });
 
 		const admin = locals?.admin;
+		// Never store email as fromName — use display name or "Your coordinator" (same as personal email fix)
 		const fromName = admin
 			? (admin.name && !String(admin.name).includes('@') ? admin.name.trim() : null) ||
 				([admin.firstName, admin.lastName].filter(Boolean).join(' ').trim() || null) ||
-				admin.email ||
 				'Your coordinator'
 			: 'Your coordinator';
 		// First name for signature: from admin.name (account info) or firstName if ever added

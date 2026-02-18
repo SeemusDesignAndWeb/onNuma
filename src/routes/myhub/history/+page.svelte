@@ -10,6 +10,11 @@
 	function handlePrint() {
 		window.print();
 	}
+	// Show name only; never show sender email (same fix as personal email)
+	function senderDisplay(msg) {
+		const n = msg.fromName;
+		return (n && typeof n === 'string' && !n.includes('@')) ? n : 'Your coordinator';
+	}
 </script>
 
 <svelte:head>
@@ -46,7 +51,7 @@
 						</svg>
 						<div class="my-thankyou-body">
 							<p class="my-thankyou-message">"{msg.message}"</p>
-							<p class="my-thankyou-from">— {msg.fromName}</p>
+							<p class="my-thankyou-from">— {senderDisplay(msg)}</p>
 						</div>
 					</div>
 				{/each}

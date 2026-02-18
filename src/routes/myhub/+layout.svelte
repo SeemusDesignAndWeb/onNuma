@@ -22,15 +22,27 @@
 	function toggleTextSize() {
 		largeText = !largeText;
 		try { localStorage.setItem('myhub-large-text', largeText ? '1' : '0'); } catch (_) {}
+		applyLargeTextClass();
 	}
+	function applyLargeTextClass() {
+		if (typeof document === 'undefined') return;
+		if (largeText) document.documentElement.classList.add('myhub-large-text');
+		else document.documentElement.classList.remove('myhub-large-text');
+	}
+
+	$: if (typeof document !== 'undefined') applyLargeTextClass();
 
 	onMount(() => {
 		try { largeText = localStorage.getItem('myhub-large-text') === '1'; } catch (_) {}
+		applyLargeTextClass();
 		function handleResize() {
 			if (window.innerWidth >= 1024) mobileMenuOpen = false;
 		}
 		window.addEventListener('resize', handleResize);
-		return () => window.removeEventListener('resize', handleResize);
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			document.documentElement.classList.remove('myhub-large-text');
+		};
 	});
 	let loginEmail = '';
 	let loginError = '';
@@ -72,7 +84,7 @@
 	}
 </script>
 
-<div class="my-layout my-layout-theme min-h-screen" class:my-large-text={largeText}>
+<div class="my-layout my-layout-theme min-h-screen">
 	{#if !member}
 		<!-- Login gate: hero background image (same as front-end site top hero) -->
 		<div class="my-login-screen">
@@ -262,9 +274,9 @@
 	.my-layout {
 		font-size: 1.125rem; /* 18px base */
 	}
-	/* Large-text mode — bumps to 22px across all MyHub pages */
-	.my-large-text {
-		font-size: 1.375rem; /* 22px */
+	/* Large-text mode: set on html so all rem in MyHub scale (Make text bigger) */
+	:global(html.myhub-large-text) {
+		font-size: 20px; /* larger root = all rem scale up */
 	}
 	/* Login screen: hero background image (same as front-end site) + optional org logo watermark */
 	.my-login-screen {

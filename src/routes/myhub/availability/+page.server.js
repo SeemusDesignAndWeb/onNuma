@@ -1,15 +1,21 @@
 import { fail } from '@sveltejs/kit';
-import { findById } from '$lib/crm/server/fileStore.js';
+import { findById, update } from '$lib/crm/server/fileStore.js';
 import { getMemberContactIdFromCookie } from '$lib/crm/server/memberAuth.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { getHolidaysByContact, addHoliday, deleteHoliday } from '$lib/crm/server/holidays.js';
 import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const TIMES = ['morning', 'afternoon', 'evening'];
+
 export async function load({ cookies }) {
 	const contactId = getMemberContactIdFromCookie(cookies);
-	if (!contactId) return { holidays: [] };
+	if (!contactId) return { holidays: [], unavailability: {} };
 	try {
-		const holidays = await getHolidaysByContact(contactId);
+		const [holidays, contact] = await Promise.all([
+			getHolidaysByContact(contactId),
+			findById('contacts', contactId)
+		]);
 		// Sort: future first, then past
 		const now = new Date();
 		const sorted = holidays
@@ -20,10 +26,13 @@ export async function load({ cookies }) {
 				allDay: h.allDay ?? true
 			}))
 			.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-		return { holidays: sorted };
+		return {
+			holidays: sorted,
+			unavailability: contact?.unavailability || {}
+		};
 	} catch (err) {
 		console.error('[myhub/availability] load failed:', err?.message || err);
-		return { holidays: [] };
+		return { holidays: [], unavailability: {} };
 	}
 }
 
@@ -105,6 +114,41 @@ export const actions = {
 		} catch (err) {
 			console.error('[myhub/availability] remove failed:', err?.message || err);
 			return fail(500, { error: err?.message || 'Failed to remove away dates.' });
+		}
+	},
+
+	updateUnavailability: async ({ request, cookies }) => {
+		const data = await request.formData();
+		const csrfToken = data.get('_csrf');
+		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+			return fail(403, { error: 'Invalid request. Please refresh and try again.' });
+		}
+		const contactId = getMemberContactIdFromCookie(cookies);
+		if (!contactId) {
+			return fail(401, { error: 'You must be signed in to update availability.' });
+		}
+		try {
+			const contact = await findById('contacts', contactId);
+			if (!contact) return fail(404, { error: 'Contact not found.' });
+
+			const unavailability = {};
+			for (const day of DAYS) {
+				unavailability[day] = {};
+				for (const time of TIMES) {
+					unavailability[day][time] = data.get(`unavail_${day}_${time}`) === 'on';
+				}
+			}
+
+			const updated = {
+				...contact,
+				unavailability,
+				updatedAt: new Date().toISOString()
+			};
+			await update('contacts', contactId, updated);
+			return { success: true, message: 'Days and times saved.', unavailability };
+		} catch (err) {
+			console.error('[myhub/availability] updateUnavailability failed:', err?.message || err);
+			return fail(500, { error: err?.message || 'Failed to save.' });
 		}
 	}
 };

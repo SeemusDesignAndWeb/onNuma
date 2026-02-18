@@ -4,9 +4,6 @@ import { getMemberContactIdFromCookie } from '$lib/crm/server/memberAuth.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-const TIMES = ['morning', 'afternoon', 'evening'];
-
 export async function load({ cookies }) {
 	const contactId = getMemberContactIdFromCookie(cookies);
 	if (!contactId) return { preferences: null, orgName: '' };
@@ -55,14 +52,8 @@ export const actions = {
 			// Newsletter subscription
 			const subscribed = data.get('subscribed') === 'on';
 
-			// Unavailability grid
-			const unavailability = {};
-			for (const day of DAYS) {
-				unavailability[day] = {};
-				for (const time of TIMES) {
-					unavailability[day][time] = data.get(`unavail_${day}_${time}`) === 'on';
-				}
-			}
+			// Unavailability is managed on the Availability page; keep existing
+			const unavailability = contact.unavailability || {};
 
 			// Reminder preferences
 			const reminderEmail = data.get('reminderEmail') === 'on';

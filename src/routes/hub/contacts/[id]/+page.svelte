@@ -77,6 +77,11 @@
 			thankyouSubmitting = false;
 		};
 	}
+	// Show sender name only; never show email (same as history page / personal email fix)
+	function thankyouSenderDisplay(msg) {
+		const n = msg?.fromName;
+		return (n && typeof n === 'string' && !n.includes('@')) ? n : 'Your coordinator';
+	}
 
 	let editing = false;
 	let initializedContactId = null;
@@ -582,7 +587,7 @@
 								<div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
 									<p class="text-base text-gray-800 leading-relaxed whitespace-pre-wrap">"{msg.message}"</p>
 									<p class="mt-2 text-sm text-gray-500">
-										— {msg.fromName} ·
+										— {thankyouSenderDisplay(msg)} ·
 										{new Date(msg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
 									</p>
 								</div>

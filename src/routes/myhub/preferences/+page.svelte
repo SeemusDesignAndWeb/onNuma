@@ -8,13 +8,7 @@
 	$: orgName = data?.orgName ?? '';
 	$: formResult = $page.form;
 
-	const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-	const DAY_LABELS = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' };
-	const TIMES = ['morning', 'afternoon', 'evening'];
-	const TIME_LABELS = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
-
 	let subscribed = true;
-	let unavailability = {};
 	let reminderEmail = true;
 	let reminderTiming = '1week';
 	let aboutMe = '';
@@ -28,11 +22,6 @@
 		reminderEmail = preferences.reminderEmail !== false;
 		reminderTiming = preferences.reminderTiming || '1week';
 		aboutMe = preferences.aboutMe || '';
-		// Deep-copy unavailability so checkboxes are reactive
-		unavailability = {};
-		for (const day of DAYS) {
-			unavailability[day] = { ...(preferences.unavailability?.[day] || {}) };
-		}
 		initialized = true;
 	}
 
@@ -44,10 +33,6 @@
 			reminderEmail = formResult.preferences.reminderEmail !== false;
 			reminderTiming = formResult.preferences.reminderTiming || '1week';
 			aboutMe = formResult.preferences.aboutMe || '';
-			for (const day of DAYS) {
-				unavailability[day] = { ...(formResult.preferences.unavailability?.[day] || {}) };
-			}
-			unavailability = { ...unavailability };
 		}
 	} else if (formResult?.error) {
 		saveSuccess = false;
@@ -92,43 +77,7 @@
 		<form method="POST" action="?/update" use:enhance={handleEnhance}>
 			<input type="hidden" name="_csrf" value={csrfToken} />
 
-			<!-- ── Section 1: Availability ─────────────────────────── -->
-			<section class="my-pref-section-block">
-				<h2 class="my-pref-section-title">Days and times that don't work for me</h2>
-				<p class="my-pref-section-desc">
-					Tick any times that don't work for you — don't worry, you can change this any time.
-				</p>
-
-				<div class="my-avail-grid" role="group" aria-label="Availability grid">
-					<!-- Header row -->
-					<div class="my-avail-header-row">
-						<div class="my-avail-day-label" aria-hidden="true"></div>
-						{#each TIMES as time}
-							<div class="my-avail-time-heading">{TIME_LABELS[time]}</div>
-						{/each}
-					</div>
-					<!-- Day rows -->
-					{#each DAYS as day}
-						<div class="my-avail-row">
-							<div class="my-avail-day-label">{DAY_LABELS[day]}</div>
-							{#each TIMES as time}
-								<label class="my-avail-cell" title="{DAY_LABELS[day]} {TIME_LABELS[time]} doesn't work for me">
-									<input
-										type="checkbox"
-										name="unavail_{day}_{time}"
-										bind:checked={unavailability[day][time]}
-										class="my-avail-checkbox"
-										aria-label="{DAY_LABELS[day]} {TIME_LABELS[time]}"
-									/>
-									<span class="my-avail-box" class:checked={unavailability[day][time]} aria-hidden="true"></span>
-								</label>
-							{/each}
-						</div>
-					{/each}
-				</div>
-			</section>
-
-			<!-- ── Section 2: Reminders ────────────────────────────── -->
+			<!-- ── Section 1: Reminders ────────────────────────────── -->
 			<section class="my-pref-section-block">
 				<h2 class="my-pref-section-title">How I'd like to be reminded</h2>
 				<p class="my-pref-section-desc">
@@ -180,7 +129,7 @@
 				{/if}
 			</section>
 
-			<!-- ── Section 3: Newsletters ──────────────────────────── -->
+			<!-- ── Section 2: Newsletters ──────────────────────────── -->
 			<section class="my-pref-section-block">
 				<h2 class="my-pref-section-title">Newsletters &amp; updates</h2>
 				<p class="my-pref-section-desc">
@@ -201,7 +150,7 @@
 				</div>
 			</section>
 
-			<!-- ── Section 4: About me ─────────────────────────────── -->
+			<!-- ── Section 3: About me ─────────────────────────────── -->
 			<section class="my-pref-section-block">
 				<h2 class="my-pref-section-title">About me</h2>
 				<label for="about-me" class="my-pref-section-desc">
@@ -301,88 +250,6 @@
 		color: #6b7280;
 		line-height: 1.5;
 		margin: 0 0 1.25rem 0;
-	}
-
-	/* ── Availability grid ── */
-	.my-avail-grid {
-		display: flex;
-		flex-direction: column;
-		gap: 0;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.75rem;
-		overflow: hidden;
-	}
-	.my-avail-header-row,
-	.my-avail-row {
-		display: grid;
-		grid-template-columns: 3.5rem repeat(3, 1fr);
-	}
-	.my-avail-header-row {
-		background: #f9fafb;
-		border-bottom: 1px solid #e5e7eb;
-	}
-	.my-avail-row {
-		border-bottom: 1px solid #f3f4f6;
-	}
-	.my-avail-row:last-child {
-		border-bottom: none;
-	}
-	.my-avail-time-heading {
-		padding: 0.625rem 0.25rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: #6b7280;
-		text-align: center;
-	}
-	.my-avail-day-label {
-		padding: 0 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: #374151;
-		display: flex;
-		align-items: center;
-	}
-	.my-avail-cell {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.75rem 0.25rem;
-		cursor: pointer;
-	}
-	.my-avail-checkbox {
-		position: absolute;
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
-	.my-avail-box {
-		width: 2rem;
-		height: 2rem;
-		border-radius: 0.5rem;
-		border: 2px solid #d1d5db;
-		background: #fff;
-		transition: background 0.15s, border-color 0.15s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-	.my-avail-box.checked {
-		background: var(--myhub-primary, #2563a8);
-		border-color: var(--myhub-primary, #2563a8);
-	}
-	.my-avail-box.checked::after {
-		content: '';
-		display: block;
-		width: 0.625rem;
-		height: 0.375rem;
-		border-left: 2px solid #fff;
-		border-bottom: 2px solid #fff;
-		transform: rotate(-45deg) translateY(-1px);
-	}
-	.my-avail-checkbox:focus-visible + .my-avail-box {
-		outline: 3px solid var(--myhub-accent, #4A97D2);
-		outline-offset: 2px;
 	}
 
 	/* ── Toggle switch ── */
@@ -622,24 +489,6 @@
 		.my-alert,
 		.my-spinner {
 			display: none !important;
-		}
-		/* Keep the availability grid and toggle rows visible */
-		.my-avail-grid {
-			border: 1pt solid #ccc !important;
-		}
-		.my-avail-time-heading,
-		.my-avail-day-label {
-			font-size: 10pt;
-			color: #000 !important;
-		}
-		.my-avail-box {
-			width: 1.5rem !important;
-			height: 1.5rem !important;
-			border: 1pt solid #666 !important;
-			background: #fff !important;
-		}
-		.my-avail-box.checked {
-			background: #000 !important;
 		}
 		.my-toggle-status,
 		.my-pref-toggle-label,
