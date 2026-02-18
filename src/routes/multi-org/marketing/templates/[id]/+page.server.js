@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { findById, update, findMany, readCollection } from '$lib/crm/server/fileStore.js';
+import { getHubBaseUrlFromOrg } from '$lib/crm/server/hubDomain.js';
 import {
 	detectPlaceholders,
 	validatePlaceholders,
@@ -111,7 +112,8 @@ export const actions = {
 		if (!toEmail) return fail(400, { error: 'Email address required' });
 
 		try {
-			const baseUrl = url.origin;
+			const org = orgId ? await findById('organisations', orgId) : null;
+			const baseUrl = getHubBaseUrlFromOrg(org, url.origin);
 			await sendTestEmail(params.id, toEmail, orgId, baseUrl);
 			return { testSent: true, testEmail: toEmail };
 		} catch (e) {

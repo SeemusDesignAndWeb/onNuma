@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { findById, readCollection, update } from '$lib/crm/server/fileStore.js';
+import { getHubBaseUrlFromOrg } from '$lib/crm/server/hubDomain.js';
 import { prepareNewsletterEmail, sendNewsletterBatch } from '$lib/crm/server/email.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
@@ -23,10 +24,15 @@ export async function POST({ request, cookies, params, url }) {
 	}
 
 	const orgs = await readCollection('organisations');
-	const plan = (await getConfiguredPlanFromAreaPermissions((Array.isArray(orgs) ? orgs : []).find(o => o?.id === organisationId)?.areaPermissions)) || 'free';
+	const org = (Array.isArray(orgs) ? orgs : []).find((o) => o?.id === organisationId);
+	const plan = (await getConfiguredPlanFromAreaPermissions(org?.areaPermissions)) || 'free';
 	const planLimit = await getConfiguredPlanMaxContacts(plan);
 	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
 	const allContacts = contactsWithinPlanLimit(orgContacts, planLimit);
+
+	// So newsletter links (unsubscribe, rota links, etc.) use the org's hub subdomain
+	const hubBaseUrl = getHubBaseUrlFromOrg(org, url.origin);
+	const eventWithHub = { url, locals: hubBaseUrl && hubBaseUrl !== url.origin ? { hubBaseUrl } : {} };
 
 	const listId = data.listId;
 	const contactIds = Array.isArray(data.contactIds) ? data.contactIds : [];
@@ -60,7 +66,7 @@ export async function POST({ request, cookies, params, url }) {
 	}
 
 	// Prepare all emails first
-	const emailDataPromises = listContacts.map(contact => 
+	const emailDataPromises = listContacts.map(contact =>
 		prepareNewsletterEmail(
 			{
 				newsletterId: email.id,
@@ -68,7 +74,7 @@ export async function POST({ request, cookies, params, url }) {
 				name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email,
 				contact: contact
 			},
-			{ url }
+			eventWithHub
 		).catch(err => {
 			// If preparation fails, return error result
 			return { error: true, contactEmail: contact.email, errorMessage: err.message };
