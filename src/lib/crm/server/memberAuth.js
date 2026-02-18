@@ -1,9 +1,14 @@
 /**
  * Member (volunteer) portal auth: signed cookie so we can trust contactId without a session store.
  * Cookie value: base64url(contactId) + '.' + base64url(hmac).
+ *
+ * Magic link tokens are stored in the member_magic_tokens collection.
+ * Each token is single-use and expires after 7 days.
  */
 
 import { createHmac } from 'crypto';
+import { create, findMany, update } from './fileStore.js';
+import { generateId } from './ids.js';
 
 const COOKIE_NAME = 'my_member';
 const COOKIE_MAX_AGE_DAYS = 30;
@@ -101,3 +106,68 @@ export function getMemberContactIdFromCookie(cookies) {
 }
 
 export { COOKIE_NAME, COOKIE_PATH };
+
+// ---------------------------------------------------------------------------
+// Magic link tokens
+// ---------------------------------------------------------------------------
+
+const MAGIC_TOKEN_COLLECTION = 'member_magic_tokens';
+const MAGIC_TOKEN_EXPIRY_DAYS = 7;
+
+/**
+ * Generate a new unpredictable magic link token string.
+ * @returns {string} e.g. "MLK_01JPXQ..."
+ */
+export function generateMagicLinkToken() {
+	return `MLK_${generateId()}`;
+}
+
+/**
+ * Create a magic link token for a contact and persist it.
+ * Any previous unused tokens for the same contact remain valid (coordinator
+ * may resend; invalidating old ones could confuse volunteers checking email later).
+ * @param {string} contactId
+ * @returns {Promise<string>} The raw token string to embed in the link URL.
+ */
+export async function createMagicLinkToken(contactId) {
+	const token = generateMagicLinkToken();
+	const expiresAt = new Date(Date.now() + MAGIC_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+	await create(MAGIC_TOKEN_COLLECTION, {
+		contactId,
+		token,
+		expiresAt,
+		createdAt: new Date().toISOString(),
+		usedAt: null
+	});
+	return token;
+}
+
+/**
+ * Verify a magic link token and, if valid, mark it as consumed.
+ * Returns the contactId on success, or null if invalid / expired / already used.
+ * @param {string} tokenStr
+ * @returns {Promise<string | null>}
+ */
+export async function verifyAndConsumeMagicLinkToken(tokenStr) {
+	if (!tokenStr || typeof tokenStr !== 'string') return null;
+	let records;
+	try {
+		records = await findMany(MAGIC_TOKEN_COLLECTION, (t) => t.token === tokenStr);
+	} catch {
+		return null;
+	}
+	if (!records || !records.length) return null;
+	const record = records[0];
+	if (record.usedAt) return null;
+	if (new Date(record.expiresAt) < new Date()) return null;
+	try {
+		await update(MAGIC_TOKEN_COLLECTION, record.id, {
+			...record,
+			usedAt: new Date().toISOString()
+		});
+	} catch (err) {
+		console.error('[memberAuth] Failed to consume magic token:', err?.message || err);
+		return null;
+	}
+	return record.contactId || null;
+}

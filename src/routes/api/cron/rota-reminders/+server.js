@@ -1,14 +1,13 @@
 // API endpoint for sending rota reminder notifications
 // Access: GET or POST /api/cron/rota-reminders?secret=ROTA_REMINDER_CRON_SECRET
-// Optional: ?daysAhead=N to override Hub setting (Settings → Advanced → Rota reminder emails)
+// Runs daily, respects each volunteer's reminderTiming preference (1 day / 2 days / 1 week / 1 week + 1 day)
+// Deduplicates via rota_reminder_log — safe to call multiple times per day
+// Optional: ?daysAhead=N for legacy single-day override (testing)
 // Protected by ROTA_REMINDER_CRON_SECRET environment variable
-// Designed to be called by Railway cron or external cron (e.g. cron-job.org) daily.
-// See docs/ROTA_REMINDER_SETUP.md for setup.
 
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { getSettings } from '$lib/crm/server/settings.js';
-import { sendRotaReminders } from '$lib/crm/server/rotaReminders.js';
+import { sendRotaReminders, sendMyhubRotaReminders } from '$lib/crm/server/rotaReminders.js';
 
 export async function GET({ url, request }) {
 	return handleRequest(url, request);
@@ -42,43 +41,47 @@ async function handleRequest(url, request) {
 	}
 
 	try {
-		// Get days ahead: query/body override > Hub settings (rotaReminderDaysAhead) > env ROTA_REMINDER_DAYS_AHEAD > 3
-		const daysAheadParam = url.searchParams.get('daysAhead');
-		let daysAhead = daysAheadParam ? parseInt(daysAheadParam, 10) : null;
-		if (daysAhead == null || isNaN(daysAhead)) {
-			daysAhead = body.daysAhead != null ? parseInt(String(body.daysAhead), 10) : null;
-		}
-		if (daysAhead == null || isNaN(daysAhead)) {
-			const settings = await getSettings();
-			daysAhead = settings.rotaReminderDaysAhead ?? (parseInt(env.ROTA_REMINDER_DAYS_AHEAD, 10) || 3);
-		}
-
-		if (isNaN(daysAhead) || daysAhead < 0) {
-			return json({ 
-				error: 'Invalid daysAhead parameter',
-				message: 'daysAhead must be a non-negative integer'
-			}, { status: 400 });
-		}
-
-		console.log(`[Rota Reminders API] Starting reminder job for ${daysAhead} days ahead`);
-
 		// Create a mock event object for getBaseUrl (we only need the URL)
-		const event = {
+		const sveltekitEvent = {
 			url: new URL(request.url)
 		};
 
-		// Send reminders
-		const results = await sendRotaReminders(daysAhead, event);
+		// ?daysAhead=N overrides to the old single-day path (useful for testing)
+		const daysAheadParam = url.searchParams.get('daysAhead') ?? (body.daysAhead != null ? String(body.daysAhead) : null);
+		if (daysAheadParam !== null) {
+			const daysAhead = parseInt(daysAheadParam, 10);
+			if (isNaN(daysAhead) || daysAhead < 0) {
+				return json({ error: 'Invalid daysAhead parameter', message: 'daysAhead must be a non-negative integer' }, { status: 400 });
+			}
+			console.log(`[Rota Reminders API] Override mode: running for ${daysAhead} days ahead`);
+			const results = await sendRotaReminders(daysAhead, sveltekitEvent);
+			console.log(`[Rota Reminders API] Override job done: ${results.sent} sent, ${results.failed} failed`);
+			return json({
+				success: true,
+				message: `Rota reminders processed for ${daysAhead} days ahead (override)`,
+				results: {
+					totalContacts: results.totalContacts,
+					totalAssignments: results.totalAssignments,
+					sent: results.sent,
+					failed: results.failed,
+					errors: results.errors.length > 0 ? results.errors : undefined
+				},
+				timestamp: new Date().toISOString()
+			});
+		}
 
-		console.log(`[Rota Reminders API] Reminder job completed: ${results.sent} sent, ${results.failed} failed`);
+		// Default: run for all timing buckets (1, 2, 7 days) respecting per-volunteer preferences
+		console.log('[Rota Reminders API] Starting MyHub reminder job (all timing buckets)');
+		const results = await sendMyhubRotaReminders(sveltekitEvent);
+		console.log(`[Rota Reminders API] Job complete: ${results.sent} sent, ${results.skipped} skipped, ${results.failed} failed`);
 
 		return json({
 			success: true,
-			message: `Rota reminders processed for ${daysAhead} days ahead`,
+			message: 'Rota reminders processed for all volunteer timing preferences',
 			results: {
-				totalContacts: results.totalContacts,
 				totalAssignments: results.totalAssignments,
 				sent: results.sent,
+				skipped: results.skipped,
 				failed: results.failed,
 				errors: results.errors.length > 0 ? results.errors : undefined
 			},

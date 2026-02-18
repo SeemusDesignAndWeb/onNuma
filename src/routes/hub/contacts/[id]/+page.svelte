@@ -19,15 +19,37 @@
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
 
+	$: thankyouMessages = $page.data?.thankyouMessages ?? [];
+
+	let showThankyouForm = false;
+	let thankyouText = '';
+	let thankyouSubmitting = false;
+
 	// Show notifications from form results
 	$: if (formResult && formResult !== lastProcessedFormResult) {
 		lastProcessedFormResult = formResult;
-		
-		if (formResult?.success) {
+
+		if (formResult?.action === 'sendThankyou') {
+			if (formResult?.success) {
+				notifications.success('Thank-you message sent!');
+				showThankyouForm = false;
+				thankyouText = '';
+			} else if (formResult?.error) {
+				notifications.error(formResult.error);
+			}
+		} else if (formResult?.success) {
 			notifications.success('Contact updated successfully');
 		} else if (formResult?.error) {
 			notifications.error(formResult.error);
 		}
+	}
+
+	function handleThankyouEnhance() {
+		thankyouSubmitting = true;
+		return async ({ update }) => {
+			await update({ reset: false });
+			thankyouSubmitting = false;
+		};
 	}
 
 	let editing = false;
@@ -465,6 +487,83 @@
 				</div>
 			</div>
 		{/if}
+
+		<!-- Thank-you messages panel -->
+		<div class="hub-top-panel overflow-hidden">
+			<div class="hub-top-panel-header flex items-center justify-between gap-3 bg-theme-panel-bg/50">
+				<div class="flex items-center gap-3">
+					<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+						<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+						</svg>
+					</div>
+					<h2 class="text-xl font-bold text-gray-900 crm-shell-main">Thank-you messages</h2>
+					{#if thankyouMessages.length > 0}
+						<span class="text-sm font-medium text-gray-500">({thankyouMessages.length})</span>
+					{/if}
+				</div>
+				<button
+					type="button"
+					class="hub-btn btn-theme-1 text-sm px-4 py-2"
+					on:click={() => { showThankyouForm = !showThankyouForm; }}
+				>
+					{showThankyouForm ? 'Cancel' : '+ Send a message'}
+				</button>
+			</div>
+
+			<div class="p-6 space-y-4">
+				{#if showThankyouForm}
+					<form method="POST" action="?/sendThankyou" use:enhance={handleThankyouEnhance} class="space-y-3 pb-4 border-b border-gray-100">
+						<input type="hidden" name="_csrf" value={csrfToken} />
+						<label for="thankyou-msg" class="block text-sm font-semibold text-gray-700">
+							Write a personal message to {contact.firstName || 'this volunteer'}
+						</label>
+						<textarea
+							id="thankyou-msg"
+							name="message"
+							bind:value={thankyouText}
+							rows="4"
+							maxlength="1000"
+							placeholder="e.g. Thank you so much for your help at the food bank last Saturday — the team really appreciated it!"
+							class="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 text-base resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-transparent"
+						></textarea>
+						<p class="text-xs text-gray-400 text-right">{thankyouText.length}/1000</p>
+						<div class="flex gap-3">
+							<button
+								type="submit"
+								class="hub-btn btn-theme-1 px-5 py-2 text-sm font-semibold"
+								disabled={thankyouSubmitting || !thankyouText.trim()}
+							>
+								{thankyouSubmitting ? 'Sending…' : 'Send message'}
+							</button>
+							<button
+								type="button"
+								class="hub-btn text-sm px-4 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+								on:click={() => { showThankyouForm = false; thankyouText = ''; }}
+							>
+								Cancel
+							</button>
+						</div>
+					</form>
+				{/if}
+
+				{#if thankyouMessages.length > 0}
+					<div class="space-y-3">
+						{#each thankyouMessages as msg}
+							<div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+								<p class="text-base text-gray-800 leading-relaxed whitespace-pre-wrap">"{msg.message}"</p>
+								<p class="mt-2 text-sm text-gray-500">
+									— {msg.fromName} ·
+									{new Date(msg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+								</p>
+							</div>
+						{/each}
+					</div>
+				{:else if !showThankyouForm}
+					<p class="text-sm text-gray-500">No messages sent yet. Send a personal thank-you and it'll appear on {contact.firstName || 'their'} MyHub history page.</p>
+				{/if}
+			</div>
+		</div>
 	</div>
 {/if}
 

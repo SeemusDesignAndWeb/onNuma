@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
-import { findById, readCollection, findMany } from '$lib/crm/server/fileStore.js';
+import { findById, readCollection, findMany, create } from '$lib/crm/server/fileStore.js';
+import { getCurrentOrganisationId } from '$lib/crm/server/orgContext.js';
 import { ensureRotaTokens, ensureEventToken } from '$lib/crm/server/tokens.js';
 import { sendCombinedRotaInvites } from '$lib/crm/server/email.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
@@ -102,6 +103,31 @@ export async function POST({ request, cookies, url }) {
 
 	// Send combined invites (one email per contact)
 	const results = await sendCombinedRotaInvites(contactInvites, event, eventPageUrl, { url }, customMessage || '');
+
+	// Create myhub_invitations records for each successfully contacted person,
+	// so Section 2 on their MyHub dashboard shows pending invitations.
+	try {
+		const organisationId = await getCurrentOrganisationId();
+		const sentContacts = contactInvites.filter((_, i) => !results[i] || results[i]?.status !== 'error');
+		for (const { contact, invites } of sentContacts) {
+			if (!contact?.id) continue;
+			for (const { rotaData } of invites) {
+				await create('myhub_invitations', {
+					organisationId,
+					contactId: contact.id,
+					rotaId: rotaData.rota?.id || null,
+					occurrenceId: rotaData.occurrence?.id || null,
+					eventId: eventId,
+					status: 'pending',
+					invitedAt: new Date().toISOString(),
+					respondedAt: null
+				});
+			}
+		}
+	} catch (err) {
+		// Non-fatal — invitation records are best-effort; emails already sent
+		console.error('[bulk invite] Failed to create myhub_invitations records:', err?.message || err);
+	}
 
 	return json({ success: true, results });
 }

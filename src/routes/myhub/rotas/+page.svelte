@@ -1,6 +1,6 @@
 <script>
 	import { page } from '$app/stores';
-	import { formatDateLongUK, formatTimeUK } from '$lib/crm/utils/dateFormat.js';
+	import { formatMyhubDate, formatMyhubTimeRange } from '$lib/crm/utils/dateFormat.js';
 
 	export let data = {};
 	$: member = data?.member ?? null;
@@ -73,24 +73,26 @@
 						<li class="my-rota-item">
 							<span class="my-rota-role">{rota.role}</span>
 							<span class="my-rota-event">{rota.eventTitle}</span>
-							{#if rota.date}
-								<p class="my-rota-date">
-									<span class="font-semibold">{formatDateLongUK(rota.date)}</span>
-									{#if rota.startTime}
-										<span class="block mt-0.5">
-											{formatTimeUK(rota.startTime)}
-											{#if rota.endTime}
-												– {formatTimeUK(rota.endTime)}
-											{/if}
-										</span>
-									{/if}
-								</p>
-							{:else}
-								<p class="my-muted">Date to be confirmed</p>
-							{/if}
-							{#if rota.location}
-								<p class="my-rota-location">{rota.location}</p>
-							{/if}
+						{#if rota.date}
+							<p class="my-rota-date">
+								<span class="font-semibold">{formatMyhubDate(rota.date)}</span>
+								{#if rota.startTime}
+									<span class="block mt-0.5">{formatMyhubTimeRange(rota.startTime, rota.endTime)}</span>
+								{/if}
+							</p>
+						{:else}
+							<p class="my-muted">Date to be confirmed</p>
+						{/if}
+						{#if rota.location}
+							<p class="my-rota-location">
+								<a
+									href="https://maps.google.com/?q={encodeURIComponent(rota.location)}"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="my-location-link"
+								>{rota.location}<span class="sr-only"> (open in maps)</span></a>
+							</p>
+						{/if}
 							<div class="my-rota-cannot-attend">
 								{#if confirmingRotaKey === confirmKey}
 									<form method="POST" action="?/cannotVolunteer" class="my-cannot-form">
@@ -266,6 +268,25 @@
 		font-size: 1rem;
 		color: #6b7280;
 		margin-top: 0.25rem;
+	}
+	.my-location-link {
+		color: var(--myhub-primary, #2563a8);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+	.my-location-link:hover {
+		color: var(--myhub-primary-hover, #1d4d82);
+	}
+	:global(.sr-only) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 	.my-link {
 		font-weight: 600;

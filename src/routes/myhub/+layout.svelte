@@ -1,6 +1,5 @@
 <script>
 	import { page } from '$app/stores';
-	import { invalidateAll, goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import MySidebar from './MySidebar.svelte';
 
@@ -18,45 +17,54 @@
 		prevPath = path;
 		mobileMenuOpen = false;
 	}
+
+	let largeText = false;
+	function toggleTextSize() {
+		largeText = !largeText;
+		try { localStorage.setItem('myhub-large-text', largeText ? '1' : '0'); } catch (_) {}
+	}
+
 	onMount(() => {
+		try { largeText = localStorage.getItem('myhub-large-text') === '1'; } catch (_) {}
 		function handleResize() {
 			if (window.innerWidth >= 1024) mobileMenuOpen = false;
 		}
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	});
-	let loginName = '';
 	let loginEmail = '';
 	let loginError = '';
 	let loginSubmitting = false;
+	let linkSent = false;
 
-	async function handleLoginSubmit(e) {
+	$: linkExpired = !member && $page.url.searchParams.get('error') === 'link-expired';
+
+	// Pre-fill email from ?email= query param (e.g. from a coordinator invite link).
+	onMount(() => {
+		const emailParam = $page.url.searchParams.get('email') || '';
+		if (emailParam && !loginEmail) loginEmail = emailParam;
+	});
+
+	async function handleSendLink(e) {
 		e.preventDefault();
 		loginError = '';
-		if (!loginName.trim() || !loginEmail.trim()) {
-			loginError = 'Name and email are required.';
+		if (!loginEmail.trim()) {
+			loginError = 'Please enter your email address.';
 			return;
 		}
 		loginSubmitting = true;
 		try {
 			const formData = new FormData();
-			formData.set('name', loginName.trim());
 			formData.set('email', loginEmail.trim());
 			formData.set('_csrf', csrfToken);
-			const res = await fetch('/myhub/login', {
+			await fetch('/myhub/login', {
 				method: 'POST',
 				body: formData,
 				credentials: 'same-origin'
 			});
-			if (res.ok) {
-				const body = await res.json().catch(() => ({}));
-				await invalidateAll();
-				goto(body.redirectTo || '/myhub');
-				return;
-			}
-			const body = await res.json().catch(() => ({}));
-			loginError = body.error || 'Something went wrong. Please try again.';
-		} catch (err) {
+			// Always show "check your email" — server never reveals whether address exists.
+			linkSent = true;
+		} catch {
 			loginError = 'Something went wrong. Please try again.';
 		} finally {
 			loginSubmitting = false;
@@ -64,7 +72,7 @@
 	}
 </script>
 
-<div class="my-layout my-layout-theme min-h-screen">
+<div class="my-layout my-layout-theme min-h-screen" class:my-large-text={largeText}>
 	{#if !member}
 		<!-- Login gate: hero background image (same as front-end site top hero) -->
 		<div class="my-login-screen">
@@ -96,45 +104,64 @@
 					<span class="text-xl font-bold text-white drop-shadow-sm">MyHUB</span>
 				</a>
 				<div class="my-login-card w-full max-w-sm rounded-2xl p-6">
-				<h1 class="text-lg font-semibold text-gray-900 mb-1">Sign in</h1>
-				<p class="text-gray-600 text-sm mb-6">Enter your name and email to access your volunteering.</p>
-				<form on:submit={handleLoginSubmit} class="space-y-4">
-					<input type="hidden" name="_csrf" value={csrfToken} />
-					<div>
-						<label for="my-login-name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-						<input
-							id="my-login-name"
-							type="text"
-							autocomplete="name"
-							bind:value={loginName}
-							class="my-login-input w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-400"
-							placeholder="Your full name"
-							required
-						/>
+				{#if linkSent}
+					<!-- Confirmation: link sent -->
+					<div class="text-center py-2">
+						<div class="my-link-sent-icon" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M22 2L11 13" /><path d="M22 2L15 22 11 13 2 9l20-7z" />
+							</svg>
+						</div>
+						<h1 class="my-link-sent-heading">Check your email</h1>
+						<p class="my-link-sent-body">
+							We've sent a link to <strong>{loginEmail}</strong>.
+							Tap the button in that email to open your hub — no password needed.
+						</p>
+						<p class="my-link-sent-note">The link works for 7 days.</p>
+						<button
+							type="button"
+							class="my-link-resend-btn"
+							on:click={() => { linkSent = false; loginEmail = ''; }}
+						>
+							Send to a different address
+						</button>
 					</div>
-					<div>
-						<label for="my-login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-						<input
-							id="my-login-email"
-							type="email"
-							autocomplete="email"
-							bind:value={loginEmail}
-							class="my-login-input w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-400"
-							placeholder="you@example.com"
-							required
-						/>
-					</div>
-					{#if loginError}
-						<p class="text-sm text-red-600" role="alert">{loginError}</p>
+				{:else}
+					<!-- Send-link form -->
+					{#if linkExpired}
+						<div class="my-login-expired-notice" role="alert">
+							<strong>Your link has expired.</strong>
+							Enter your email below and we'll send you a fresh one.
+						</div>
 					{/if}
-					<button
-						type="submit"
-						disabled={loginSubmitting}
-						class="my-login-btn w-full rounded-xl text-white font-medium py-3 px-4 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-					>
-						{loginSubmitting ? 'Signing in…' : 'Sign in'}
-					</button>
-				</form>
+					<h1 class="my-login-heading">Welcome to your hub</h1>
+					<p class="my-login-sub">Enter your email and we'll send you a link to get in — no password needed.</p>
+					<form on:submit={handleSendLink} class="space-y-4">
+						<input type="hidden" name="_csrf" value={csrfToken} />
+						<div>
+							<label for="my-login-email" class="block font-medium text-gray-700 mb-1">Your email address</label>
+							<input
+								id="my-login-email"
+								type="email"
+								autocomplete="email"
+								bind:value={loginEmail}
+								class="my-login-input w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-400"
+								placeholder="you@example.com"
+								required
+							/>
+						</div>
+						{#if loginError}
+							<p class="text-red-600 font-medium" role="alert">{loginError}</p>
+						{/if}
+						<button
+							type="submit"
+							disabled={loginSubmitting}
+							class="my-login-btn w-full rounded-xl text-white font-bold py-4 px-4 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+						>
+							{loginSubmitting ? 'Sending…' : 'Send me a link'}
+						</button>
+					</form>
+				{/if}
 				</div>
 				<footer class="my-login-footer">
 					<a href="/hub/privacy" class="my-login-footer-link">
@@ -193,16 +220,27 @@
 						<slot />
 					</div>
 				</main>
-				<footer class="my-footer">
-					<div class="my-footer-inner">
-						<a href="/myhub/privacy" class="my-footer-link">
-							<svg class="my-footer-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-							</svg>
-							Click to read how we use your information
-						</a>
-					</div>
-				</footer>
+			<footer class="my-footer">
+				<div class="my-footer-inner">
+					<button
+						type="button"
+						class="my-text-size-btn"
+						on:click={toggleTextSize}
+						aria-pressed={largeText}
+					>
+						<svg class="my-text-size-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h10M4 14h7M4 18h4" />
+						</svg>
+						{largeText ? 'Make text smaller' : 'Make text bigger'}
+					</button>
+					<a href="/myhub/privacy" class="my-footer-link">
+						<svg class="my-footer-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+						</svg>
+						Click to read how we use your information
+					</a>
+				</div>
+			</footer>
 			</div>
 		</div>
 	{/if}
@@ -222,9 +260,13 @@
 		--myhub-card-hover: rgba(37, 99, 168, 0.08);
 		background: var(--myhub-bg);
 	}
-	/* Over 60s: readable base size, generous spacing */
+	/* Accessible base size — spec minimum 18px */
 	.my-layout {
-		font-size: 1.0625rem; /* 17px base */
+		font-size: 1.125rem; /* 18px base */
+	}
+	/* Large-text mode — bumps to 22px across all MyHub pages */
+	.my-large-text {
+		font-size: 1.375rem; /* 22px */
 	}
 	/* Login screen: hero background image (same as front-end site) + optional org logo watermark */
 	.my-login-screen {
@@ -287,8 +329,69 @@
 		box-shadow: 0 20px 40px rgba(15, 40, 64, 0.12);
 		border: 1px solid var(--myhub-card-border);
 	}
+	/* Send-link form headings */
+	.my-login-heading {
+		font-size: 1.375rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.5rem 0;
+	}
+	.my-login-sub {
+		color: #475569;
+		margin: 0 0 1.5rem 0;
+		line-height: 1.5;
+	}
+	/* Expired-link notice */
+	.my-login-expired-notice {
+		background: #fef3c7;
+		border: 1px solid #f59e0b;
+		border-radius: 0.75rem;
+		padding: 0.875rem 1rem;
+		margin-bottom: 1.25rem;
+		color: #92400e;
+		font-size: 1rem;
+		line-height: 1.5;
+	}
+	/* Link-sent confirmation */
+	.my-link-sent-icon {
+		width: 3rem;
+		height: 3rem;
+		margin: 0 auto 1rem;
+		color: var(--myhub-primary);
+	}
+	.my-link-sent-heading {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.75rem 0;
+	}
+	.my-link-sent-body {
+		color: #334155;
+		margin: 0 0 0.5rem 0;
+		line-height: 1.6;
+	}
+	.my-link-sent-note {
+		color: #64748b;
+		font-size: 0.9375rem;
+		margin: 0 0 1.5rem 0;
+	}
+	.my-link-resend-btn {
+		background: none;
+		border: none;
+		color: var(--myhub-primary);
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		padding: 0.5rem 0;
+		text-decoration: underline;
+	}
+	.my-link-resend-btn:hover {
+		color: var(--myhub-primary-hover);
+	}
+	/* Input */
 	.my-login-input {
 		border-color: var(--myhub-card-border);
+		font-size: 1.125rem;
 	}
 	.my-login-input:focus {
 		outline: none;
@@ -372,6 +475,35 @@
 	.my-mobile-logo img {
 		filter: brightness(0) invert(1);
 	}
+	/* Text size toggle button */
+	.my-text-size-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: rgba(255, 255, 255, 0.12);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 0.625rem;
+		color: #fff;
+		font-size: 1rem;
+		font-weight: 600;
+		padding: 0.625rem 1rem;
+		min-height: 3rem;
+		cursor: pointer;
+		transition: background 0.15s;
+		margin-bottom: 0.75rem;
+	}
+	.my-text-size-btn:hover {
+		background: rgba(255, 255, 255, 0.2);
+	}
+	.my-text-size-btn[aria-pressed="true"] {
+		background: rgba(255, 255, 255, 0.22);
+		border-color: rgba(255, 255, 255, 0.4);
+	}
+	.my-text-size-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+		flex-shrink: 0;
+	}
 	/* Footer (logged-in) – flows with content */
 	.my-footer {
 		background: var(--myhub-sidebar-bg);
@@ -381,8 +513,11 @@
 		max-width: 42rem;
 		width: 100%;
 		margin: 0 auto;
-		padding: 1rem 1.25rem 1.25rem;
+		padding: 1.25rem 1.25rem 1.25rem;
 		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 0;
 	}
 	@media (min-width: 640px) {
 		.my-footer-inner {
@@ -438,5 +573,32 @@
 		width: 2.5rem;
 		height: 2.5rem;
 		flex-shrink: 0;
+	}
+
+	/* =====================
+	   PRINT — GLOBAL LAYOUT
+	   Hide chrome; let page content render cleanly.
+	   ===================== */
+	@media print {
+		:global(body) {
+			background: #fff !important;
+		}
+		.my-sidebar-wrap,
+		.my-mobile-header,
+		.my-footer,
+		.my-mobile-nav-dropdown,
+		.my-text-size-btn {
+			display: none !important;
+		}
+		.my-layout-desktop {
+			display: block !important;
+		}
+		.my-main-wrap {
+			width: 100% !important;
+		}
+		.my-main-inner {
+			padding: 0 !important;
+			max-width: none !important;
+		}
 	}
 </style>

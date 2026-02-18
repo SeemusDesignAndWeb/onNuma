@@ -89,8 +89,18 @@
 						invalidateAll();
 					}, 500);
 				}
-			} else if (formResult?.type !== 'addAssignees' && formResult?.type !== 'removeAssignee' && formResult?.type !== 'addHelpFile' && formResult?.type !== 'removeHelpFile') {
-				notifications.success('Rota updated successfully');
+		} else if (formResult?.type === 'inviteToMyhub') {
+			if (formResult.success) {
+				notifications.success(formResult.message || 'Invitation sent.');
+				showInviteModal = false;
+				inviteContactId = '';
+				inviteSearchTerm = '';
+				inviteError = null;
+			} else {
+				inviteError = formResult.error || 'Failed to send invitation.';
+			}
+		} else if (formResult?.type !== 'addAssignees' && formResult?.type !== 'removeAssignee' && formResult?.type !== 'addHelpFile' && formResult?.type !== 'removeHelpFile') {
+			notifications.success('Rota updated successfully');
 				// Exit editing mode after successful save
 				editing = false;
 				// Invalidate to get fresh data, but preserve formData until data loads
@@ -218,6 +228,21 @@
 	let selectedContactIds = new Set();
 	let selectedOccurrenceId = '';
 	let selectedListId = '';
+
+	// MyHUB invite modal state
+	let showInviteModal = false;
+	let inviteOccurrenceId = null;
+	let inviteSearchTerm = '';
+	let inviteContactId = '';
+	let inviteSending = false;
+	let inviteError = null;
+
+	$: inviteFilteredContacts = inviteSearchTerm
+		? availableContacts.filter(c =>
+				`${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().includes(inviteSearchTerm.toLowerCase()) ||
+				(c.email || '').toLowerCase().includes(inviteSearchTerm.toLowerCase())
+			)
+		: availableContacts;
 	
 	// Help Files
 	let showAddHelpFile = false;
@@ -931,7 +956,8 @@
 								</span>
 								{#if isFull}
 									<span class="text-xs text-hub-red-600 font-medium">Full</span>
-								{:else}
+							{:else}
+								<div class="flex items-center gap-1">
 									<button
 										on:click={() => {
 											console.log('[CLIENT] + Add clicked for occurrence:', occ.id, 'Current assignees:', occAssignees.length, 'Assignees:', JSON.stringify(occAssignees));
@@ -946,7 +972,21 @@
 									>
 										+ Add
 									</button>
-								{/if}
+									<button
+										on:click={() => {
+											inviteOccurrenceId = occ.id;
+											inviteSearchTerm = '';
+											inviteContactId = '';
+											inviteError = null;
+											showInviteModal = true;
+										}}
+										class="bg-purple-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-purple-700"
+										title="Send a MyHUB invitation to a volunteer"
+									>
+										✉ Invite
+									</button>
+								</div>
+							{/if}
 							</div>
 						</div>
 						{#if occAssignees.length > 0}
@@ -1257,5 +1297,85 @@
 			</div>
 		</div>
 	{/if}
+{/if}
+
+<!-- MyHUB Invite Modal -->
+{#if showInviteModal}
+	<div
+		class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="invite-modal-title"
+	>
+		<div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+			<h3 id="invite-modal-title" class="text-lg font-bold text-gray-900 mb-2">Invite to MyHub</h3>
+			<p class="text-sm text-gray-600 mb-4">
+				Send a personal invitation — the volunteer will get an email with a link to respond from their MyHub dashboard.
+			</p>
+			<form method="POST" action="?/inviteToMyhub" use:enhance={() => {
+				inviteSending = true;
+				inviteError = null;
+				return async ({ update }) => {
+					inviteSending = false;
+					await update();
+				};
+			}}>
+				<input type="hidden" name="_csrf" value={csrfToken} />
+				<input type="hidden" name="occurrenceId" value={inviteOccurrenceId ?? ''} />
+
+				<div class="mb-3">
+					<label for="invite-search" class="block text-sm font-medium text-gray-700 mb-1">Search volunteer</label>
+					<input
+						id="invite-search"
+						type="text"
+						placeholder="Name or email…"
+						bind:value={inviteSearchTerm}
+						class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+					/>
+				</div>
+
+				<div class="mb-4 max-h-48 overflow-y-auto border border-gray-200 rounded-md divide-y divide-gray-100">
+					{#each inviteFilteredContacts.slice(0, 50) as contact (contact.id)}
+						<label class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer {inviteContactId === contact.id ? 'bg-purple-50' : ''}">
+							<input type="radio" name="contactId" value={contact.id} bind:group={inviteContactId} class="h-4 w-4 text-purple-600" />
+							<span class="text-sm flex-1 min-w-0">
+								<span class="font-medium">{contact.firstName || ''} {contact.lastName || ''}</span>
+								{#if contact.email}
+									<span class="text-gray-400 ml-1 truncate">{contact.email}</span>
+								{/if}
+							</span>
+						</label>
+					{/each}
+					{#if inviteFilteredContacts.length === 0}
+						<p class="text-sm text-gray-500 px-3 py-3 italic">No contacts found</p>
+					{/if}
+					{#if inviteFilteredContacts.length > 50}
+						<p class="text-xs text-gray-400 px-3 py-2">Showing first 50 — type to narrow down</p>
+					{/if}
+				</div>
+
+				{#if inviteError}
+					<p class="text-red-600 text-sm mb-3">{inviteError}</p>
+				{/if}
+
+				<div class="flex justify-end gap-3">
+					<button
+						type="button"
+						on:click={() => { showInviteModal = false; inviteError = null; }}
+						class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={!inviteContactId || inviteSending}
+						class="px-4 py-2 text-sm text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{#if inviteSending}Sending…{:else}Send invitation{/if}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
 {/if}
 

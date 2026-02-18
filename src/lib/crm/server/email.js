@@ -2213,7 +2213,7 @@ View the rota: ${hubUrl}
  * @returns {Promise<object>} Resend API response
  */
 export async function sendVolunteerCannotAttendNotification({ to, name }, payload, event) {
-	const { volunteerName, volunteerEmail, role, eventTitle, dateDisplay } = payload;
+	const { volunteerName, volunteerEmail, role, eventTitle, dateDisplay, note } = payload;
 	const baseUrl = getBaseUrl(event);
 	const fromEmail = fromEmailDefault();
 
@@ -2237,14 +2237,15 @@ export async function sendVolunteerCannotAttendNotification({ to, name }, payloa
 					<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">
 						<strong>${volunteerName || volunteerEmail || 'A volunteer'}</strong>${volunteerEmail ? ` (${volunteerEmail})` : ''} has let you know they can no longer volunteer on this date.
 					</p>
-					<div style="background: #fef2f2; padding: 15px; border-radius: 6px; margin: 15px 0; border: 1px solid #fecaca;">
-						<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Role:</strong> ${role || '—'}</p>
-						<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Event:</strong> ${eventTitle || '—'}</p>
-						<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Date:</strong> ${dateDisplay || '—'}</p>
-					</div>
-					<p style="color: #666; font-size: 14px; margin: 15px 0 0 0;">
-						Please update the rota in the Hub and find a replacement if needed.
-					</p>
+				<div style="background: #fef2f2; padding: 15px; border-radius: 6px; margin: 15px 0; border: 1px solid #fecaca;">
+					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Role:</strong> ${role || '—'}</p>
+					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Event:</strong> ${eventTitle || '—'}</p>
+					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Date:</strong> ${dateDisplay || '—'}</p>
+				</div>
+				${note ? `<div style="background: #f9fafb; padding: 12px 15px; border-radius: 6px; margin: 15px 0; border-left: 3px solid #9ca3af;"><p style="margin: 0 0 4px 0; color: #6b7280; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Their message</p><p style="margin: 0; color: #374151; font-size: 15px;">${note}</p></div>` : ''}
+				<p style="color: #666; font-size: 14px; margin: 15px 0 0 0;">
+					Please update the rota in the Hub and find a replacement if needed.
+				</p>
 				</div>
 			</div>
 		</body>
@@ -2262,7 +2263,7 @@ Details:
 Role: ${role || '—'}
 Event: ${eventTitle || '—'}
 Date: ${dateDisplay || '—'}
-
+${note ? '\nTheir message:\n' + note : ''}
 Please update the rota in the Hub and find a replacement if needed.
 	`.trim();
 
@@ -2360,140 +2361,146 @@ If you didn't request this change, you can ignore this email. Your address will 
  * @param {object} event - SvelteKit event object (for base URL)
  * @returns {Promise<object>} Resend API response
  */
-export async function sendUpcomingRotaReminder({ to, name }, rotaData, event) {
+export async function sendUpcomingRotaReminder({ to, name, firstName }, rotaData, event, { daysAhead = 7, orgName = '', coordinatorName = '' } = {}) {
 	const { rota, event: eventData, occurrence } = rotaData;
 	const baseUrl = getBaseUrl(event);
 	const fromEmail = fromEmailDefault();
-	
-	// Get signup link if token exists
-	let signupLink = '';
-	try {
-		const { ensureRotaToken } = await import('./tokens.js');
-		const token = await ensureRotaToken(rota.eventId, rota.id, occurrence?.id || rota.occurrenceId);
-		signupLink = `${baseUrl}/signup/rota/${token.token}`;
-	} catch (error) {
-		console.error('Error generating rota token for reminder:', error);
-		// Continue without signup link if token generation fails
-	}
 
 	const eventTitle = eventData?.title || 'Event';
-	const role = rota?.role || 'Volunteer';
+	const role = rota?.role || '';
 
-	// Format occurrence date
-	let occurrenceDateDisplay = '';
-	let occurrenceTimeDisplay = '';
-	let occurrenceLocation = '';
-	if (occurrence) {
-		const startDate = new Date(occurrence.startsAt);
-		occurrenceDateDisplay = startDate.toLocaleDateString('en-GB', {
-			weekday: 'long',
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
-		occurrenceTimeDisplay = startDate.toLocaleTimeString('en-GB', {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-		occurrenceLocation = occurrence.location || eventData?.location || '';
-	} else if (rota.occurrenceId) {
-		const { readCollection } = await import('./fileStore.js');
-		const occurrences = await readCollection('occurrences');
-		const rotaOccurrence = occurrences.find(o => o.id === rota.occurrenceId);
-		if (rotaOccurrence) {
-			const startDate = new Date(rotaOccurrence.startsAt);
-			occurrenceDateDisplay = startDate.toLocaleDateString('en-GB', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric'
-			});
-			occurrenceTimeDisplay = startDate.toLocaleTimeString('en-GB', {
-				hour: '2-digit',
-				minute: '2-digit'
-			});
-			occurrenceLocation = rotaOccurrence.location || eventData?.location || '';
-		}
+	// Resolve occurrence if not passed directly
+	let occ = occurrence;
+	if (!occ && rota?.occurrenceId) {
+		try {
+			const { readCollection: rc } = await import('./fileStore.js');
+			const occs = await rc('occurrences');
+			occ = occs.find((o) => o.id === rota.occurrenceId) || null;
+		} catch (_) {}
 	}
 
+	// Plain-English date and time formatting (matches MyHub display)
+	function _ordinal(n) {
+		const s = ['th', 'st', 'nd', 'rd'];
+		const v = n % 100;
+		return n + (s[(v - 20) % 10] || s[v] || s[0]);
+	}
+	function _fmtDate(d) {
+		if (!d) return '';
+		const dt = d instanceof Date ? d : new Date(d);
+		if (isNaN(dt.getTime())) return '';
+		const dayName = dt.toLocaleDateString('en-GB', { weekday: 'long' });
+		const month = dt.toLocaleDateString('en-GB', { month: 'long' });
+		return `${dayName}, ${_ordinal(dt.getDate())} ${month}`;
+	}
+	function _fmtTime(d) {
+		if (!d) return '';
+		const dt = d instanceof Date ? d : new Date(d);
+		if (isNaN(dt.getTime())) return '';
+		const h = dt.getHours();
+		const m = dt.getMinutes();
+		const ampm = h >= 12 ? 'pm' : 'am';
+		const h12 = h % 12 || 12;
+		return m === 0 ? `${h12}${ampm}` : `${h12}:${m.toString().padStart(2, '0')}${ampm}`;
+	}
+
+	let dayName = '';
+	let dateDisplay = '';
+	let timeDisplay = '';
+	let locationDisplay = '';
+
+	if (occ?.startsAt) {
+		const startDate = new Date(occ.startsAt);
+		dayName = startDate.toLocaleDateString('en-GB', { weekday: 'long' });
+		dateDisplay = _fmtDate(startDate);
+		const startTime = _fmtTime(startDate);
+		const endTime = occ.endsAt ? _fmtTime(new Date(occ.endsAt)) : '';
+		timeDisplay = endTime ? `${startTime} – ${endTime}` : startTime;
+		locationDisplay = occ.location || eventData?.location || '';
+	}
+
+	// Subject: "See you [Day]! — [Org Name]"
+	const subjectDay = daysAhead === 0 ? 'today' : daysAhead === 1 ? 'tomorrow' : dayName || 'soon';
+	const orgSuffix = orgName ? ` — ${orgName}` : '';
+	const subject = `See you ${subjectDay}!${orgSuffix}`;
+
+	const myhubUrl = `${baseUrl}/myhub`;
+	const firstName_display = firstName || name?.split(' ')[0] || name || 'there';
+	const signOff = coordinatorName || orgName || 'Your coordinator';
+	const orgPhrase = orgName ? `with ${orgName}` : 'with us';
+
+	const locationHtml = locationDisplay
+		? `<p style="margin:6px 0 0 0;font-size:16px;color:#6b7280;">📍 <a href="https://maps.google.com/?q=${encodeURIComponent(locationDisplay)}" style="color:#2563a8;text-decoration:underline;">${locationDisplay}</a></p>`
+		: '';
+
 	const branding = await getEmailBranding(event);
-	const html = `
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Upcoming Rota Reminder</title>
-		</head>
-		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f9fafb;">
-			<div style="background: #ffffff; padding: 20px 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
-				${branding}
-				<div style="background: linear-gradient(135deg, #2d7a32 0%, #1e5a22 100%); padding: 20px 15px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
-					<h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Upcoming Rota Reminder</h1>
-					<p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">You have a rota assignment coming up in 3 days</p>
-				</div>
-				
-				<div style="padding: 0;">
-				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">Hello ${name},</p>
-				
-				<p style="color: #333; font-size: 15px; margin: 0 0 15px 0;">
-					This is a friendly reminder that you are assigned to the rota <strong>${role}</strong> for <strong>${eventTitle}</strong>.
-				</p>
 
-				<div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #2d7a32;">
-					<h2 style="color: #2d7a32; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">Rota Details</h2>
-					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Role:</strong> ${role}</p>
-					<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Event:</strong> ${eventTitle}</p>
-					${occurrenceDateDisplay ? `<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Date:</strong> ${occurrenceDateDisplay}</p>` : ''}
-					${occurrenceTimeDisplay ? `<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Time:</strong> ${occurrenceTimeDisplay}</p>` : ''}
-					${occurrenceLocation ? `<p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>Location:</strong> ${occurrenceLocation}</p>` : ''}
-				</div>
+	const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${subject}</title>
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#111827;max-width:600px;margin:0 auto;padding:12px;background:#f9fafb;">
+<div style="background:#fff;padding:32px 24px;border-radius:12px;border:1px solid #e5e7eb;">
+${branding}
 
-				${signupLink ? `
-				<div style="text-align: center; margin: 20px 0;">
-					<a href="${signupLink}" style="display: inline-block; background: #2d7a32; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">View Rota Details</a>
-				</div>
-				` : ''}
+<p style="font-size:18px;margin:0 0 16px 0;color:#111827;">Hi ${firstName_display},</p>
 
-				<div style="background: #fffbf0; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #E6A324;">
-					<p style="color: #333; font-size: 13px; margin: 0;">
-						<strong>Note:</strong> If you are unable to fulfill this assignment, please contact the rota coordinator as soon as possible.
-					</p>
-				</div>
-				</div>
-			</div>
-		</body>
-		</html>
-	`;
+<p style="font-size:18px;margin:0 0 24px 0;color:#111827;">
+  Just a friendly reminder that you're volunteering ${orgPhrase} this ${dayName || 'week'}:
+</p>
 
-	const text = `
-Upcoming Rota Reminder
+<div style="background:#eff6ff;border-radius:10px;padding:20px 24px;margin:0 0 24px 0;border-left:4px solid #2563a8;">
+  <p style="font-size:20px;font-weight:700;color:#1e40af;margin:0 0 6px 0;">${eventTitle}</p>
+  ${role ? `<p style="font-size:16px;color:#374151;margin:0 0 6px 0;">${role}</p>` : ''}
+  ${dateDisplay ? `<p style="font-size:18px;font-weight:600;color:#111827;margin:0 0 4px 0;">${dateDisplay}${timeDisplay ? ` — ${timeDisplay}` : ''}</p>` : ''}
+  ${locationHtml}
+</div>
 
-Hello ${name},
+<div style="text-align:center;margin:0 0 28px 0;">
+  <a href="${myhubUrl}" style="display:inline-block;background:#2563a8;color:#fff;padding:16px 36px;text-decoration:none;border-radius:10px;font-size:18px;font-weight:700;min-width:200px;">View in My Hub</a>
+</div>
 
-This is a friendly reminder that you are assigned to the rota ${role} for ${eventTitle}.
+<p style="font-size:16px;color:#374151;margin:0 0 6px 0;">
+  If something has come up and you can't make it, please let us know as soon as you can so we can find cover:
+</p>
+<p style="font-size:16px;margin:0 0 28px 0;">
+  <a href="${myhubUrl}" style="color:#2563a8;font-weight:600;">I can't make this one</a>
+</p>
 
-Rota Details:
-Role: ${role}
-Event: ${eventTitle}
-${occurrenceDateDisplay ? `Date: ${occurrenceDateDisplay}` : ''}
-${occurrenceTimeDisplay ? `Time: ${occurrenceTimeDisplay}` : ''}
-${occurrenceLocation ? `Location: ${occurrenceLocation}` : ''}
+<p style="font-size:17px;color:#111827;margin:0 0 4px 0;">Thank you — see you ${subjectDay}!</p>
+<p style="font-size:16px;color:#374151;margin:0;">${signOff}</p>
 
-${signupLink ? `View rota details: ${signupLink}` : ''}
+</div>
+</body>
+</html>`;
 
-Note: If you are unable to fulfill this assignment, please contact the rota coordinator as soon as possible.
-	`.trim();
+	const text = `Hi ${firstName_display},
+
+Just a friendly reminder that you're volunteering ${orgPhrase} this ${dayName || 'week'}:
+
+${eventTitle}${role ? `\n${role}` : ''}${dateDisplay ? `\n${dateDisplay}${timeDisplay ? ` — ${timeDisplay}` : ''}` : ''}${locationDisplay ? `\n${locationDisplay}` : ''}
+
+View in My Hub: ${myhubUrl}
+
+If something has come up and you can't make it, please let us know as soon as you can so we can find cover:
+I can't make this one: ${myhubUrl}
+
+Thank you — see you ${subjectDay}!
+${signOff}`.trim();
 
 	try {
-		const result = await rateLimitedSend(() => sendEmail({
-			from: fromEmail,
-			to: [to],
-			subject: `Reminder: ${role} - ${eventTitle} in 3 days`,
-			html,
-			text
-		}));
-
+		const result = await rateLimitedSend(() =>
+			sendEmail({
+				from: fromEmail,
+				to: [to],
+				subject,
+				html,
+				text
+			})
+		);
 		return result;
 	} catch (error) {
 		console.error('Failed to send upcoming rota reminder:', error);
@@ -2706,3 +2713,419 @@ This email was sent from the member signup form on Eltham Green Community Church
 	}
 }
 
+/**
+ * Send a magic link email to a volunteer so they can access MyHUB without a password.
+ * Spec: warm, personal tone; single large "Go to My Hub" button; no jargon.
+ *
+ * @param {{ to: string, name: string, magicLink: string, orgName?: string }} options
+ * @param {object} event - SvelteKit event object (for base URL / branding)
+ * @returns {Promise<object>}
+ */
+export async function sendMagicLinkEmail({ to, name, magicLink, orgName }, event) {
+	const fromEmail = fromEmailDefault();
+	const branding = await getEmailBranding(event);
+	const firstName = (name || '').split(/\s+/)[0] || 'there';
+	const displayOrg = orgName ? orgName : 'your volunteering team';
+
+	const html = `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Your link to MyHUB</title>
+		</head>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 10px; background-color: #f0f4f8;">
+			<div style="background: #ffffff; padding: 28px 24px 32px; border-radius: 12px; border: 1px solid #e2e8f0;">
+				${branding}
+				<p style="font-size: 18px; margin: 0 0 16px 0; color: #1e293b;">Hi ${firstName},</p>
+				<p style="font-size: 18px; margin: 0 0 24px 0; color: #1e293b;">
+					Here is your personal link to <strong>${displayOrg}</strong>'s volunteer hub.
+					Tap the button below to open it — no password needed.
+				</p>
+				<div style="text-align: center; margin: 32px 0;">
+					<a href="${magicLink}"
+					   style="display: inline-block; background: #2563a8; color: #ffffff; text-decoration: none;
+					          font-size: 20px; font-weight: 700; padding: 18px 40px; border-radius: 10px;
+					          letter-spacing: 0.01em;">
+						Go to My Hub
+					</a>
+				</div>
+				<p style="font-size: 15px; color: #64748b; margin: 24px 0 0 0;">
+					This link will work for 7 days. If you didn't ask for it, you can safely ignore this email.
+				</p>
+				<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+				<p style="font-size: 13px; color: #94a3b8; margin: 0;">
+					If the button doesn't work, copy and paste this address into your browser:<br>
+					<span style="color: #2563a8; word-break: break-all;">${magicLink}</span>
+				</p>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Hi ${firstName},
+
+Here is your personal link to ${displayOrg}'s volunteer hub:
+
+${magicLink}
+
+Tap or paste the link above into your browser — no password needed.
+
+This link will work for 7 days. If you didn't ask for it, you can safely ignore this email.
+	`.trim();
+
+	try {
+		const result = await rateLimitedSend(() =>
+			sendEmail({
+				from: fromEmail,
+				to: [to],
+				subject: `Your link to MyHUB — ${displayOrg}`,
+				html,
+				text
+			})
+		);
+		return result;
+	} catch (error) {
+		console.error('[email] Failed to send magic link email:', error);
+		throw error;
+	}
+}
+
+/**
+ * Send a personal MyHUB shift invitation to a volunteer.
+ * The email includes shift details and a magic-link button leading directly to their MyHub dashboard.
+ *
+ * @param {{ to: string, name: string, magicLink: string, orgName?: string, eventTitle: string, role?: string, dateDisplay: string, timeDisplay?: string }} options
+ * @param {object} event - SvelteKit event (for base URL / branding)
+ */
+export async function sendMyhubInvitationEmail({ to, name, magicLink, orgName, eventTitle, role, dateDisplay, timeDisplay }, event) {
+	const fromEmail = fromEmailDefault();
+	const branding = await getEmailBranding(event);
+	const firstName = (name || '').split(/\s+/)[0] || 'there';
+	const displayOrg = orgName ? orgName : 'your volunteering team';
+	const roleLine = role
+		? `<p style="font-size:16px;color:#4b5563;margin:0 0 4px 0;">Role: <strong>${role}</strong></p>`
+		: '';
+	const timeLine = timeDisplay
+		? `<p style="font-size:16px;color:#374151;margin:0 0 4px 0;">${timeDisplay}</p>`
+		: '';
+
+	const html = `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>You've been invited to help</title>
+		</head>
+		<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#1e293b;max-width:600px;margin:0 auto;padding:10px;background-color:#f0f4f8;">
+			<div style="background:#ffffff;padding:28px 24px 32px;border-radius:12px;border:1px solid #e2e8f0;">
+				${branding}
+				<p style="font-size:18px;margin:0 0 16px 0;color:#1e293b;">Hi ${firstName},</p>
+				<p style="font-size:18px;margin:0 0 20px 0;color:#1e293b;">
+					<strong>${displayOrg}</strong> would love your help with an upcoming shift. Here are the details:
+				</p>
+				<div style="background:#f8fafc;border-left:4px solid #2563a8;border-radius:6px;padding:16px 20px;margin:0 0 24px 0;">
+					<p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 6px 0;">${eventTitle}</p>
+					${roleLine}
+					<p style="font-size:16px;font-weight:600;color:#374151;margin:0 0 4px 0;">${dateDisplay}</p>
+					${timeLine}
+				</div>
+				<p style="font-size:17px;margin:0 0 24px 0;color:#1e293b;">
+					Tap the button below to see your invitation in My Hub — you can say yes or let us know if you can't make it.
+				</p>
+				<div style="text-align:center;margin:32px 0;">
+					<a href="${magicLink}"
+					   style="display:inline-block;background:#2563a8;color:#ffffff;text-decoration:none;font-size:20px;font-weight:700;padding:18px 40px;border-radius:10px;letter-spacing:0.01em;">
+						See my invitation
+					</a>
+				</div>
+				<p style="font-size:15px;color:#64748b;margin:24px 0 0 0;">
+					This link will work for 7 days. If you didn't expect this email, you can safely ignore it.
+				</p>
+				<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
+				<p style="font-size:13px;color:#94a3b8;margin:0;">
+					If the button doesn't work, copy and paste this address into your browser:<br>
+					<span style="color:#2563a8;word-break:break-all;">${magicLink}</span>
+				</p>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Hi ${firstName},
+
+${displayOrg} would love your help with an upcoming shift:
+
+${eventTitle}${role ? '\nRole: ' + role : ''}
+${dateDisplay}${timeDisplay ? '\n' + timeDisplay : ''}
+
+Tap or paste the link below to see your invitation in My Hub — you can say yes or let us know if you can't make it:
+
+${magicLink}
+
+This link will work for 7 days. If you didn't expect this email, you can safely ignore it.
+	`.trim();
+
+	try {
+		const result = await rateLimitedSend(() =>
+			sendEmail({
+				from: fromEmail,
+				to: [to],
+				subject: `You've been invited to help — ${eventTitle}`,
+				html,
+				text
+			})
+		);
+		return result;
+	} catch (error) {
+		console.error('[email] Failed to send MyHUB invitation email:', error);
+		throw error;
+	}
+}
+
+/**
+ * Notify a rota coordinator when a volunteer accepts or declines a MyHUB shift invitation.
+ *
+ * @param {{ to: string, name: string, volunteerName: string, volunteerEmail?: string, eventTitle: string, role?: string, dateDisplay: string, accepted: boolean }} options
+ * @param {object} event - SvelteKit event
+ */
+export async function sendInvitationResponseEmail({ to, name, volunteerName, volunteerEmail, eventTitle, role, dateDisplay, accepted }, event) {
+	const fromEmail = fromEmailDefault();
+	const branding = await getEmailBranding(event);
+	const firstName = (name || '').split(/\s+/)[0] || 'there';
+	const statusVerb = accepted ? 'said yes' : "let you know they can't make it";
+	const statusLabel = accepted ? '✓ Attending' : '✗ Cannot attend';
+	const statusColour = accepted ? '#15803d' : '#b45309';
+	const statusBg = accepted ? '#f0fdf4' : '#fefce8';
+	const statusBorder = accepted ? '#bbf7d0' : '#fde68a';
+
+	const html = `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Invitation response</title>
+		</head>
+		<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#1e293b;max-width:600px;margin:0 auto;padding:10px;background-color:#f0f4f8;">
+			<div style="background:#ffffff;padding:28px 24px 32px;border-radius:12px;border:1px solid #e2e8f0;">
+				${branding}
+				<p style="font-size:18px;margin:0 0 16px 0;color:#1e293b;">Hi ${firstName},</p>
+				<p style="font-size:18px;margin:0 0 20px 0;color:#1e293b;">
+					<strong>${volunteerName}</strong> has ${statusVerb} for a shift:
+				</p>
+				<div style="background:#f8fafc;border-left:4px solid #2563a8;border-radius:6px;padding:16px 20px;margin:0 0 16px 0;">
+					<p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 6px 0;">${eventTitle}</p>
+					${role ? `<p style="font-size:16px;color:#4b5563;margin:0 0 4px 0;">Role: <strong>${role}</strong></p>` : ''}
+					<p style="font-size:16px;font-weight:600;color:#374151;margin:0;">${dateDisplay}</p>
+				</div>
+				<div style="background:${statusBg};border:1px solid ${statusBorder};border-radius:6px;padding:12px 16px;margin:0 0 24px 0;">
+					<p style="font-size:16px;font-weight:700;color:${statusColour};margin:0;">${statusLabel}</p>
+					${volunteerEmail ? `<p style="font-size:14px;color:#6b7280;margin:4px 0 0 0;">${volunteerName} &lt;${volunteerEmail}&gt;</p>` : ''}
+				</div>
+				<p style="font-size:15px;color:#64748b;margin:0;">
+					You can manage this shift in your hub admin area.
+				</p>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Hi ${firstName},
+
+${volunteerName} has ${statusVerb} for a shift:
+
+${eventTitle}${role ? '\nRole: ' + role : ''}
+${dateDisplay}
+
+Status: ${statusLabel}
+${volunteerEmail ? volunteerName + ' <' + volunteerEmail + '>' : ''}
+
+You can manage this shift in your hub admin area.
+	`.trim();
+
+	try {
+		const result = await rateLimitedSend(() =>
+			sendEmail({
+				from: fromEmail,
+				to: [to],
+				subject: `${volunteerName} has ${statusVerb} — ${eventTitle}`,
+				html,
+				text
+			})
+		);
+		return result;
+	} catch (error) {
+		console.error('[email] Failed to send invitation response email:', error);
+		throw error;
+	}
+}
+
+/**
+ * Send a warm welcome email to a new volunteer when a coordinator adds them.
+ * Spec: personal tone, magic-link "Visit My Hub" button, no jargon.
+ *
+ * @param {{ to: string, name: string, magicLink: string, orgName?: string, coordinatorName?: string }} options
+ * @param {object} event - SvelteKit event (for base URL / branding)
+ */
+export async function sendVolunteerWelcomeEmail({ to, name, magicLink, orgName, coordinatorName }, event) {
+	const fromEmail = fromEmailDefault();
+	const branding = await getEmailBranding(event);
+	const firstName = (name || '').split(/\s+/)[0] || 'there';
+	const displayOrg = orgName || 'your volunteering team';
+	const coordinatorLine = coordinatorName
+		? `${coordinatorName} from <strong>${displayOrg}</strong>`
+		: `<strong>${displayOrg}</strong>`;
+
+	const html = `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Welcome to ${displayOrg}'s volunteer team</title>
+		</head>
+		<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#1e293b;max-width:600px;margin:0 auto;padding:10px;background-color:#f0f4f8;">
+			<div style="background:#ffffff;padding:28px 24px 32px;border-radius:12px;border:1px solid #e2e8f0;">
+				${branding}
+				<p style="font-size:18px;margin:0 0 16px 0;color:#1e293b;">Hi ${firstName},</p>
+				<p style="font-size:18px;margin:0 0 20px 0;color:#1e293b;">
+					${coordinatorLine} has added you to their volunteer team on OnNuma Hub.
+				</p>
+				<p style="font-size:18px;margin:0 0 24px 0;color:#1e293b;">
+					Your personal hub is ready — it's where you'll see your upcoming shifts
+					and can let us know if you're available.
+				</p>
+				<div style="text-align:center;margin:32px 0;">
+					<a href="${magicLink}"
+					   style="display:inline-block;background:#2563a8;color:#ffffff;text-decoration:none;font-size:20px;font-weight:700;padding:18px 40px;border-radius:10px;letter-spacing:0.01em;">
+						Visit My Hub
+					</a>
+				</div>
+				<p style="font-size:16px;color:#374151;margin:0 0 24px 0;">
+					That's it! No passwords to remember. Just tap the button above
+					any time you want to check in.
+				</p>
+				<p style="font-size:16px;color:#374151;margin:0;">
+					See you soon,<br>
+					<strong>${coordinatorName || displayOrg}</strong><br>
+					<span style="color:#64748b;">${displayOrg}</span>
+				</p>
+				<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
+				<p style="font-size:13px;color:#94a3b8;margin:0;">
+					If the button doesn't work, copy and paste this address into your browser:<br>
+					<span style="color:#2563a8;word-break:break-all;">${magicLink}</span>
+				</p>
+			</div>
+		</body>
+		</html>
+	`;
+
+	const text = `
+Hi ${firstName},
+
+${coordinatorName ? coordinatorName + ' from ' + displayOrg : displayOrg} has added you to their volunteer team on OnNuma Hub.
+
+Your personal hub is ready — it's where you'll see your upcoming shifts and can let us know if you're available.
+
+Visit My Hub:
+${magicLink}
+
+That's it! No passwords to remember. Just tap the link above any time you want to check in.
+
+See you soon,
+${coordinatorName || displayOrg}
+${displayOrg}
+	`.trim();
+
+	try {
+		const result = await rateLimitedSend(() =>
+			sendEmail({
+				from: fromEmail,
+				to: [to],
+				subject: `Welcome to ${displayOrg}'s volunteer team, ${firstName}!`,
+				html,
+				text
+			})
+		);
+		return result;
+	} catch (error) {
+		console.error('[email] Failed to send volunteer welcome email:', error);
+		throw error;
+	}
+}
+
+/**
+ * Send a personal thank-you message from a coordinator to a volunteer.
+ * The message also appears on the volunteer's MyHub history page.
+ */
+export async function sendThankyouEmail({ to, firstName, fromName, message, orgName }, event) {
+	const baseUrl = getBaseUrl(event);
+	const fromEmail = fromEmailDefault();
+	const branding = await getEmailBranding(event);
+
+	const displayOrg = orgName || 'your coordinator';
+	const myhubUrl = `${baseUrl}/myhub/history`;
+	const subject = orgName ? `A personal note from ${orgName}` : 'A personal note for you';
+
+	const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${subject}</title>
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#111827;max-width:600px;margin:0 auto;padding:12px;background:#fafaf9;">
+<div style="background:#fff;padding:32px 24px;border-radius:12px;border:1px solid #e5e7eb;">
+${branding}
+
+<p style="font-size:18px;margin:0 0 20px 0;color:#111827;">Hi ${firstName},</p>
+
+<div style="background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);border:1px solid #fde68a;border-radius:12px;padding:24px 28px;margin:0 0 24px 0;">
+  <p style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#92400e;margin:0 0 12px 0;">A personal message for you</p>
+  <p style="font-size:18px;color:#78350f;line-height:1.7;margin:0 0 16px 0;font-style:italic;">"${message}"</p>
+  <p style="font-size:16px;font-weight:600;color:#92400e;margin:0;">— ${fromName}</p>
+</div>
+
+<p style="font-size:16px;color:#374151;margin:0 0 24px 0;">
+  This message has been saved on your volunteering history page, so you can look back at it any time.
+</p>
+
+<div style="text-align:center;margin:0 0 24px 0;">
+  <a href="${myhubUrl}" style="display:inline-block;background:#2563a8;color:#fff;padding:14px 32px;text-decoration:none;border-radius:10px;font-size:17px;font-weight:700;">View my history</a>
+</div>
+
+<p style="font-size:16px;color:#374151;margin:0;">Thank you for everything you do,</p>
+<p style="font-size:16px;color:#374151;margin:4px 0 0 0;">${displayOrg}</p>
+</div>
+</body>
+</html>`;
+
+	const text = `Hi ${firstName},
+
+A personal message for you:
+
+"${message}"
+
+— ${fromName}
+
+This message has been saved on your volunteering history page.
+View your history: ${myhubUrl}
+
+Thank you for everything you do,
+${displayOrg}`.trim();
+
+	try {
+		return await rateLimitedSend(() =>
+			sendEmail({ from: fromEmail, to: [to], subject, html, text })
+		);
+	} catch (error) {
+		console.error('[email] Failed to send thank-you email:', error);
+		throw error;
+	}
+}

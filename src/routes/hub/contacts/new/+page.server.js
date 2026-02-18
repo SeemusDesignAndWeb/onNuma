@@ -5,6 +5,7 @@ import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
 import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 import { getConfiguredPlanFromAreaPermissions, getConfiguredPlanMaxContacts } from '$lib/crm/server/permissions.js';
+import { getSettings } from '$lib/crm/server/settings.js';
 
 export async function load({ cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
@@ -19,13 +20,15 @@ export async function load({ cookies, parent }) {
 }
 
 export const actions = {
-	create: async ({ request, cookies, locals }) => {
+	create: async ({ request, cookies, locals, url }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 
 		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
 			return fail(403, { error: 'CSRF token validation failed' });
 		}
+
+		const sendWelcome = data.get('sendWelcome') === 'on';
 
 		try {
 			const contactData = {
@@ -72,6 +75,40 @@ export const actions = {
 				email: contact.email,
 				name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim()
 			}, event);
+
+			// Send MyHub welcome email if the coordinator opted in and the contact has an email
+			if (sendWelcome && contact.email) {
+				try {
+					const { createMagicLinkToken } = await import('$lib/crm/server/memberAuth.js');
+					const { sendVolunteerWelcomeEmail } = await import('$lib/crm/server/email.js');
+					const { env } = await import('$env/dynamic/private');
+
+					const token = await createMagicLinkToken(contact.id);
+					const baseUrl = env.APP_BASE_URL || url.origin;
+					const magicLink = `${baseUrl}/myhub/auth/${token}`;
+
+					const settings = await getSettings();
+					const orgName = settings?.organisationName || settings?.name || '';
+
+					const admin = locals?.admin;
+					const coordinatorName = admin
+						? ([admin.firstName, admin.lastName].filter(Boolean).join(' ').trim() || admin.email || '')
+						: '';
+
+					const volunteerName = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim();
+
+					await sendVolunteerWelcomeEmail({
+						to: contact.email,
+						name: volunteerName,
+						magicLink,
+						orgName,
+						coordinatorName
+					}, { url });
+				} catch (emailErr) {
+					// Non-fatal — contact was created successfully; log and continue
+					console.error('[contacts/new] Failed to send welcome email:', emailErr?.message || emailErr);
+				}
+			}
 
 			throw redirect(302, `/hub/contacts/${contact.id}`);
 		} catch (error) {

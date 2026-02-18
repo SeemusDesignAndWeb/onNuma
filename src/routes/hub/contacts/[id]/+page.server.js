@@ -1,10 +1,11 @@
-import { redirect } from '@sveltejs/kit';
-import { findById, update, remove, readCollection } from '$lib/crm/server/fileStore.js';
+import { redirect, fail } from '@sveltejs/kit';
+import { findById, update, remove, readCollection, create } from '$lib/crm/server/fileStore.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange, getAdminIdFromEvent } from '$lib/crm/server/audit.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
+import { generateId } from '$lib/crm/server/ids.js';
 
 export async function load({ params, cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
@@ -32,7 +33,14 @@ export async function load({ params, cookies, parent }) {
 
 	const csrfToken = getCsrfToken(cookies) || '';
 	const settings = await getSettings();
-	return { contact, spouse, contacts, csrfToken, theme: settings?.theme || null };
+
+	// Load thank-you messages sent to this volunteer
+	const allThankyou = await readCollection('volunteer_thankyou').catch(() => []);
+	const thankyouMessages = allThankyou
+		.filter((t) => t.contactId === params.id && (!organisationId || !t.organisationId || t.organisationId === organisationId))
+		.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+	return { contact, spouse, contacts, csrfToken, theme: settings?.theme || null, thankyouMessages };
 }
 
 export const actions = {
@@ -124,6 +132,54 @@ export const actions = {
 		}, event);
 
 		throw redirect(302, '/hub/contacts');
+	},
+
+	sendThankyou: async ({ request, params, cookies, locals }) => {
+		const data = await request.formData();
+		const csrfToken = data.get('_csrf');
+		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+			return fail(403, { error: 'Invalid request. Please refresh and try again.', action: 'sendThankyou' });
+		}
+
+		const message = (data.get('message') || '').toString().trim();
+		if (!message) return fail(400, { error: 'Please write a message before sending.', action: 'sendThankyou' });
+		if (message.length > 1000) return fail(400, { error: 'Message is too long (max 1000 characters).', action: 'sendThankyou' });
+
+		const organisationId = await getCurrentOrganisationId();
+		const contact = await findById('contacts', params.id);
+		if (!contact) return fail(404, { error: 'Contact not found.', action: 'sendThankyou' });
+
+		const admin = locals?.admin;
+		const fromName = admin
+			? ([admin.firstName, admin.lastName].filter(Boolean).join(' ').trim() || admin.email || 'Your coordinator')
+			: 'Your coordinator';
+
+		await create('volunteer_thankyou', {
+			id: generateId(),
+			contactId: params.id,
+			organisationId: organisationId || '',
+			fromName,
+			fromAdminId: admin?.id || null,
+			message,
+			createdAt: new Date().toISOString()
+		});
+
+		// Send email notification to the volunteer (non-fatal)
+		if (contact.email) {
+			try {
+				const { sendThankyouEmail } = await import('$lib/crm/server/email.js');
+				const settings = await getSettings();
+				const orgName = settings?.organisationName || settings?.name || '';
+				await sendThankyouEmail(
+					{ to: contact.email, firstName: contact.firstName || contact.email, fromName, message, orgName },
+					{ url: { origin: process.env.APP_BASE_URL || 'https://onnuma.com' } }
+				);
+			} catch (err) {
+				console.error('[sendThankyou] Email failed (non-fatal):', err?.message);
+			}
+		}
+
+		return { success: true, action: 'sendThankyou' };
 	}
 };
 

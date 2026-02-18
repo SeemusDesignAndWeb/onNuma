@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { formatDateLongUK } from '$lib/crm/utils/dateFormat.js';
+	import { formatMyhubDate } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
 
@@ -60,8 +60,8 @@
 	}
 
 	function formatRange(h) {
-		const start = formatDateLongUK(h.startDate);
-		const end = formatDateLongUK(h.endDate);
+		const start = formatMyhubDate(h.startDate + 'T00:00:00');
+		const end = formatMyhubDate(h.endDate + 'T00:00:00');
 		if (start === end) return start;
 		return `${start} – ${end}`;
 	}
@@ -129,8 +129,8 @@
 					</div>
 
 					{#if startDate && endDate}
-						<p class="my-preview">
-							You'll be marked as <strong>away</strong> from <strong>{formatDateLongUK(startDate + 'T00:00:00')}</strong> to <strong>{formatDateLongUK(endDate + 'T00:00:00')}</strong>
+					<p class="my-preview">
+						You'll be marked as <strong>away</strong> from <strong>{formatMyhubDate(startDate + 'T00:00:00')}</strong> to <strong>{formatMyhubDate(endDate + 'T00:00:00')}</strong>
 							({Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1} {Math.round((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1 === 1 ? 'day' : 'days'}).
 						</p>
 					{/if}

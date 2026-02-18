@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { findById, update, remove, readCollection } from '$lib/crm/server/fileStore.js';
+import { findById, update, remove, readCollection, create, findMany } from '$lib/crm/server/fileStore.js';
+import { getSettings } from '$lib/crm/server/settings.js';
 import { validateRota } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
@@ -656,6 +657,91 @@ export const actions = {
 			} catch (error) {
 				console.error('Error removing help file:', error);
 				return fail(400, { error: error.message || 'Failed to remove help file' });
+			}
+		},
+
+		inviteToMyhub: async ({ request, params, cookies, url }) => {
+			const data = await request.formData();
+			const csrfToken = data.get('_csrf');
+			if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+				return fail(403, { error: 'CSRF token validation failed', type: 'inviteToMyhub' });
+			}
+
+			const contactId = (data.get('contactId') || '').toString().trim();
+			const occurrenceId = (data.get('occurrenceId') || '').toString().trim() || null;
+			if (!contactId) {
+				return fail(400, { error: 'Please select a contact to invite.', type: 'inviteToMyhub' });
+			}
+
+			try {
+				const organisationId = await getCurrentOrganisationId();
+				const rota = await findById('rotas', params.id);
+				if (!rota) return fail(404, { error: 'Rota not found.', type: 'inviteToMyhub' });
+
+				const contact = await findById('contacts', contactId);
+				if (!contact) return fail(404, { error: 'Contact not found.', type: 'inviteToMyhub' });
+				if (!contact.email) {
+					return fail(400, { error: 'This contact does not have an email address.', type: 'inviteToMyhub' });
+				}
+
+				// Prevent duplicate pending invitations for the same contact + rota
+				const existingInvitations = await findMany('myhub_invitations', (inv) =>
+					inv.contactId === contactId && inv.rotaId === params.id && inv.status === 'pending'
+				);
+				if (existingInvitations.length > 0) {
+					return fail(400, { error: 'This person already has a pending invitation for this rota.', type: 'inviteToMyhub' });
+				}
+
+				await create('myhub_invitations', {
+					organisationId,
+					contactId,
+					rotaId: params.id,
+					occurrenceId,
+					eventId: rota.eventId,
+					status: 'pending',
+					invitedAt: new Date().toISOString(),
+					respondedAt: null
+				});
+
+				// Create a magic link so the volunteer can access their MyHub dashboard
+				const { createMagicLinkToken } = await import('$lib/crm/server/memberAuth.js');
+				const token = await createMagicLinkToken(contactId);
+				const baseUrl = env.APP_BASE_URL || url.origin;
+				const magicLink = `${baseUrl}/myhub/auth/${token}?redirectTo=/myhub`;
+
+				const eventRecord = await findById('events', rota.eventId);
+				const occurrence = occurrenceId ? await findById('occurrences', occurrenceId) : null;
+
+				const dateDisplay = occurrence
+					? new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
+							weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+						})
+					: 'Date to be confirmed';
+				const timeDisplay = occurrence
+					? new Date(occurrence.startsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+					: '';
+
+				const settings = await getSettings();
+				const orgName = settings?.organisationName || settings?.name || '';
+
+				const volunteerName = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || contact.email;
+
+				const { sendMyhubInvitationEmail } = await import('$lib/crm/server/email.js');
+				await sendMyhubInvitationEmail({
+					to: contact.email,
+					name: volunteerName,
+					magicLink,
+					orgName,
+					eventTitle: eventRecord?.title || 'an event',
+					role: rota.role || '',
+					dateDisplay,
+					timeDisplay
+				}, { url });
+
+				return { success: true, type: 'inviteToMyhub', message: `Invitation sent to ${volunteerName}.` };
+			} catch (err) {
+				console.error('[inviteToMyhub] Error:', err?.message || err);
+				return fail(500, { error: err?.message || 'Failed to send invitation. Please try again.', type: 'inviteToMyhub' });
 			}
 		}
 	};

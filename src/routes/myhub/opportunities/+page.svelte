@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
+	import { formatMyhubDate, formatMyhubTime } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
 
@@ -164,7 +164,7 @@
 																on:change={() => toggleRotaSelection(rota.id, occ.id)}
 																class="my-occ-checkbox"
 															/>
-															<span class="my-occ-text">{formatDateTimeUK(occ.startsAt)}</span>
+															<span class="my-occ-text">{formatMyhubDate(occ.startsAt)} · {formatMyhubTime(occ.startsAt)}</span>
 															<span class="my-occ-meta">{assignees.length}/{cap} filled</span>
 															{#if full}<span class="my-occ-full">Full</span>{/if}
 															{#if already}<span class="my-occ-done" aria-hidden="true">✓ You</span>{/if}

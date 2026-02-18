@@ -28,7 +28,8 @@
 		dateJoined: '',
 		notes: '',
 		subscribed: true,
-		spouseId: ''
+		spouseId: '',
+		sendWelcome: true
 	};
 </script>
 
@@ -70,15 +71,28 @@
 							{/each}
 						</select>
 					</div>
-					<label class="flex items-center">
-						<input
-							type="checkbox"
-							name="subscribed"
-							bind:checked={formData.subscribed}
-							class="rounded border-gray-300 text-hub-green-600 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2"
-						/>
-						<span class="ml-2 text-sm text-gray-700">Subscribed to newsletters</span>
-					</label>
+				<label class="flex items-center">
+					<input
+						type="checkbox"
+						name="subscribed"
+						bind:checked={formData.subscribed}
+						class="rounded border-gray-300 text-hub-green-600 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2"
+					/>
+					<span class="ml-2 text-sm text-gray-700">Subscribed to newsletters</span>
+				</label>
+				<label class="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md cursor-pointer">
+					<input
+						type="checkbox"
+						name="sendWelcome"
+						bind:checked={formData.sendWelcome}
+						disabled={!formData.email}
+						class="mt-0.5 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+					/>
+					<span class="text-sm text-blue-900">
+						<span class="font-semibold">Send MyHub welcome email</span><br>
+						<span class="text-blue-700">Sends a personal welcome email with a "Visit My Hub" button — no password needed.</span>
+					</span>
+				</label>
 				</div>
 
 				<!-- Address -->

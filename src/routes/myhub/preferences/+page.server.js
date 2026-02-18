@@ -2,22 +2,38 @@ import { fail } from '@sveltejs/kit';
 import { findById, update } from '$lib/crm/server/fileStore.js';
 import { getMemberContactIdFromCookie } from '$lib/crm/server/memberAuth.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { getSettings } from '$lib/crm/server/settings.js';
+
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const TIMES = ['morning', 'afternoon', 'evening'];
 
 export async function load({ cookies }) {
 	const contactId = getMemberContactIdFromCookie(cookies);
-	if (!contactId) return { preferences: null };
+	if (!contactId) return { preferences: null, orgName: '' };
 	try {
-		const contact = await findById('contacts', contactId);
-		if (!contact) return { preferences: null };
+		const [contact, settings] = await Promise.all([
+			findById('contacts', contactId),
+			getSettings().catch(() => null)
+		]);
+		if (!contact) return { preferences: null, orgName: '' };
+
+		const orgName = settings?.organisationName || settings?.name || '';
+
 		return {
 			preferences: {
 				subscribed: contact.subscribed !== false,
-				email: contact.email || ''
-			}
+				email: contact.email || '',
+				phone: contact.phone || '',
+				unavailability: contact.unavailability || {},
+				reminderEmail: contact.reminderEmail !== false,
+				reminderTiming: contact.reminderTiming || '1week',
+				aboutMe: contact.aboutMe || ''
+			},
+			orgName
 		};
 	} catch (err) {
 		console.error('[myhub/preferences] load failed:', err?.message || err);
-		return { preferences: null };
+		return { preferences: null, orgName: '' };
 	}
 }
 
@@ -36,25 +52,52 @@ export const actions = {
 			const contact = await findById('contacts', contactId);
 			if (!contact) return fail(404, { error: 'Contact not found.' });
 
-			// Newsletter subscription toggle
-			const subscribed = data.get('subscribed') === 'on' || data.get('subscribed') === 'true';
+			// Newsletter subscription
+			const subscribed = data.get('subscribed') === 'on';
+
+			// Unavailability grid
+			const unavailability = {};
+			for (const day of DAYS) {
+				unavailability[day] = {};
+				for (const time of TIMES) {
+					unavailability[day][time] = data.get(`unavail_${day}_${time}`) === 'on';
+				}
+			}
+
+			// Reminder preferences
+			const reminderEmail = data.get('reminderEmail') === 'on';
+			const reminderTiming = data.get('reminderTiming') || '1week';
+
+			// About me
+			const aboutMe = (data.get('aboutMe') || '').toString().trim().slice(0, 1000);
 
 			const updated = {
 				...contact,
 				subscribed,
+				unavailability,
+				reminderEmail,
+				reminderTiming,
+				aboutMe,
 				updatedAt: new Date().toISOString()
 			};
 
 			await update('contacts', contactId, updated);
 
+			const settings = await getSettings().catch(() => null);
+			const orgName = settings?.organisationName || settings?.name || '';
+			const who = orgName || 'your coordinator';
+
 			return {
 				success: true,
-				message: subscribed
-					? 'You will receive newsletters and updates.'
-					: 'You have been unsubscribed from newsletters.',
+				message: `Your preferences have been saved — ${who} can see these.`,
 				preferences: {
 					subscribed: updated.subscribed,
-					email: updated.email || ''
+					email: updated.email || '',
+					phone: updated.phone || '',
+					unavailability: updated.unavailability,
+					reminderEmail: updated.reminderEmail,
+					reminderTiming: updated.reminderTiming,
+					aboutMe: updated.aboutMe
 				}
 			};
 		} catch (err) {
