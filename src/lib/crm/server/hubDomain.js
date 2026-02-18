@@ -90,6 +90,21 @@ export function invalidateHubDomainCache() {
 	orgsCacheTime = 0;
 }
 
+/**
+ * Build hub base URL (e.g. https://acme.onnuma.com) from an organisation.
+ * If org.hubDomain is subdomain-only (no dot), appends HUB_BASE_DOMAIN (e.g. "acme" → acme.onnuma.com).
+ * @param {object} org - Organisation { hubDomain? }
+ * @param {string} fallback - URL to return when org has no hubDomain
+ * @returns {string}
+ */
+export function getHubBaseUrlFromOrg(org, fallback) {
+	const domain = org?.hubDomain && String(org.hubDomain).trim();
+	if (!domain) return fallback;
+	let host = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+	if (!host.includes('.')) host = `${host}.${HUB_BASE_DOMAIN}`;
+	return `https://${host}`;
+}
+
 // --- Main app domain (www.onnuma.com) — Hub must not be served here ---
 
 /**

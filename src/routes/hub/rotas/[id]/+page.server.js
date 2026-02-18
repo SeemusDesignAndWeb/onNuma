@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { findById, update, remove, readCollection, create, findMany } from '$lib/crm/server/fileStore.js';
+import { getHubBaseUrlFromOrg } from '$lib/crm/server/hubDomain.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { validateRota } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
@@ -707,9 +708,7 @@ export const actions = {
 				const { createMagicLinkToken } = await import('$lib/crm/server/memberAuth.js');
 				const token = await createMagicLinkToken(contactId);
 				const org = organisationId ? await findById('organisations', organisationId) : null;
-				const hubBase = org?.hubDomain && String(org.hubDomain).trim()
-					? `https://${String(org.hubDomain).replace(/^https?:\/\//, '').replace(/\/$/, '')}`
-					: (env.APP_BASE_URL || url.origin);
+				const hubBase = getHubBaseUrlFromOrg(org, env.APP_BASE_URL || url.origin);
 				const magicLink = `${hubBase}/myhub/auth/${token}?redirectTo=/myhub`;
 
 				const eventRecord = await findById('events', rota.eventId);

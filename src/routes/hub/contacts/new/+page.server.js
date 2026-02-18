@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { create, update, readCollection, readCollectionCount } from '$lib/crm/server/fileStore.js';
+import { getHubBaseUrlFromOrg } from '$lib/crm/server/hubDomain.js';
 import { validateContact } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
@@ -84,10 +85,8 @@ export const actions = {
 					const { env } = await import('$env/dynamic/private');
 
 					const token = await createMagicLinkToken(contact.id);
-					// Use org's hub domain so "Go to My Hub" link points to the correct subdomain
-					const hubBase = org?.hubDomain && String(org.hubDomain).trim()
-						? `https://${String(org.hubDomain).replace(/^https?:\/\//, '').replace(/\/$/, '')}`
-						: (env.APP_BASE_URL || url.origin);
+					// Use org's hub domain so "Go to My Hub" link points to the correct subdomain (e.g. acme.onnuma.com)
+					const hubBase = getHubBaseUrlFromOrg(org, env.APP_BASE_URL || url.origin);
 					const magicLink = `${hubBase}/myhub/auth/${token}`;
 
 					const settings = await getSettings();

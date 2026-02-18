@@ -1,4 +1,5 @@
 import { readCollection, create, findById } from './fileStore.js';
+import { getHubBaseUrlFromOrg } from './hubDomain.js';
 import { sendUpcomingRotaReminder } from './email.js';
 import { getSettings } from './settings.js';
 import { getCurrentOrganisationId } from './orgContext.js';
@@ -8,9 +9,7 @@ import { generateId } from './ids.js';
 async function getHubBaseUrlForOrg(organisationId, fallbackOrigin) {
 	if (!organisationId) return fallbackOrigin;
 	const org = await findById('organisations', organisationId);
-	const domain = org?.hubDomain && String(org.hubDomain).trim();
-	if (!domain) return fallbackOrigin;
-	return `https://${domain.replace(/^https?:\/\//, '').replace(/\/$/, '')}`;
+	return getHubBaseUrlFromOrg(org, fallbackOrigin);
 }
 
 // Maps a contact's reminderTiming preference to the daysAhead value(s) it covers

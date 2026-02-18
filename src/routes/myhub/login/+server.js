@@ -1,7 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import { getCurrentOrganisationId, getSettings } from '$lib/crm/server/settings.js';
-import { readCollection } from '$lib/crm/server/fileStore.js';
+import { readCollection, findById } from '$lib/crm/server/fileStore.js';
 import { filterByOrganisation } from '$lib/crm/server/orgContext.js';
+import { getHubBaseUrlFromOrg } from '$lib/crm/server/hubDomain.js';
 import { createMagicLinkToken } from '$lib/crm/server/memberAuth.js';
 import { sendMagicLinkEmail } from '$lib/crm/server/email.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
@@ -67,7 +68,10 @@ async function dispatchMagicLink(email, event) {
 	if (!contact || contact.confirmed === false) return;
 
 	const token = await createMagicLinkToken(contact.id);
-	const baseUrl = env.APP_BASE_URL || event?.url?.origin || 'http://localhost:5173';
+	// Use org's hub domain so link points to correct subdomain (e.g. acme.onnuma.com), not main app
+	const fallbackOrigin = event?.url?.origin || env.APP_BASE_URL || 'http://localhost:5173';
+	const org = contact.organisationId ? await findById('organisations', contact.organisationId) : null;
+	const baseUrl = getHubBaseUrlFromOrg(org, fallbackOrigin);
 	const magicLink = `${baseUrl}/myhub/auth/${token}`;
 
 	let orgName = '';
