@@ -3106,9 +3106,12 @@ export async function sendThankyouEmail({ to, firstName, fromName, fromEmail, fr
 	const myhubUrl = `${baseUrl}/myhub/history`;
 	const subject = orgName ? `A personal note from ${orgName}` : 'A personal note for you';
 
-	// Signature: show first name as clickable mailto when we have coordinator email, else plain fromName
-	const signerDisplay = (fromEmail && (fromFirstName || fromName))
-		? `<a href="mailto:${fromEmail.replace(/"/g, '&quot;')}" style="color:#92400e;text-decoration:underline;">${fromFirstName || (typeof fromName === 'string' ? fromName.split(/\s+/)[0] : '') || fromName}</a>`
+	// Signature: show first name as clickable mailto when we have coordinator email; never show raw email as link text
+	const linkText = fromFirstName
+		? fromFirstName
+		: (typeof fromName === 'string' && !fromName.includes('@') ? fromName.split(/\s+/)[0] : null) || 'Your coordinator';
+	const signerDisplay = fromEmail
+		? `<a href="mailto:${fromEmail.replace(/"/g, '&quot;')}" style="color:#92400e;text-decoration:underline;">${linkText}</a>`
 		: (fromName || 'Your coordinator');
 
 	const html = `<!DOCTYPE html>
@@ -3144,7 +3147,7 @@ ${branding}
 </body>
 </html>`;
 
-	const textSigner = fromFirstName || (typeof fromName === 'string' ? fromName.split(/\s+/)[0] : '') || fromName;
+	const textSigner = fromFirstName || (typeof fromName === 'string' && !fromName.includes('@') ? fromName.split(/\s+/)[0] : null) || fromName || 'Your coordinator';
 	const text = `Hi ${firstName},
 
 A personal message for you:
