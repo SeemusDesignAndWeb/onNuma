@@ -152,8 +152,14 @@ export const actions = {
 
 		const admin = locals?.admin;
 		const fromName = admin
-			? ([admin.firstName, admin.lastName].filter(Boolean).join(' ').trim() || admin.email || 'Your coordinator')
+			? (admin.name && !String(admin.name).includes('@') ? admin.name.trim() : null) ||
+				([admin.firstName, admin.lastName].filter(Boolean).join(' ').trim() || null) ||
+				admin.email ||
+				'Your coordinator'
 			: 'Your coordinator';
+		// First name for signature: from admin.name (account info) or firstName if ever added
+		const fromFirstName = admin?.firstName ||
+			(admin?.name && !String(admin.name).includes('@') ? String(admin.name).trim().split(/\s+/)[0] : null);
 
 		await create('volunteer_thankyou', {
 			id: generateId(),
@@ -185,7 +191,7 @@ export const actions = {
 						firstName: contact.firstName || contact.email,
 						fromName,
 						fromEmail: admin?.email || null,
-						fromFirstName: admin?.firstName || null,
+						fromFirstName: fromFirstName || null,
 						message,
 						orgName
 					},
