@@ -4,11 +4,13 @@ import { writable } from 'svelte/store';
 function createNotificationStore() {
 	const { subscribe, set, update } = writable([]);
 
+	let nextId = 0;
 	const store = {
 		subscribe,
 		show: (message, type = 'info', duration = 5000) => {
-			const id = Date.now().toString();
-			const notification = { id, message, type, duration };
+			const id = `${Date.now()}-${++nextId}`;
+			const messageStr = typeof message === 'string' ? message : String(message ?? '');
+			const notification = { id, message: messageStr, type, duration };
 			
 			update(notifications => [...notifications, notification]);
 			

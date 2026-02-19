@@ -60,8 +60,11 @@
 		<a href="/hub/events/calendar" class="btn-theme-1 px-2.5 py-1.5 rounded-md text-xs">
 			Calendar View
 		</a>
-		<a href="/hub/events/new" class="btn-theme-2 px-2.5 py-1.5 rounded-md text-xs">
-			New Event
+		<a href="/hub/events/create-with-schedules" class="btn-theme-2 px-2.5 py-1.5 rounded-md text-xs">
+			Event Quick Start
+		</a>
+		<a href="/hub/events/new" class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-2.5 py-1.5 rounded-md text-xs">
+			New event
 		</a>
 	</div>
 </div>

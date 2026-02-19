@@ -211,7 +211,8 @@
 			});
 			if (result) {
 				successCount++;
-				if (result.warning) notifications.warning(result.warning);
+				const msg = result.warning;
+				if (typeof msg === 'string' && msg.trim()) notifications.warning(msg);
 			}
 		}
 		assignSubmitting = false;
@@ -237,7 +238,8 @@
 		assignSubmitting = false;
 		if (result) {
 			notifications.success('Guest added');
-			if (result.warning) notifications.warning(result.warning);
+			const msg = result.warning;
+			if (typeof msg === 'string' && msg.trim()) notifications.warning(msg);
 			guestName = '';
 		}
 	}

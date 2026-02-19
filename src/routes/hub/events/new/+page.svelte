@@ -360,7 +360,7 @@
 							<label for="event-visibility" class="block text-xs font-medium text-gray-700 mb-1">Visibility</label>
 							<select id="event-visibility" name="visibility" bind:value={formData.visibility} class="mt-1 block w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-2 text-sm">
 								<option value="private">Private (Hub Admins only)</option>
-								<option value="internal">Internal (Church only)</option>
+								<option value="internal">Internal ({$page.data?.churchBoltOn ? 'Church only' : 'Organisation only'})</option>
 								<option value="public">Public (Everyone)</option>
 							</select>
 						</div>

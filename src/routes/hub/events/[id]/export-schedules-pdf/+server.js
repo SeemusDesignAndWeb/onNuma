@@ -59,10 +59,6 @@ export async function GET({ params, locals }) {
 		// Load all rotas for this event (scoped to current org)
 		const allRotas = filterByOrganisation(await readCollection('rotas'), organisationId);
 		const rotas = allRotas.filter(r => r.eventId === params.id);
-		
-		if (rotas.length === 0) {
-			throw error(404, 'No rotas found for this event');
-		}
 
 		// Load all occurrences for this event (for PDF, show all occurrences, sorted by date, scoped to current org)
 		const allOccurrences = filterByOrganisation(await readCollection('occurrences'), organisationId);
@@ -78,7 +74,7 @@ export async function GET({ params, locals }) {
 		// Load contacts for assignees (scoped to current org)
 		const contacts = filterByOrganisation(await readCollection('contacts'), organisationId);
 		
-		// Process all rotas and their assignees
+		// Process all rotas and their assignees (empty array if no rotas)
 		const rotasWithAssignees = rotas.map(rota => {
 			// Process assignees
 			const processedAssignees = (rota.assignees || []).map(assignee => {
@@ -165,11 +161,11 @@ export async function GET({ params, locals }) {
 			throw error(500, 'PDF export requires puppeteer. Please run: npm install puppeteer');
 		}
 
-		// Generate HTML for PDF
+		// Generate HTML for PDF (works even when no rotas - shows friendly message)
 		const htmlContent = generateEventRotasPDFHTML({
 			event,
 			rotas: rotasWithAssignees,
-			eventOccurrences
+			eventOccurrences: eventOccurrences || []
 		});
 
 		// Launch browser
@@ -181,9 +177,9 @@ export async function GET({ params, locals }) {
 		try {
 			const page = await browser.newPage();
 			
-			// Set content
+			// Set content (domcontentloaded avoids timeouts with static HTML)
 			await page.setContent(htmlContent, {
-				waitUntil: 'networkidle0'
+				waitUntil: 'domcontentloaded'
 			});
 
 			// Generate PDF in landscape A4 format
@@ -271,7 +267,7 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 		}
 		
 		// If no occurrences, check unassigned assignees
-		if (occurrencesToDisplay.length === 0 && rota.assigneesByOccurrence['unassigned'] && rota.assigneesByOccurrence['unassigned'].length > 0) {
+		if (occurrencesToDisplay.length === 0 && rota.assigneesByOccurrence?.['unassigned']?.length > 0) {
 			occurrencesToDisplay = [{ id: 'unassigned', startsAt: null, endsAt: null }];
 		}
 		
@@ -279,7 +275,7 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 		let cardsHTML = '';
 		if (occurrencesToDisplay.length > 0) {
 			occurrencesToDisplay.forEach(occ => {
-				const occAssignees = rota.assigneesByOccurrence[occ.id] || [];
+				const occAssignees = rota.assigneesByOccurrence?.[occ.id] || [];
 				
 				// Only include this occurrence if there are contacts assigned
 				if (occAssignees.length > 0) {
@@ -328,9 +324,12 @@ function generateEventRotasPDFHTML({ event, rotas, eventOccurrences }) {
 		}
 	});
 	
-	// If no rotas with contacts, show a message
+	// If no rotas or no rotas with contacts, show a message
 	if (!rotaSectionsHTML) {
-		rotaSectionsHTML = '<div class="no-rotas">No contacts assigned to any rotas</div>';
+		rotaSectionsHTML =
+			rotas.length === 0
+				? '<div class="no-rotas">No schedules for this event.</div>'
+				: '<div class="no-rotas">No contacts assigned to any schedules</div>';
 	}
 
 	return `

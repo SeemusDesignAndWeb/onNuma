@@ -504,8 +504,11 @@
 				<a href="/hub/events?view=list" class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
 					List View
 				</a>
-				<a href="/hub/events/new" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
-					New Event
+				<a href="/hub/events/create-with-schedules" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
+					Event Quick Start
+				</a>
+				<a href="/hub/events/new" class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
+					New event
 				</a>
 			</div>
 		</div>

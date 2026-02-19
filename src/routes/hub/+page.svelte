@@ -254,24 +254,32 @@
 
 {#if !accessDenied}
 	<div class="space-y-6 min-w-0 max-w-full">
-		<!-- Page header: Dashboard title left, privacy contact reminder right -->
+		<!-- Page header: Dashboard title left, Event Quick Start + privacy reminder right -->
 		<div class="flex flex-wrap items-start justify-between gap-3 min-w-0">
 			<h1 class="text-xl sm:text-2xl font-bold break-words">Dashboard</h1>
-			{#if showPrivacyContactPanel}
-				<div class="relative w-full sm:w-1/2 min-w-0 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 p-3 pr-8 text-sm shadow-sm border-gray-100 sm:ml-auto">
-					<button
-						type="button"
-						on:click={dismissPrivacyContactBanner}
-						class="absolute top-2 right-2 p-1 rounded text-sky-600 hover:text-sky-800 hover:bg-sky-100 transition-colors"
-						aria-label="Dismiss"
-					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-					</button>
-					<p class="mb-0">
-						<strong>Update your Privacy policy contact.</strong> Your policy currently shows the Super admin. Set a dedicated contact in <a href="/hub/settings?tab=privacy" class="font-medium underline hover:no-underline">Settings → Privacy</a>.
-					</p>
-				</div>
-			{/if}
+			<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 min-w-0 sm:ml-auto">
+				{#if canAccessEvents}
+					<a href="/hub/events/create-with-schedules" class="inline-flex items-center justify-center gap-2 bg-theme-button-2 text-white px-3 py-2 rounded-lg text-sm font-medium hover:opacity-90 shadow-sm border border-transparent whitespace-nowrap">
+						<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+						Event Quick Start
+					</a>
+				{/if}
+				{#if showPrivacyContactPanel}
+					<div class="relative min-w-0 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 p-3 pr-8 text-sm shadow-sm sm:max-w-md">
+						<button
+							type="button"
+							on:click={dismissPrivacyContactBanner}
+							class="absolute top-2 right-2 p-1 rounded text-sky-600 hover:text-sky-800 hover:bg-sky-100 transition-colors"
+							aria-label="Dismiss"
+						>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+						</button>
+						<p class="mb-0">
+							<strong>Update your Privacy policy contact.</strong> Your policy currently shows the Super admin. Set a dedicated contact in <a href="/hub/settings?tab=privacy" class="font-medium underline hover:no-underline">Settings → Privacy</a>.
+						</p>
+					</div>
+				{/if}
+			</div>
 		</div>
 
 		<!-- Compact Quick Stats: responsive grid, cards shrink and truncate on small screens -->

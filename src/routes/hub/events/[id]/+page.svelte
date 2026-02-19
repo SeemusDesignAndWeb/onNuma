@@ -42,6 +42,17 @@
     // Track last processed form result to avoid duplicate notifications
     let lastProcessedFormResult = null;
 
+    // Show success message when redirected here after adding a team to the event (once per load)
+    let scheduleCreatedShown = false;
+    $: scheduleCreatedMessage = $page.url.searchParams.get('scheduleCreated');
+    $: if (browser && scheduleCreatedMessage && !scheduleCreatedShown) {
+        scheduleCreatedShown = true;
+        notifications.success(decodeURIComponent(scheduleCreatedMessage));
+        const url = new URL($page.url);
+        url.searchParams.delete('scheduleCreated');
+        goto(url.pathname + url.search, { replaceState: true, invalidateAll: true });
+    }
+
     // Show notifications from form results
     $: if (formResult && browser && formResult !== lastProcessedFormResult) {
         lastProcessedFormResult = formResult;
@@ -54,11 +65,12 @@
             } else {
                 notifications.success('Event updated successfully');
             }
-            // Reset editing mode after successful save
+            // Navigate to detail view (drop ?edit=true) so we stay in read-only mode
             setTimeout(() => {
-                editing = false;
                 if (browser) {
-                    goto($page.url, { invalidateAll: true });
+                    const url = new URL($page.url);
+                    url.searchParams.delete('edit');
+                    goto(url.pathname + url.search, { replaceState: true, invalidateAll: true });
                 }
             }, 100);
         } else if (formResult?.error) {
@@ -133,7 +145,8 @@
         }
     }
 
-    let editing = false;
+    // Edit mode is driven by URL ?edit=true so the Edit link shows the form
+    $: editing = $page.url.searchParams.get('edit') === 'true';
     let description = '';
     let selectedListIds = [];
     let formData = {
@@ -155,21 +168,40 @@
     let createdEmailId = null;
     let creatingEventEmail = false;
 
-    // Initialize form data when event is loaded (avoid hydration issues)
-    $: if (event && !editing) {
-        formData = {
-            title: event.title || '',
-            location: event.location || '',
-            image: event.image || '',
-            visibility: event.visibility || 'private',
-            enableSignup: event.enableSignup || false,
-            hideFromEmail: event.hideFromEmail || false,
-            showDietaryRequirements: event.showDietaryRequirements || false,
-            maxSpaces: event.maxSpaces ? event.maxSpaces.toString() : '',
-            color: event.color || '#9333ea'
-        };
-        description = event.description || '';
-        selectedListIds = Array.isArray(event.listIds) ? [...event.listIds] : [];
+    // Sync form data from event when in detail mode or when entering edit mode
+    let formDataSyncedFor = null;
+    $: if (event) {
+        if (!editing) {
+            formData = {
+                title: event.title || '',
+                location: event.location || '',
+                image: event.image || '',
+                visibility: event.visibility || 'private',
+                enableSignup: event.enableSignup || false,
+                hideFromEmail: event.hideFromEmail || false,
+                showDietaryRequirements: event.showDietaryRequirements || false,
+                maxSpaces: event.maxSpaces ? event.maxSpaces.toString() : '',
+                color: event.color || '#9333ea'
+            };
+            description = event.description || '';
+            selectedListIds = Array.isArray(event.listIds) ? [...event.listIds] : [];
+            formDataSyncedFor = null;
+        } else if (formDataSyncedFor !== event.id) {
+            formData = {
+                title: event.title || '',
+                location: event.location || '',
+                image: event.image || '',
+                visibility: event.visibility || 'private',
+                enableSignup: event.enableSignup || false,
+                hideFromEmail: event.hideFromEmail || false,
+                showDietaryRequirements: event.showDietaryRequirements || false,
+                maxSpaces: event.maxSpaces ? event.maxSpaces.toString() : '',
+                color: event.color || '#9333ea'
+            };
+            description = event.description || '';
+            selectedListIds = Array.isArray(event.listIds) ? [...event.listIds] : [];
+            formDataSyncedFor = event.id;
+        }
     }
 
     function handleImageSelect(imagePath) {
@@ -341,7 +373,7 @@
 
 {#if event}
     <div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 bg-hub-blue-50 border border-hub-blue-200 rounded-lg px-3 py-2 mb-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-3">
             <h2 class="text-base sm:text-lg md:text-xl font-bold text-gray-900">Event Details</h2>
             {#if viewingOccurrence}
                 <div class="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -409,7 +441,7 @@
                                         <label for="event-visibility" class="block text-xs font-medium text-gray-700 mb-1">Visibility</label>
                                         <select id="event-visibility" name="visibility" bind:value={formData.visibility} class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-2 text-sm">
                                             <option value="private">Private (Hub Admins only)</option>
-                                            <option value="internal">Internal (Church only)</option>
+                                            <option value="internal">Internal ({$page.data?.churchBoltOn ? 'Church only' : 'Organisation only'})</option>
                                             <option value="public">Public (Everyone)</option>
                                         </select>
                                     </div>

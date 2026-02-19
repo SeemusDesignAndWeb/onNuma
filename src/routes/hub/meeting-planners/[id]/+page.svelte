@@ -11,6 +11,8 @@
 	import { dialog } from '$lib/crm/stores/notifications.js';
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 
+	export let params = {};
+
 	$: meetingPlanner = $page.data?.meetingPlanner;
 	$: event = $page.data?.event;
 	$: occurrence = $page.data?.occurrence;

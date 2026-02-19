@@ -9,9 +9,10 @@
 	$: events = data.events || [];
 	$: occurrences = data.occurrences || [];
 	$: contacts = data.contacts || [];
+	$: teams = data.teams || [];
 	$: formResult = $page.form;
 	$: csrfToken = data.csrfToken || '';
-	
+
 	$: if (formResult?.error) {
 		notifications.error(formResult.error);
 	}
@@ -20,14 +21,21 @@
 	let ownerSearchTerm = '';
 	let helpFiles = [];
 
+	/** 'single' = one role + capacity; 'team' = select a team (adds all its roles) */
+	let scheduleMode = 'single';
+
 	let formData = {
 		eventId: '',
 		occurrenceId: '',
 		role: '',
 		capacity: 1,
+		teamId: '',
 		ownerId: '',
 		visibility: 'public'
 	};
+
+	$: selectedTeam = formData.teamId ? teams.find(t => t.id === formData.teamId) : null;
+	$: selectedTeamRoles = selectedTeam?.roles || [];
 
 	function addHelpLink() {
 		helpFiles = [...helpFiles, { type: 'link', title: '', url: '' }];
@@ -74,12 +82,19 @@
 	function handleEnhance() {
 		return async ({ update, result }) => {
 			if (result.type === 'redirect') {
-				notifications.success('Schedule created successfully');
+				notifications.success(scheduleMode === 'team' ? 'Team added to event.' : 'Schedule created successfully');
 			} else if (result.type === 'failure') {
 				notifications.error(result.data?.error || 'Failed to create schedule');
 			}
 			await update();
 		};
+	}
+
+	function submitLabel() {
+		if (scheduleMode === 'team' && selectedTeamRoles.length > 0) {
+			return `Add ${selectedTeam?.name || 'team'} (${selectedTeamRoles.length} role${selectedTeamRoles.length !== 1 ? 's' : ''})`;
+		}
+		return 'Create schedule';
 	}
 </script>
 
@@ -87,11 +102,11 @@
 	<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
 		<h2 class="text-xl sm:text-2xl font-bold text-gray-900">New Schedule</h2>
 		<div class="flex flex-wrap gap-2">
-			<a href="/hub/schedules" class="bg-theme-button-3 text-white px-3 py-2 rounded-md hover:opacity-90 text-sm font-medium">
+			<a href={formData.eventId ? `/hub/events/${formData.eventId}` : '/hub/schedules'} class="bg-theme-button-3 text-white px-3 py-2 rounded-md hover:opacity-90 text-sm font-medium">
 				Cancel
 			</a>
 			<button type="submit" form="rota-create-form" class="bg-theme-button-2 text-white px-3 py-2 rounded-md hover:opacity-90 text-sm font-medium">
-				Create Schedule
+				{submitLabel()}
 			</button>
 		</div>
 	</div>
@@ -100,6 +115,7 @@
 		<input type="hidden" name="_csrf" value={csrfToken} />
 		<input type="hidden" name="notes" bind:value={notes} />
 		<input type="hidden" name="helpFiles" value={JSON.stringify(helpFiles)} />
+		<input type="hidden" name="teamId" value={scheduleMode === 'team' ? (formData.teamId || '') : ''} />
 		
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 			<!-- Basic Information (top-left) -->
@@ -107,34 +123,73 @@
 				<h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
 				<div class="space-y-4">
 					<div>
-						<label for="eventId" class="block text-sm font-medium text-gray-700 mb-1">Event</label>
+						<label for="eventId" class="block text-sm font-medium text-gray-700 mb-1">Event <span class="text-hub-red-500">*</span></label>
 						<select id="eventId" name="eventId" bind:value={formData.eventId} required class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900">
 							<option value="">Select an event</option>
 							{#each events as event}
 								<option value={event.id}>{event.title}</option>
 							{/each}
 						</select>
-						<p class="mt-1 text-xs text-gray-500">Select the event that this schedule belongs to</p>
+						<p class="mt-1 text-xs text-gray-500">Select the event this schedule belongs to</p>
 					</div>
+					<div role="group" aria-labelledby="schedule-mode-label">
+						<span id="schedule-mode-label" class="block text-sm font-medium text-gray-700 mb-2">Add as</span>
+						<div class="flex gap-4">
+							<label class="inline-flex items-center gap-2 cursor-pointer">
+								<input type="radio" name="scheduleMode" bind:group={scheduleMode} value="single" class="rounded-full border-gray-300 text-theme-button-2 focus:ring-theme-button-2" />
+								<span class="text-sm text-gray-900">Single role</span>
+							</label>
+							<label class="inline-flex items-center gap-2 cursor-pointer">
+								<input type="radio" name="scheduleMode" bind:group={scheduleMode} value="team" class="rounded-full border-gray-300 text-theme-button-2 focus:ring-theme-button-2" />
+								<span class="text-sm text-gray-900">Team</span>
+							</label>
+						</div>
+						<p class="mt-1 text-xs text-gray-500">Single role: one schedule with a name and capacity. Team: add all roles from a team in one go.</p>
+					</div>
+
+					{#if scheduleMode === 'single'}
+						<div>
+							<label for="role" class="block text-sm font-medium text-gray-700 mb-1">Schedule name <span class="text-hub-red-500">*</span></label>
+							<input id="role" type="text" name="role" bind:value={formData.role} required={scheduleMode === 'single'} placeholder="e.g. Host, Tech lead" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900" />
+							<p class="mt-1 text-xs text-gray-500">The name of this schedule</p>
+						</div>
+						<div>
+							<label for="capacity" class="block text-sm font-medium text-gray-700 mb-1">Number of people needed <span class="text-hub-red-500">*</span></label>
+							<input id="capacity" type="number" name="capacity" bind:value={formData.capacity} required={scheduleMode === 'single'} min="1" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900" />
+							<p class="mt-1 text-xs text-gray-500">How many people are needed for this role</p>
+						</div>
+					{:else}
+						<div>
+							<label for="teamId" class="block text-sm font-medium text-gray-700 mb-1">Team <span class="text-hub-red-500">*</span></label>
+							<select id="teamId" bind:value={formData.teamId} required={scheduleMode === 'team'} class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900">
+								<option value="">Select a team</option>
+								{#each teams as team}
+									<option value={team.id}>{team.name}{(team.roles || []).length ? ` (${team.roles.length} role${team.roles.length !== 1 ? 's' : ''})` : ''}</option>
+								{/each}
+							</select>
+							<p class="mt-1 text-xs text-gray-500">All roles in this team will be added as schedules for this event</p>
+							{#if selectedTeamRoles.length > 0}
+								<div class="mt-2 p-3 bg-gray-50 rounded-md border border-gray-100">
+									<p class="text-xs font-medium text-gray-700 mb-1.5">Roles that will be added:</p>
+									<ul class="text-xs text-gray-600 space-y-0.5">
+										{#each selectedTeamRoles as r}
+											<li>{r.name} (capacity {typeof r.capacity === 'number' && r.capacity > 0 ? r.capacity : 1})</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{/if}
+
 					<div>
 						<label for="visibility" class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
 						<select id="visibility" name="visibility" bind:value={formData.visibility} class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900">
 							<option value="public">Public</option>
 							<option value="internal">Internal</option>
 						</select>
-						<p class="mt-1 text-xs text-gray-500">Public schedules can be accessed via signup links. Internal schedules are only visible to admins.</p>
+						<p class="mt-1 text-xs text-gray-500">Public schedules can be accessed via signup links. Internal are only visible to admins.</p>
 					</div>
-					<div>
-						<label for="role" class="block text-sm font-medium text-gray-700 mb-1">Schedule name <span class="text-hub-red-500">*</span></label>
-						<input id="role" type="text" name="role" bind:value={formData.role} required placeholder="" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900" />
-						<p class="mt-1 text-xs text-gray-500">The name of the schedule (e.g. 'Worship Team', 'Welcome Team')</p>
-					</div>
-					<div>
-						<label for="capacity" class="block text-sm font-medium text-gray-700 mb-1">Number of people needed <span class="text-hub-red-500">*</span></label>
-						<input id="capacity" type="number" name="capacity" bind:value={formData.capacity} required min="1" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900" />
-						<p class="mt-1 text-xs text-gray-500">The number of people needed for this schedule</p>
-					</div>
-					{#if filteredOccurrences.length > 0}
+					{#if filteredOccurrences.length > 0 && scheduleMode === 'single'}
 						<div>
 							<label for="occurrenceId" class="block text-sm font-medium text-gray-700 mb-1">Occurrence (optional)</label>
 							<select id="occurrenceId" name="occurrenceId" bind:value={formData.occurrenceId} class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2.5 px-3 text-gray-900">
@@ -148,7 +203,8 @@
 				</div>
 			</div>
 
-			<!-- Owner (top-right) -->
+			<!-- Owner (top-right) - only for single role -->
+			{#if scheduleMode === 'single'}
 			<div class="border border-gray-200 rounded-lg p-6 shadow-sm">
 				<h3 class="text-lg font-semibold text-gray-900 mb-4">Owner</h3>
 				<div class="space-y-4">
@@ -180,8 +236,10 @@
 					</div>
 				</div>
 			</div>
+			{/if}
 
-			<!-- Notes (bottom-left) -->
+			<!-- Notes (bottom-left) - only for single role -->
+			{#if scheduleMode === 'single'}
 			<div class="border border-gray-200 rounded-lg p-6 shadow-sm">
 				<h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
 				<HtmlEditor bind:value={notes} name="notes" placeholder="Enter content..." />
@@ -241,6 +299,7 @@
 					</div>
 				{/each}
 			</div>
+			{/if}
 		</div>
 	</form>
 </div>

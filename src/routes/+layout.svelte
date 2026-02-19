@@ -11,6 +11,7 @@
 	import { page } from '$app/stores';
 
 	export let data;
+	export let params = {};
 
 	function getColor(val, fallback) {
 		return typeof val === 'string' && val.trim() && /^#[0-9A-Fa-f]{6}$/.test(val.trim()) ? val.trim() : fallback;
