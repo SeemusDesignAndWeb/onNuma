@@ -14,11 +14,11 @@
     import { notifications } from '$lib/crm/stores/notifications.js';
     import { dialog } from '$lib/crm/stores/notifications.js';
     import { EVENT_COLORS } from '$lib/crm/constants/eventColours.js';
+    import { terminology } from '$lib/crm/stores/terminology.js';
 
     $: event = $page.data?.event;
     $: occurrences = $page.data?.occurrences || [];
     $: rotas = $page.data?.rotas || [];
-    $: meetingPlanners = $page.data?.meetingPlanners || [];
     $: rotaSignupLink = $page.data?.rotaSignupLink || '';
     $: publicEventLink = $page.data?.publicEventLink || '';
     $: occurrenceLinks = $page.data?.occurrenceLinks || [];
@@ -149,8 +149,7 @@
     };
     let showImagePicker = false;
     let showOccurrences = false;
-    let showBookingsSection = true;
-    let showMeetingPlanners = false;
+    let showBookingsSection = false;
     let showRotas = false;
     let showEventEmailModal = false;
     let createdEmailId = null;
@@ -179,7 +178,7 @@
     }
 
     async function handleDelete() {
-        const confirmed = await dialog.confirm('Are you sure you want to delete this event? This will also delete all occurrences and rotas.', 'Delete Event');
+        const confirmed = await dialog.confirm('Are you sure you want to delete this event? This will also delete all occurrences and schedules.', 'Delete Event');
         if (confirmed) {
             const form = document.createElement('form');
             form.method = 'POST';
@@ -234,7 +233,7 @@
         },
         { 
             key: 'rotaStats', 
-            label: 'Rotas',
+            label: 'Schedules',
             render: (stats) => {
                 if (!stats || stats.rotaCount === 0) return '-';
                 const { rotaCount, totalAssigned, totalCapacity } = stats;
@@ -625,13 +624,17 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         Back to Calendar
                     </a>
-                    <a href="/hub/events/{event.id}/export-rotas-pdf" target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-xs font-medium">
+                    <a href="/hub/events/{event.id}/export-schedules-pdf" target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-xs font-medium">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                        Export All Rotas PDF
+                        Export All Schedules PDF
+                    </a>
+                    <a href="/hub/planner?eventId={event.id}" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-xs font-medium">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h12M3 18h8" /></svg>
+                        {$terminology.meeting_planner}
                     </a>
                     <a href={rotaSignupLink} target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-xs font-medium">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                        Rota Signup
+                        Schedule Signup
                     </a>
                     <a href={publicEventLink} target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 text-xs font-medium">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
@@ -804,62 +807,6 @@
         </div>
     {/if}
 
-    {#if meetingPlanners.length > 0}
-        <div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
-            <div class="flex items-center gap-2">
-                <button
-                    type="button"
-                    on:click={() => (showMeetingPlanners = !showMeetingPlanners)}
-                    class="flex items-center gap-2 flex-1 min-w-0 text-left group"
-                    aria-expanded={showMeetingPlanners}
-                >
-                    <svg
-                        class="w-5 h-5 text-gray-500 flex-shrink-0 transition-transform duration-200"
-                        class:rotate-180={!showMeetingPlanners}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                    <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-700">Meeting Planners</h3>
-                </button>
-                <a href="/hub/meeting-planners/new?eventId={event.id}" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs whitespace-nowrap flex-shrink-0">
-                    <span class="hidden sm:inline">New Meeting Planner</span>
-                    <span class="sm:hidden">New Planner</span>
-                </a>
-            </div>
-            
-            {#if showMeetingPlanners}
-                <div class="mt-3 pt-3 border-t border-gray-200 space-y-2" transition:slide={{ duration: 200 }}>
-                    {#each meetingPlanners as mp}
-                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer" on:click={() => goto(`/hub/meeting-planners/${mp.id}`)}>
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <p class="font-medium text-gray-900">Meeting Planner</p>
-                                    {#if mp.occurrenceId}
-                                        <p class="text-sm text-gray-500">
-                                            {(() => {
-                                                const occ = occurrences.find(o => o.id === mp.occurrenceId);
-                                                return occ ? formatDateTimeUK(occ.startsAt) : 'Specific occurrence';
-                                            })()}
-                                        </p>
-                                    {:else}
-                                        <p class="text-sm text-gray-500">All occurrences</p>
-                                    {/if}
-                                </div>
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </div>
-                        </div>
-                    {/each}
-                </div>
-            {/if}
-        </div>
-    {/if}
-
     <div class="bg-white shadow rounded-lg p-3 sm:p-4">
         <div class="flex items-center gap-2">
             <button
@@ -878,16 +825,19 @@
                 >
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
-                <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-700">Rotas</h3>
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-700">Schedules</h3>
             </button>
-            <a href="/hub/rotas/new?eventId={event.id}" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs whitespace-nowrap flex-shrink-0">
-                Add Rota
+            <a href="/hub/planner?eventId={event.id}" class="border border-hub-blue-500 bg-white text-hub-blue-600 hover:bg-hub-blue-50 px-2.5 py-1.5 rounded-md text-xs font-medium whitespace-nowrap flex-shrink-0">
+                Open in {$terminology.meeting_planner}
+            </a>
+            <a href="/hub/schedules/new?eventId={event.id}" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs whitespace-nowrap flex-shrink-0">
+                Add Schedule
             </a>
         </div>
         
         {#if showRotas}
             <div class="mt-3 pt-3 border-t border-gray-200" transition:slide={{ duration: 200 }}>
-                <Table columns={rotaColumns} rows={rotas} onRowClick={(row) => goto(`/hub/rotas/${row.id}`)} />
+                <Table columns={rotaColumns} rows={rotas} onRowClick={(row) => goto(`/hub/schedules/${row.id}`)} />
             </div>
         {/if}
     </div>

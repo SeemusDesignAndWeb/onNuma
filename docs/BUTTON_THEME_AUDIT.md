@@ -27,7 +27,7 @@ Theme provides 5 button colours in Hub Settings → Theme:
 
 **Remaining (optional):**
 - Decorative/panel colours (border-hub-blue-200, from-hub-green-500, text-hub-blue-100, etc.) – not buttons; can stay or switch to theme-panel-head/theme-button for consistency
-- Signup/public pages (signup/rotas, signup/rota, signup/event, event/[token]) – bg-blue-600 primary → could use theme-button-1
+- Signup/public pages (signup/schedules, signup/schedule, signup/event, event/[token]) – bg-blue-600 primary → could use theme-button-1
 - Admin area (admin/*) – bg-blue-500 etc. – could use theme-button-1 if admin should match site theme
 
 **Intentionally left non-theme:**

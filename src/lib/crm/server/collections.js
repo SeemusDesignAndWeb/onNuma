@@ -49,7 +49,12 @@ export const ALL_COLLECTIONS = [
 	'rota_tokens',
 	'rotas',
 	'sessions',
-	'week_notes'
+	'week_notes',
+	'volunteer_thankyou',
+	'myhub_invitations',
+	'volunteer_absence_events',
+	'volunteer_pastoral_flags',
+	'volunteer_milestones'
 ];
 
 /** Collections to migrate when moving from file store to database (all of them). */

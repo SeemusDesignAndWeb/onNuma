@@ -9,6 +9,8 @@ import { isValidHubDomain, normaliseHost, invalidateHubDomainCache, getMultiOrgP
 import { getCurrentOrganisationId, setCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { invalidateOrganisationsCache } from '$lib/crm/server/organisationsCache.js';
 import { getAdminByEmail, invalidateAllSessions, invalidateAdminSessions } from '$lib/crm/server/auth.js';
+import { seedChurchBoltOnContent } from '$lib/crm/server/churchBoltOnSeed.js';
+import { resetTerminologyToDefault } from '$lib/crm/server/settings.js';
 
 const VALID_PLANS = new Set(['free', 'professional', 'enterprise', 'freebie']);
 
@@ -84,6 +86,10 @@ export const actions = {
 		const contactName = form.get('contactName')?.toString()?.trim() || '';
 		const hubDomain = form.get('hubDomain')?.toString()?.trim() || '';
 		const plan = (form.get('plan')?.toString() || 'free').toLowerCase().trim();
+		const dbsBoltOn = form.get('dbsBoltOn') === 'on';
+		const dbsRenewalYearsRaw = form.get('dbsRenewalYears');
+		const dbsRenewalYears = (dbsRenewalYearsRaw === '2' || dbsRenewalYearsRaw === 2) ? 2 : 3;
+		const churchBoltOn = form.get('churchBoltOn') === 'on';
 		const existingPlan = (org.planId ?? (await getConfiguredPlanFromAreaPermissions(org.areaPermissions))) || 'free';
 		const targetPlan = VALID_PLANS.has(plan) ? plan : existingPlan;
 		const areaPermissions = await getConfiguredAreaPermissionsForPlan(targetPlan);
@@ -92,13 +98,13 @@ export const actions = {
 		if (errors) {
 			return fail(400, {
 				errors,
-				values: { name, address, telephone, email, contactName, hubDomain, plan: plan || 'free' }
+				values: { name, address, telephone, email, contactName, hubDomain, plan: plan || 'free', dbsBoltOn, dbsRenewalYears, churchBoltOn }
 			});
 		}
 		if (hubDomain && (await isHubDomainTaken(normaliseHost(hubDomain), params.id))) {
 			return fail(400, {
 				errors: { hubDomain: 'This hub domain is already used by another organisation' },
-				values: { name, address, telephone, email, contactName, hubDomain, plan }
+				values: { name, address, telephone, email, contactName, hubDomain, plan, dbsBoltOn, dbsRenewalYears, churchBoltOn }
 			});
 		}
 
@@ -112,8 +118,17 @@ export const actions = {
 			areaPermissions,
 			isHubOrganisation: true,
 			archivedAt: org.archivedAt ?? null,
-			planId: VALID_PLANS.has(plan) ? plan : null
+			planId: VALID_PLANS.has(plan) ? plan : null,
+			dbsBoltOn: !!dbsBoltOn,
+			dbsRenewalYears,
+			churchBoltOn: !!churchBoltOn
 		});
+		if (churchBoltOn) {
+			await seedChurchBoltOnContent(params.id);
+		}
+		if (!churchBoltOn && org.churchBoltOn) {
+			await resetTerminologyToDefault();
+		}
 		invalidateHubDomainCache();
 		invalidateOrganisationsCache();
 		await invalidateAllSessions(); // Force re-login so Hub users see plan/org changes

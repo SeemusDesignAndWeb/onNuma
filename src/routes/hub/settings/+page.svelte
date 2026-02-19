@@ -10,8 +10,7 @@
 	export const params = {};
 
 	$: admin = data?.admin || null;
-	let settings = data?.settings || { emailRateLimitDelay: 500, calendarColours: [], meetingPlannerRotas: [], theme: {} };
-	let availableRoles = data?.availableRoles || [];
+	let settings = data?.settings || { emailRateLimitDelay: 500, calendarColours: [], theme: {} };
 	
 	function toHex(val, fallback) {
 		return (typeof val === 'string' && val.trim() && /^#[0-9A-Fa-f]{6}$/.test(val.trim())) ? val.trim() : fallback;
@@ -21,9 +20,7 @@
 	}
 
 	let emailRateLimitDelay = settings?.emailRateLimitDelay || 500;
-	let rotaReminderDaysAhead = settings?.rotaReminderDaysAhead ?? 3;
 	let calendarColours = (JSON.parse(JSON.stringify(settings?.calendarColours || []))).map(normalizeCalendarColour);
-	let meetingPlannerRotas = JSON.parse(JSON.stringify(settings?.meetingPlannerRotas || []));
 
 	// Theme: logos and layout only (colours are set in multi-org Settings)
 	let themeLogoPath = settings?.theme?.logoPath ?? '';
@@ -37,8 +34,8 @@
 	let showAddColour = false;
 	// Set to true to show Email Rate Limiting and Data store tabs (code kept for later use)
 	const SHOW_EMAIL_AND_DATA_STORE_TABS = false;
-	const validTabs = ['theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', 'privacy', 'advanced'];
-	let activeTab = 'theme'; // 'theme', 'colours', 'meeting-planner', 'billing', 'email', 'data-store', 'privacy', or 'advanced'
+	const validTabs = ['theme', 'colours', 'terminology', 'billing', 'email', 'data-store', 'privacy', 'advanced'];
+	let activeTab = 'theme';
 	// Deep link: open specific tab from URL (e.g. /hub/settings?tab=billing for plan confirmation link)
 	onMount(() => {
 		const params = typeof window !== 'undefined' && window.location?.search ? new URLSearchParams(window.location.search) : null;
@@ -52,7 +49,7 @@
 		const opts = [
 			{ value: 'theme', label: 'Branding' },
 			{ value: 'colours', label: 'Calendar Colours' },
-			{ value: 'meeting-planner', label: 'Meeting Planner' }
+			{ value: 'terminology', label: 'Terminology' }
 		];
 		if (SHOW_EMAIL_AND_DATA_STORE_TABS) {
 			opts.push({ value: 'email', label: 'Email Rate Limiting' }, { value: 'data-store', label: 'Data store' });
@@ -178,17 +175,86 @@
 		}
 	}
 	
-	// Meeting Planner Rota state
-	let editingRotaIndex = null;
-	let originalRota = null;
-	let showAddRota = false;
-	let newRota = { role: '' };
+	// Terminology settings
+	const TERMINOLOGY_DEFAULTS = {
+		hub_name: 'TheHUB',
+		organisation: 'Organisation',
+		coordinator: 'Coordinator',
+		team_leader: 'Team Leader',
+		volunteer: 'Volunteer',
+		team: 'Team',
+		role: 'Role',
+		event: 'Event',
+		rota: 'Schedule',
+		sign_up: 'Sign Up',
+		session: 'Session',
+		group: 'Group',
+		multi_site: 'Multi-Site',
+		meeting_planner: 'Meeting Planner'
+	};
+	const TERMINOLOGY_CHURCH_DEFAULTS = {
+		hub_name: 'TheHUB',
+		organisation: 'Parish',
+		coordinator: 'Parish Administrator',
+		team_leader: 'Team Leader',
+		volunteer: 'Volunteer',
+		team: 'Ministry Team',
+		role: 'Ministry Role',
+		event: 'Service',
+		sign_up: 'Sign Up',
+		session: 'Service',
+		group: 'Congregation Group',
+		multi_site: 'Multi-Site',
+		meeting_planner: 'Service Planner'
+	};
+	// rota (Schedule) is fixed and not user-editable
+	const TERMINOLOGY_FIELDS = [
+		{ key: 'hub_name', label: 'Hub name', description: 'The name shown in the sidebar and browser title.' },
+		{ key: 'organisation', label: 'Organisation', description: 'What you call your organisation.' },
+		{ key: 'coordinator', label: 'Coordinator', description: 'The person who manages schedules and events.' },
+		{ key: 'team_leader', label: 'Team leader', description: 'A devolved leader who manages their own team.' },
+		{ key: 'volunteer', label: 'Volunteer', description: 'The people who fill roles on your schedules.' },
+		{ key: 'team', label: 'Team', description: 'A named group of volunteers with defined roles.' },
+		{ key: 'role', label: 'Role', description: 'A position or job within a team or schedule.' },
+		{ key: 'event', label: 'Event', description: 'A scheduled event (e.g. Sunday service, match day, meeting).' },
+		{ key: 'sign_up', label: 'Sign up', description: 'When a volunteer opts in to a schedule slot.' },
+		{ key: 'session', label: 'Session', description: 'A single occurrence of a recurring event.' },
+		{ key: 'group', label: 'Group', description: 'A subset or sub-group within the organisation.' },
+		{ key: 'multi_site', label: 'Multi-site', description: 'When an organisation operates across more than one location.' },
+		{ key: 'meeting_planner', label: 'Meeting Planner', description: 'The single-event overview showing all teams and assignments.' }
+	];
+	let terminologyValues = { ...TERMINOLOGY_DEFAULTS, ...(data?.settings?.terminology ?? {}) };
+	let savingTerminology = false;
 
-	// Meeting planner–specific settings
-	$: events = data?.events || [];
-	let sundayPlannerEventId = data?.settings?.sundayPlannerEventId ?? null;
-	let sundayPlannersLabel = data?.settings?.sundayPlannersLabel ?? 'Meeting Planners';
-	let savingSundayPlanner = false;
+	async function saveTerminology() {
+		savingTerminology = true;
+		try {
+			const response = await fetch('/hub/settings', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ terminology: terminologyValues })
+			});
+			if (!response.ok) {
+				const err = await response.json().catch(() => ({}));
+				throw new Error(err.message || 'Failed to save terminology');
+			}
+			notifications.success('Terminology saved.');
+			await invalidateAll();
+		} catch (err) {
+			notifications.error(err.message || 'Failed to save terminology');
+		} finally {
+			savingTerminology = false;
+		}
+	}
+
+	function resetTerminologyField(key) {
+		terminologyValues = { ...terminologyValues, [key]: TERMINOLOGY_DEFAULTS[key] };
+	}
+
+	function applyChurchDefaults() {
+		// Merge church defaults but keep rota from DEFAULTS (Schedule is fixed, not editable)
+		terminologyValues = { ...TERMINOLOGY_DEFAULTS, ...TERMINOLOGY_CHURCH_DEFAULTS };
+	}
 
 	// Theme logo image browser ('navbar' | 'login')
 	let logoPickerMode = 'navbar';
@@ -266,25 +332,20 @@
 		lastSyncedSettings = data.settings;
 		settings = data.settings;
 		emailRateLimitDelay = settings.emailRateLimitDelay;
-		rotaReminderDaysAhead = settings.rotaReminderDaysAhead ?? 3;
 		calendarColours = (JSON.parse(JSON.stringify(settings.calendarColours || []))).map(normalizeCalendarColour);
-		meetingPlannerRotas = JSON.parse(JSON.stringify(settings.meetingPlannerRotas || []));
 		if (settings.theme) {
 			themeLogoPath = settings.theme.logoPath ?? '';
 			themeLoginLogoPath = settings.theme.loginLogoPath ?? '';
 			themeExternalPagesLayout = settings.theme.externalPagesLayout ?? 'integrated';
 			themePublicPagesBranding = settings.theme.publicPagesBranding ?? 'hub';
 		}
-		sundayPlannerEventId = settings.sundayPlannerEventId ?? null;
-		sundayPlannersLabel = (typeof settings.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== '') ? settings.sundayPlannersLabel.trim() : 'Meeting Planners';
+		terminologyValues = { ...TERMINOLOGY_DEFAULTS, ...(settings.terminology ?? {}) };
 		if (data.currentOrganisation) {
 			privacyContactName = data.currentOrganisation.privacyContactName ?? '';
 			privacyContactEmail = data.currentOrganisation.privacyContactEmail ?? '';
 			privacyContactPhone = data.currentOrganisation.privacyContactPhone ?? '';
 		}
 	}
-	
-	$: availableRoles = data?.availableRoles || [];
 	
 	async function saveSettings() {
 		saving = true;
@@ -383,48 +444,6 @@
 		}
 	}
 
-	async function saveMeetingPlannerRotas() {
-		saving = true;
-		
-		try {
-			// Ensure all rotas have a capacity of 1 for validation
-			const rotasToSave = meetingPlannerRotas.map(r => ({
-				...r,
-				capacity: r.capacity || 1
-			}));
-
-			const response = await fetch('/hub/settings', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					meetingPlannerRotas: rotasToSave
-				})
-			});
-			
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Failed to save meeting planner rotas' }));
-				throw new Error(errorData.message || 'Failed to save meeting planner rotas');
-			}
-			
-			const result = await response.json();
-			notifications.success('Meeting planner rotas saved successfully!');
-			
-			await invalidateAll();
-			
-			// Reset editing state
-			editingRotaIndex = null;
-			showAddRota = false;
-			newRota = { role: '' };
-		} catch (err) {
-			notifications.error(err.message || 'Failed to save meeting planner rotas');
-			console.error('Error saving meeting planner rotas:', err);
-		} finally {
-			saving = false;
-		}
-	}
-	
 	function startEditColour(index) {
 		editingColourIndex = index;
 		// Store original colour values for cancel
@@ -433,23 +452,13 @@
 	}
 	
 	function cancelEdit() {
-		// Restore original colour if we were editing
 		if (editingColourIndex !== null && originalColour) {
 			calendarColours[editingColourIndex] = { ...originalColour };
-		}
-		// Restore original rota if we were editing
-		if (editingRotaIndex !== null && originalRota) {
-			meetingPlannerRotas[editingRotaIndex] = { ...originalRota };
 		}
 		editingColourIndex = null;
 		originalColour = null;
 		showAddColour = false;
 		newColour = { value: '#9333ea', label: '' };
-		
-		editingRotaIndex = null;
-		originalRota = null;
-		showAddRota = false;
-		newRota = { role: '' };
 	}
 	
 	async function addColour() {
@@ -510,56 +519,6 @@
 		await saveCalendarColours();
 	}
 
-	function startEditRota(index) {
-		editingRotaIndex = index;
-		originalRota = { ...meetingPlannerRotas[index] };
-		showAddRota = false;
-	}
-
-	function updateRota(index, field, value) {
-		meetingPlannerRotas[index] = { ...meetingPlannerRotas[index], [field]: value };
-	}
-
-	async function saveRotaEdit() {
-		const rota = meetingPlannerRotas[editingRotaIndex];
-		if (!rota.role.trim()) {
-			notifications.error('Please provide a role name');
-			return;
-		}
-		
-		editingRotaIndex = null;
-		originalRota = null;
-		
-		await saveMeetingPlannerRotas();
-	}
-
-	async function saveRotaReminderSettings() {
-		saving = true;
-		try {
-			const n = Math.min(90, Math.max(0, parseInt(String(rotaReminderDaysAhead), 10)));
-			if (isNaN(n)) {
-				notifications.error('Please enter a number between 0 and 90');
-				return;
-			}
-			const response = await fetch('/hub/settings', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ rotaReminderDaysAhead: n })
-			});
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Failed to save' }));
-				throw new Error(errorData.message || 'Failed to save');
-			}
-			rotaReminderDaysAhead = n;
-			notifications.success('Rota reminder setting saved.');
-			await invalidateAll();
-		} catch (err) {
-			notifications.error(err.message || 'Failed to save rota reminder setting');
-		} finally {
-			saving = false;
-		}
-	}
-
 	async function savePrivacyContact() {
 		savingPrivacyContact = true;
 		try {
@@ -583,84 +542,6 @@
 		} finally {
 			savingPrivacyContact = false;
 		}
-	}
-
-	async function addRota() {
-		if (!newRota.role.trim()) {
-			notifications.error('Please select a rota');
-			return;
-		}
-		
-		meetingPlannerRotas = [...meetingPlannerRotas, { role: newRota.role.trim() }];
-		newRota = { role: '' };
-		showAddRota = false;
-		
-		await saveMeetingPlannerRotas();
-	}
-
-	async function removeRota(index) {
-		const confirmed = await dialog.confirm('Are you sure you want to remove this rota? New meeting planners will no longer include this role.');
-		if (confirmed) {
-			meetingPlannerRotas = meetingPlannerRotas.filter((_, i) => i !== index);
-			await saveMeetingPlannerRotas();
-		}
-	}
-
-	async function saveSundayPlannerSettings() {
-		savingSundayPlanner = true;
-		try {
-			const response = await fetch('/hub/settings', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					sundayPlannerEventId: sundayPlannerEventId || null,
-					sundayPlannersLabel: (typeof sundayPlannersLabel === 'string' && sundayPlannersLabel.trim() !== '') ? sundayPlannersLabel.trim() : 'Meeting Planners'
-				})
-			});
-			if (!response.ok) {
-				const err = await response.json().catch(() => ({}));
-				throw new Error(err.message || 'Failed to save');
-			}
-			notifications.success('Meeting planner settings saved.');
-			await invalidateAll();
-		} catch (err) {
-			notifications.error(err.message || 'Failed to save Meeting planner settings');
-		} finally {
-			savingSundayPlanner = false;
-		}
-	}
-
-	// Drag and Drop for Rotas
-	let draggedRotaIndex = null;
-	let dragOverRotaIndex = null;
-
-	function handleRotaDragStart(index) {
-		draggedRotaIndex = index;
-	}
-
-	function handleRotaDragOver(e, index) {
-		e.preventDefault();
-		dragOverRotaIndex = index;
-	}
-
-	async function handleRotaDrop(e, index) {
-		e.preventDefault();
-		if (draggedRotaIndex === null || draggedRotaIndex === index) return;
-
-		const updatedRotas = [...meetingPlannerRotas];
-		const [draggedItem] = updatedRotas.splice(draggedRotaIndex, 1);
-		updatedRotas.splice(index, 0, draggedItem);
-
-		meetingPlannerRotas = updatedRotas;
-		draggedRotaIndex = null;
-		dragOverRotaIndex = null;
-
-		await saveMeetingPlannerRotas();
-	}
-
-	function handleRotaDragEnd() {
-		draggedRotaIndex = null;
-		dragOverRotaIndex = null;
 	}
 
 	// Billing: checkout and portal
@@ -826,7 +707,7 @@
 
 <div class="w-full min-w-0 max-w-full px-3 py-4 sm:px-4 sm:py-8">
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-		<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Settings</h1>
+		<h1 class="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Settings</h1>
 		<p class="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Manage system settings (Superadmin only)</p>
 
 		<!-- Mobile: dropdown submenu so all tabs fit on one screen -->
@@ -860,10 +741,10 @@
 					Calendar Colours
 				</button>
 				<button
-					on:click={() => activeTab = 'meeting-planner'}
-					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'meeting-planner' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+					on:click={() => activeTab = 'terminology'}
+					class="py-4 px-1 border-b-2 font-medium text-sm transition-colors {activeTab === 'terminology' ? 'border-theme-button-1 text-theme-button-1' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 				>
-					Meeting Planner
+					Terminology
 				</button>
 				{#if SHOW_EMAIL_AND_DATA_STORE_TABS}
 				<button
@@ -1169,180 +1050,6 @@
 		</div>
 		{/if}
 
-		<!-- Meeting Planner Settings -->
-		{#if activeTab === 'meeting-planner'}
-		<!-- Meeting planner–specific settings -->
-		<div class="border-b border-gray-200 pb-6 mb-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-4">Meeting planner</h2>
-			<p class="text-sm text-gray-600 mb-4">
-				Choose which event to use as the &quot;Meeting planner&quot; event and the label shown in the Hub (e.g. &quot;Meeting Planners&quot;). Use singular form for one item (e.g. &quot;Meeting Planner&quot;).
-			</p>
-			<div class="space-y-4 max-w-xl mb-4">
-				<div>
-					<label for="sunday-planner-event" class="block text-sm font-medium text-gray-700 mb-1">Meeting planner event</label>
-					<select
-						id="sunday-planner-event"
-						bind:value={sundayPlannerEventId}
-						class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-theme-button-1 focus:border-theme-button-1 py-2 px-3 text-sm"
-					>
-						<option value="">None</option>
-						{#each events as ev}
-							<option value={ev.id}>{ev.title || 'Untitled'}</option>
-						{/each}
-					</select>
-					<p class="mt-1 text-xs text-gray-500">Event whose occurrences are used for the Meeting planner section. Leave as &quot;None&quot; to disable.</p>
-				</div>
-				<div>
-					<label for="sunday-planners-label" class="block text-sm font-medium text-gray-700 mb-1">Section name</label>
-					<input
-						id="sunday-planners-label"
-						type="text"
-						bind:value={sundayPlannersLabel}
-						placeholder="Meeting Planners"
-						class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-theme-button-1 focus:border-theme-button-1 py-2 px-3 text-sm"
-					/>
-					<p class="mt-1 text-xs text-gray-500">Label used in the Hub nav and headings (e.g. &quot;Meeting Planners&quot;). Use singular &quot;Meeting Planner&quot; for one item where needed.</p>
-				</div>
-				<button
-					type="button"
-					on:click={saveSundayPlannerSettings}
-					disabled={savingSundayPlanner}
-					class="px-4 py-2 text-sm font-medium btn-theme-2 rounded-md disabled:opacity-50"
-				>
-					{savingSundayPlanner ? 'Saving…' : 'Save'}
-				</button>
-			</div>
-		</div>
-		<div class="border-b border-gray-200 pb-6 mb-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-4">Meeting Planner Rotas</h2>
-			<p class="text-sm text-gray-600 mb-4">
-				Manage the default rotas that are attached to new meeting planners. Only rotas that exist in this organisation are shown; create rotas from Meeting Planners or Rotas first if the list is empty.
-			</p>
-			
-			<div class="space-y-4">
-				<!-- Existing Rotas -->
-				<div class="space-y-2">
-					{#each meetingPlannerRotas as rota, index}
-						<div 
-							class="flex items-center gap-3 p-3 border border-gray-200 rounded-md transition-all duration-200 {draggedRotaIndex === index ? 'opacity-40 grayscale' : 'bg-gray-50'} {dragOverRotaIndex === index ? 'border-theme-button-1 border-t-4' : ''}"
-							draggable={editingRotaIndex === null}
-							on:dragstart={() => handleRotaDragStart(index)}
-							on:dragover={(e) => handleRotaDragOver(e, index)}
-							on:drop={(e) => handleRotaDrop(e, index)}
-							on:dragend={handleRotaDragEnd}
-						>
-							{#if editingRotaIndex === index}
-								<!-- Edit Mode -->
-								<div class="flex-1 flex items-center gap-3">
-									<div class="flex-1">
-										<label class="block text-xs font-medium text-gray-700 mb-1">Rota Name</label>
-										<select
-											value={rota.role}
-											on:change={(e) => updateRota(index, 'role', e.target.value)}
-											class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
-										>
-											<option value="">-- Select a rota --</option>
-											{#each availableRoles as role}
-												<option value={role}>{role}</option>
-											{/each}
-										</select>
-									</div>
-									<div class="flex gap-2">
-										<button
-											on:click={cancelEdit}
-											class="p-2 text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-											title="Cancel"
-										>
-											<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-											</svg>
-										</button>
-										<button
-											on:click={saveRotaEdit}
-											class="p-2 btn-theme-light-2 rounded-md"
-											title="Save"
-										>
-											<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-											</svg>
-										</button>
-									</div>
-								</div>
-							{:else}
-								<!-- View Mode -->
-								<div class="flex items-center gap-2 cursor-move text-gray-400 hover:text-gray-600" title="Drag to reorder">
-									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
-									</svg>
-								</div>
-								<div class="flex-1 flex items-center gap-3">
-									<div class="flex-1">
-										<div class="font-medium text-gray-900">{rota.role}</div>
-									</div>
-									<div class="flex gap-2">
-										<button
-											on:click={() => startEditRota(index)}
-											class="px-3 py-1 text-sm btn-theme-light-1 rounded-md"
-										>
-											Edit
-										</button>
-										<button
-											on:click={() => removeRota(index)}
-											class="px-3 py-1 text-sm text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50"
-										>
-											Remove
-										</button>
-									</div>
-								</div>
-							{/if}
-						</div>
-					{/each}
-				</div>
-				
-				<!-- Add New Rota -->
-				{#if showAddRota}
-					<div class="p-4 border-2 border-dashed border-gray-300 rounded-md bg-gray-50">
-						<div class="flex items-center gap-3">
-								<div class="flex-1">
-									<label class="block text-xs font-medium text-gray-700 mb-1">Rota Name</label>
-									<select
-										bind:value={newRota.role}
-										class="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
-									>
-									<option value="">-- Select a rota --</option>
-									{#each availableRoles as role}
-										<option value={role}>{role}</option>
-									{/each}
-								</select>
-							</div>
-							<div class="flex gap-2 items-end">
-								<button
-									on:click={addRota}
-									class="px-3 py-1 text-sm btn-theme-2 rounded-md"
-								>
-									Add
-								</button>
-								<button
-									on:click={cancelEdit}
-									class="px-3 py-1 text-sm btn-theme-light-3 rounded-md"
-								>
-									Cancel
-								</button>
-							</div>
-						</div>
-					</div>
-				{:else}
-					<button
-						on:click={() => { showAddRota = true; editingRotaIndex = null; }}
-						class="w-full px-4 py-2 text-sm btn-theme-light-1 rounded-md border-2 border-dashed"
-					>
-						+ Add New Rota
-					</button>
-				{/if}
-			</div>
-		</div>
-		{/if}
-
 		<!-- Billing -->
 		{#if (showBilling || showBillingPortal) && activeTab === 'billing'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
@@ -1532,6 +1239,82 @@
 		</div>
 		{/if}
 
+		<!-- Terminology -->
+	{#if activeTab === 'terminology'}
+	<div>
+		<h2 class="text-xl font-semibold text-gray-900 mb-1">Terminology</h2>
+		<p class="text-sm text-gray-600 mb-4">
+			Rename the key labels used throughout the Hub to match your organisation's language.
+			MyHub (volunteer-facing pages) always uses plain English and is not affected.
+		</p>
+
+		{#if data?.churchBoltOn}
+		<!-- Church Bolt-On: terminology starter set -->
+		<div class="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+				<div>
+					<h3 class="text-sm font-semibold text-blue-900">Church / Parish starter set</h3>
+					<p class="text-xs text-blue-700 mt-0.5">Pre-fills suggested defaults for churches and parishes. Every field remains editable after applying.</p>
+				</div>
+				<button
+					type="button"
+					on:click={applyChurchDefaults}
+					class="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-blue-700 border border-blue-300 rounded-md hover:bg-blue-100 transition-colors"
+				>
+					Apply church defaults
+				</button>
+			</div>
+		</div>
+		{/if}
+
+		<!-- Fields -->
+		<div class="space-y-3 max-w-2xl mb-6">
+			{#each TERMINOLOGY_FIELDS as field}
+			<div class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+				<div class="flex-1 min-w-0">
+					<label for="term-{field.key}" class="block text-xs font-semibold text-gray-700 mb-0.5">{field.label}</label>
+					<p class="text-xs text-gray-500 mb-1.5">{field.description}</p>
+					<input
+						id="term-{field.key}"
+						type="text"
+						bind:value={terminologyValues[field.key]}
+						placeholder={TERMINOLOGY_DEFAULTS[field.key]}
+						maxlength="50"
+						class="block w-full rounded-md border border-gray-300 shadow-sm focus:ring-theme-button-1 focus:border-theme-button-1 py-1.5 px-3 text-sm"
+					/>
+				</div>
+				<button
+					type="button"
+					title="Reset to default"
+					on:click={() => resetTerminologyField(field.key)}
+					class="flex-shrink-0 mt-6 px-2 py-1.5 text-xs text-gray-500 border border-gray-300 rounded-md hover:text-gray-700 hover:border-gray-400 transition-colors"
+				>
+					Reset
+				</button>
+			</div>
+			{/each}
+		</div>
+
+		<div class="flex items-center gap-3">
+			<button
+				type="button"
+				on:click={saveTerminology}
+				disabled={savingTerminology}
+				class="px-4 py-2 text-sm btn-theme-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+			>
+				{savingTerminology ? 'Saving...' : 'Save terminology'}
+			</button>
+			<button
+				type="button"
+				on:click={() => { terminologyValues = { ...TERMINOLOGY_DEFAULTS }; }}
+				class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+			>
+				Reset all to defaults
+			</button>
+		</div>
+	</div>
+	{/if}
+
 		<!-- Privacy (GDPR & privacy policy contact) -->
 		{#if activeTab === 'privacy'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
@@ -1675,36 +1458,6 @@
 		{#if activeTab === 'advanced'}
 		<div class="border-b border-gray-200 pb-6 mb-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-4">Advanced</h2>
-
-			<!-- Rota reminder emails -->
-			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200 mb-4">
-				<h3 class="text-sm font-semibold text-gray-700 mb-2">Rota reminder emails</h3>
-				<p class="text-sm text-gray-600 mb-3">
-					Contacts on the rota receive an email reminder a set number of days before the event.
-				</p>
-				<div class="flex flex-wrap items-end gap-3">
-					<div>
-						<label for="rota-reminder-days" class="block text-xs font-medium text-gray-700 mb-1">Days before event to send reminder</label>
-						<input
-							id="rota-reminder-days"
-							type="number"
-							min="0"
-							max="90"
-							bind:value={rotaReminderDaysAhead}
-							class="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-theme-button-1 focus:border-theme-button-1"
-						/>
-					</div>
-					<button
-						type="button"
-						on:click={saveRotaReminderSettings}
-						disabled={saving}
-						class="px-3 py-1.5 text-sm btn-theme-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						{saving ? 'Saving...' : 'Save'}
-					</button>
-				</div>
-				<p class="mt-2 text-xs text-gray-500">0 = day of event; 1 = one day before; 3 = three days before (default).</p>
-			</div>
 
 			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
 				<h3 class="text-sm font-semibold text-gray-700 mb-2">Current organisation (Hub context)</h3>

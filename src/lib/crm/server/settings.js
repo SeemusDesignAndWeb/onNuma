@@ -64,6 +64,25 @@ function ensureColorArray(arr, defaults) {
 	return defaults.map((d, i) => ensureHex(arr[i], d));
 }
 
+export function getDefaultTerminology() {
+	return {
+		hub_name: 'TheHUB',
+		organisation: 'Organisation',
+		coordinator: 'Coordinator',
+		team_leader: 'Team Leader',
+		volunteer: 'Volunteer',
+		team: 'Team',
+		role: 'Role',
+		event: 'Event',
+		rota: 'Schedule',
+		sign_up: 'Sign Up',
+		session: 'Session',
+		group: 'Group',
+		multi_site: 'Multi-Site',
+		meeting_planner: 'Meeting Planner'
+	};
+}
+
 function getDefaultSettings() {
 	return {
 		emailRateLimitDelay: 500,
@@ -73,7 +92,8 @@ function getDefaultSettings() {
 		theme: getDefaultTheme(),
 		rotaReminderDaysAhead: 3,
 		sundayPlannerEventId: null,
-		sundayPlannersLabel: 'Meeting Planners',
+		sundayPlannersLabel: 'Meeting Planner',
+		terminology: getDefaultTerminology(),
 		planSetup: null
 	};
 }
@@ -107,6 +127,21 @@ function mergeWithDefaults(record) {
 		typeof rotaReminderDays === 'number' && rotaReminderDays >= 0 && rotaReminderDays <= 90
 			? rotaReminderDays
 			: defaultSettings.rotaReminderDaysAhead;
+	// Merge terminology: defaults first, then any stored overrides, strip unknown keys.
+	// Migrate renamed defaults so orgs that never customised a term pick up the new label.
+	const MIGRATED_DEFAULTS = { rota: 'Rota', meeting_planner: 'Planner' };
+	const defaultTerminology = getDefaultTerminology();
+	const storedTerminology = record.terminology && typeof record.terminology === 'object' ? record.terminology : {};
+	const terminology = {};
+	for (const key of Object.keys(defaultTerminology)) {
+		const stored = storedTerminology[key];
+		if (typeof stored === 'string' && stored.trim() !== '' && stored.trim() !== MIGRATED_DEFAULTS[key]) {
+			terminology[key] = stored.trim();
+		} else {
+			terminology[key] = defaultTerminology[key];
+		}
+	}
+
 	return {
 		emailRateLimitDelay: record.emailRateLimitDelay ?? defaultSettings.emailRateLimitDelay,
 		emailProvider,
@@ -119,9 +154,12 @@ function mergeWithDefaults(record) {
 		hubSuperAdminEmail: record.hubSuperAdminEmail ?? null,
 		currentOrganisationId: record.currentOrganisationId ?? null,
 		sundayPlannerEventId: record.sundayPlannerEventId ?? defaultSettings.sundayPlannerEventId,
-		sundayPlannersLabel: typeof record.sundayPlannersLabel === 'string' && record.sundayPlannersLabel.trim() !== ''
-			? record.sundayPlannersLabel.trim()
-			: defaultSettings.sundayPlannersLabel,
+		sundayPlannersLabel: (() => {
+			const v = typeof record.sundayPlannersLabel === 'string' ? record.sundayPlannersLabel.trim() : '';
+			const OLD_PLANNER_LABELS = ['Meeting Planners', 'Planner', ''];
+			return OLD_PLANNER_LABELS.includes(v) ? defaultSettings.sundayPlannersLabel : v;
+		})(),
+		terminology,
 		planSetup: record.planSetup && typeof record.planSetup === 'object' ? record.planSetup : null
 	};
 }
@@ -205,7 +243,8 @@ export async function writeSettings(settings) {
 		hubSuperAdminEmail: existing?.hubSuperAdminEmail ?? settings.hubSuperAdminEmail ?? null,
 		currentOrganisationId: existing?.currentOrganisationId ?? settings.currentOrganisationId ?? null,
 		sundayPlannerEventId: settings.sundayPlannerEventId ?? existing?.sundayPlannerEventId ?? null,
-		sundayPlannersLabel: settings.sundayPlannersLabel ?? existing?.sundayPlannersLabel ?? 'Meeting Planners',
+		sundayPlannersLabel: settings.sundayPlannersLabel ?? existing?.sundayPlannersLabel ?? 'Meeting Planner',
+		terminology: settings.terminology ?? existing?.terminology ?? null,
 		planSetup: existing?.planSetup ?? settings.planSetup ?? null,
 		createdAt: existing?.createdAt ?? now,
 		updatedAt: now
@@ -219,6 +258,16 @@ export async function writeSettings(settings) {
 		invalidateOrganisationsCache();
 		await invalidateAllSessions();
 	}
+}
+
+/**
+ * Reset Hub terminology to default (e.g. when Church Bolt-On is removed for an organisation).
+ * Updates the single hub_settings record and invalidates caches/sessions so Hub users see the change.
+ */
+export async function resetTerminologyToDefault() {
+	const settings = await getSettings();
+	settings.terminology = getDefaultTerminology();
+	await writeSettings(settings);
 }
 
 /**
@@ -274,6 +323,34 @@ export async function getEffectiveSuperAdminEmail() {
 	if (fromOrg) return fromOrg;
 	const fromSettings = await getHubSuperAdminEmail();
 	return fromSettings || env.SUPER_ADMIN_EMAIL || 'john.watson@egcc.co.uk';
+}
+
+/** Strip legacy Cloudinary logo URLs so public and Hub pages show correct branding. */
+function sanitizeThemeLogoUrls(theme) {
+	if (!theme || typeof theme !== 'object') return theme;
+	const isLegacyCloudinary = (u) => typeof u === 'string' && u.includes('cloudinary.com');
+	const t = { ...theme };
+	if (isLegacyCloudinary(t.logoPath)) t.logoPath = '';
+	if (isLegacyCloudinary(t.loginLogoPath)) t.loginLogoPath = '';
+	return t;
+}
+
+/**
+ * Get theme (logo, colours) for the current organisation. Use for public pages (forms, signup, events, view-schedules)
+ * and MyHUB so they show the same logo as the Hub for that org.
+ * @returns {Promise<object>}
+ */
+export async function getThemeForCurrentOrganisation() {
+	const { getCachedOrganisations } = await import('./organisationsCache.js');
+	const organisationId = await getCurrentOrganisationId();
+	const orgs = await getCachedOrganisations();
+	const org = organisationId ? (orgs.find((o) => o.id === organisationId) || null) : null;
+	const defaultTheme = getDefaultTheme();
+	const themeSource =
+		org?.theme && typeof org.theme === 'object'
+			? { ...defaultTheme, ...org.theme }
+			: defaultTheme;
+	return sanitizeThemeLogoUrls(themeSource);
 }
 
 /**

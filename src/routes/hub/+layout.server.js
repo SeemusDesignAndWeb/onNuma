@@ -59,14 +59,15 @@ export async function load({ cookies, locals }) {
 		? { ...defaultTheme, ...org.theme }
 		: defaultTheme;
 	const theme = sanitizeThemeLogoUrls(themeSource);
-	const sundayPlannersLabel =
-		typeof settings?.sundayPlannersLabel === 'string' && settings.sundayPlannersLabel.trim() !== ''
-			? settings.sundayPlannersLabel.trim()
-			: 'Meeting Planners';
+	// Planner label comes from Terminology (single source); fallback for legacy data
+	const terminologyPlanner = (settings?.terminology?.meeting_planner ?? '').trim();
+	const sundayPlannersLabel = terminologyPlanner || 'Meeting Planner';
 	const showBilling =
 		!!(env.PADDLE_API_KEY && (env.PADDLE_PRICE_ID_PROFESSIONAL || env.PADDLE_PRICE_ID_ENTERPRISE));
 	const showBillingPortal = !!(env.BOATHOUSE_PORTAL_ID && env.BOATHOUSE_SECRET);
 	const privacyContactSet = !!(org?.privacyContactName || org?.privacyContactEmail || org?.privacyContactPhone);
+	const dbsBoltOn = !!(org?.dbsBoltOn ?? org?.churchBoltOn);
+	const churchBoltOn = !!org?.churchBoltOn;
 	return {
 		csrfToken,
 		admin: locals.admin || null,
@@ -75,12 +76,15 @@ export async function load({ cookies, locals }) {
 		hubOrganisationFromDomain: locals.hubOrganisationFromDomain || null,
 		currentOrganisation: org || null,
 		organisations: orgs || [],
+		dbsBoltOn,
+		churchBoltOn,
 		showOnboarding: !!showOnboarding,
 		organisationId: organisationId || null,
 		organisationAreaPermissions,
 		plan: plan || 'free',
 		trialStatus,
 		sundayPlannersLabel,
+		terminology: settings?.terminology ?? null,
 		showBilling: !!showBilling,
 		showBillingPortal: !!showBillingPortal,
 		isSuperAdmin: locals.admin ? isSuperAdmin(locals.admin) : false,

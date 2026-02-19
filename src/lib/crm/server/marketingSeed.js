@@ -161,13 +161,13 @@ function getLinks() {
 		{ key: 'help_centre', name: 'Help Centre', url: '/hub/help' },
 		{ key: 'contacts_page', name: 'Contacts', url: '/hub/contacts' },
 		{ key: 'events_page', name: 'Events', url: '/hub/events' },
-		{ key: 'rotas_page', name: 'Rotas', url: '/hub/rotas' },
+		{ key: 'rotas_page', name: 'Schedules', url: '/hub/schedules' },
 		{ key: 'emails_page', name: 'Emails', url: '/hub/emails' },
 		{ key: 'forms_page', name: 'Forms', url: '/hub/forms' },
 		{ key: 'settings_page', name: 'Settings', url: '/hub/settings' },
 		{ key: 'profile_page', name: 'Profile', url: '/hub/profile' },
 		{ key: 'import_contacts', name: 'Import Contacts', url: '/hub/contacts/import' },
-		{ key: 'meeting_planners', name: 'Meeting Planners', url: '/hub/meeting-planners' },
+		{ key: 'meeting_planners', name: 'Meeting Planner', url: '/hub/planner' },
 		{ key: 'member_signup', name: 'Member Signup Form', url: '/signup/member' },
 		{ key: 'get_started', name: 'Getting Started', url: '/hub/help' }
 	];

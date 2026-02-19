@@ -11,6 +11,7 @@
 	$: organisation = data?.organisation;
 	$: hubPlanTiers = data?.hubPlanTiers || [];
 	$: currentPlan = data?.currentPlan ?? 'free';
+	$: effectiveDbsBoltOn = organisation?.dbsBoltOn ?? organisation?.churchBoltOn;
 	$: values = form?.values ?? (organisation ? {
 		name: organisation.name,
 		address: organisation.address ?? '',
@@ -19,8 +20,25 @@
 		contactName: organisation.contactName ?? '',
 		hubDomain: organisation.hubDomain ?? '',
 		isHubOrganisation: organisation.isHubOrganisation ?? false,
-		plan: currentPlan
+		plan: currentPlan,
+		dbsBoltOn: !!effectiveDbsBoltOn,
+		dbsRenewalYears: organisation?.dbsRenewalYears ?? 3,
+		churchBoltOn: !!organisation?.churchBoltOn
 	} : {});
+	// Bound locals for bolt-ons so checkbox/select don't revert on re-render.
+	// Only sync from server/form when org or form result changes; otherwise user's toggles would be overwritten
+	// because `values` is a new object every render when form is unset.
+	let dbsBoltOnChecked = false;
+	let dbsRenewalYearsVal = 3;
+	let churchBoltOnChecked = false;
+	let _lastBoltOnSyncKey = '';
+	$: boltOnSyncKey = organisation?.id + '|' + (form?.values ? 'saved' : '');
+	$: if (organisation && boltOnSyncKey !== _lastBoltOnSyncKey) {
+		_lastBoltOnSyncKey = boltOnSyncKey;
+		dbsBoltOnChecked = !!values.dbsBoltOn;
+		dbsRenewalYearsVal = values.dbsRenewalYears ?? 3;
+		churchBoltOnChecked = !!values.churchBoltOn;
+	}
 	$: errors = form?.errors || {};
 	$: multiOrgAdmin = data?.multiOrgAdmin || null;
 
@@ -191,7 +209,56 @@
 			</div>
 		</div>
 
-		<!-- Panel 3: Plan (Free, Professional, Enterprise, Freebie) -->
+		<!-- Panel 3: Bolt-ons (DBS Bolt-On managed here; future: Church Bolt-On for forms/templates/terminology) -->
+		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
+			<h2 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Bolt-ons</h2>
+			<p class="text-sm text-slate-600">Enable add-on features for this organisation. These can also be assigned via the purchase form when that is available.</p>
+			<div class="space-y-4">
+				<label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
+					<input
+						type="checkbox"
+						name="dbsBoltOn"
+						value="on"
+						bind:checked={dbsBoltOnChecked}
+						class="mt-1 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+					/>
+					<div>
+						<span class="font-medium text-slate-800">DBS Bolt-On</span>
+						<p class="text-sm text-slate-500 mt-0.5">DBS compliance tracking, safeguarding training records, and pastoral care. Available to any organisation.</p>
+					</div>
+				</label>
+				{#if dbsBoltOnChecked}
+					<div class="pl-7">
+						<label for="dbsRenewalYears" class="block text-sm font-medium text-slate-700 mb-1">DBS renewal period</label>
+						<select
+							id="dbsRenewalYears"
+							name="dbsRenewalYears"
+							bind:value={dbsRenewalYearsVal}
+							class="block w-full max-w-xs rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:border-[#EB9486] focus:ring-2 focus:ring-[#EB9486]/30 focus:outline-none sm:text-sm"
+						>
+							<option value={3}>3 years</option>
+							<option value={2}>2 years</option>
+						</select>
+						<p class="mt-1 text-xs text-slate-500">Years after issue date for DBS renewal due.</p>
+					</div>
+				{/if}
+				<label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
+					<input
+						type="checkbox"
+						name="churchBoltOn"
+						value="on"
+						bind:checked={churchBoltOnChecked}
+						class="mt-1 rounded border-slate-300 text-[#EB9486] focus:ring-[#EB9486]"
+					/>
+					<div>
+						<span class="font-medium text-slate-800">Church Bolt-On</span>
+						<p class="text-sm text-slate-500 mt-0.5">Church-specific terminologies, form templates, and email templates (parish/service language, volunteer forms, service reminders).</p>
+					</div>
+				</label>
+			</div>
+		</div>
+
+		<!-- Panel 4: Plan (Free, Professional, Enterprise, Freebie) -->
 		<div class="space-y-5 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm" role="group" aria-labelledby="plan-panel-heading">
 			<h2 id="plan-panel-heading" class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Plan</h2>
 			<div class="space-y-3">

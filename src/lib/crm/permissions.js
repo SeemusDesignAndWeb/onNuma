@@ -16,6 +16,7 @@ export const HUB_AREAS = {
 	SAFEGUARDING_FORMS: 'safeguarding_forms',
 	MEMBERS: 'members',
 	USERS: 'users', // Admin management - only super admin
+	TEAMS: 'teams', // Team management — not a plan area; granted via addTeamLeaderToTeam or by super admin
 	SUPER_ADMIN: 'super_admin' // Super admin permission - grants all permissions
 };
 
@@ -23,9 +24,9 @@ export const HUB_AREAS = {
 const ROUTE_TO_AREA = {
 	'/hub/contacts': HUB_AREAS.CONTACTS,
 	'/hub/lists': HUB_AREAS.LISTS,
-	'/hub/rotas': HUB_AREAS.ROTAS,
+	'/hub/schedules': HUB_AREAS.ROTAS,
 	'/hub/events': HUB_AREAS.EVENTS,
-	'/hub/meeting-planners': HUB_AREAS.MEETING_PLANNERS,
+	'/hub/planner': HUB_AREAS.MEETING_PLANNERS,
 	'/hub/emails': HUB_AREAS.NEWSLETTERS,
 	'/hub/forms': HUB_AREAS.FORMS,
 	'/hub/members': HUB_AREAS.MEMBERS,
@@ -175,6 +176,19 @@ export function hasRouteAccess(admin, pathname, superAdminEmail = null, organisa
 	if (pathname === '/hub' || pathname === '/hub/profile' || pathname === '/hub/billing' || pathname === '/hub/help' || pathname === '/hub/video-tutorials') {
 		return true;
 	}
+	// Teams: accessible to coordinators with 'teams' permission OR any team leader
+	if (pathname.startsWith('/hub/teams')) {
+		const rawPerms = getAdminPermissions(admin, superAdminEmail);
+		if (rawPerms.includes(HUB_AREAS.TEAMS)) return true;
+		return Array.isArray(admin.teamLeaderForTeamIds) && admin.teamLeaderForTeamIds.length > 0;
+	}
+	// Planner (unified): accessible with rotas, meeting_planners area permission OR teams/team-leader access
+	if (pathname.startsWith('/hub/planner')) {
+		if (effectivePerms.includes(HUB_AREAS.ROTAS) || effectivePerms.includes(HUB_AREAS.MEETING_PLANNERS)) return true;
+		const rawPerms = getAdminPermissions(admin, superAdminEmail);
+		if (rawPerms.includes(HUB_AREAS.TEAMS)) return true;
+		return Array.isArray(admin.teamLeaderForTeamIds) && admin.teamLeaderForTeamIds.length > 0;
+	}
 	if (pathname.startsWith('/hub/settings') || pathname.startsWith('/hub/users') || pathname.startsWith('/hub/audit-logs')) {
 		return isSuperAdmin(admin, superAdminEmail);
 	}
@@ -215,9 +229,9 @@ export function getAvailableHubAreas(currentAdmin = null) {
 	const areas = [
 		{ value: HUB_AREAS.CONTACTS, label: 'Contacts', description: 'Manage contact database' },
 		{ value: HUB_AREAS.LISTS, label: 'Lists', description: 'Manage contact lists' },
-		{ value: HUB_AREAS.ROTAS, label: 'Rotas', description: 'Manage volunteer rotas' },
+		{ value: HUB_AREAS.ROTAS, label: 'Schedules', description: 'Manage volunteer schedules' },
 		{ value: HUB_AREAS.EVENTS, label: 'Events', description: 'Manage events and calendar' },
-		{ value: HUB_AREAS.MEETING_PLANNERS, label: 'Meeting Planners', description: 'Plan and manage meetings' },
+		{ value: HUB_AREAS.MEETING_PLANNERS, label: 'Meeting Planner', description: 'Single-event overview of all teams and assignments' },
 		{ value: HUB_AREAS.NEWSLETTERS, label: 'Emails', description: 'Create and send emails' },
 		{ value: HUB_AREAS.FORMS, label: 'Forms (Non-Safeguarding)', description: 'Manage general forms and submissions' },
 		{ value: HUB_AREAS.SAFEGUARDING_FORMS, label: 'Safeguarding Forms', description: 'Access safeguarding forms and submissions' },
@@ -237,9 +251,9 @@ export function getOrganisationHubAreas() {
 	return [
 		{ value: HUB_AREAS.CONTACTS, label: 'Contacts', description: 'Manage contact database' },
 		{ value: HUB_AREAS.LISTS, label: 'Lists', description: 'Manage contact lists' },
-		{ value: HUB_AREAS.ROTAS, label: 'Rotas', description: 'Manage volunteer rotas' },
+		{ value: HUB_AREAS.ROTAS, label: 'Schedules', description: 'Manage volunteer schedules' },
 		{ value: HUB_AREAS.EVENTS, label: 'Events', description: 'Manage events and calendar' },
-		{ value: HUB_AREAS.MEETING_PLANNERS, label: 'Meeting Planners', description: 'Plan and manage meetings' },
+		{ value: HUB_AREAS.MEETING_PLANNERS, label: 'Meeting Planner', description: 'Single-event overview of all teams and assignments' },
 		{ value: HUB_AREAS.NEWSLETTERS, label: 'Emails', description: 'Create and send emails' },
 		{ value: HUB_AREAS.FORMS, label: 'Forms (Non-Safeguarding)', description: 'Manage general forms and submissions' },
 		{ value: HUB_AREAS.SAFEGUARDING_FORMS, label: 'Safeguarding Forms', description: 'Access safeguarding forms and submissions' },
@@ -319,9 +333,9 @@ export function getPlanFromAreaPermissions(areaPermissions) {
 export const PLAN_MODULE_OPTIONS = [
 	{ value: HUB_AREAS.CONTACTS, label: 'Contacts' },
 	{ value: HUB_AREAS.LISTS, label: 'Lists' },
-	{ value: HUB_AREAS.ROTAS, label: 'Rotas' },
+	{ value: HUB_AREAS.ROTAS, label: 'Schedules' },
 	{ value: HUB_AREAS.EVENTS, label: 'Events' },
-	{ value: HUB_AREAS.MEETING_PLANNERS, label: 'Meeting Planners' },
+	{ value: HUB_AREAS.MEETING_PLANNERS, label: 'Meeting Planner' },
 	{ value: HUB_AREAS.NEWSLETTERS, label: 'Emails' },
 	{ value: HUB_AREAS.FORMS, label: 'Forms' },
 	{ value: HUB_AREAS.MEMBERS, label: 'Members' },
@@ -331,7 +345,7 @@ export const PLAN_MODULE_OPTIONS = [
 /** Plan options for public signup (Free, Professional, Enterprise). Freebie is invite-only and not included. */
 export function getHubPlanTiers() {
 	return [
-		{ value: 'free', label: 'Free', description: 'Contacts, Lists, Events, Rotas, Meeting Planners, Email reminders. No forms or email campaigns.' },
+		{ value: 'free', label: 'Free', description: 'Contacts, Lists, Events, Schedules, Meeting Planner, Email reminders. No forms or email campaigns.' },
 		{ value: 'professional', label: 'Professional', description: 'Everything in Free plus Forms, Email templates and campaigns, Members, your branding.' },
 		{ value: 'enterprise', label: 'Enterprise', description: 'Everything in Professional plus Safeguarding forms. Custom solutions for larger needs.' }
 	];

@@ -1,12 +1,10 @@
-import { readCollection, findById, remove, create } from '$lib/crm/server/fileStore.js';
+import { readCollection, findById, remove } from '$lib/crm/server/fileStore.js';
 import { getAdminFromCookies, getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { canAccessSafeguarding, canAccessForms, isSuperAdmin } from '$lib/crm/server/permissions.js';
 import { getSuperAdminEmail } from '$lib/crm/server/envConfig.js';
 import { logDataChange } from '$lib/crm/server/audit.js';
-import { fail, redirect } from '@sveltejs/kit';
-import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
-import { validateForm } from '$lib/crm/server/validators.js';
-import { MEMBERSHIP_FORM_TEMPLATE } from '$lib/crm/membershipFormTemplate.js';
+import { fail } from '@sveltejs/kit';
+import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -77,9 +75,6 @@ export async function load({ url, cookies }) {
 	const superAdminEmail = getSuperAdminEmail();
 	const canDelete = isSuperAdmin(admin, superAdminEmail) || canAccessSafeguarding(admin);
 
-	// Whether a form named "Membership Form" already exists (so we can show "Create Membership Form" only when needed)
-	const hasMembershipForm = filtered.some((f) => f.name === 'Membership Form');
-
 	return {
 		forms: paginated,
 		currentPage: page,
@@ -88,7 +83,6 @@ export async function load({ url, cookies }) {
 		search,
 		latestSubmissions: enrichedSubmissions,
 		canDelete,
-		hasMembershipForm,
 		csrfToken: getCsrfToken(cookies) || ''
 	};
 }
@@ -169,39 +163,6 @@ export const actions = {
 		} catch (error) {
 			console.error('Unexpected error in deleteSubmission:', error);
 			return fail(500, { error: 'An unexpected error occurred while deleting the submission' });
-		}
-	},
-
-	createMembershipForm: async ({ request, cookies }) => {
-		try {
-			const data = await request.formData();
-			const csrfToken = data.get('_csrf');
-			if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
-				return fail(403, { error: 'CSRF token validation failed' });
-			}
-
-			const admin = await getAdminFromCookies(cookies);
-			if (!admin) {
-				return fail(401, { error: 'Unauthorized' });
-			}
-			if (!canAccessForms(admin) && !canAccessSafeguarding(admin)) {
-				return fail(403, { error: 'You do not have permission to create forms' });
-			}
-
-			const organisationId = await getCurrentOrganisationId();
-			const formData = {
-				name: MEMBERSHIP_FORM_TEMPLATE.name,
-				description: MEMBERSHIP_FORM_TEMPLATE.description,
-				fields: MEMBERSHIP_FORM_TEMPLATE.fields,
-				isSafeguarding: false
-			};
-			const validated = validateForm(formData);
-			const form = await create('forms', withOrganisationId(validated, organisationId));
-			throw redirect(302, `/hub/forms/${form.id}`);
-		} catch (error) {
-			if (error?.status === 302) throw error;
-			console.error('Error creating Membership Form:', error);
-			return fail(400, { error: error?.message || 'Failed to create Membership Form' });
 		}
 	}
 };

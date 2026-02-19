@@ -154,7 +154,7 @@
 					invalidateAll();
 				}
 			} else if (formResult?.type !== 'addAssignee' && formResult?.type !== 'removeAssignee') {
-				notifications.success('Meeting planner updated successfully');
+				notifications.success('Meeting plan updated');
 				// Clear unsaved form data after successful save
 				if (browser && meetingPlanner?.id && typeof sessionStorage !== 'undefined') {
 					const unsavedFormDataKey = `unsavedMeetingPlanner_${meetingPlanner.id}`;
@@ -303,7 +303,7 @@
 		
 		const rota = rotas[rotaKey];
 		if (!rota || !rawRotas[rotaKey]) {
-			notifications.error('Rota not found');
+			notifications.error('Schedule not found');
 			return;
 		}
 
@@ -343,7 +343,7 @@
 						});
 						conflictMessage += '\nAre you sure you want to proceed with these assignments?';
 
-						const confirmed = await dialog.confirm(conflictMessage, 'Potential Rota Conflict');
+						const confirmed = await dialog.confirm(conflictMessage, 'Potential Schedule Conflict');
 						if (!confirmed) return;
 					}
 				}
@@ -459,7 +459,7 @@
 
 		const rota = rotas[rotaKey];
 		if (!rota || !rawRotas[rotaKey]) {
-			notifications.error('Rota not found');
+			notifications.error('Schedule not found');
 			return;
 		}
 
@@ -509,7 +509,7 @@
 		if (confirmed) {
 			const rota = rawRotas[rotaKey];
 			if (!rota) {
-				notifications.error('Rota not found');
+				notifications.error('Schedule not found');
 				return;
 			}
 
@@ -644,10 +644,10 @@
 	<div class="bg-white shadow rounded-lg p-3 sm:p-4 mb-4">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
 			<div class="flex-1 min-w-0">
-				<h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">{singularLabel}</h2>
+				<h2 class="text-lg sm:text-xl font-bold mb-2">{singularLabel}</h2>
 				<div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3 text-base sm:text-xl text-gray-600">
 					<div>
-						<a href="/hub/events/{event.id}" class="text-hub-blue-600 hover:text-hub-blue-700 underline font-bold break-words">
+						<a href="/hub/events/{event.id}" class="text-theme-button-1 hover:opacity-80 underline font-bold break-words">
 							{event?.title || 'Unknown'}
 						</a>
 					</div>
@@ -664,20 +664,20 @@
 				<button
 					type="submit"
 					form="meeting-planner-edit-form"
-					class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex-1 sm:flex-none"
+					class="hub-btn btn-theme-2 px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex-1 sm:flex-none"
 				>
 					<span class="hidden sm:inline">Save Changes</span>
 					<span class="sm:hidden">Save</span>
 				</button>
 				<button
 					on:click={handleDelete}
-					class="bg-hub-red-600 hover:bg-hub-red-700 text-white px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex-1 sm:flex-none"
+					class="hub-btn bg-hub-red-600 hover:bg-hub-red-700 text-white px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex-1 sm:flex-none"
 				>
 					Delete
 				</button>
 				<a
 					href="/hub/meeting-planners"
-					class="bg-white border-2 border-hub-blue-500 text-hub-blue-600 hover:bg-hub-blue-50 px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-none justify-center"
+					class="hub-btn btn-theme-light-1 px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex items-center gap-1 flex-1 sm:flex-none justify-center"
 				>
 					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -716,7 +716,7 @@
 								name="communionHappening"
 								value="on"
 								bind:checked={formData.communionHappening}
-								class="h-4 w-4 text-hub-green-600 focus:ring-theme-button-2 border-gray-300 rounded"
+								class="h-4 w-4 text-theme-button-2 focus:ring-theme-button-2 border-gray-300 rounded"
 							/>
 							<label for="communionHappening" class="ml-2 block text-xs text-gray-700">
 								Communion happening
@@ -767,7 +767,7 @@
 		<div class="lg:col-span-3">
 			<div class="bg-white shadow rounded-lg p-3 sm:p-4">
 				<div class="flex justify-between items-center mb-3">
-					<h3 class="text-base sm:text-lg font-bold text-gray-900">Rotas</h3>
+					<h3 class="text-base sm:text-lg font-bold text-gray-900">Schedules</h3>
 				</div>
 				
 				<div class="flex flex-wrap -mx-2">
@@ -783,8 +783,8 @@
 											<div class="flex items-center gap-1.5 mb-1">
 												<h4 class="text-xs sm:text-sm font-semibold text-gray-900 truncate">{getRotaDisplayName(rotaKey)}</h4>
 												<a 
-													href="/hub/rotas/{rota.id}" 
-													class="text-hub-blue-600 hover:text-hub-blue-800 flex-shrink-0"
+													href="/hub/schedules/{rota.id}" 
+													class="text-theme-button-1 hover:opacity-80 flex-shrink-0"
 													target="_blank"
 													title="View full details"
 												>
@@ -808,7 +808,7 @@
 													<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
 														<div class="flex-1 min-w-0 pr-1.5">
 															{#if assignee.id}
-																<a href="/hub/contacts/{assignee.id}" class="text-hub-green-600 hover:text-hub-green-700 underline font-medium text-xs block truncate">
+																<a href="/hub/contacts/{assignee.id}" class="text-theme-button-2 hover:opacity-80 underline font-medium text-xs block truncate">
 																	{assignee.name || 'Unknown'}
 																</a>
 															{:else}
@@ -907,7 +907,7 @@
 														<div class="flex gap-2">
 															<button
 																on:click={() => selectAllContacts(rotaKey)}
-																class="text-xs text-hub-green-600 hover:text-hub-green-800 underline"
+																class="text-xs text-theme-button-2 hover:opacity-80 underline"
 															>
 																Select All
 															</button>

@@ -35,9 +35,9 @@
    - [Adding Occurrences](#adding-occurrences)
    - [Editing Occurrences](#editing-occurrences)
    - [Downloading Events](#downloading-events)
-7. [Rotas](#rotas)
-   - [Creating a Rota](#creating-a-rota)
-   - [Managing Rotas](#managing-rotas)
+7. [Schedules](#schedules)
+   - [Creating a Schedule](#creating-a-schedule)
+   - [Managing Schedules](#managing-schedules)
    - [Bulk Invitations](#bulk-invitations)
 8. [Forms](#forms)
    - [Creating a Form](#creating-a-form)
@@ -95,7 +95,7 @@ The dashboard (`/hub`) provides a comprehensive overview of your CRM system:
 - Total number of lists
 - Total number of newsletters
 - Total number of events
-- Total number of rotas
+- Total number of schedules
 - Total number of forms
 
 **Quick Actions:**
@@ -103,13 +103,13 @@ Use the coloured quick action buttons at the top to quickly create:
 - **+ Contact** (Blue) - Create a new contact
 - **+ Newsletter** (Green) - Create a new newsletter
 - **+ Event** (Purple) - Create a new event
-- **+ Rota** (Orange) - Create a new rota
+- **+ Schedule** (Orange) - Create a new schedule
 - **+ List** (Teal) - Create a new list
 - **+ Form** (Pink) - Create a new form
 
 **Recent Activity:**
 - **Latest Newsletters**: Displays the 3 most recently created or edited newsletters
-- **Recently Edited Rotas**: Shows the 5 most recently edited rotas
+- **Recently Edited Schedules**: Shows the 5 most recently edited schedules
 
 Click on any item in the recent activity sections to view its details.
 
@@ -460,7 +460,7 @@ You can export any newsletter as a PDF document for archiving or sharing:
 **Sending Process:**
 - The newsletter will be sent to all contacts in the selected list
 - Each email is personalised with the contact's information
-- Upcoming rotas (within 7 days) are automatically included for contacts who are assigned to rotas
+- Upcoming schedules (within 7 days) are automatically included for contacts who are assigned to schedules
 - Upcoming events (up to the following Sunday) are automatically included
 - Sending status and counts are tracked
 - The newsletter status changes from "draft" to "sent" after sending
@@ -470,9 +470,9 @@ You can export any newsletter as a PDF document for archiving or sharing:
 **Personalisation:**
 Newsletters automatically include:
 - Contact's name in the greeting (using placeholders like `{{firstName}}`, `{{name}}`, etc.)
-- Upcoming rotas section (if the contact has rotas in the next 7 days) - shows event title, role, date/time, and a link to view details
+- Upcoming schedules section (if the contact has schedules in the next 7 days) - shows event title, role, date/time, and a link to view details
 - Upcoming events section (public events up to the following Sunday) - shows event title, date/time, location, and description
-- Links to rota signup pages for assigned rotas
+- Links to schedule signup pages for assigned schedules
 
 ### Deleting a Newsletter
 
@@ -546,16 +546,16 @@ When creating newsletters, you can use the "Insert Placeholder" button to add pe
 - `{{name}}` - Full name (or email if name not available)
 - `{{email}}` - Contact's email address
 - `{{phone}}` - Contact's phone number
-- `{{rotaLinks}}` - Upcoming rotas section (next 14 days) with clickable links
+- `{{rotaLinks}}` - Upcoming schedules section (next 14 days) with clickable links
 - `{{upcomingEvents}}` - Upcoming events section
 
 **Special Placeholders:**
-- `{{rotaLinks}}` automatically generates a formatted section showing all rotas the contact is assigned to in the next 14 days, with clickable links to view rota details. Each rota shows the event title, role, date/time, and a "View Rota Details" button. **Important:** Only rotas for specific occurrences where the contact is directly assigned are shown - if a contact is assigned to only some occurrences of a rota, only those occurrences will appear. **Note:** No title is included - add your own heading in the newsletter content.
+- `{{rotaLinks}}` automatically generates a formatted section showing all schedules the contact is assigned to in the next 14 days, with clickable links to view schedule details. Each schedule shows the event title, role, date/time, and a "View Schedule Details" button. **Important:** Only schedules for specific occurrences where the contact is directly assigned are shown - if a contact is assigned to only some occurrences of a schedule, only those occurrences will appear. **Note:** No title is included - add your own heading in the newsletter content.
 - `{{upcomingEvents}}` shows upcoming public and internal events up to the following Sunday. Each event shows the title, date/time, location (if available), and description. **Note:** No title is included - add your own heading in the newsletter content. Internal events are included so members can see member-only events in newsletters.
 
 **Placeholder Formatting:**
 - Both `{{rotaLinks}}` and `{{upcomingEvents}}` are inserted without extra padding or container styling, allowing them to integrate seamlessly with your newsletter content
-- If a contact has no upcoming rotas, a message will be displayed instead
+- If a contact has no upcoming schedules, a message will be displayed instead
 - If there are no upcoming events, a message will be displayed instead
 
 ---
@@ -673,53 +673,53 @@ You can download events as ICS (iCalendar) files for import into calendar applic
 
 ---
 
-## Rotas
+## Schedules
 
-### Creating a Rota
+### Creating a Schedule
 
-1. Go to `/hub/rotas` or click the "+ Rota" quick action button on the dashboard
-2. Click "New Rota" button
+1. Go to `/hub/schedules` or click the "+ Schedule" quick action button on the dashboard
+2. Click "New Schedule" button
 3. Select an **Event** from the dropdown (required)
 4. Enter:
    - **Role** (required) - The role or position (e.g., "Worship Leader", "Sound Technician")
    - **Capacity** (required) - How many people are needed
-   - **Owner** (optional) - The contact who will be notified when this rota is updated. Use the search bar to quickly find contacts by name or email.
-   - **Notes** (optional) - Additional information about the rota
-5. Click "Create Rota"
+   - **Owner** (optional) - The contact who will be notified when this schedule is updated. Use the search bar to quickly find contacts by name or email.
+   - **Notes** (optional) - Additional information about the schedule
+5. Click "Create Schedule"
 
-**Note:** Rotas are linked to events. You can create multiple rotas for the same event (e.g., different roles).
+**Note:** Schedules are linked to events. You can create multiple schedules for the same event (e.g., different roles).
 
-### Managing Rotas
+### Managing Schedules
 
-**Viewing Rotas:**
-- View all rotas at `/hub/rotas`
-- See which event each rota is for
+**Viewing Schedules:**
+- View all schedules at `/hub/schedules`
+- See which event each schedule is for
 - View role, capacity, and current assignments
 
-**Editing Rotas:**
-- Open a rota's detail page
+**Editing Schedules:**
+- Open a schedule's detail page
 - Click "Edit" to modify role, capacity, owner, or notes
 - Use the search bar in the Owner field to quickly find contacts
 - Click "Save Changes" (button is located at the top of the page)
 
 **Assigning Volunteers:**
-- Open a rota
+- Open a schedule
 - View the list of assigned volunteers
 - Assignees are clickable links that take you to their contact details page
 - Use bulk invitations to send signup links to multiple contacts
 
-**Deleting Rotas:**
-- Open a rota's detail page
+**Deleting Schedules:**
+- Open a schedule's detail page
 - Click "Delete" button
 - Confirm the deletion
 
 ### Bulk Invitations
 
-Send rota signup invitations to multiple contacts at once:
+Send schedule signup invitations to multiple contacts at once:
 
-1. Go to `/hub/rotas/invite`
+1. Go to `/hub/schedules/invite`
 2. Select an **Event** from the dropdown
-3. Select one or more **Rotas** for that event
+3. Select one or more **Schedules** for that event
 4. Optionally select specific **Occurrences** (if you only want to invite for certain dates)
 5. Select a **Contact List** to send invitations to
 6. Click "Send Invitations"
@@ -728,27 +728,27 @@ Send rota signup invitations to multiple contacts at once:
 - Each contact receives a personalised email invitation
 - Emails include:
   - Greeting with contact's name
-  - Details about the assigned rota(s)
-  - Links to other upcoming rotas (within 7 days)
-  - Unique signup link for each rota
+  - Details about the assigned schedule(s)
+  - Links to other upcoming schedules (within 7 days)
+  - Unique signup link for each schedule
 - Contacts can click the link to sign up without needing to log in
 
 **Public Signup:**
 - Volunteers receive unique token-based signup links
-- They can sign up at `/signup/rota/[token]` without logging in
-- The signup page shows rota details and allows them to confirm their participation
+- They can sign up at `/signup/schedule/[token]` without logging in
+- The signup page shows schedule details and allows them to confirm their participation
 
-**Rota Owner Notifications:**
-- When a rota has an owner assigned, they receive email notifications when:
-  - The rota is updated (role, capacity, notes changed)
-  - New volunteers sign up for the rota
-  - Volunteers are removed from the rota
+**Schedule Owner Notifications:**
+- When a schedule has an owner assigned, they receive email notifications when:
+  - The schedule is updated (role, capacity, notes changed)
+  - New volunteers sign up for the schedule
+  - Volunteers are removed from the schedule
 - Email notifications include:
   - Event name and occurrence date/time
-  - Rota details (role, capacity)
+  - Schedule details (role, capacity)
   - Complete list of all assignees with their names and emails
   - Assignees grouped by occurrence (if applicable)
-  - Link to view the rota in the hub
+  - Link to view the schedule in the hub
 
 ---
 
@@ -826,21 +826,21 @@ Forms can be accessed publicly for submission without requiring login:
 
 ## Public Signup
 
-Volunteers receive email invitations with unique tokens for rota signup.
+Volunteers receive email invitations with unique tokens for schedule signup.
 
 **Signup Process:**
 1. Volunteer receives an email invitation
-2. Email includes personalised greeting and rota details
-3. Email shows links to other upcoming rotas (within 7 days)
+2. Email includes personalised greeting and schedule details
+3. Email shows links to other upcoming schedules (within 7 days)
 4. Volunteer clicks the unique signup link
-5. They are taken to `/signup/rota/[token]`
-6. They can view rota details and confirm participation
+5. They are taken to `/signup/schedule/[token]`
+6. They can view schedule details and confirm participation
 7. No login required - the token provides secure access
 
 **Email Features:**
 - Personalised with volunteer's name
-- Shows rota role and event details
-- Includes links to other upcoming rotas
+- Shows schedule role and event details
+- Includes links to other upcoming schedules
 - Direct signup link for easy access
 - Professional formatting
 
@@ -906,11 +906,11 @@ The Hub includes comprehensive built-in documentation:
 - Add detailed descriptions to help people understand the event
 - Download ICS files to share events externally
 
-**Rotas:**
-- Create rotas well in advance
+**Schedules:**
+- Create schedules well in advance
 - Send invitations early to give volunteers time to respond
-- Use bulk invitations to efficiently manage multiple rotas
-- Link rotas to events for better organisation
+- Use bulk invitations to efficiently manage multiple schedules
+- Link schedules to events for better organisation
 
 **Forms:**
 - Use safeguarding encryption for any forms collecting information about children or vulnerable adults

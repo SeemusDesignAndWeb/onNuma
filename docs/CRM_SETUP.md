@@ -60,7 +60,7 @@ Run: `node scripts/create-admin.js admin@example.com password123 "Admin Name"`
 The CRM module has been installed at:
 - `src/lib/hub/` - Core CRM code
 - `src/routes/hub/` - CRM routes
-- `src/routes/signup/rota/` - Public signup routes
+- `src/routes/signup/schedule/` - Public signup routes
 - `static/docs/` - Documentation
 - `src/hooks.server.js` - Hook integration
 

@@ -15,12 +15,49 @@
 	$: formResult = $page.form;
 	$: theme = $page.data?.theme || null;
 	$: panelHeadBgColor = getPanelHeadColor(theme);
-	
+	$: dbsBoltOn = $page.data?.dbsBoltOn ?? false;
+	$: dbsRenewalYears = $page.data?.dbsRenewalYears ?? 3;
+	$: dbsStatus = $page.data?.dbsStatus ?? null;
+	$: safeguardingStatus = $page.data?.safeguardingStatus ?? null;
+
+	function suggestedRenewalDue(dateIssued, years) {
+		if (!dateIssued || (years !== 2 && years !== 3)) return null;
+		const d = new Date(dateIssued);
+		if (Number.isNaN(d.getTime())) return null;
+		d.setFullYear(d.getFullYear() + years);
+		return d.toISOString().slice(0, 10);
+	}
+
+	function suggestedSafeguardingRenewalDue(dateCompleted) {
+		if (!dateCompleted) return null;
+		const d = new Date(dateCompleted);
+		if (Number.isNaN(d.getTime())) return null;
+		d.setFullYear(d.getFullYear() + 3);
+		return d.toISOString().slice(0, 10);
+	}
+
+	const SAFEGUARDING_LEVELS = [
+		{ value: '', label: '—' },
+		{ value: 'basic_awareness', label: 'Basic Awareness' },
+		{ value: 'foundation', label: 'Foundation' },
+		{ value: 'leadership', label: 'Leadership' },
+		{ value: 'safer_recruitment', label: 'Safer Recruitment' },
+		{ value: 'pso_induction', label: 'PSO Induction' }
+	];
+
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;
 
 	$: thankyouMessages = $page.data?.thankyouMessages ?? [];
 	$: myhubInvitations = $page.data?.myhubInvitations ?? [];
+
+	const DBS_LEVELS = [
+		{ value: '', label: '—' },
+		{ value: 'basic', label: 'Basic' },
+		{ value: 'standard', label: 'Standard' },
+		{ value: 'enhanced', label: 'Enhanced' },
+		{ value: 'enhanced_barred', label: 'Enhanced with Barred List' }
+	];
 
 	// MyHub preferences display (same structure as myhub/preferences)
 	const PREF_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -37,14 +74,59 @@
 		return !!(contact?.unavailability?.[day]?.[time]);
 	}
 
-	// Collapsible panels (all expanded by default)
-	const PANEL_IDS = ['personal', 'address', 'notes', 'thankyou', 'outstanding', 'myhub'];
-	let expandedPanels = new Set(PANEL_IDS);
+	// Collapsible panels (all expanded by default except MyHub; address is in personal)
+	const PANEL_IDS = ['personal', 'notes', 'dbs', 'safeguarding', 'coordinatorNotes', 'thankyou', 'outstanding', 'myhub'];
+	let expandedPanels = new Set(PANEL_IDS.filter((id) => id !== 'myhub'));
 	function togglePanel(id) {
 		const next = new Set(expandedPanels);
 		if (next.has(id)) next.delete(id);
 		else next.add(id);
 		expandedPanels = next;
+	}
+
+	// Pastoral care (DBS bolt-on)
+	$: pastoralFlags = $page.data?.pastoralFlags ?? [];
+	$: absenceEvents = $page.data?.absenceEvents ?? [];
+	$: milestones = $page.data?.milestones ?? [];
+
+	$: activePastoralFlags = pastoralFlags.filter((f) => f.status === 'active');
+	$: recentAbsences = absenceEvents.slice(0, 10);
+
+	let showAbsenceForm = false;
+	let absenceNote = '';
+	let absenceDate = '';
+	let absenceType = 'marked_absent';
+	let pastoralWorking = false;
+
+	// Note editor per flag: flagId -> note text
+	let flagNotes = {};
+
+	async function pastoralAction(action, params = {}) {
+		if (pastoralWorking) return;
+		pastoralWorking = true;
+		try {
+			const res = await fetch(`/hub/contacts/${contact.id}/pastoral`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ action, ...params })
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				notifications.error(err?.error || 'An error occurred');
+			} else {
+				// Reload page data to reflect changes
+				window.location.reload();
+			}
+		} catch (e) {
+			notifications.error('Network error — please try again');
+		} finally {
+			pastoralWorking = false;
+		}
+	}
+
+	function milestoneLabel(key) {
+		const map = { '1year': '1 year of service', '5years': '5 years of service', '50sessions': '50 sessions served', '100sessions': '100 sessions served' };
+		return map[key] || key;
 	}
 
 	let showThankyouForm = false;
@@ -105,6 +187,8 @@
 
 	// Initialize formData when contact loads or changes (including after successful save)
 	$: if (contact && contact.id !== initializedContactId) {
+		const d = contact.dbs || {};
+		const sg = contact.safeguarding || {};
 		formData = {
 			email: contact.email || '',
 			firstName: contact.firstName || '',
@@ -120,7 +204,22 @@
 			dateJoined: contact.dateJoined || '',
 			notes: contact.notes || '',
 			subscribed: contact.subscribed !== false, // Default to true if not set
-			spouseId: contact.spouseId || ''
+			spouseId: contact.spouseId || '',
+			dbs: {
+				level: d.level || '',
+				dateIssued: d.dateIssued || '',
+				renewalDueDate: d.renewalDueDate || '',
+				updateServiceRegistered: d.updateServiceRegistered === true,
+				certificateRef: d.certificateRef || '',
+				notes: d.notes || ''
+			},
+			safeguarding: {
+				level: sg.level || '',
+				dateCompleted: sg.dateCompleted || '',
+				renewalDueDate: sg.renewalDueDate || '',
+				notes: sg.notes || ''
+			},
+			coordinatorNotes: contact.coordinatorNotes || ''
 		};
 		initializedContactId = contact.id;
 	}
@@ -157,7 +256,7 @@
 							</svg>
 						</div>
 						<div>
-							<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 crm-shell-main">
+							<h1 class="text-2xl sm:text-3xl font-bold crm-shell-main">
 								{contact.firstName || ''} {contact.lastName || ''}
 								{#if !contact.firstName && !contact.lastName}
 									Contact
@@ -242,7 +341,7 @@
 				<input type="hidden" name="_csrf" value={csrfToken} />
 				
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<!-- Personal Information Card -->
+					<!-- Personal Information Card (includes address) -->
 					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
 						<div class="px-6 py-4" style="background-color: {panelHeadBgColor};">
 							<div class="flex items-center gap-3">
@@ -256,46 +355,31 @@
 						</div>
 						<div class="p-6 space-y-5">
 							<FormField label="Email" name="email" type="email" bind:value={formData.email} required />
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+							<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 								<FormField label="First Name" name="firstName" bind:value={formData.firstName} />
 								<FormField label="Last Name" name="lastName" bind:value={formData.lastName} />
-							</div>
-							<FormField label="Phone" name="phone" bind:value={formData.phone} />
-							<div>
-								<label class="block text-sm font-semibold text-gray-700 mb-2">Partner</label>
-								<select name="spouseId" bind:value={formData.spouseId} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-1 focus:ring-2 focus:ring-theme-button-1 py-2.5 px-4 text-gray-900 transition-all">
-									<option value="">None</option>
-									{#each contacts as contactOption}
-										<option value={contactOption.id}>
-											{contactOption.firstName || ''} {contactOption.lastName || ''} {contactOption.email ? `(${contactOption.email})` : ''}
-										</option>
-									{/each}
-								</select>
-							</div>
-						</div>
-					</div>
-
-					<!-- Address Card -->
-					<div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-						<div class="bg-theme-panel-head-2 px-6 py-4">
-							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-									<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-									</svg>
+								<FormField label="Phone" name="phone" bind:value={formData.phone} />
+								<div class="sm:col-span-2 lg:col-span-1">
+									<label for="spouseId" class="block text-sm font-semibold text-gray-700 mb-2">Partner</label>
+									<select id="spouseId" name="spouseId" bind:value={formData.spouseId} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-1 focus:ring-2 focus:ring-theme-button-1 py-2.5 px-4 text-gray-900 transition-all">
+										<option value="">None</option>
+										{#each contacts as contactOption}
+											<option value={contactOption.id}>
+												{contactOption.firstName || ''} {contactOption.lastName || ''} {contactOption.email ? `(${contactOption.email})` : ''}
+											</option>
+										{/each}
+									</select>
 								</div>
-								<h3 class="text-lg font-bold text-white">Address</h3>
 							</div>
-						</div>
-						<div class="p-6 space-y-5">
-							<FormField label="Address Line 1" name="addressLine1" bind:value={formData.addressLine1} />
-							<FormField label="Address Line 2" name="addressLine2" bind:value={formData.addressLine2} />
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+							<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-2 border-t border-gray-100">
+								<div class="sm:col-span-2 lg:col-span-2">
+									<FormField label="Address Line 1" name="addressLine1" bind:value={formData.addressLine1} />
+								</div>
+								<div class="sm:col-span-2 lg:col-span-2">
+									<FormField label="Address Line 2" name="addressLine2" bind:value={formData.addressLine2} />
+								</div>
 								<FormField label="City" name="city" bind:value={formData.city} />
 								<FormField label="County" name="county" bind:value={formData.county} />
-							</div>
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
 								<FormField label="Postcode" name="postcode" bind:value={formData.postcode} />
 								<FormField label="Country" name="country" bind:value={formData.country} />
 							</div>
@@ -329,8 +413,8 @@
 						</div>
 					</div>
 
-					<!-- Additional Information Card -->
-					<div class="hub-top-panel overflow-hidden">
+					<!-- Additional Information (Notes, full width) -->
+					<div class="hub-top-panel overflow-hidden lg:col-span-2">
 						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
 							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
 								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,6 +427,97 @@
 							<FormField label="Notes" name="notes" type="textarea" rows="6" bind:value={formData.notes} />
 						</div>
 					</div>
+
+					{#if dbsBoltOn}
+					<!-- DBS record (DBS Bolt-On) -->
+					<div class="hub-top-panel overflow-hidden">
+						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+								</svg>
+							</div>
+							<h3 class="text-lg font-bold text-gray-900 crm-shell-main">DBS record</h3>
+						</div>
+						<div class="p-6 space-y-5">
+							<p class="text-sm text-gray-600">Record-keeping only. OnNuma does not process DBS applications.</p>
+							<div>
+								<label for="dbs_level" class="block text-sm font-semibold text-gray-700 mb-1">DBS level</label>
+								<select id="dbs_level" name="dbs_level" bind:value={formData.dbs.level} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-1 focus:ring-2 focus:ring-theme-button-1 py-2.5 px-4 text-gray-900">
+									{#each DBS_LEVELS as opt}
+										<option value={opt.value}>{opt.label}</option>
+									{/each}
+								</select>
+							</div>
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+								<FormField label="Date certificate issued" name="dbs_dateIssued" type="date" bind:value={formData.dbs.dateIssued} />
+								<div>
+									<label for="dbs_renewalDueDate" class="block text-sm font-semibold text-gray-700 mb-1">Renewal due date</label>
+									<input type="date" id="dbs_renewalDueDate" name="dbs_renewalDueDate" bind:value={formData.dbs.renewalDueDate} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-1 focus:ring-2 focus:ring-theme-button-1 py-2.5 px-4 text-gray-900" />
+									{#if formData.dbs.dateIssued && suggestedRenewalDue(formData.dbs.dateIssued, dbsRenewalYears)}
+										<p class="text-xs text-gray-500 mt-1">Suggested: {suggestedRenewalDue(formData.dbs.dateIssued, dbsRenewalYears)} (issued + {dbsRenewalYears} years)</p>
+									{/if}
+								</div>
+							</div>
+							<div>
+								<label class="flex items-center cursor-pointer group">
+									<input type="checkbox" name="dbs_updateService" bind:checked={formData.dbs.updateServiceRegistered} class="w-5 h-5 rounded border-gray-300 text-theme-button-2 shadow-sm focus:ring-2 focus:ring-theme-button-2 cursor-pointer" />
+									<span class="ml-3 text-sm font-medium text-gray-700">DBS Update Service registered</span>
+								</label>
+							</div>
+							<FormField label="Certificate reference (optional)" name="dbs_certificateRef" bind:value={formData.dbs.certificateRef} />
+							<FormField label="Notes (e.g. awaiting renewal, working supervised)" name="dbs_notes" type="textarea" rows="3" bind:value={formData.dbs.notes} />
+						</div>
+					</div>
+					<!-- Safeguarding training (DBS Bolt-On) -->
+					<div class="hub-top-panel overflow-hidden">
+						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+								</svg>
+							</div>
+							<h3 class="text-lg font-bold text-gray-900 crm-shell-main">Safeguarding training</h3>
+						</div>
+						<div class="p-6 space-y-5">
+							<p class="text-sm text-gray-600">Record-keeping only. OnNuma does not host training content.</p>
+							<div>
+								<label for="sg_level" class="block text-sm font-semibold text-gray-700 mb-1">Training level</label>
+								<select id="sg_level" name="sg_level" bind:value={formData.safeguarding.level} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-1 focus:ring-2 focus:ring-theme-button-1 py-2.5 px-4 text-gray-900">
+									{#each SAFEGUARDING_LEVELS as opt}
+										<option value={opt.value}>{opt.label}</option>
+									{/each}
+								</select>
+							</div>
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+								<FormField label="Date completed" name="sg_dateCompleted" type="date" bind:value={formData.safeguarding.dateCompleted} />
+								<div>
+									<label for="sg_renewalDueDate" class="block text-sm font-semibold text-gray-700 mb-1">Renewal due date</label>
+									<input type="date" id="sg_renewalDueDate" name="sg_renewalDueDate" bind:value={formData.safeguarding.renewalDueDate} class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-theme-button-1 focus:ring-2 focus:ring-theme-button-1 py-2.5 px-4 text-gray-900" />
+									{#if formData.safeguarding.dateCompleted && suggestedSafeguardingRenewalDue(formData.safeguarding.dateCompleted)}
+										<p class="text-xs text-gray-500 mt-1">Suggested: {suggestedSafeguardingRenewalDue(formData.safeguarding.dateCompleted)} (completed + 3 years)</p>
+									{/if}
+								</div>
+							</div>
+							<FormField label="Notes" name="sg_notes" type="textarea" rows="3" bind:value={formData.safeguarding.notes} />
+						</div>
+					</div>
+					<!-- Coordinator notes (DBS Bolt-On, private – not visible in MyHub) -->
+					<div class="hub-top-panel overflow-hidden">
+						<div class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50">
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l11.964-11.964A6 6 0 1121 9z" />
+								</svg>
+							</div>
+							<h3 class="text-lg font-bold text-gray-900 crm-shell-main">Coordinator notes</h3>
+						</div>
+						<div class="p-6">
+							<p class="text-sm text-gray-600 mb-3">Private notes for coordinators and team leaders only. Never visible to the volunteer in MyHub.</p>
+							<FormField label="Notes" name="coordinatorNotes" type="textarea" rows="4" bind:value={formData.coordinatorNotes} placeholder="e.g. pastoral context, serving restrictions, temporary arrangements" />
+						</div>
+					</div>
+					{/if}
 				</div>
 			</form>
 		{:else}
@@ -368,7 +543,7 @@
 						</button>
 						{#if expandedPanels.has('personal')}
 						<div class="p-6">
-							<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+							<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 								{#if contact.firstName || contact.lastName}
 									<div>
 										<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Name</dt>
@@ -395,6 +570,24 @@
 										</dd>
 									</div>
 								{/if}
+								<div>
+									<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Address</dt>
+									<dd class="text-base text-gray-900">
+										{#if contact.addressLine1 || contact.city || contact.postcode}
+											<div class="space-y-0.5">
+												{#if contact.addressLine1}
+													<p>{contact.addressLine1}</p>
+													{#if contact.addressLine2}<p>{contact.addressLine2}</p>{/if}
+												{/if}
+												<p class="text-gray-600">
+													{[contact.city, contact.county, contact.postcode, contact.country].filter(Boolean).join(', ') || '—'}
+												</p>
+											</div>
+										{:else}
+											—
+										{/if}
+									</dd>
+								</div>
 								{#if spouse}
 									<div>
 										<dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Partner</dt>
@@ -447,75 +640,278 @@
 						{/if}
 					</div>
 
-					<!-- Address + Notes row -->
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-						<!-- Address Card -->
-						{#if contact.addressLine1 || contact.city || contact.postcode}
-							<div class="hub-top-panel overflow-hidden">
-								<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('address')} aria-expanded={expandedPanels.has('address')}>
-									<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
-										<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-										</svg>
-									</div>
-									<h2 class="text-xl font-bold text-gray-900 crm-shell-main flex-1">Address</h2>
-									<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('address')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-								</button>
-								{#if expandedPanels.has('address')}
-								<div class="p-6">
-									<div class="space-y-1">
-										{#if contact.addressLine1}
-											<p class="text-base text-gray-900 font-medium">
-												{contact.addressLine1}
-											</p>
-											{#if contact.addressLine2}
-												<p class="text-base text-gray-900 font-medium">
-													{contact.addressLine2}
-												</p>
-											{/if}
-										{/if}
-										<div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm text-gray-600">
-											{#if contact.city}
-												<span>{contact.city}</span>
-											{/if}
-											{#if contact.county}
-												<span>{contact.county}</span>
-											{/if}
-											{#if contact.postcode}
-												<span class="font-medium">{contact.postcode}</span>
-											{/if}
-											{#if contact.country}
-												<span>{contact.country}</span>
-											{/if}
-										</div>
-									</div>
+					<!-- Notes (full width) -->
+					{#if contact.notes}
+						<div class="hub-top-panel overflow-hidden">
+							<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('notes')} aria-expanded={expandedPanels.has('notes')}>
+								<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+									<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+									</svg>
 								</div>
-								{/if}
+								<h2 class="text-xl font-bold text-gray-900 crm-shell-main flex-1">Notes</h2>
+								<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('notes')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+							</button>
+							{#if expandedPanels.has('notes')}
+							<div class="p-6">
+								<p class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{contact.notes}</p>
 							</div>
-						{/if}
+							{/if}
+						</div>
+					{/if}
 
-						<!-- Notes Card -->
-						{#if contact.notes}
-							<div class="hub-top-panel overflow-hidden">
-								<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('notes')} aria-expanded={expandedPanels.has('notes')}>
-									<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
-										<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-										</svg>
-									</div>
-									<h2 class="text-xl font-bold text-gray-900 crm-shell-main flex-1">Notes</h2>
-									<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('notes')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-								</button>
-								{#if expandedPanels.has('notes')}
-								<div class="p-6">
-									<p class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{contact.notes}</p>
-								</div>
-								{/if}
+					{#if dbsBoltOn}
+					<!-- DBS record (view) -->
+					<div class="hub-top-panel overflow-hidden">
+						<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('dbs')} aria-expanded={expandedPanels.has('dbs')}>
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+								</svg>
 							</div>
+							<h2 class="text-xl font-bold text-gray-900 crm-shell-main flex-1">DBS record</h2>
+							{#if dbsStatus}
+								<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {dbsStatus.status === 'green' ? 'bg-green-100 text-green-800' : dbsStatus.status === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}">
+									{dbsStatus.label}
+								</span>
+							{/if}
+							<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('dbs')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+						</button>
+						{#if expandedPanels.has('dbs')}
+						<div class="p-6">
+							{#if contact.dbs?.level}
+								<dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Level</dt><dd class="text-base text-gray-900">{contact.dbs.level.replace(/_/g, ' ')}</dd></div>
+									<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date issued</dt><dd class="text-base text-gray-900">{contact.dbs.dateIssued ? formatDateUK(contact.dbs.dateIssued) : '—'}</dd></div>
+									<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Renewal due</dt><dd class="text-base text-gray-900">{contact.dbs.renewalDueDate ? formatDateUK(contact.dbs.renewalDueDate) : '—'}</dd></div>
+									<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Service</dt><dd class="text-base text-gray-900">{contact.dbs.updateServiceRegistered ? 'Yes' : 'No'}</dd></div>
+									{#if contact.dbs.certificateRef}<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Certificate ref</dt><dd class="text-base text-gray-900">{contact.dbs.certificateRef}</dd></div>{/if}
+								</dl>
+								{#if contact.dbs.notes}<p class="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{contact.dbs.notes}</p>{/if}
+							{:else}
+								<p class="text-gray-500 text-sm">No DBS record yet. Edit the contact to add one.</p>
+							{/if}
+						</div>
 						{/if}
 					</div>
+					<!-- Safeguarding training (view) -->
+					<div class="hub-top-panel overflow-hidden">
+						<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('safeguarding')} aria-expanded={expandedPanels.has('safeguarding')}>
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+								</svg>
+							</div>
+							<h2 class="text-xl font-bold text-gray-900 crm-shell-main flex-1">Safeguarding training</h2>
+							{#if safeguardingStatus}
+								<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {safeguardingStatus.status === 'green' ? 'bg-green-100 text-green-800' : safeguardingStatus.status === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}">
+									{safeguardingStatus.label}
+								</span>
+							{/if}
+							<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('safeguarding')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+						</button>
+						{#if expandedPanels.has('safeguarding')}
+						<div class="p-6">
+							{#if contact.safeguarding?.level}
+								<dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Training level</dt><dd class="text-base text-gray-900">{contact.safeguarding.level.replace(/_/g, ' ')}</dd></div>
+									<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date completed</dt><dd class="text-base text-gray-900">{contact.safeguarding.dateCompleted ? formatDateUK(contact.safeguarding.dateCompleted) : '—'}</dd></div>
+									<div><dt class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Renewal due</dt><dd class="text-base text-gray-900">{contact.safeguarding.renewalDueDate ? formatDateUK(contact.safeguarding.renewalDueDate) : '—'}</dd></div>
+								</dl>
+								{#if contact.safeguarding.notes}<p class="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{contact.safeguarding.notes}</p>{/if}
+							{:else}
+								<p class="text-gray-500 text-sm">No safeguarding training record yet. Edit the contact to add one.</p>
+							{/if}
+						</div>
+						{/if}
+					</div>
+					<!-- Coordinator notes (view, private) -->
+					<div class="hub-top-panel overflow-hidden">
+						<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('coordinatorNotes')} aria-expanded={expandedPanels.has('coordinatorNotes')}>
+							<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+								<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l11.964-11.964A6 6 0 1121 9z" />
+								</svg>
+							</div>
+							<h2 class="text-xl font-bold text-gray-900 crm-shell-main flex-1">Coordinator notes</h2>
+							<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('coordinatorNotes')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+						</button>
+						{#if expandedPanels.has('coordinatorNotes')}
+						<div class="p-6">
+							{#if contact.coordinatorNotes}
+								<p class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{contact.coordinatorNotes}</p>
+							{:else}
+								<p class="text-gray-500 text-sm">No coordinator notes. Private — not visible to the volunteer.</p>
+							{/if}
+						</div>
+						{/if}
+					</div>
+					{/if}
 			</div>
+		{/if}
+
+		{#if dbsBoltOn}
+		<!-- Milestone prompts (shown when unacknowledged milestones exist) -->
+		{#each milestones as milestone}
+		<div class="bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<div class="flex items-start gap-3">
+				<div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-700 text-xl" aria-hidden="true">🎉</div>
+				<div>
+					<p class="font-semibold text-gray-900">Long-service milestone reached</p>
+					<p class="text-sm text-gray-700 mt-0.5">{contact.firstName || 'This volunteer'} has reached <strong>{milestoneLabel(milestone.milestoneKey)}</strong>. You may wish to send a personal thank-you.</p>
+				</div>
+			</div>
+			<div class="flex gap-2 shrink-0">
+				<button
+					type="button"
+					class="hub-btn btn-theme-1 text-sm"
+					on:click={() => { showThankyouForm = true; pastoralAction('acknowledge-milestone', { milestoneId: milestone.id }); }}
+				>
+					Send thank-you
+				</button>
+				<button
+					type="button"
+					class="hub-btn text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+					on:click={() => pastoralAction('acknowledge-milestone', { milestoneId: milestone.id })}
+					disabled={pastoralWorking}
+				>
+					Dismiss
+				</button>
+			</div>
+		</div>
+		{/each}
+
+		<!-- Active pastoral care flags -->
+		{#each activePastoralFlags as flag}
+		<div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+			<div class="flex items-start gap-3">
+				<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-blue-700" aria-hidden="true">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+				</div>
+				<div class="flex-1">
+					<p class="font-semibold text-gray-900">Pastoral care note</p>
+					<p class="text-sm text-gray-700 mt-0.5">{flag.message}</p>
+					{#if flag.pastoralNote}
+						<p class="text-sm text-gray-600 mt-2 italic bg-blue-100 rounded px-3 py-2">Private note: {flag.pastoralNote}</p>
+					{/if}
+					<!-- Private note editor -->
+					<div class="mt-3 space-y-2">
+						<textarea
+							bind:value={flagNotes[flag.id]}
+							placeholder="Add a private pastoral note (not visible to the volunteer)…"
+							rows="2"
+							class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-blue-300"
+						></textarea>
+						<div class="flex flex-wrap gap-2">
+							<button
+								type="button"
+								class="hub-btn text-sm border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+								on:click={() => pastoralAction('add-note', { flagId: flag.id, note: flagNotes[flag.id] || '' })}
+								disabled={pastoralWorking}
+							>
+								Save note
+							</button>
+							<button
+								type="button"
+								class="hub-btn text-sm border border-blue-300 bg-blue-100 text-blue-800 hover:bg-blue-200"
+								on:click={() => pastoralAction('follow-up', { flagId: flag.id, note: flagNotes[flag.id] || null })}
+								disabled={pastoralWorking}
+							>
+								Mark as followed up
+							</button>
+							<button
+								type="button"
+								class="hub-btn text-sm border border-gray-300 bg-white text-gray-500 hover:bg-gray-50"
+								on:click={() => pastoralAction('dismiss-flag', { flagId: flag.id })}
+								disabled={pastoralWorking}
+							>
+								Dismiss
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<p class="text-xs text-gray-400 mt-3 text-right">Raised {new Date(flag.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} · Private — never shown to volunteer</p>
+		</div>
+		{/each}
+
+		<!-- Absence recording + history -->
+		<div class="hub-top-panel overflow-hidden">
+			<div class="hub-top-panel-header flex items-center justify-between gap-3 bg-theme-panel-bg/50">
+				<div class="flex items-center gap-3">
+					<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
+						<svg class="w-6 h-6 text-theme-button-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+					</div>
+					<h2 class="text-xl font-bold text-gray-900 crm-shell-main">Absence record</h2>
+					{#if absenceEvents.length > 0}
+						<span class="text-sm font-medium text-gray-500">({absenceEvents.length})</span>
+					{/if}
+				</div>
+				<button
+					type="button"
+					class="hub-btn btn-theme-1 text-sm px-4 py-2 shrink-0"
+					on:click={() => { showAbsenceForm = !showAbsenceForm; }}
+				>
+					{showAbsenceForm ? 'Cancel' : '+ Record absence'}
+				</button>
+			</div>
+			<div class="p-6 space-y-4">
+				{#if showAbsenceForm}
+					<div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 mb-4">
+						<p class="text-sm text-gray-600">Record that {contact.firstName || 'this volunteer'} cancelled or was absent from a session. Three or more absences in eight weeks will raise a pastoral care prompt.</p>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div>
+								<label class="block text-sm font-semibold text-gray-700 mb-1" for="absence-type">Type</label>
+								<select id="absence-type" bind:value={absenceType} class="w-full rounded-lg border border-gray-300 py-2 px-3 text-sm">
+									<option value="marked_absent">Marked absent</option>
+									<option value="cancelled">Volunteer cancelled</option>
+								</select>
+							</div>
+							<div>
+								<label class="block text-sm font-semibold text-gray-700 mb-1" for="absence-date">Session date (optional)</label>
+								<input type="date" id="absence-date" bind:value={absenceDate} class="w-full rounded-lg border border-gray-300 py-2 px-3 text-sm" />
+							</div>
+						</div>
+						<div>
+							<label class="block text-sm font-semibold text-gray-700 mb-1" for="absence-notes">Notes (optional, private)</label>
+							<input type="text" id="absence-notes" bind:value={absenceNote} placeholder="e.g. unwell, family commitment" class="w-full rounded-lg border border-gray-300 py-2 px-3 text-sm" maxlength="500" />
+						</div>
+						<button
+							type="button"
+							class="hub-btn btn-theme-1 text-sm"
+							on:click={() => {
+								pastoralAction('record-absence', {
+									type: absenceType,
+									absenceDate: absenceDate || null,
+									notes: absenceNote || null
+								}).then(() => { showAbsenceForm = false; absenceNote = ''; absenceDate = ''; });
+							}}
+							disabled={pastoralWorking}
+						>
+							{pastoralWorking ? 'Saving…' : 'Record absence'}
+						</button>
+					</div>
+				{/if}
+
+				{#if recentAbsences.length > 0}
+					<ul class="space-y-2">
+						{#each recentAbsences as ev}
+							<li class="flex items-center gap-3 text-sm py-1 border-b border-gray-100 last:border-0">
+								<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {ev.type === 'cancelled' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-700'}">
+									{ev.type === 'cancelled' ? 'Cancelled' : 'Absent'}
+								</span>
+								<span class="text-gray-700">{ev.absenceDate ? new Date(ev.absenceDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date(ev.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+								{#if ev.notes}<span class="text-gray-500 truncate max-w-xs">{ev.notes}</span>{/if}
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="text-sm text-gray-500">No absences recorded. Record an absence to start tracking patterns.</p>
+				{/if}
+			</div>
+		</div>
 		{/if}
 
 		<!-- Thank-you messages + Outstanding invites row -->
@@ -622,11 +1018,11 @@
 								<li class="flex flex-wrap items-center gap-2 sm:gap-3 py-2 border-b border-gray-100 last:border-0">
 									<div class="flex-1 min-w-0">
 										{#if rota?.id}
-											<a href="/hub/rotas/{rota.id}" class="text-theme-button-1 hover:underline font-medium">
-												{event?.name || rota?.name || 'Rota'}
+											<a href="/hub/schedules/{rota.id}" class="text-theme-button-1 hover:underline font-medium">
+												{event?.title || rota?.role || 'Schedule'}
 											</a>
 										{:else}
-											<span class="text-gray-700">Rota (deleted or unavailable)</span>
+											<span class="text-gray-700">Schedule (deleted or unavailable)</span>
 										{/if}
 										{#if occurrence?.startsAt}
 											<span class="text-gray-500 text-sm ml-1">
@@ -647,7 +1043,7 @@
 										{inv.status === 'pending' ? 'Pending' : inv.status === 'accepted' ? 'Accepted' : inv.status === 'declined' ? 'Declined' : (inv.status || 'Pending')}
 									</span>
 									{#if rota?.id}
-										<a href="/hub/rotas/{rota.id}" class="text-sm text-theme-button-1 hover:underline shrink-0">View rota →</a>
+										<a href="/hub/schedules/{rota.id}" class="text-sm text-theme-button-1 hover:underline shrink-0">View rota →</a>
 									{/if}
 								</li>
 							{/each}
@@ -660,7 +1056,7 @@
 			</div>
 		</div>
 
-		<!-- MyHub preferences (read-only: availability, about me, reminders) -->
+		<!-- MyHub preferences (compact: availability, about me, reminders) -->
 		<div class="hub-top-panel overflow-hidden">
 			<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('myhub')} aria-expanded={expandedPanels.has('myhub')}>
 				<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
@@ -673,27 +1069,27 @@
 				<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('myhub')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
 			</button>
 			{#if expandedPanels.has('myhub')}
-			<div class="p-6 space-y-6">
-				<div>
-					<h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Times that don't work for them</h3>
+			<div class="p-4 flex flex-col sm:flex-row sm:items-start gap-4">
+				<div class="shrink-0">
+					<h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Times that don't work</h3>
 					<div class="overflow-x-auto">
-						<table class="w-full border border-gray-200 rounded-lg overflow-hidden text-sm" role="grid" aria-label="Availability grid">
+						<table class="w-full max-w-md border border-gray-200 rounded text-xs" role="grid" aria-label="Availability grid">
 							<thead>
 								<tr class="bg-gray-50">
-									<th scope="col" class="text-left py-2 px-3 font-semibold text-gray-600 w-14"></th>
+									<th scope="col" class="text-left py-1.5 px-2 font-semibold text-gray-600 w-10"></th>
 									{#each PREF_TIMES as time}
-										<th scope="col" class="text-center py-2 px-2 font-semibold text-gray-600">{PREF_TIME_LABELS[time]}</th>
+										<th scope="col" class="text-center py-1.5 px-1 font-semibold text-gray-600">{PREF_TIME_LABELS[time]}</th>
 									{/each}
 								</tr>
 							</thead>
 							<tbody>
 								{#each PREF_DAYS as day}
 									<tr class="border-t border-gray-100">
-										<td class="py-1.5 px-3 font-medium text-gray-700">{PREF_DAY_LABELS[day]}</td>
+										<td class="py-1 px-2 font-medium text-gray-700">{PREF_DAY_LABELS[day]}</td>
 										{#each PREF_TIMES as time}
-											<td class="py-1.5 px-2 text-center">
+											<td class="py-1 px-1 text-center">
 												{#if isUnavailable(contact, day, time)}
-													<span class="inline-block w-6 h-6 rounded bg-amber-100 text-amber-800 flex items-center justify-center mx-auto" title="Unavailable">✕</span>
+													<span class="inline-block w-5 h-5 rounded bg-amber-100 text-amber-800 flex items-center justify-center mx-auto text-xs" title="Unavailable">✕</span>
 												{:else}
 													<span class="text-gray-300">—</span>
 												{/if}
@@ -704,31 +1100,27 @@
 							</tbody>
 						</table>
 					</div>
-					<p class="text-xs text-gray-500 mt-1">Set by the volunteer in MyHub. Blank = no preference.</p>
+					<p class="text-xs text-gray-400 mt-1">Set in MyHub. Blank = no preference.</p>
 				</div>
-				<div>
-					<h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">About me</h3>
-					{#if contact?.aboutMe?.trim()}
-						<p class="text-base text-gray-800 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-lg p-4">{contact.aboutMe.trim()}</p>
-					{:else}
-						<p class="text-sm text-gray-500">— Not set</p>
-					{/if}
-				</div>
-				<div>
-					<h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Shift reminders</h3>
-					<div class="flex flex-wrap items-center gap-4">
-						<div>
-							<span class="text-xs text-gray-500 block">Email reminders</span>
-							<span class="font-medium {contact?.reminderEmail !== false ? 'text-green-700' : 'text-gray-500'}">
-								{contact?.reminderEmail !== false ? 'On' : 'Off'}
-							</span>
-						</div>
-						{#if contact?.reminderEmail !== false}
-							<div>
-								<span class="text-xs text-gray-500 block">When</span>
-								<span class="font-medium text-gray-800">{REMINDER_TIMING_LABELS[contact?.reminderTiming || '1week'] ?? (contact?.reminderTiming || '1 week before')}</span>
-							</div>
+				<div class="sm:ml-4 flex-1 min-w-0 space-y-3">
+					<div>
+						<h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">About me</h3>
+						{#if contact?.aboutMe?.trim()}
+							<p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded p-3">{contact.aboutMe.trim()}</p>
+						{:else}
+							<p class="text-xs text-gray-500">— Not set</p>
 						{/if}
+					</div>
+					<div>
+						<h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Shift reminders</h3>
+						<div class="flex flex-wrap items-center gap-3 text-sm">
+							<span class="font-medium {contact?.reminderEmail !== false ? 'text-green-700' : 'text-gray-500'}">
+								Email: {contact?.reminderEmail !== false ? 'On' : 'Off'}
+							</span>
+							{#if contact?.reminderEmail !== false}
+								<span class="text-gray-600">· {REMINDER_TIMING_LABELS[contact?.reminderTiming || '1week'] ?? (contact?.reminderTiming || '1 week before')}</span>
+							{/if}
+						</div>
 					</div>
 				</div>
 			</div>

@@ -3,17 +3,20 @@
 	import { onMount } from 'svelte';
 	import { hasRouteAccess, isSuperAdmin } from '$lib/crm/permissions.js';
 	import { hubSidebarCollapsed, HUB_SIDEBAR_COLLAPSED_KEY } from '$lib/crm/stores/sidebar.js';
+	import { terminology } from '$lib/crm/stores/terminology.js';
 
 	export let admin = null;
 	/** @type {{ logoPath?: string } | null} */
 	export let theme = null;
 	export let superAdminEmail = null;
 	export let organisationAreaPermissions = null;
-	export let sundayPlannersLabel = 'Meeting Planners';
+	export let sundayPlannersLabel = 'Meeting Planner';
 	export let showBilling = false;
 	/** Multi-org: list of { id, name } to switch org; empty = single org */
 	export let organisations = [];
 	export let currentOrganisation = null;
+	/** DBS Bolt-On enabled: show DBS, Safeguarding, Pastoral links */
+	export let dbsBoltOn = false;
 	/** Callback when user selects another org (e.g. navigate to multi-org with org id) */
 	export let onOrganisationSwitch = null;
 	/** When set (e.g. mobile overlay), show close button and call on nav/close */
@@ -28,11 +31,20 @@
 	$: canAccessMembers = admin && hasRouteAccess(admin, '/hub/members', superAdminEmail, organisationAreaPermissions);
 	$: canAccessNewsletters = admin && hasRouteAccess(admin, '/hub/emails', superAdminEmail, organisationAreaPermissions);
 	$: canAccessEvents = admin && hasRouteAccess(admin, '/hub/events', superAdminEmail, organisationAreaPermissions);
-	$: canAccessMeetingPlanners = admin && hasRouteAccess(admin, '/hub/meeting-planners', superAdminEmail, organisationAreaPermissions);
-	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/rotas', superAdminEmail, organisationAreaPermissions);
+	$: canAccessMeetingPlanners = admin && hasRouteAccess(admin, '/hub/planner', superAdminEmail, organisationAreaPermissions);
+	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/schedules', superAdminEmail, organisationAreaPermissions);
 	$: canAccessForms = admin && hasRouteAccess(admin, '/hub/forms', superAdminEmail, organisationAreaPermissions);
 	$: canAccessUsers = admin && isSuperAdmin(admin, superAdminEmail);
 	$: canAccessVideos = admin && isSuperAdmin(admin, superAdminEmail);
+	$: canAccessTeams = admin && (
+		isSuperAdmin(admin, superAdminEmail) ||
+		(Array.isArray(admin.permissions) && admin.permissions.includes('teams')) ||
+		(Array.isArray(admin.teamLeaderForTeamIds) && admin.teamLeaderForTeamIds.length > 0)
+	);
+	$: canAccessServicePlanner = admin && (
+		canAccessTeams ||
+		hasRouteAccess(admin, '/hub/schedules', superAdminEmail, organisationAreaPermissions)
+	);
 
 	let collapsed = false;
 
@@ -64,7 +76,7 @@
 	$: isDashboard = $page.url.pathname === '/hub' || $page.url.pathname === '/hub/';
 	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/members');
 	$: isListsActive = $page.url.pathname.startsWith('/hub/lists');
-	$: isEventsActive = $page.url.pathname.startsWith('/hub/events') || $page.url.pathname.startsWith('/hub/meeting-planners');
+	$: isEventsActive = $page.url.pathname.startsWith('/hub/events');
 	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/billing') || $page.url.pathname.startsWith('/hub/audit-logs') || $page.url.pathname.startsWith('/hub/settings') || $page.url.pathname.startsWith('/hub/images') || $page.url.pathname.startsWith('/hub/videos');
 </script>
 
@@ -96,7 +108,7 @@
 				height="32"
 			/>
 			{#if !collapsed || onClose}
-				<span class="hub-sidebar-brand-text">TheHUB</span>
+				<span class="hub-sidebar-brand-text">{$terminology.hub_name}</span>
 			{/if}
 		</a>
 		{#if onClose}
@@ -159,23 +171,41 @@
 				</a>
 			{/if}
 
-			{#if canAccessRotas}
-				<a href="/hub/rotas" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/rotas')} title="Rotas" on:click={handleNavClick}>
-					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-					</svg>
-				{#if !collapsed || onClose}<span class="hub-sidebar-label">Rotas</span>{/if}
-				</a>
-			{/if}
+		{#if canAccessEvents || canAccessMeetingPlanners}
+			<a href="/hub/events" class="hub-sidebar-item" class:active={isEventsActive} title="{$terminology.event}s" on:click={handleNavClick}>
+				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+				</svg>
+			{#if !collapsed || onClose}<span class="hub-sidebar-label">{$terminology.event}s</span>{/if}
+			</a>
+		{/if}
 
-			{#if canAccessEvents || canAccessMeetingPlanners}
-				<a href="/hub/events" class="hub-sidebar-item" class:active={isEventsActive} title="Events" on:click={handleNavClick}>
-					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-					</svg>
-				{#if !collapsed || onClose}<span class="hub-sidebar-label">Events</span>{/if}
-				</a>
-			{/if}
+		{#if canAccessRotas}
+			<a href="/hub/schedules" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/schedules')} title="{$terminology.rota}s" on:click={handleNavClick}>
+				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+				</svg>
+			{#if !collapsed || onClose}<span class="hub-sidebar-label">{$terminology.rota}s</span>{/if}
+			</a>
+		{/if}
+
+		{#if canAccessTeams}
+			<a href="/hub/teams" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/teams')} title="{$terminology.team}s" on:click={handleNavClick}>
+				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+				</svg>
+			{#if !collapsed || onClose}<span class="hub-sidebar-label">{$terminology.team}s</span>{/if}
+			</a>
+		{/if}
+
+	{#if canAccessServicePlanner}
+		<a href="/hub/planner" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/planner')} title="{$terminology.meeting_planner}" on:click={handleNavClick}>
+			<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+			</svg>
+		{#if !collapsed || onClose}<span class="hub-sidebar-label">{$terminology.meeting_planner}</span>{/if}
+		</a>
+	{/if}
 
 			{#if canAccessNewsletters}
 				<a href="/hub/emails" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/emails')} title="Messages" on:click={handleNavClick}>
@@ -192,6 +222,21 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 					</svg>
 				{#if !collapsed || onClose}<span class="hub-sidebar-label">Forms</span>{/if}
+				</a>
+			{/if}
+
+			{#if dbsBoltOn && (canAccessContacts || canAccessTeams)}
+				<a href="/hub/dbs" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/dbs')} title="DBS Compliance" on:click={handleNavClick}>
+					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+					</svg>
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">DBS Compliance</span>{/if}
+				</a>
+				<a href="/hub/pastoral" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/pastoral')} title="Pastoral Care" on:click={handleNavClick}>
+					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+					</svg>
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Pastoral Care</span>{/if}
 				</a>
 			{/if}
 

@@ -1,8 +1,10 @@
+import { redirect } from '@sveltejs/kit';
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 
 export async function load({ parent }) {
+	throw redirect(302, '/hub/planner');
 	const organisationId = await getCurrentOrganisationId();
 	const { plan } = await parent();
 	const meetingPlanners = filterByOrganisation(await readCollection('meeting_planners'), organisationId);

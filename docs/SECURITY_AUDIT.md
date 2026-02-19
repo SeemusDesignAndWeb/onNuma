@@ -2,7 +2,7 @@
 
 **Date:** 2025-01-27  
 **Last Updated:** 2025-01-27  
-**Scope:** CRM Module (`/hub` routes and `/signup/rota` routes)
+**Scope:** CRM Module (`/hub` routes and `/signup/schedule` routes)
 
 ## Executive Summary
 

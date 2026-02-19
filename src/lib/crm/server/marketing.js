@@ -128,7 +128,7 @@ export function buildPlaceholderData(contact, org, baseUrl, links = {}) {
 		org_name: o.name || '',
 		org_logo_url: o.logoUrl || `${baseUrl}/assets/onnuma-logo.png`,
 		login_url: `${baseUrl}/hub/auth/login`,
-		rota_url: `${baseUrl}/hub/rotas`,
+		rota_url: `${baseUrl}/hub/schedules`,
 		events_url: `${baseUrl}/hub/events`,
 		profile_url: `${baseUrl}/hub/profile`,
 		support_email: o.supportEmail || env.MAILGUN_FROM_EMAIL || '',

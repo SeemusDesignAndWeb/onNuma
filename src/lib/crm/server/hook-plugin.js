@@ -99,7 +99,7 @@ async function crmHandleInner({ event, resolve, url, request, cookies, pathname,
 		pathname.startsWith('/event/') ||
 		pathname.startsWith('/forms') ||
 		pathname.startsWith('/unsubscribe/') ||
-		pathname.startsWith('/view-rotas');
+		pathname.startsWith('/view-schedules');
 
 	// Protected hub paths require auth; avoid slow resolveOrganisationFromHost when there is no session cookie.
 	const isProtectedHubPath =
@@ -170,11 +170,11 @@ async function crmHandleHubAndSignup(event, resolve) {
 
 	// Public routes - no auth required (signup, forms, event links, unsubscribe, view-rotas)
 	const isPublicPath =
-		pathname.startsWith('/signup/rota/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member') || pathname.startsWith('/signup/membership-form') || pathname.startsWith('/signup/rotas') ||
+		pathname.startsWith('/signup/schedule/') || pathname.startsWith('/signup/event/') || pathname.startsWith('/signup/member') || pathname.startsWith('/signup/membership-form') || pathname.startsWith('/signup/schedules') ||
 		pathname.startsWith('/forms') ||
 		pathname.startsWith('/event/') ||
 		pathname.startsWith('/unsubscribe/') ||
-		pathname.startsWith('/view-rotas');
+		pathname.startsWith('/view-schedules');
 	if (isPublicPath) {
 		// Set CSRF token on GET requests (only if not already set)
 		if (request.method === 'GET') {

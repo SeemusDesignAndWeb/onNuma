@@ -39,7 +39,7 @@
 		{ value: '{{email}}', label: 'Email' },
 		{ value: '{{phone}}', label: 'Phone' },
 		{ value: '{{org_name}}', label: 'Organisation Name' },
-		{ value: '{{rotaLinks}}', label: 'Upcoming Rotas' },
+		{ value: '{{rotaLinks}}', label: 'Upcoming Schedules' },
 		{ value: '{{upcomingEvents}}', label: 'Upcoming Events' }
 	];
 

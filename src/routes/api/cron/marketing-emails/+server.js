@@ -43,7 +43,10 @@ async function handleRequest(url, request) {
 	}
 
 	try {
-		const baseUrl = env.APP_BASE_URL || url.origin || 'http://localhost:5173';
+		// Prefer APP_BASE_URL so email links use the canonical public URL when cron is hit at internal URL
+		const baseUrl = (env.APP_BASE_URL && String(env.APP_BASE_URL).trim().startsWith('http'))
+			? String(env.APP_BASE_URL).trim().replace(/\/$/, '')
+			: (url.origin || 'http://localhost:5173');
 
 		console.log('[Marketing Cron] Starting sequence evaluation...');
 		const evalResult = await evaluateSequences(baseUrl);

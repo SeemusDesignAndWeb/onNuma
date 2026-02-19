@@ -23,29 +23,15 @@ export async function POST({ request, cookies }) {
 		emailRateLimitDelay,
 		calendarColours,
 		calendarColors,
-		meetingPlannerRotas,
 		theme: themeUpdate,
-		rotaReminderDaysAhead: rotaReminderDaysAheadUpdate,
-		sundayPlannerEventId: sundayPlannerEventIdUpdate,
-		sundayPlannersLabel: sundayPlannersLabelUpdate,
+		terminology: terminologyUpdate,
 		privacyContactName: privacyContactNameUpdate,
 		privacyContactEmail: privacyContactEmailUpdate,
 		privacyContactPhone: privacyContactPhoneUpdate
-	} = data; // Support both for backward compatibility
+	} = data;
 
 	const settings = await getSettings();
 	
-	// Update rota reminder days ahead if provided
-	if (rotaReminderDaysAheadUpdate !== undefined) {
-		const n = typeof rotaReminderDaysAheadUpdate === 'number'
-			? rotaReminderDaysAheadUpdate
-			: parseInt(String(rotaReminderDaysAheadUpdate), 10);
-		if (isNaN(n) || n < 0 || n > 90) {
-			throw error(400, 'rotaReminderDaysAhead must be a number between 0 and 90');
-		}
-		settings.rotaReminderDaysAhead = n;
-	}
-
 	// Update email rate limit delay if provided
 	if (emailRateLimitDelay !== undefined) {
 		// Validate delay (must be between 100ms and 10000ms)
@@ -81,27 +67,6 @@ export async function POST({ request, cookies }) {
 		}
 		
 		settings.calendarColours = coloursToUpdate;
-	}
-
-	// Update meeting planner rotas if provided
-	if (meetingPlannerRotas !== undefined) {
-		if (!Array.isArray(meetingPlannerRotas)) {
-			throw error(400, 'Invalid meetingPlannerRotas: must be an array');
-		}
-
-		for (const rota of meetingPlannerRotas) {
-			if (!rota || typeof rota !== 'object') {
-				throw error(400, 'Invalid rota: each rota must be an object');
-			}
-			if (!rota.role || typeof rota.role !== 'string' || rota.role.trim().length === 0) {
-				throw error(400, 'Invalid rota: each rota must have a role name');
-			}
-			if (typeof rota.capacity !== 'number' || rota.capacity < 1) {
-				throw error(400, 'Invalid rota: each rota must have a capacity of at least 1');
-			}
-		}
-
-		settings.meetingPlannerRotas = meetingPlannerRotas;
 	}
 
 	// Update theme if provided
@@ -179,26 +144,33 @@ export async function POST({ request, cookies }) {
 		}
 	}
 
-	// Meeting planner event (dropdown: which event to use as "Meeting planner")
-	if (sundayPlannerEventIdUpdate !== undefined) {
-		settings.sundayPlannerEventId =
-			sundayPlannerEventIdUpdate === null || sundayPlannerEventIdUpdate === ''
-				? null
-				: String(sundayPlannerEventIdUpdate).trim() || null;
-	}
-	if (sundayPlannersLabelUpdate !== undefined) {
-		const v = String(sundayPlannersLabelUpdate ?? '').trim();
-		settings.sundayPlannersLabel = v || 'Meeting Planners';
+	// Update terminology if provided
+	if (terminologyUpdate !== undefined) {
+		if (typeof terminologyUpdate !== 'object' || terminologyUpdate === null || Array.isArray(terminologyUpdate)) {
+			throw error(400, 'Invalid terminology: must be an object');
+		}
+		const { getDefaultTerminology } = await import('$lib/crm/server/settings.js');
+		const defaults = getDefaultTerminology();
+		const merged = {};
+		for (const key of Object.keys(defaults)) {
+			const val = terminologyUpdate[key];
+			merged[key] = (typeof val === 'string' && val.trim() !== '') ? val.trim().slice(0, 50) : defaults[key];
+		}
+		settings.terminology = merged;
 	}
 
-	// Privacy policy contact (stored on current organisation for multi-org)
+	// Privacy policy contact (stored on current organisation; bolt-ons are managed in multi-org)
 	const organisationId = await getCurrentOrganisationId();
-	if (organisationId && (privacyContactNameUpdate !== undefined || privacyContactEmailUpdate !== undefined || privacyContactPhoneUpdate !== undefined)) {
-		const updates = {};
-		if (privacyContactNameUpdate !== undefined) updates.privacyContactName = String(privacyContactNameUpdate ?? '').trim() || null;
-		if (privacyContactEmailUpdate !== undefined) updates.privacyContactEmail = String(privacyContactEmailUpdate ?? '').trim() || null;
-		if (privacyContactPhoneUpdate !== undefined) updates.privacyContactPhone = String(privacyContactPhoneUpdate ?? '').trim() || null;
-		await updatePartial('organisations', organisationId, updates);
+	if (organisationId) {
+		const orgUpdates = {};
+		if (privacyContactNameUpdate !== undefined) orgUpdates.privacyContactName = String(privacyContactNameUpdate ?? '').trim() || null;
+		if (privacyContactEmailUpdate !== undefined) orgUpdates.privacyContactEmail = String(privacyContactEmailUpdate ?? '').trim() || null;
+		if (privacyContactPhoneUpdate !== undefined) orgUpdates.privacyContactPhone = String(privacyContactPhoneUpdate ?? '').trim() || null;
+		if (Object.keys(orgUpdates).length > 0) {
+			await updatePartial('organisations', organisationId, orgUpdates);
+			const { invalidateOrganisationsCache } = await import('$lib/crm/server/organisationsCache.js');
+			invalidateOrganisationsCache();
+		}
 	}
 
 	await writeSettings(settings);

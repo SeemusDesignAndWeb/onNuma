@@ -46,7 +46,7 @@ export async function POST({ request, cookies, url }) {
 		rotaInvites.push({
 			rota,
 			event: eventData,
-			signupUrl: `${baseUrl}/signup/rota/${tokenData.token}#rota-${rota.id}`
+			signupUrl: `${baseUrl}/signup/schedule/${tokenData.token}#rota-${rota.id}`
 		});
 	}
 

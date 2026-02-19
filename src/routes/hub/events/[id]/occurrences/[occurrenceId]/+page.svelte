@@ -566,10 +566,10 @@
 
 	<!-- Rotas Section -->
 	<div class="bg-white shadow rounded-lg p-6 mt-6">
-		<h3 class="text-xl font-bold text-gray-900 mb-4">Rotas for this Occurrence</h3>
+		<h3 class="text-xl font-bold text-gray-900 mb-4">Schedules for this Occurrence</h3>
 		
 		{#if rotas.length === 0}
-			<p class="text-gray-500">No rotas assigned to this occurrence.</p>
+			<p class="text-gray-500">No schedules assigned to this occurrence.</p>
 		{:else}
 			<div class="space-y-6">
 				{#each rotas as rota}
@@ -613,7 +613,7 @@
 
 						<div class="mt-3">
 							<a 
-								href="/hub/rotas/{rota.id}" 
+								href="/hub/schedules/{rota.id}" 
 								class="text-sm text-hub-blue-600 hover:text-hub-blue-600/80 underline"
 							>
 								View rota details →

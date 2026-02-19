@@ -167,7 +167,7 @@
 </script>
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Contacts</h2>
+	<h2 class="text-xl sm:text-2xl font-bold">Contacts</h2>
 	<div class="flex flex-wrap gap-2">
 		{#if isSuperAdmin}
 			<button

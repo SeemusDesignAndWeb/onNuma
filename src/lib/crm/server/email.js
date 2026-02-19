@@ -11,12 +11,18 @@ const fromEmailDefault = () => env.MAILGUN_FROM_EMAIL || (env.MAILGUN_DOMAIN ? `
  * Get base URL for absolute links in emails.
  * When the request is from a hub custom domain (e.g. hub.egcc.co.uk), uses that origin
  * so links and images point to the correct domain/subdomain.
+ * Prefers APP_BASE_URL when the request origin is localhost so cron/internal calls still produce correct links.
  * @param {object} event - SvelteKit event object (may have locals.hubBaseUrl when on hub domain)
- * @returns {string} Base URL
+ * @returns {string} Base URL (origin, no trailing slash)
  */
 function getBaseUrl(event) {
 	if (event?.locals?.hubBaseUrl) return event.locals.hubBaseUrl;
-	return env.APP_BASE_URL || event?.url?.origin || 'http://localhost:5173';
+	const requestOrigin = event?.url?.origin;
+	const isLocalhost = !requestOrigin || /^https?:\/\/localhost(:\d+)?$/i.test(requestOrigin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/i.test(requestOrigin);
+	const appBase = env.APP_BASE_URL ? String(env.APP_BASE_URL).trim().replace(/\/$/, '') : '';
+	if (appBase && (isLocalhost || !requestOrigin)) return appBase;
+	const base = appBase || requestOrigin || 'http://localhost:5173';
+	return base.replace(/\/$/, '');
 }
 
 /** Default logo path when no theme logo is set (must exist in static/assets). */
@@ -384,7 +390,7 @@ export async function getUpcomingRotas(contactId, event) {
 					rota,
 					event: eventData,
 					occurrence,
-					signupUrl: tokenData ? `${baseUrl}/signup/rota/${tokenData.token}` : null,
+					signupUrl: tokenData ? `${baseUrl}/signup/schedule/${tokenData.token}` : null,
 					eventRotaViewUrl
 				});
 			}
@@ -434,7 +440,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 		.replace(/\{\{phone\}\}/g, contactData.phone || '')
 		.replace(/\{\{org_name\}\}/g, orgContact.orgName || '');
 
-	const signupPageUrl = `${baseUrl}/signup/rotas`;
+	const signupPageUrl = `${baseUrl}/signup/schedules`;
 
 	// Replace rota links placeholder with actual rota links
 	if (isText) {
@@ -458,7 +464,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 
 					text += `\n- ${eventData.title} - ${rota.role}\n  ${dateStr}`;
 					if (eventRotaViewUrl) {
-						text += `\n  See who's on the rotas: ${eventRotaViewUrl}`;
+						text += `\n  See who's on the schedules: ${eventRotaViewUrl}`;
 					}
 					if (signupUrl) {
 						text += `\n  Sign up: ${signupUrl}`;
@@ -469,7 +475,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 			
 			// Add signup link
 			text += '\n';
-			text += `Sign Up for Rotas: ${signupPageUrl}`;
+			text += `Sign Up for Schedules: ${signupPageUrl}`;
 			
 			return text;
 		});
@@ -511,7 +517,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 						html += '<div style="margin-bottom: 8px;">';
 						html += `<p style="margin: 0 0 5px 0; color: #333; font-size: 14px;">${line}</p>`;
 						if (signupUrl) {
-							html += `<a href="${signupUrl}" style="display: inline-block; background: #4A97D2; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; margin-top: 3px;">View Rota Details</a>`;
+							html += `<a href="${signupUrl}" style="display: inline-block; background: #4A97D2; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; margin-top: 3px;">View Schedule Details</a>`;
 						}
 						html += '</div>';
 					}
@@ -519,7 +525,7 @@ export async function personalizeContent(content, contact, upcomingRotas = [], u
 			
 				// Add signup link
 				html += '<div style="margin-top: 12px;">';
-				html += `<a href="${signupPageUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">Sign Up for Rotas</a>`;
+				html += `<a href="${signupPageUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">Sign Up for Schedules</a>`;
 				html += '</div>';
 			
 				return html;
@@ -854,7 +860,7 @@ export async function sendNewsletterBatch(emailDataArray, newsletterId) {
 export async function sendRotaInvite({ to, name, token }, rotaData, contact, event) {
 	const { rota, event: eventData, occurrence } = rotaData;
 	const baseUrl = getBaseUrl(event);
-	const signupUrl = `${baseUrl}/signup/rota/${token}`;
+	const signupUrl = `${baseUrl}/signup/schedule/${token}`;
 	const fromEmail = fromEmailDefault();
 
 	const eventTitle = eventData?.title || 'Event';
@@ -902,7 +908,7 @@ export async function sendRotaInvite({ to, name, token }, rotaData, contact, eve
 					<p style="margin: 0 0 3px 0; color: #333; font-size: 14px; font-weight: 600;">${item.event.title} - ${item.rota.role}</p>
 					<p style="margin: 0 0 3px 0; color: #666; font-size: 13px;">${dateStr}</p>
 					${location ? `<p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">📍 ${location}</p>` : ''}
-					${item.signupUrl ? `<a href="${item.signupUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 12px;">View Rota</a>` : ''}
+					${item.signupUrl ? `<a href="${item.signupUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 12px;">View Schedule</a>` : ''}
 				</div>
 			`;
 		}
@@ -1056,7 +1062,7 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 					rotasMap.set(rotaId, {
 						rota,
 						token: invite.token,
-						signupUrl: `${baseUrl}/signup/rota/${invite.token}#rota-${rotaId}`
+						signupUrl: `${baseUrl}/signup/schedule/${invite.token}#rota-${rotaId}`
 					});
 				}
 			}
@@ -1114,7 +1120,7 @@ export async function sendCombinedRotaInvites(contactInvites, eventData, eventPa
 							<p style="margin: 0 0 3px 0; color: #333; font-size: 14px; font-weight: 600;">${item.event.title} - ${item.rota.role}</p>
 							<p style="margin: 0 0 3px 0; color: #666; font-size: 13px;">${dateStr}</p>
 							${location ? `<p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">📍 ${location}</p>` : ''}
-							${item.signupUrl ? `<a href="${item.signupUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 12px;">View Rota</a>` : ''}
+							${item.signupUrl ? `<a href="${item.signupUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 12px;">View Schedule</a>` : ''}
 						</div>
 					`;
 				}
@@ -1978,7 +1984,7 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 	const { rota, event: eventData, occurrence } = rotaData;
 	const baseUrl = getBaseUrl(event);
 	const fromEmail = fromEmailDefault();
-	const hubUrl = `${baseUrl}/hub/rotas/${rota.id}`;
+	const hubUrl = `${baseUrl}/hub/schedules/${rota.id}`;
 
 	const eventTitle = eventData?.title || 'Event';
 	const role = rota?.role || 'Volunteer';
@@ -2191,7 +2197,7 @@ export async function sendRotaUpdateNotification({ to, name }, rotaData, event) 
 				</div>
 
 				<div style="text-align: center; margin: 20px 0;">
-					<a href="${hubUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">View Rota</a>
+					<a href="${hubUrl}" style="display: inline-block; background: #2d7a32; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 14px;">View Schedule</a>
 				</div>
 				</div>
 			</div>
@@ -2212,7 +2218,7 @@ Event: ${eventTitle}${occurrenceDateDisplay ? ` - ${occurrenceDateDisplay}` : ''
 Capacity: ${rota.capacity} ${rota.capacity === 1 ? 'person is' : 'people are'} ideal for this rota
 Total Assignees: ${(rota.assignees || []).length}${assigneesText}
 
-View the rota: ${hubUrl}
+View the schedule: ${hubUrl}
 	`.trim();
 
 	try {

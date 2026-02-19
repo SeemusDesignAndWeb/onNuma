@@ -61,7 +61,7 @@
 	$: canAccessLists = admin && hasRouteAccess(admin, '/hub/lists', superAdminEmail, organisationAreaPermissions);
 	$: canAccessNewsletters = admin && hasRouteAccess(admin, '/hub/emails', superAdminEmail, organisationAreaPermissions);
 	$: canAccessEvents = admin && hasRouteAccess(admin, '/hub/events', superAdminEmail, organisationAreaPermissions);
-	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/rotas', superAdminEmail, organisationAreaPermissions);
+	$: canAccessRotas = admin && hasRouteAccess(admin, '/hub/schedules', superAdminEmail, organisationAreaPermissions);
 	$: canAccessForms = admin && hasRouteAccess(admin, '/hub/forms', superAdminEmail, organisationAreaPermissions);
 
 	$: visiblePanelIds = (() => {
@@ -256,7 +256,7 @@
 	<div class="space-y-6 min-w-0 max-w-full">
 		<!-- Page header: Dashboard title left, privacy contact reminder right -->
 		<div class="flex flex-wrap items-start justify-between gap-3 min-w-0">
-			<h1 class="text-xl sm:text-2xl font-bold text-gray-900 break-words">Dashboard</h1>
+			<h1 class="text-xl sm:text-2xl font-bold break-words">Dashboard</h1>
 			{#if showPrivacyContactPanel}
 				<div class="relative w-full sm:w-1/2 min-w-0 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 p-3 pr-8 text-sm shadow-sm border-gray-100 sm:ml-auto">
 					<button
@@ -314,13 +314,13 @@
 				</a>
 			{/if}
 			{#if canAccessRotas}
-				<a href="/hub/rotas" class="dashboard-stat-tile rounded-xl bg-white p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow min-w-0">
+				<a href="/hub/schedules" class="dashboard-stat-tile rounded-xl bg-white p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow min-w-0">
 					<div class="flex items-center gap-2 sm:gap-3 min-w-0">
 						<div class="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
 							<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
 						</div>
 						<div class="min-w-0 flex-1">
-							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">Rotas</p>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">Schedules</p>
 							<p class="text-lg sm:text-xl font-semibold text-gray-900 truncate">{stats.rotas ?? 0}</p>
 						</div>
 					</div>
@@ -382,7 +382,7 @@
 									<path d="M8 6a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zM5 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
 								</svg>
 							</div>
-							<h2 class="dashboard-panel-title">Rota shortages</h2>
+							<h2 class="dashboard-panel-title">Schedule shortages</h2>
 							<span class="dashboard-panel-link-spacer"></span>
 							<button
 								type="button"
@@ -426,7 +426,7 @@
 											<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 												<th scope="col" class="py-2 pr-3">Event</th>
 												<th scope="col" class="py-2 pr-3 whitespace-nowrap">Date</th>
-												<th scope="col" class="py-2 pr-3">Rota</th>
+												<th scope="col" class="py-2 pr-3">Schedule</th>
 												<th scope="col" class="py-2 pr-3 text-center">Filled</th>
 												<th scope="col" class="py-2 pl-3 w-10"></th>
 											</tr>
@@ -443,7 +443,7 @@
 														</span>
 													</td>
 													<td class="py-1.5 pl-3">
-														<a href="/hub/rotas/{gap.rotaId}" class="inline-flex items-center justify-center w-8 h-8 rounded text-gray-500 hover:text-theme-button-1 hover:bg-gray-100" title="View rota" aria-label="View {gap.rotaName}">
+														<a href="/hub/schedules/{gap.rotaId}" class="inline-flex items-center justify-center w-8 h-8 rounded text-gray-500 hover:text-theme-button-1 hover:bg-gray-100" title="View rota" aria-label="View {gap.rotaName}">
 															<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -479,8 +479,8 @@
 							{/if}
 						</div>
 						<div class="dashboard-panel-footer flex items-center justify-between gap-2 flex-wrap">
-							<a href="/hub/rotas" class="dashboard-panel-link dashboard-panel-link--left">View your rotas</a>
-							<a href="/hub/rotas/invite" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium">
+							<a href="/hub/schedules" class="dashboard-panel-link dashboard-panel-link--left">View your rotas</a>
+							<a href="/hub/schedules/invite" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium">
 								<svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
 								</svg>
@@ -549,7 +549,7 @@
 										<thead>
 											<tr class="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 												<th scope="col" class="py-2 pr-3">Name</th>
-												<th scope="col" class="py-2 pr-3 text-center">Rotas</th>
+												<th scope="col" class="py-2 pr-3 text-center">Schedules</th>
 												<th scope="col" class="py-2 pl-3 text-center whitespace-nowrap">Last 30 days</th>
 											</tr>
 										</thead>

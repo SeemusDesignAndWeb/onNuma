@@ -1,174 +1,19 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { findById, update, remove, readCollection } from '$lib/crm/server/fileStore.js';
+import { findById, update, remove } from '$lib/crm/server/fileStore.js';
 import { validateMeetingPlanner, validateRota } from '$lib/crm/server/validators.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { sanitizeHtml } from '$lib/crm/server/sanitize.js';
-import { getSettings } from '$lib/crm/server/settings.js';
-import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
+import { getCurrentOrganisationId } from '$lib/crm/server/orgContext.js';
 
-export async function load({ params, cookies, url, parent }) {
-	const organisationId = await getCurrentOrganisationId();
+export async function load({ params }) {
 	const meetingPlanner = await findById('meeting_planners', params.id);
-	if (!meetingPlanner) {
-		throw redirect(302, '/hub/meeting-planners');
+	const organisationId = await getCurrentOrganisationId();
+	if (!meetingPlanner || (meetingPlanner.organisationId != null && meetingPlanner.organisationId !== organisationId)) {
+		throw redirect(302, '/hub/planner');
 	}
-	if (meetingPlanner.organisationId != null && meetingPlanner.organisationId !== organisationId) {
-		throw redirect(302, '/hub/meeting-planners');
-	}
-
-	const { plan } = await parent();
-	const event = await findById('events', meetingPlanner.eventId);
-	if (event && event.organisationId != null && event.organisationId !== organisationId) {
-		throw redirect(302, '/hub/meeting-planners');
-	}
-	const occurrence = meetingPlanner.occurrenceId ? await findById('occurrences', meetingPlanner.occurrenceId) : null;
-	
-	// Load all occurrences for this event (scoped to current org)
-	const allOccurrences = filterByOrganisation(await readCollection('occurrences'), organisationId);
-	const eventOccurrences = allOccurrences.filter(o => o.eventId === meetingPlanner.eventId);
-
-	// Load all rotas (scoped to current org)
-	const allRotas = filterByOrganisation(await readCollection('rotas'), organisationId);
-	const settings = await getSettings();
-	const settingsRotas = settings.meetingPlannerRotas || [];
-	
-	// Find rotas for this event
-	const eventRotas = allRotas.filter(r => r.eventId === meetingPlanner.eventId);
-
-	// Determine which rotas to load based on settings
-	const rotasToLoad = settingsRotas.map(sr => {
-		const role = (sr.role || '').trim();
-		let matchedRota = eventRotas.find(r => (r.role || '').trim() === role);
-		
-		// Fuzzy match for Worship Team legacy name
-		if (!matchedRota && role === 'Worship Team') {
-			matchedRota = eventRotas.find(r => (r.role || '').trim() === 'Worship Leader and Team');
-		} else if (!matchedRota && role === 'Worship Leader and Team') {
-			matchedRota = eventRotas.find(r => (r.role || '').trim() === 'Worship Team');
-		}
-
-		return {
-			key: role.toLowerCase().replace(/[^a-z0-9]/g, ''),
-			role: role,
-			rota: matchedRota || null
-		};
-	});
-
-	// Load contacts for assignee selection (plan-limited)
-	const orgContacts = filterByOrganisation(await readCollection('contacts'), organisationId);
-	const contacts = contactsWithinPlanLimit(orgContacts, plan);
-	
-	// Load all lists for filtering contacts (scoped to current org)
-	const lists = filterByOrganisation(await readCollection('lists'), organisationId);
-
-	// Process assignees for each rota, filtering by meeting planner's occurrence
-	function processAssignees(rota) {
-		if (!rota || !rota.assignees) {
-			return [];
-		}
-		
-		const processed = (rota.assignees || []).map((assignee) => {
-			let contactId, occurrenceId;
-			
-			if (typeof assignee === 'string') {
-				contactId = assignee;
-				occurrenceId = rota.occurrenceId;
-			} else if (assignee && typeof assignee === 'object') {
-				if (assignee.contactId) {
-					contactId = assignee.contactId;
-					occurrenceId = assignee.occurrenceId || rota.occurrenceId;
-				} else if (assignee.id) {
-					contactId = assignee.id;
-					occurrenceId = assignee.occurrenceId || rota.occurrenceId;
-				} else if (assignee.name && assignee.email) {
-					contactId = { name: assignee.name, email: assignee.email };
-					occurrenceId = assignee.occurrenceId || rota.occurrenceId;
-				} else {
-					return null;
-				}
-			} else {
-				return null;
-			}
-			
-			// Filter: If meeting planner is for a specific occurrence, only show assignees for that occurrence
-			// If meeting planner is for all occurrences (occurrenceId is null), show all assignees
-			if (meetingPlanner.occurrenceId !== null && occurrenceId !== meetingPlanner.occurrenceId) {
-				return null; // Filter out assignees from other occurrences
-			}
-			
-			let contactDetails = null;
-			if (typeof contactId === 'string') {
-				const contact = contacts.find(c => c.id === contactId);
-				if (contact) {
-					contactDetails = {
-						id: contact.id,
-						name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email,
-						email: contact.email
-					};
-				} else {
-					contactDetails = {
-						id: contactId,
-						name: 'Unknown Contact',
-						email: ''
-					};
-				}
-			} else {
-				contactDetails = {
-					id: null,
-					name: contactId.name || 'Unknown',
-					email: contactId.email || ''
-				};
-			}
-			
-			return {
-				...contactDetails,
-				occurrenceId: occurrenceId
-			};
-		}).filter(a => a !== null);
-		
-		return processed;
-	}
-
-	const processedRotas = {};
-	const rawRotas = {};
-	
-	for (const item of rotasToLoad) {
-		if (item.rota) {
-			processedRotas[item.key] = {
-				...item.rota,
-				assignees: processAssignees(item.rota)
-			};
-			rawRotas[item.key] = item.rota;
-		} else {
-			processedRotas[item.key] = null;
-			rawRotas[item.key] = null;
-		}
-	}
-
-	// Get unique speaker series from all meeting planners (excluding current one, scoped to current org)
-	const allMeetingPlanners = filterByOrganisation(await readCollection('meeting_planners'), organisationId);
-	const speakerSeries = [...new Set(
-		allMeetingPlanners
-			.filter(mp => mp.id !== params.id) // Exclude current meeting planner
-			.map(mp => mp.speakerSeries)
-			.filter(series => series && series.trim() !== '')
-	)].sort();
-
-	const csrfToken = getCsrfToken(cookies) || '';
-
-	return { 
-		meetingPlanner, 
-		event, 
-		occurrence,
-		eventOccurrences,
-		rotas: processedRotas,
-		rawRotas: rawRotas,
-		rotasToLoad, // Include this so the UI knows the order and roles
-		availableContacts: contacts,
-		lists,
-		speakerSeries,
-		csrfToken 
-	};
+	// Planner is notes + attached schedules only; redirect to planner for this event
+	const eventId = meetingPlanner.eventId;
+	throw redirect(302, eventId ? `/hub/planner?eventId=${encodeURIComponent(eventId)}` : '/hub/planner');
 }
 
 export const actions = {
@@ -187,10 +32,10 @@ export const actions = {
 			const organisationId = await getCurrentOrganisationId();
 			const meetingPlanner = await findById('meeting_planners', params.id);
 			if (!meetingPlanner) {
-				return fail(404, { error: 'Meeting planner not found' });
+				return fail(404, { error: 'Meeting plan not found' });
 			}
 			if (meetingPlanner.organisationId != null && meetingPlanner.organisationId !== organisationId) {
-				return fail(404, { error: 'Meeting planner not found' });
+				return fail(404, { error: 'Meeting plan not found' });
 			}
 
 			const meetingPlannerData = {
@@ -208,7 +53,7 @@ export const actions = {
 			return { success: true };
 		} catch (error) {
 			console.error('Error updating meeting planner:', error);
-			return fail(400, { error: error.message || 'Failed to update meeting planner' });
+			return fail(400, { error: error.message || 'Failed to update meeting plan' });
 		}
 	},
 
@@ -224,10 +69,10 @@ export const actions = {
 			const organisationId = await getCurrentOrganisationId();
 			const meetingPlanner = await findById('meeting_planners', params.id);
 			if (!meetingPlanner) {
-				return fail(404, { error: 'Meeting planner not found' });
+				return fail(404, { error: 'Meeting plan not found' });
 			}
 			if (meetingPlanner.organisationId != null && meetingPlanner.organisationId !== organisationId) {
-				return fail(404, { error: 'Meeting planner not found' });
+				return fail(404, { error: 'Meeting plan not found' });
 			}
 
 			// Optionally delete rotas (for now, we'll keep them)
@@ -238,11 +83,11 @@ export const actions = {
 			// if (meetingPlanner.callToWorshipRotaId) await remove('rotas', meetingPlanner.callToWorshipRotaId);
 
 			await remove('meeting_planners', params.id);
-			throw redirect(302, '/hub/meeting-planners');
+			throw redirect(302, '/hub/planner');
 		} catch (error) {
 			if (error.status === 302) throw error; // Re-throw redirects
 			console.error('Error deleting meeting planner:', error);
-			return fail(400, { error: error.message || 'Failed to delete meeting planner' });
+			return fail(400, { error: error.message || 'Failed to delete meeting plan' });
 		}
 	},
 

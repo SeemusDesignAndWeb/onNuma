@@ -1,24 +1,14 @@
-import { getSettings, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
+import { getThemeForCurrentOrganisation, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { getMemberContactIdFromCookie } from '$lib/crm/server/memberAuth.js';
 import { getCsrfToken, generateCsrfToken, setCsrfToken } from '$lib/crm/server/auth.js';
 import { readCollection, findById } from '$lib/crm/server/fileStore.js';
 import { filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { env } from '$env/dynamic/private';
 
-/** Strip legacy Cloudinary logo URLs (we use volume/disk image storage now) for consistent display. */
-function sanitizeThemeLogoUrls(theme) {
-	if (!theme || typeof theme !== 'object') return theme;
-	const isLegacyCloudinary = (u) => typeof u === 'string' && u.includes('cloudinary.com');
-	const t = { ...theme };
-	if (isLegacyCloudinary(t.logoPath)) t.logoPath = '';
-	if (isLegacyCloudinary(t.loginLogoPath)) t.loginLogoPath = '';
-	return t;
-}
-
 /**
  * Member (volunteer) self-service portal layout.
  * Resolves member from signed cookie (set after name+email login).
- * Theme (logo etc.) makes the My area self-contained and branded like the hub.
+ * Theme (logo etc.) from current org so MyHUB shows the same logo as the Hub.
  */
 export async function load({ cookies }) {
 	let member = null;
@@ -38,8 +28,7 @@ export async function load({ cookies }) {
 	}
 	let theme = null;
 	try {
-		const settings = await getSettings();
-		theme = sanitizeThemeLogoUrls(settings?.theme || null);
+		theme = await getThemeForCurrentOrganisation();
 	} catch (err) {
 		console.error('[my layout] load theme failed:', err?.message || err);
 	}

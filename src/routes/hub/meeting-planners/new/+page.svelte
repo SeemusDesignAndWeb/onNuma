@@ -22,9 +22,9 @@
 	function handleEnhance() {
 		return async ({ update, result }) => {
 			if (result.type === 'redirect') {
-				notifications.success('Meeting Planner created successfully');
+				notifications.success('Meeting plan created');
 			} else if (result.type === 'failure') {
-				notifications.error(result.data?.error || 'Failed to create meeting planner');
+				notifications.error(result.data?.error || 'Failed to create meeting plan');
 			}
 			await update();
 		};
@@ -50,12 +50,12 @@
 	<!-- Header with Action Buttons -->
 	<div class="bg-white shadow rounded-lg p-4 mb-4">
 		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-			<h2 class="text-lg sm:text-xl font-bold text-gray-900">New {singularLabel}</h2>
+			<h2 class="text-lg sm:text-xl font-bold">New {singularLabel}</h2>
 			<div class="flex flex-wrap gap-2">
-				<a href="/hub/meeting-planners" class="bg-white border-2 border-hub-blue-500 text-hub-blue-600 hover:bg-hub-blue-50 px-2.5 py-1.5 rounded-md text-sm">
+				<a href="/hub/meeting-planners" class="hub-btn btn-theme-light-1 px-2.5 py-1.5 rounded-md text-sm">
 					Cancel
 				</a>
-				<button type="submit" form="meeting-planner-form" class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5 rounded-md text-sm">
+				<button type="submit" form="meeting-planner-form" class="hub-btn btn-theme-2 px-2.5 py-1.5 rounded-md text-sm">
 					<span class="hidden sm:inline">Create {singularLabel}</span>
 					<span class="sm:hidden">Create</span>
 				</button>

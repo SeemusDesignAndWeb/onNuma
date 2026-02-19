@@ -7,6 +7,14 @@ import { logDataChange, getAdminIdFromEvent } from '$lib/crm/server/audit.js';
 import { getSettings } from '$lib/crm/server/settings.js';
 import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit } from '$lib/crm/server/orgContext.js';
 import { generateId } from '$lib/crm/server/ids.js';
+import { getDbsStatus } from '$lib/crm/server/dbs.js';
+import { getSafeguardingStatus } from '$lib/crm/server/safeguarding.js';
+import {
+	getAllPastoralFlagsForContact,
+	getAbsenceEventsForContact,
+	checkAndRecordMilestones,
+	getAndNotifyUnacknowledgedMilestones
+} from '$lib/crm/server/pastoral.js';
 
 export async function load({ params, cookies, parent }) {
 	const organisationId = await getCurrentOrganisationId();
@@ -35,6 +43,11 @@ export async function load({ params, cookies, parent }) {
 	const csrfToken = getCsrfToken(cookies) || '';
 	const settings = await getSettings();
 
+	// DBS Bolt-On: get current org flag and DBS renewal years (for contact profile sections)
+	const org = organisationId ? await findById('organisations', organisationId) : null;
+	const dbsBoltOn = !!(org?.dbsBoltOn ?? org?.churchBoltOn);
+	const dbsRenewalYears = org?.dbsRenewalYears ?? 3;
+
 	// Load thank-you messages sent to this volunteer
 	const allThankyou = await readCollection('volunteer_thankyou').catch(() => []);
 	const thankyouMessages = allThankyou
@@ -57,7 +70,24 @@ export async function load({ params, cookies, parent }) {
 	// Sort by invitedAt descending (most recent first)
 	myhubInvitations.sort((a, b) => new Date((b.inv.invitedAt || 0)) - new Date((a.inv.invitedAt || 0)));
 
-	return { contact, spouse, contacts, csrfToken, theme: settings?.theme || null, thankyouMessages, myhubInvitations };
+	const dbsStatus = dbsBoltOn && contact.dbs ? getDbsStatus(contact.dbs, dbsRenewalYears) : null;
+	const safeguardingStatus = dbsBoltOn && contact.safeguarding ? getSafeguardingStatus(contact.safeguarding) : null;
+
+	// Pastoral care (DBS bolt-on only): flags, absence history, milestones
+	let pastoralFlags = [];
+	let absenceEvents = [];
+	let milestones = [];
+	if (dbsBoltOn) {
+		// Check for newly reached milestones, then load all pastoral data
+		await checkAndRecordMilestones(organisationId, params.id).catch(() => null);
+		[pastoralFlags, absenceEvents, milestones] = await Promise.all([
+			getAllPastoralFlagsForContact(organisationId, params.id),
+			getAbsenceEventsForContact(organisationId, params.id),
+			getAndNotifyUnacknowledgedMilestones(organisationId, params.id)
+		]);
+	}
+
+	return { contact, spouse, contacts, csrfToken, theme: settings?.theme || null, thankyouMessages, myhubInvitations, dbsBoltOn, dbsRenewalYears, dbsStatus, safeguardingStatus, pastoralFlags, absenceEvents, milestones };
 }
 
 export const actions = {
@@ -92,7 +122,41 @@ export const actions = {
 			};
 
 			const validated = validateContact(contactData);
-			await update('contacts', params.id, validated);
+			const toUpdate = { ...validated };
+
+			// DBS Bolt-On: merge DBS, coordinatorNotes only when org has bolt-on
+			const orgId = oldContact?.organisationId;
+			const org = orgId ? await findById('organisations', orgId) : null;
+			if (org?.dbsBoltOn ?? org?.churchBoltOn) {
+				const dbsLevel = (data.get('dbs_level') || '').toString().trim() || null;
+				toUpdate.dbs = {
+					level: dbsLevel,
+					dateIssued: (data.get('dbs_dateIssued') || '').toString().trim() || null,
+					renewalDueDate: (data.get('dbs_renewalDueDate') || '').toString().trim() || null,
+					updateServiceRegistered: data.get('dbs_updateService') === 'on' || data.get('dbs_updateService') === 'true',
+					certificateRef: (data.get('dbs_certificateRef') || '').toString().trim() || null,
+					notes: (data.get('dbs_notes') || '').toString().trim() || null
+				};
+				if (!toUpdate.dbs.level && !toUpdate.dbs.dateIssued && !toUpdate.dbs.renewalDueDate && !toUpdate.dbs.certificateRef && !toUpdate.dbs.notes) {
+					toUpdate.dbs = null;
+				}
+
+				const sgLevel = (data.get('sg_level') || '').toString().trim() || null;
+				toUpdate.safeguarding = {
+					level: sgLevel,
+					dateCompleted: (data.get('sg_dateCompleted') || '').toString().trim() || null,
+					renewalDueDate: (data.get('sg_renewalDueDate') || '').toString().trim() || null,
+					notes: (data.get('sg_notes') || '').toString().trim() || null
+				};
+				if (!toUpdate.safeguarding.level && !toUpdate.safeguarding.dateCompleted && !toUpdate.safeguarding.renewalDueDate && !toUpdate.safeguarding.notes) {
+					toUpdate.safeguarding = null;
+				}
+
+				const coordNotes = (data.get('coordinatorNotes') || '').toString().trim() || null;
+				toUpdate.coordinatorNotes = coordNotes || null;
+			}
+
+			await update('contacts', params.id, toUpdate);
 
 			// Sync bidirectional spouse relationship
 			const oldSpouseId = oldContact?.spouseId || null;

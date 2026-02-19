@@ -31,13 +31,13 @@ export const ONBOARDING_STEP_DEFS = [
 		route: '/hub/contacts',
 		helpHref: '/hub/help/step/contacts',
 		helpContent: `
-			<p>Contacts are the people in your organisation. Everything else—lists, emails, rotas, events—builds on your contact list.</p>
+			<p>Contacts are the people in your organisation. Everything else—lists, emails, schedules, events—builds on your contact list.</p>
 			<h3>Adding contacts</h3>
 			<p>Use <strong>New Contact</strong> to add people one by one. You can also <strong>Import</strong> from a CSV or Excel file and map columns to TheHUB fields.</p>
 			<h3>Editing & deleting</h3>
 			<p>Open a contact to edit details or remove them. Deleting a contact cannot be undone.</p>
 			<h3>Organising</h3>
-			<p>Use <strong>Lists</strong> to group contacts (e.g. Welcome Team, Newsletter subscribers). Lists are used when sending emails and managing rotas.</p>
+			<p>Use <strong>Lists</strong> to group contacts (e.g. Welcome Team, Newsletter subscribers). Lists are used when sending emails and managing schedules.</p>
 			<p><a href="/hub/contacts">Go to Contacts</a></p>
 		`
 	},
@@ -49,7 +49,7 @@ export const ONBOARDING_STEP_DEFS = [
 		route: '/hub/lists',
 		helpHref: '/hub/help/step/lists',
 		helpContent: `
-			<p>Lists let you group contacts so you can send targeted emails and manage rotas by team or role.</p>
+			<p>Lists let you group contacts so you can send targeted emails and manage schedules by team or role.</p>
 			<h3>Creating a list</h3>
 			<p>Go to <strong>Lists → New List</strong>, give it a name, then add contacts by searching or selecting from your contact list.</p>
 			<h3>Using lists</h3>
@@ -79,20 +79,20 @@ export const ONBOARDING_STEP_DEFS = [
 	},
 	{
 		id: 'rotas',
-		title: 'Rotas',
-		description: 'Assign rotas to events and invite volunteers.',
-		href: '/hub/rotas',
-		route: '/hub/rotas',
+		title: 'Schedules',
+		description: 'Create schedules for events and invite volunteers.',
+		href: '/hub/schedules',
+		route: '/hub/schedules',
 		helpHref: '/hub/help/step/rotas',
 		helpContent: `
-			<p>Rotas let you assign volunteers to roles (e.g. Welcome Team, Session Lead) for specific dates.</p>
-			<h3>Creating a rota</h3>
-			<p>Create a rota, add roles (each with a name and optional capacity), then link it to an event or use it standalone.</p>
+			<p>Schedules let you assign volunteers to roles (e.g. Welcome Team, Session Lead) for specific dates.</p>
+			<h3>Creating a schedule</h3>
+			<p>Create a schedule, add roles (each with a name and optional capacity), then link it to an event or use it standalone.</p>
 			<h3>Assigning people</h3>
-			<p>Open a rota and use <strong>Assign</strong> to add contacts to roles for chosen dates. You can also send <strong>bulk invitations</strong> so people can pick their own dates.</p>
+			<p>Open a schedule and use <strong>Assign</strong> to add contacts to roles for chosen dates. You can also send <strong>bulk invitations</strong> so people can pick their own dates.</p>
 			<h3>Help files</h3>
-			<p>Attach PDFs or links to each rota so volunteers know what to do. These appear when they view their assignments.</p>
-			<p><a href="/hub/rotas">Go to Rotas</a></p>
+			<p>Attach PDFs or links to each schedule so volunteers know what to do. These appear when they view their assignments.</p>
+			<p><a href="/hub/schedules">Go to Schedules</a></p>
 		`
 	},
 	{
@@ -127,7 +127,7 @@ export const ONBOARDING_STEP_DEFS = [
 			<h3>Viewing submissions</h3>
 			<p>Open a form to see all submissions. You can export or use the data to create or update contacts.</p>
 			<h3>Public signup pages</h3>
-			<p>TheHUB also provides built-in signup pages for members, events and rotas. These are separate from custom forms but work in a similar way.</p>
+			<p>TheHUB also provides built-in signup pages for members, events and schedules. These are separate from custom forms but work in a similar way.</p>
 			<p><a href="/hub/forms">Go to Forms</a></p>
 		`
 	}

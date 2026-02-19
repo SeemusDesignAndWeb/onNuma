@@ -1,9 +1,11 @@
+import { redirect } from '@sveltejs/kit';
 import { readCollection } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 
 const ITEMS_PER_PAGE = 20;
 
 export async function load({ url }) {
+	throw redirect(302, '/hub/planner');
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
 	const search = url.searchParams.get('search') || '';
 

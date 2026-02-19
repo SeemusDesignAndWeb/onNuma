@@ -55,7 +55,7 @@
 </script>
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-	<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Events</h2>
+	<h2 class="text-xl sm:text-2xl font-bold">Events</h2>
 	<div class="flex flex-wrap gap-2">
 		<a href="/hub/events/calendar" class="btn-theme-1 px-2.5 py-1.5 rounded-md text-xs">
 			Calendar View

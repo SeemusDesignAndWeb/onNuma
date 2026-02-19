@@ -6,18 +6,21 @@
 	import { browser } from '$app/environment';
 	import { invalidateAll, goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { 
-		hubDataLoaded, 
-		hubDataLoading, 
-		loadHubData, 
-		clearHubData, 
-		refreshHubData 
+	import {
+		hubDataLoaded,
+		hubDataLoading,
+		loadHubData,
+		clearHubData,
+		refreshHubData
 	} from '$lib/crm/stores/hubData.js';
+	import { setTerminology } from '$lib/crm/stores/terminology.js';
 
 	export let data = {};
 	export let params = {};
 	$: orgUpdated = typeof $page !== 'undefined' && $page.url?.searchParams?.get('org_updated') === '1';
 	$: admin = data?.admin ?? null;
+	// Keep terminology store in sync whenever layout data changes (org switch, settings save, etc.)
+	$: setTerminology(data?.terminology);
 	$: theme = data?.theme ?? null;
 	$: superAdminEmail = data?.superAdminEmail ?? null;
 	$: showOnboarding = data?.showOnboarding ?? false;
@@ -26,6 +29,8 @@
 	$: trialStatus = data?.trialStatus ?? { inTrial: false, expired: false, daysRemaining: 0, trialPlan: null };
 	$: isSuperAdmin = data?.isSuperAdmin ?? false;
 	$: privacyContactSet = data?.privacyContactSet ?? true;
+	$: dbsBoltOn = data?.dbsBoltOn ?? false;
+	$: churchBoltOn = data?.churchBoltOn ?? false;
 
 	// Track organisation changes to refresh store data
 	let previousOrgId = null;
@@ -162,11 +167,12 @@
 	{theme}
 	superAdminEmail={superAdminEmail}
 	organisationAreaPermissions={organisationAreaPermissions}
-	sundayPlannersLabel={data?.sundayPlannersLabel ?? 'Meeting Planners'}
+	sundayPlannersLabel={data?.sundayPlannersLabel ?? 'Meeting Planner'}
 	showBilling={data?.showBilling ?? false}
 	showBillingPortal={data?.showBillingPortal ?? false}
 	organisations={data?.organisations ?? []}
 	currentOrganisation={data?.currentOrganisation ?? null}
+	dbsBoltOn={dbsBoltOn}
 >
 	<svelte:fragment slot="top">
 		<OnboardingRouteBar

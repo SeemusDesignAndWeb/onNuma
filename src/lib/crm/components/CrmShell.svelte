@@ -3,18 +3,21 @@
 	import { onMount } from 'svelte';
 	import HubSidebar from './HubSidebar.svelte';
 	import { hubSidebarCollapsed, HUB_SIDEBAR_COLLAPSED_KEY } from '$lib/crm/stores/sidebar.js';
+	import { terminology } from '$lib/crm/stores/terminology.js';
 
 	export let admin = null;
 	/** @type {{ logoPath?: string; primaryColor?: string; brandColor?: string } | null} */
 	export let theme = null;
 	export let superAdminEmail = null;
 	export let organisationAreaPermissions = null;
-	export let sundayPlannersLabel = 'Meeting Planners';
+	export let sundayPlannersLabel = 'Meeting Planner';
 	export let showBilling = false;
 	export let showBillingPortal = false;
 	/** For multi-org: list of { id, name }; empty = single org (no switcher). */
 	export let organisations = [];
 	export let currentOrganisation = null;
+	/** When true, show DBS Bolt-On features (DBS, Safeguarding, Pastoral). */
+	export let dbsBoltOn = false;
 
 	$: isAuthPage = $page.url.pathname.startsWith('/hub/auth/');
 
@@ -57,6 +60,7 @@
 					{showBilling}
 					organisations={organisations || []}
 					currentOrganisation={currentOrganisation}
+					{dbsBoltOn}
 				/>
 			</div>
 
@@ -76,7 +80,7 @@
 						</button>
 					</div>
 					<div class="absolute left-0 right-0 flex justify-center items-center pointer-events-none">
-						<a href="/hub" class="crm-mobile-brand flex items-center gap-2 pointer-events-auto text-white hover:opacity-90 font-bold" aria-label="TheHUB home">
+						<a href="/hub" class="crm-mobile-brand flex items-center gap-2 pointer-events-auto text-white hover:opacity-90 font-bold" aria-label="{$terminology.hub_name} home">
 							<img
 								src={theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png'}
 								alt=""
@@ -84,7 +88,7 @@
 								width="32"
 								height="32"
 							/>
-							<span class="text-lg font-bold">TheHUB</span>
+							<span class="text-lg font-bold">{$terminology.hub_name}</span>
 						</a>
 					</div>
 					<div class="w-12 flex-shrink-0" aria-hidden="true"></div>
@@ -108,6 +112,7 @@
 						{showBilling}
 						organisations={organisations || []}
 						currentOrganisation={currentOrganisation}
+						{dbsBoltOn}
 						onClose={closeMobileSidebar}
 					/>
 				</div>

@@ -9,9 +9,9 @@
 	const areaLabels = {
 		contacts: 'Contacts',
 		lists: 'Lists',
-		rotas: 'Rotas',
+		rotas: 'Schedules',
 		events: 'Events',
-		meeting_planners: 'Meeting Planners',
+		meeting_planners: 'Meeting Planner',
 		newsletters: 'Newsletters',
 		forms: 'Forms',
 		safeguarding_forms: 'Safeguarding Forms',

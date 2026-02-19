@@ -27,7 +27,7 @@
 	$: hideWebsiteElements = isAdminArea || isHubArea || isMultiOrgArea || isMyArea || multiOrgAdminDomain;
 	// External = public hub pages: signup sub-routes (rota/event/member), event token, forms, unsubscribe, view-rotas (theme applies only here when Hub branding is on).
 	// Root /signup (free-trial) is part of the frontend marketing site and uses full navbar (not /signup/ so not external).
-	$: isExternalPage = $page.url.pathname.startsWith('/signup/') || $page.url.pathname.startsWith('/event/') || $page.url.pathname.startsWith('/forms') || $page.url.pathname.startsWith('/unsubscribe') || $page.url.pathname.startsWith('/view-rotas');
+	$: isExternalPage = $page.url.pathname.startsWith('/signup/') || $page.url.pathname.startsWith('/event/') || $page.url.pathname.startsWith('/forms') || $page.url.pathname.startsWith('/unsubscribe') || $page.url.pathname.startsWith('/view-schedules');
 
 	// Theme from Hub settings. Only applied in Hub/admin and on public hub pages. Main website (/, /church, /events, etc.) never uses Hub theme.
 	$: theme = data?.theme || null;
@@ -67,7 +67,7 @@
 	}
 
 	let bannerDismissed = false;
-	$: isSignupPage = $page.url.pathname === '/signup' || $page.url.pathname.startsWith('/signup/rota') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
+	$: isSignupPage = $page.url.pathname === '/signup' || $page.url.pathname.startsWith('/signup/schedule') || $page.url.pathname.startsWith('/signup/event') || $page.url.pathname.startsWith('/signup/member');
 	$: useStandaloneHeader = isExternalPage;
 	$: isMarketingHome = $page.url.pathname === '/';
 	$: showWebsiteNavbar = !hideWebsiteElements || isSignupPage;

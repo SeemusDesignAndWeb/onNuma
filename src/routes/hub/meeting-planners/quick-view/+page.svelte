@@ -127,11 +127,11 @@
 </script>
 
 <div class="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-	<h2 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{sundayPlannersLabel} - Quick View</h2>
+	<h2 class="text-lg sm:text-xl md:text-2xl font-bold">{sundayPlannersLabel} - Quick View</h2>
 	<div class="flex flex-wrap gap-2">
 		<button 
 			on:click={toggleFullscreen}
-			class="bg-theme-button-1 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 flex items-center gap-1.5 text-xs sm:text-sm"
+			class="hub-btn btn-theme-1 px-2.5 py-1.5 rounded-md text-xs sm:text-sm flex items-center gap-1.5"
 			title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
 		>
 			{#if isFullscreen}
@@ -148,10 +148,10 @@
 				<span class="sm:hidden">Full</span>
 			{/if}
 		</button>
-		<a href="/hub/meeting-planners" class="bg-white border-2 border-hub-blue-500 text-hub-blue-600 hover:bg-hub-blue-50 px-2.5 py-1.5 rounded-md text-xs sm:text-sm whitespace-nowrap">
+		<a href="/hub/meeting-planners" class="hub-btn btn-theme-light-1 px-2.5 py-1.5 rounded-md text-xs sm:text-sm whitespace-nowrap">
 			Back to List
 		</a>
-		<a href="/hub/meeting-planners/new" class="bg-hub-green-600 hover:bg-hub-green-700 text-white px-2.5 py-1.5 rounded-md text-xs sm:text-sm whitespace-nowrap">
+		<a href="/hub/meeting-planners/new" class="hub-btn btn-theme-2 px-2.5 py-1.5 rounded-md text-xs sm:text-sm whitespace-nowrap">
 			<span class="hidden sm:inline">New {singularLabel}</span>
 			<span class="sm:hidden">New</span>
 		</a>
@@ -222,7 +222,7 @@
 		</div>
 	{:else}
 		<div class="bg-white shadow rounded-lg p-6 text-center text-gray-500">
-			No meeting planners found
+			No meeting plans found
 		</div>
 	{/each}
 </div>
@@ -336,7 +336,7 @@
 				{:else}
 					<tr>
 						<td colspan={totalColumns} class="px-3 sm:px-4 py-6 sm:py-8 text-center text-gray-500 border border-gray-300">
-							No meeting planners found
+							No meeting plans found
 						</td>
 					</tr>
 				{/each}

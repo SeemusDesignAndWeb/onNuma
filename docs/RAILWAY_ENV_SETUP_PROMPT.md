@@ -41,14 +41,14 @@ CLOUDINARY_API_SECRET=your_api_secret
 RESEND_API_KEY=your_resend_api_key
 RESEND_FROM_EMAIL=your-verified-email@yourdomain.com
 
-# Rota Reminder Cron Job Security
+# Schedule Reminder Cron Job Security
 # Generate with: openssl rand -base64 32
-# Required for securing the rota reminder API endpoint
-ROTA_REMINDER_CRON_SECRET=your-secret-token-here
+# Required for securing the schedule reminder API endpoint
+SCHEDULE_REMINDER_CRON_SECRET=your-secret-token-here
 
-# Rota Reminder Configuration (optional)
+# Schedule Reminder Configuration (optional)
 # Days ahead to send reminders (defaults to 3)
-ROTA_REMINDER_DAYS_AHEAD=3
+SCHEDULE_REMINDER_DAYS_AHEAD=3
 
 # Port (optional - Railway will set this automatically)
 PORT=3000
@@ -242,8 +242,8 @@ Before deploying to Railway:
   - [ ] `CLOUDINARY_API_SECRET=<your-api-secret>`
   - [ ] `RESEND_API_KEY=<your-resend-key>`
   - [ ] `RESEND_FROM_EMAIL=<your-verified-email>`
-  - [ ] `ROTA_REMINDER_CRON_SECRET=<generated-secret-token>`
-  - [ ] `ROTA_REMINDER_DAYS_AHEAD=3` (optional, defaults to 3)
+  - [ ] `SCHEDULE_REMINDER_CRON_SECRET=<generated-secret-token>`
+  - [ ] `SCHEDULE_REMINDER_DAYS_AHEAD=3` (optional, defaults to 3)
 - [ ] Initialize database file on volume (if needed)
 - [ ] Test deployment and verify volume persistence
 

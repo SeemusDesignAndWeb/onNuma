@@ -7,6 +7,7 @@ import { getSettings } from '$lib/crm/server/settings.js';
 import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
 
 export async function load({ cookies, url }) {
+	throw redirect(302, '/hub/planner');
 	const organisationId = await getCurrentOrganisationId();
 	const events = filterByOrganisation(await readCollection('events'), organisationId);
 	const occurrences = filterByOrganisation(await readCollection('occurrences'), organisationId);
@@ -70,7 +71,7 @@ export const actions = {
 				const meetingPlanners = filterByOrganisation(await readCollection('meeting_planners'), organisationId);
 				const existingPlanner = meetingPlanners.find(mp => mp.occurrenceId === occurrenceId);
 				if (existingPlanner) {
-					return fail(400, { error: 'This occurrence already has a meeting planner attached' });
+					return fail(400, { error: 'This occurrence already has a meeting plan' });
 				}
 			}
 
@@ -151,7 +152,7 @@ export const actions = {
 			throw redirect(302, `/hub/meeting-planners/${meetingPlanner.id}`);
 		} catch (error) {
 			if (error.status === 302) throw error; // Re-throw redirects
-			return fail(400, { error: error.message || 'Failed to create meeting planner' });
+			return fail(400, { error: error.message || 'Failed to create meeting plan' });
 		}
 	}
 };

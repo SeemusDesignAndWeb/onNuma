@@ -213,7 +213,7 @@
 					<div class="my-mobile-nav-dropdown px-4 pb-4 pt-2 border-t">
 						<nav class="flex flex-col gap-1" aria-label="Main">
 							<a href="/myhub" class="my-mobile-nav-link" class:active={path === '/myhub'} on:click={() => (mobileMenuOpen = false)}>Overview</a>
-							<a href="/myhub/rotas" class="my-mobile-nav-link" class:active={path === '/myhub/rotas'} on:click={() => (mobileMenuOpen = false)}>My rotas</a>
+							<a href="/myhub/schedules" class="my-mobile-nav-link" class:active={path === '/myhub/schedules'} on:click={() => (mobileMenuOpen = false)}>My rotas</a>
 							<a href="/myhub/opportunities" class="my-mobile-nav-link" class:active={path === '/myhub/opportunities'} on:click={() => (mobileMenuOpen = false)}>Sign up</a>
 							<a href="/myhub/profile" class="my-mobile-nav-link" class:active={path === '/myhub/profile'} on:click={() => (mobileMenuOpen = false)}>My details</a>
 							<a href="/myhub/availability" class="my-mobile-nav-link" class:active={path === '/myhub/availability'} on:click={() => (mobileMenuOpen = false)}>Availability</a>

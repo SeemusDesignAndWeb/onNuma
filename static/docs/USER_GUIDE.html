@@ -157,7 +157,7 @@ margin: 30px 0;
 <li>Total number of lists</li>
 <li>Total number of newsletters</li>
 <li>Total number of events</li>
-<li>Total number of rotas</li>
+<li>Total number of schedules</li>
 <li>Total number of forms</li>
 </ul>
 
@@ -167,7 +167,7 @@ margin: 30px 0;
 <li><strong>+ Contact</strong> (Blue) - Create a new contact</li>
 <li><strong>+ Newsletter</strong> (Green) - Create a new newsletter</li>
 <li><strong>+ Event</strong> (Purple) - Create a new event</li>
-<li><strong>+ Rota</strong> (Orange) - Create a new rota</li>
+<li><strong>+ Schedule</strong> (Orange) - Create a new schedule</li>
 <li><strong>+ List</strong> (Teal) - Create a new list</li>
 <li><strong>+ Form</strong> (Pink) - Create a new form</li>
 </ul>
@@ -175,7 +175,7 @@ margin: 30px 0;
 <p><strong>Recent Activity:</strong></p>
 <ul>
 <li><strong>Latest Newsletters</strong>: Displays the 3 most recently created or edited newsletters</li>
-<li><strong>Recently Edited Rotas</strong>: Shows the 5 most recently edited rotas</li>
+<li><strong>Recently Edited Schedules</strong>: Shows the 5 most recently edited schedules</li>
 </ul>
 
 <p>Click on any item in the recent activity sections to view its details.</p>
@@ -628,7 +628,7 @@ margin: 30px 0;
 <ul>
 <li>The newsletter will be sent to all contacts in the selected list</li>
 <li>Each email is personalised with the contact's information</li>
-<li>Upcoming rotas (within 7 days) are automatically included for contacts who are assigned to rotas</li>
+<li>Upcoming schedules (within 7 days) are automatically included for contacts who are assigned to schedules</li>
 <li>Upcoming events (up to the following Sunday) are automatically included</li>
 <li>Sending status and counts are tracked</li>
 <li>The newsletter status changes from "draft" to "sent" after sending</li>
@@ -640,9 +640,9 @@ margin: 30px 0;
 <p>Newsletters automatically include:</p>
 <ul>
 <li>Contact's name in the greeting (using placeholders like <code>{{firstName}}</code>, <code>{{name}}</code>, etc.)</li>
-<li>Upcoming rotas section (if the contact has rotas in the next 7 days) - shows event title, role, date/time, and a link to view details</li>
+<li>Upcoming schedules section (if the contact has schedules in the next 7 days) - shows event title, role, date/time, and a link to view details</li>
 <li>Upcoming events section (public events up to the following Sunday) - shows event title, date/time, location, and description</li>
-<li>Links to rota signup pages for assigned rotas</li>
+<li>Links to schedule signup pages for assigned schedules</li>
 </ul>
 
 <h3 id="deleting-a-newsletter">Deleting a Newsletter</h3>
@@ -736,20 +736,20 @@ margin: 30px 0;
 <li><code>{{name}}</code> - Full name (or email if name not available)</li>
 <li><code>{{email}}</code> - Contact's email address</li>
 <li><code>{{phone}}</code> - Contact's phone number</li>
-<li><code>{{rotaLinks}}</code> - Upcoming rotas section (next 14 days) with clickable links</li>
+<li><code>{{rotaLinks}}</code> - Upcoming schedules section (next 14 days) with clickable links</li>
 <li><code>{{upcomingEvents}}</code> - Upcoming events section</li>
 </ul>
 
 <p><strong>Special Placeholders:</strong></p>
 <ul>
-<li><code>{{rotaLinks}}</code> automatically generates a formatted section showing all rotas the contact is assigned to in the next 14 days, with clickable links to view rota details. Each rota shows the event title, role, date/time, and a "View Rota Details" button. <strong>Important:</strong> Only rotas for specific occurrences where the contact is directly assigned are shown - if a contact is assigned to only some occurrences of a rota, only those occurrences will appear. <strong>Note:</strong> No title is included - add your own heading in the newsletter content.</li>
+<li><code>{{rotaLinks}}</code> automatically generates a formatted section showing all schedules the contact is assigned to in the next 14 days, with clickable links to view schedule details. Each schedule shows the event title, role, date/time, and a "View Schedule Details" button. <strong>Important:</strong> Only schedules for specific occurrences where the contact is directly assigned are shown - if a contact is assigned to only some occurrences of a schedule, only those occurrences will appear. <strong>Note:</strong> No title is included - add your own heading in the newsletter content.</li>
 <li><code>{{upcomingEvents}}</code> shows upcoming public and internal events up to the following Sunday. Each event shows the title, date/time, location (if available), and description. <strong>Note:</strong> No title is included - add your own heading in the newsletter content. Internal events are included so members can see member-only events in newsletters.</li>
 </ul>
 
 <p><strong>Placeholder Formatting:</strong></p>
 <ul>
 <li>Both <code>{{rotaLinks}}</code> and <code>{{upcomingEvents}}</code> are inserted without extra padding or container styling, allowing them to integrate seamlessly with your newsletter content</li>
-<li>If a contact has no upcoming rotas, a message will be displayed instead</li>
+<li>If a contact has no upcoming schedules, a message will be displayed instead</li>
 <li>If there are no upcoming events, a message will be displayed instead</li>
 </ul>
 
@@ -902,38 +902,38 @@ margin: 30px 0;
 
 <hr>
 
-<h2 id="rotas">Rotas</h2>
+<h2 id="schedules">Schedules</h2>
 
-<h3 id="creating-a-rota">Creating a Rota</h3>
+<h3 id="creating-a-schedule">Creating a Schedule</h3>
 
 <ol>
-<li>Go to <code>/hub/rotas</code> or click the "+ Rota" quick action button on the dashboard</li>
-<li>Click "New Rota" button</li>
+<li>Go to <code>/hub/schedules</code> or click the "+ Schedule" quick action button on the dashboard</li>
+<li>Click "New Schedule" button</li>
 <li>Select an <strong>Event</strong> from the dropdown (required)</li>
 <li>Enter:</li>
 </ol>
 <p>   - <strong>Role</strong> (required) - The role or position (e.g., "Worship Leader", "Sound Technician")</p>
 <p>   - <strong>Capacity</strong> (required) - How many people are needed</p>
-<p>   - <strong>Owner</strong> (optional) - The contact who will be notified when this rota is updated. Use the search bar to quickly find contacts by name or email.</p>
-<p>   - <strong>Notes</strong> (optional) - Additional information about the rota</p>
+<p>   - <strong>Owner</strong> (optional) - The contact who will be notified when this schedule is updated. Use the search bar to quickly find contacts by name or email.</p>
+<p>   - <strong>Notes</strong> (optional) - Additional information about the schedule</p>
 <ol>
-<li>Click "Create Rota"</li>
+<li>Click "Create Schedule"</li>
 </ol>
 
-<p><strong>Note:</strong> Rotas are linked to events. You can create multiple rotas for the same event (e.g., different roles).</p>
+<p><strong>Note:</strong> Schedules are linked to events. You can create multiple schedules for the same event (e.g., different roles).</p>
 
-<h3 id="managing-rotas">Managing Rotas</h3>
+<h3 id="managing-schedules">Managing Schedules</h3>
 
-<p><strong>Viewing Rotas:</strong></p>
+<p><strong>Viewing Schedules:</strong></p>
 <ul>
-<li>View all rotas at <code>/hub/rotas</code></li>
-<li>See which event each rota is for</li>
+<li>View all schedules at <code>/hub/schedules</code></li>
+<li>See which event each schedule is for</li>
 <li>View role, capacity, and current assignments</li>
 </ul>
 
-<p><strong>Editing Rotas:</strong></p>
+<p><strong>Editing Schedules:</strong></p>
 <ul>
-<li>Open a rota's detail page</li>
+<li>Open a schedule's detail page</li>
 <li>Click "Edit" to modify role, capacity, owner, or notes</li>
 <li>Use the search bar in the Owner field to quickly find contacts</li>
 <li>Click "Save Changes" (button is located at the top of the page)</li>
@@ -941,27 +941,27 @@ margin: 30px 0;
 
 <p><strong>Assigning Volunteers:</strong></p>
 <ul>
-<li>Open a rota</li>
+<li>Open a schedule</li>
 <li>View the list of assigned volunteers</li>
 <li>Assignees are clickable links that take you to their contact details page</li>
 <li>Use bulk invitations to send signup links to multiple contacts</li>
 </ul>
 
-<p><strong>Deleting Rotas:</strong></p>
+<p><strong>Deleting Schedules:</strong></p>
 <ul>
-<li>Open a rota's detail page</li>
+<li>Open a schedule's detail page</li>
 <li>Click "Delete" button</li>
 <li>Confirm the deletion</li>
 </ul>
 
 <h3 id="bulk-invitations">Bulk Invitations</h3>
 
-<p>Send rota signup invitations to multiple contacts at once:</p>
+<p>Send schedule signup invitations to multiple contacts at once:</p>
 
 <ol>
-<li>Go to <code>/hub/rotas/invite</code></li>
+<li>Go to <code>/hub/schedules/invite</code></li>
 <li>Select an <strong>Event</strong> from the dropdown</li>
-<li>Select one or more <strong>Rotas</strong> for that event</li>
+<li>Select one or more <strong>Schedules</strong> for that event</li>
 <li>Optionally select specific <strong>Occurrences</strong> (if you only want to invite for certain dates)</li>
 <li>Select a <strong>Contact List</strong> to send invitations to</li>
 <li>Click "Send Invitations"</li>
@@ -973,9 +973,9 @@ margin: 30px 0;
 <li>Emails include:</li>
 </ul>
 <p>  - Greeting with contact's name</p>
-<p>  - Details about the assigned rota(s)</p>
-<p>  - Links to other upcoming rotas (within 7 days)</p>
-<p>  - Unique signup link for each rota</p>
+<p>  - Details about the assigned schedule(s)</p>
+<p>  - Links to other upcoming schedules (within 7 days)</p>
+<p>  - Unique signup link for each schedule</p>
 <ul>
 <li>Contacts can click the link to sign up without needing to log in</li>
 </ul>
@@ -983,25 +983,25 @@ margin: 30px 0;
 <p><strong>Public Signup:</strong></p>
 <ul>
 <li>Volunteers receive unique token-based signup links</li>
-<li>They can sign up at <code>/signup/rota/[token]</code> without logging in</li>
-<li>The signup page shows rota details and allows them to confirm their participation</li>
+<li>They can sign up at <code>/signup/schedule/[token]</code> without logging in</li>
+<li>The signup page shows schedule details and allows them to confirm their participation</li>
 </ul>
 
-<p><strong>Rota Owner Notifications:</strong></p>
+<p><strong>Schedule Owner Notifications:</strong></p>
 <ul>
-<li>When a rota has an owner assigned, they receive email notifications when:</li>
+<li>When a schedule has an owner assigned, they receive email notifications when:</li>
 </ul>
-<p>  - The rota is updated (role, capacity, notes changed)</p>
-<p>  - New volunteers sign up for the rota</p>
-<p>  - Volunteers are removed from the rota</p>
+<p>  - The schedule is updated (role, capacity, notes changed)</p>
+<p>  - New volunteers sign up for the schedule</p>
+<p>  - Volunteers are removed from the schedule</p>
 <ul>
 <li>Email notifications include:</li>
 </ul>
 <p>  - Event name and occurrence date/time</p>
-<p>  - Rota details (role, capacity)</p>
+<p>  - Schedule details (role, capacity)</p>
 <p>  - Complete list of all assignees with their names and emails</p>
 <p>  - Assignees grouped by occurrence (if applicable)</p>
-<p>  - Link to view the rota in the hub</p>
+<p>  - Link to view the schedule in the hub</p>
 
 <hr>
 
@@ -1097,24 +1097,24 @@ margin: 30px 0;
 
 <h2 id="public-signup">Public Signup</h2>
 
-<p>Volunteers receive email invitations with unique tokens for rota signup.</p>
+<p>Volunteers receive email invitations with unique tokens for schedule signup.</p>
 
 <p><strong>Signup Process:</strong></p>
 <ol>
 <li>Volunteer receives an email invitation</li>
-<li>Email includes personalised greeting and rota details</li>
-<li>Email shows links to other upcoming rotas (within 7 days)</li>
+<li>Email includes personalised greeting and schedule details</li>
+<li>Email shows links to other upcoming schedules (within 7 days)</li>
 <li>Volunteer clicks the unique signup link</li>
-<li>They are taken to <code>/signup/rota/[token]</code></li>
-<li>They can view rota details and confirm participation</li>
+<li>They are taken to <code>/signup/schedule/[token]</code></li>
+<li>They can view schedule details and confirm participation</li>
 <li>No login required - the token provides secure access</li>
 </ol>
 
 <p><strong>Email Features:</strong></p>
 <ul>
 <li>Personalised with volunteer's name</li>
-<li>Shows rota role and event details</li>
-<li>Includes links to other upcoming rotas</li>
+<li>Shows schedule role and event details</li>
+<li>Includes links to other upcoming schedules</li>
 <li>Direct signup link for easy access</li>
 <li>Professional formatting</li>
 </ul>
@@ -1199,12 +1199,12 @@ margin: 30px 0;
 <li>Download ICS files to share events externally</li>
 </ul>
 
-<p><strong>Rotas:</strong></p>
+<p><strong>Schedules:</strong></p>
 <ul>
-<li>Create rotas well in advance</li>
+<li>Create schedules well in advance</li>
 <li>Send invitations early to give volunteers time to respond</li>
-<li>Use bulk invitations to efficiently manage multiple rotas</li>
-<li>Link rotas to events for better organisation</li>
+<li>Use bulk invitations to efficiently manage multiple schedules</li>
+<li>Link schedules to events for better organisation</li>
 </ul>
 
 <p><strong>Forms:</strong></p>

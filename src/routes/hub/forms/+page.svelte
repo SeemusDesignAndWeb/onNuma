@@ -15,7 +15,6 @@
 	$: totalPages = data.totalPages || 1;
 	$: search = data.search || '';
 	$: canDelete = data.canDelete ?? false;
-	$: hasMembershipForm = data.hasMembershipForm ?? false;
 	$: csrfToken = data.csrfToken || '';
 	$: formResult = $page.form;
 
@@ -208,17 +207,6 @@
 		>
 			Export All
 		</button>
-		{#if !hasMembershipForm}
-			<form method="POST" action="?/createMembershipForm" class="inline">
-				<input type="hidden" name="_csrf" value={csrfToken} />
-				<button
-					type="submit"
-					class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-md text-xs"
-				>
-					Create Membership Form
-				</button>
-			</form>
-		{/if}
 		<a href="/hub/forms/new" class="btn-theme-2 px-2.5 py-1.5 rounded-md text-xs">
 			New Form
 		</a>
