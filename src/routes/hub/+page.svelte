@@ -9,6 +9,7 @@
 
 	$: volunteersLabel = $terminology.volunteer + 's';
 	$: volunteerLabel = $terminology.volunteer;
+	$: rotaLabel = $terminology.rota.toLowerCase();
 
 	function goToEvent(eventId) {
 		if (eventId) goto(`/hub/events/${eventId}`);
@@ -733,7 +734,7 @@
 							</button>
 						</div>
 					</header>
-					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>{volunteersLabel} by rota participation</p>
+					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>{volunteersLabel} by {rotaLabel} participation</p>
 					<div class="dashboard-panel-body dashboard-panel-body--engagement flex flex-1 flex-col items-center gap-3 min-h-0" class:hidden={collapsedPanelIds.has(panelId)}>
 						{#if engagementState.total === 0}
 							<p class="text-sm text-gray-500">No {volunteersLabel.toLowerCase()} yet. Add {volunteersLabel.toLowerCase()} to see engagement.</p>
