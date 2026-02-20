@@ -3,7 +3,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { terminology } from '$lib/crm/stores/terminology.js';
-	import { notifications } from '$lib/crm/stores/notifications.js';
+	import { notifications, dialog } from '$lib/crm/stores/notifications.js';
 	import { formatDateShortUK, formatWeekdayUK, formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 
 	$: data = $page.data || {};
@@ -12,15 +12,184 @@
 	$: occurrences = data.occurrences || [];
 	$: teamRows = data.teamRows || [];
 	$: unlinkedRows = data.unlinkedRows || [];
+	$: lists = data.lists || [];
 	$: hasRows = teamRows.length > 0 || unlinkedRows.length > 0;
 	$: canEdit = data.canEdit ?? true;
 	$: csrfToken = data.csrfToken || '';
 	$: plannerNotes = data.plannerNotes || '';
+	$: availableContacts = data.availableContacts || [];
 
 	let notesDraft = '';
 	let notesSaving = false;
 	let notesSaved = false;
 	$: notesDraft = plannerNotes;
+
+	// Add Assignees modal state
+	let showAddAssignees = false;
+	let addRotaId = '';
+	let addOccurrenceId = '';
+	let searchTerm = '';
+	let selectedContactIds = new Set();
+	let selectedListId = '';
+	let guestName = '';
+
+	function sortContacts(arr) {
+		return arr.sort((a, b) => {
+			const aName = `${a.firstName || ''} ${a.lastName || ''}`.trim().toLowerCase();
+			const bName = `${b.firstName || ''} ${b.lastName || ''}`.trim().toLowerCase();
+			return aName.localeCompare(bName) || (a.email || '').localeCompare(b.email || '');
+		});
+	}
+
+	$: contactsFilteredByList = selectedListId
+		? (() => {
+			const selectedList = lists.find((l) => l.id === selectedListId);
+			if (!selectedList || !selectedList.contactIds) return availableContacts;
+			return availableContacts.filter((c) => selectedList.contactIds.includes(c.id));
+		})()
+		: availableContacts;
+
+	$: filteredAvailableContacts = (() => {
+		const filtered = searchTerm
+			? contactsFilteredByList.filter(
+					(c) =>
+						`${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+						(c.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+				)
+			: contactsFilteredByList;
+		return sortContacts([...filtered]);
+	})();
+
+	function toggleContactSelection(contactId) {
+		if (selectedContactIds.has(contactId)) {
+			selectedContactIds.delete(contactId);
+		} else {
+			selectedContactIds.add(contactId);
+		}
+		selectedContactIds = selectedContactIds;
+	}
+
+	function selectAllContacts() {
+		filteredAvailableContacts.forEach((c) => selectedContactIds.add(c.id));
+		selectedContactIds = selectedContactIds;
+	}
+
+	function deselectAllContacts() {
+		filteredAvailableContacts.forEach((c) => selectedContactIds.delete(c.id));
+		selectedContactIds = selectedContactIds;
+	}
+
+	async function handleAddAssignees() {
+		if (selectedContactIds.size === 0) {
+			await dialog.alert('Please select at least one contact to assign', 'No Contacts Selected');
+			return;
+		}
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/addAssignee';
+		const csrfInput = document.createElement('input');
+		csrfInput.type = 'hidden';
+		csrfInput.name = '_csrf';
+		csrfInput.value = csrfToken;
+		form.appendChild(csrfInput);
+		const rotaInput = document.createElement('input');
+		rotaInput.type = 'hidden';
+		rotaInput.name = 'rotaId';
+		rotaInput.value = addRotaId;
+		form.appendChild(rotaInput);
+		const occInput = document.createElement('input');
+		occInput.type = 'hidden';
+		occInput.name = 'occurrenceId';
+		occInput.value = addOccurrenceId;
+		form.appendChild(occInput);
+		const contactIdsInput = document.createElement('input');
+		contactIdsInput.type = 'hidden';
+		contactIdsInput.name = 'contactIds';
+		contactIdsInput.value = JSON.stringify(Array.from(selectedContactIds));
+		form.appendChild(contactIdsInput);
+		document.body.appendChild(form);
+		form.submit();
+	}
+
+	async function handleAddGuest() {
+		if (!guestName) {
+			await dialog.alert('Please enter a guest name', 'Missing Name');
+			return;
+		}
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/addAssignee';
+		const csrfInput = document.createElement('input');
+		csrfInput.type = 'hidden';
+		csrfInput.name = '_csrf';
+		csrfInput.value = csrfToken;
+		form.appendChild(csrfInput);
+		const rotaInput = document.createElement('input');
+		rotaInput.type = 'hidden';
+		rotaInput.name = 'rotaId';
+		rotaInput.value = addRotaId;
+		form.appendChild(rotaInput);
+		const occInput = document.createElement('input');
+		occInput.type = 'hidden';
+		occInput.name = 'occurrenceId';
+		occInput.value = addOccurrenceId;
+		form.appendChild(occInput);
+		const contactIdsInput = document.createElement('input');
+		contactIdsInput.type = 'hidden';
+		contactIdsInput.name = 'contactIds';
+		contactIdsInput.value = '[]';
+		form.appendChild(contactIdsInput);
+		const guestInput = document.createElement('input');
+		guestInput.type = 'hidden';
+		guestInput.name = 'guest';
+		guestInput.value = JSON.stringify({ name: guestName });
+		form.appendChild(guestInput);
+		document.body.appendChild(form);
+		form.submit();
+	}
+
+	// MyHUB invite modal state
+	let showInviteModal = false;
+	let inviteRotaId = '';
+	let inviteOccurrenceId = '';
+	let inviteSearchTerm = '';
+	let inviteContactId = '';
+	let inviteSending = false;
+	let inviteError = null;
+
+	$: inviteFilteredContacts = inviteSearchTerm
+		? availableContacts.filter(c =>
+				`${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().includes(inviteSearchTerm.toLowerCase()) ||
+				(c.email || '').toLowerCase().includes(inviteSearchTerm.toLowerCase())
+			)
+		: availableContacts;
+
+	$: formResult = $page.form;
+	$: if (formResult?.type === 'inviteToMyhub') {
+		if (formResult?.message) {
+			notifications.success(formResult.message);
+			showInviteModal = false;
+			inviteContactId = '';
+			inviteSearchTerm = '';
+			inviteError = null;
+			invalidateAll();
+		} else if (formResult?.error) {
+			inviteError = formResult.error;
+		}
+	}
+	$: if (formResult?.type === 'addAssignee') {
+		if (formResult?.message) {
+			notifications.success(formResult.message);
+			showAddAssignees = false;
+			searchTerm = '';
+			guestName = '';
+			selectedContactIds = new Set();
+			selectedListId = '';
+			invalidateAll();
+		} else if (formResult?.error) {
+			notifications.error(formResult.error);
+		}
+	}
 
 	function handleEventChange(e) {
 		const id = e.currentTarget.value;
@@ -99,7 +268,128 @@
 				<p class="text-xs text-gray-400">Go to <a href="/hub/teams" class="text-theme-button-1 hover:underline">{$terminology.team}s</a> and link {$terminology.role.toLowerCase()}s to their {$terminology.rota.toLowerCase()}s.</p>
 			</div>
 		{:else}
-			<div class="hub-top-panel overflow-x-auto">
+			<!-- Card layout: exact match to Schedules (rotas) Assignees by Occurrence -->
+			<div class="space-y-6 no-print">
+				{#each teamRows as team (team.teamId)}
+					<div class="bg-white shadow rounded-lg p-6">
+						<div class="flex justify-between items-center mb-4">
+							<h3 class="text-xl font-bold text-gray-900" style="color: var(--color-panel-head-1, #0284c7);">{team.teamName}</h3>
+						</div>
+						<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+							{#each team.roles as role (role.rotaId)}
+								{#each occurrences as occ (occ.id)}
+									{@const assignees = role.occurrences[occ.id] || []}
+									{@const count = assignees.length}
+									{@const isFull = role.capacity > 0 && count >= role.capacity}
+									<div class="border border-gray-200 rounded-lg p-3 min-w-0">
+										<p class="text-xs text-gray-500 mb-1.5">{role.roleName} ×{role.capacity}</p>
+										<div class="flex justify-between items-center mb-2">
+											<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
+											<div class="flex items-center gap-2">
+												<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'} w-16">{count}/{role.capacity}</span>
+												{#if isFull}
+													<span class="text-xs text-hub-red-600 font-medium">Full</span>
+												{:else if canEdit}
+													<div class="flex items-center gap-1">
+														<button
+															type="button"
+															class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
+															title="Add assignees"
+															on:click={() => { addRotaId = role.rotaId; addOccurrenceId = occ.id; searchTerm = ''; selectedContactIds = new Set(); selectedListId = ''; guestName = ''; showAddAssignees = true; }}
+														>
+															+ Add
+														</button>
+														<button
+															type="button"
+															class="bg-purple-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
+															title="Send invitation"
+															on:click={() => { inviteRotaId = role.rotaId; inviteOccurrenceId = occ.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
+														>
+															✉ Invite
+														</button>
+													</div>
+												{/if}
+											</div>
+										</div>
+										{#if assignees.length > 0}
+											<div class="space-y-1.5 max-h-64 overflow-y-auto">
+												{#each assignees as name}
+													<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded text-sm">
+														<span class="font-medium truncate block text-gray-900" title={name}>{shortName(name)}</span>
+													</div>
+												{/each}
+											</div>
+										{:else}
+											<p class="text-xs text-gray-400 italic py-2">No assignees</p>
+										{/if}
+									</div>
+								{/each}
+							{/each}
+						</div>
+					</div>
+				{/each}
+				{#if unlinkedRows.length > 0}
+					<div class="bg-white shadow rounded-lg p-6">
+						<div class="flex justify-between items-center mb-4">
+							<h3 class="text-xl font-bold text-gray-900" style="color: var(--color-panel-head-1, #0284c7);">Other {$terminology.rota}s</h3>
+						</div>
+						<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+							{#each unlinkedRows as row (row.rotaId)}
+								{#each occurrences as occ (occ.id)}
+									{@const assignees = row.occurrences[occ.id] || []}
+									{@const count = assignees.length}
+									{@const isFull = row.capacity > 0 && count >= row.capacity}
+									<div class="border border-gray-200 rounded-lg p-3 min-w-0">
+										<p class="text-xs text-gray-500 mb-1.5">{row.roleName} ×{row.capacity}</p>
+										<div class="flex justify-between items-center mb-2">
+											<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
+											<div class="flex items-center gap-2">
+												<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'} w-16">{count}/{row.capacity}</span>
+												{#if isFull}
+													<span class="text-xs text-hub-red-600 font-medium">Full</span>
+												{:else if canEdit}
+													<div class="flex items-center gap-1">
+														<button
+															type="button"
+															class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
+															title="Add assignees"
+															on:click={() => { addRotaId = row.rotaId; addOccurrenceId = occ.id; searchTerm = ''; selectedContactIds = new Set(); selectedListId = ''; guestName = ''; showAddAssignees = true; }}
+														>
+															+ Add
+														</button>
+														<button
+															type="button"
+															class="bg-purple-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
+															title="Send invitation"
+															on:click={() => { inviteRotaId = row.rotaId; inviteOccurrenceId = occ.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
+														>
+															✉ Invite
+														</button>
+													</div>
+												{/if}
+											</div>
+										</div>
+										{#if assignees.length > 0}
+											<div class="space-y-1.5 max-h-64 overflow-y-auto">
+												{#each assignees as name}
+													<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded text-sm">
+														<span class="font-medium truncate block text-gray-900" title={name}>{shortName(name)}</span>
+													</div>
+												{/each}
+											</div>
+										{:else}
+											<p class="text-xs text-gray-400 italic py-2">No assignees</p>
+										{/if}
+									</div>
+								{/each}
+							{/each}
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Print-only: keep table for PDF/print -->
+			<div class="print-only overflow-x-auto">
 				<table class="planner-table">
 					<thead>
 						<tr>
@@ -130,9 +420,6 @@
 													<span class="planner-assignees" title={assignees.join(', ')}>{assignees.map(shortName).join(', ')}</span>
 												{/if}
 												<span class="planner-badge {badgeClass(count, role.capacity)}">{count}/{role.capacity}</span>
-												{#if count < role.capacity && canEdit}
-													<a href="/hub/teams/{team.teamId}" class="planner-assign-link no-print">+ Assign</a>
-												{/if}
 											</div>
 										</td>
 									{/each}
@@ -156,9 +443,6 @@
 													<span class="planner-assignees" title={assignees.join(', ')}>{assignees.map(shortName).join(', ')}</span>
 												{/if}
 												<span class="planner-badge {badgeClass(count, row.capacity)}">{count}/{row.capacity}</span>
-												{#if count < row.capacity && canEdit}
-													<a href="/hub/schedules/{row.rotaId}" class="planner-assign-link no-print">+ Assign</a>
-												{/if}
 											</div>
 										</td>
 									{/each}
@@ -167,13 +451,6 @@
 						{/if}
 					</tbody>
 				</table>
-			</div>
-
-			<div class="no-print mt-3 flex gap-4 text-xs text-gray-500 flex-wrap">
-				<span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-green-100 border border-green-300"></span> Fully staffed</span>
-				<span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-amber-100 border border-amber-300"></span> Partially filled</span>
-				<span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-red-50 border border-red-200"></span> Unfilled</span>
-				<span class="ml-auto text-gray-400">Click on a {$terminology.team.toLowerCase()} to assign people</span>
 			</div>
 
 			<div class="mt-5">
@@ -198,6 +475,198 @@
 				{/if}
 			</div>
 	{/if}
+{/if}
+
+<!-- Add Assignees Modal -->
+{#if showAddAssignees}
+	<div
+		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 no-print"
+		role="button"
+		tabindex="0"
+		on:click={() => { showAddAssignees = false; searchTerm = ''; guestName = ''; selectedContactIds = new Set(); selectedListId = ''; }}
+		on:keydown={(e) => e.key === 'Escape' && (showAddAssignees = false)}
+		aria-label="Close modal"
+	>
+		<div class="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] flex flex-col" on:click|stopPropagation role="dialog" aria-modal="true">
+			<div class="p-6 border-b border-gray-200">
+				<h3 class="text-xl font-bold text-gray-900 mb-4">Add Assignees</h3>
+				<div class="mb-4">
+					<label class="block text-sm font-medium text-gray-700 mb-2">Add Guest (not in contacts)</label>
+					<div class="flex flex-col sm:flex-row gap-2">
+						<input
+							type="text"
+							bind:value={guestName}
+							placeholder="Guest Name *"
+							class="flex-1 rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-3 text-sm"
+						/>
+						<button
+							type="button"
+							on:click={handleAddGuest}
+							disabled={!guestName}
+							class="bg-theme-button-1 text-white px-4 py-2 rounded-md hover:opacity-90 disabled:opacity-50 text-sm whitespace-nowrap"
+						>
+							Add Guest
+						</button>
+					</div>
+				</div>
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pt-4 border-t border-gray-200">
+					<div>
+						<label for="planner-list-filter" class="block text-sm font-medium text-gray-700 mb-1 text-xs">Filter by List</label>
+						<select id="planner-list-filter" bind:value={selectedListId} class="w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-3 text-sm">
+							<option value="">All Contacts</option>
+							{#each lists as list}
+								<option value={list.id}>{list.name}</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label for="planner-contact-search" class="block text-sm font-medium text-gray-700 mb-1 text-xs">Search Contacts</label>
+						<input
+							id="planner-contact-search"
+							type="text"
+							bind:value={searchTerm}
+							placeholder="Search contacts..."
+							class="w-full rounded-md border border-gray-500 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-4 text-sm"
+						/>
+					</div>
+				</div>
+			</div>
+			<div class="flex-1 overflow-y-auto p-6">
+				{#if filteredAvailableContacts.length > 0}
+					<div class="mb-3 flex justify-between items-center">
+						<span class="text-sm text-gray-600">
+							Showing {filteredAvailableContacts.length} contact{filteredAvailableContacts.length !== 1 ? 's' : ''}
+						</span>
+						<div class="flex gap-2">
+							<button type="button" on:click={selectAllContacts} class="text-sm text-hub-green-600 hover:text-hub-green-800 underline">
+								Select All
+							</button>
+							<button type="button" on:click={deselectAllContacts} class="text-sm text-gray-600 hover:text-gray-800 underline">
+								Deselect All
+							</button>
+						</div>
+					</div>
+					<div class="space-y-2">
+						{#each filteredAvailableContacts as contact}
+							<label class="flex items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer">
+								<input
+									type="checkbox"
+									checked={selectedContactIds.has(contact.id)}
+									on:change={() => toggleContactSelection(contact.id)}
+									class="mr-3"
+								/>
+								<div class="flex-1">
+									<div class="font-medium">
+										{`${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email}
+									</div>
+								</div>
+							</label>
+						{/each}
+					</div>
+				{:else}
+					<p class="text-gray-500">No available contacts to assign.</p>
+				{/if}
+			</div>
+			<div class="p-6 border-t border-gray-200 flex gap-2 justify-end">
+				<button
+					type="button"
+					on:click={() => { showAddAssignees = false; searchTerm = ''; guestName = ''; selectedContactIds = new Set(); selectedListId = ''; }}
+					class="hub-btn bg-theme-button-3 text-white"
+				>
+					Back
+				</button>
+				<button
+					type="button"
+					on:click={handleAddAssignees}
+					disabled={selectedContactIds.size === 0}
+					class="hub-btn bg-theme-button-2 text-white disabled:opacity-50"
+				>
+					Add Selected ({selectedContactIds.size})
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- MyHUB Invite Modal (same as Schedules page) -->
+{#if showInviteModal}
+	<div
+		class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 no-print"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="invite-modal-title"
+	>
+		<div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+			<h3 id="invite-modal-title" class="text-lg font-bold text-gray-900 mb-2">Invite to MyHub</h3>
+			<p class="text-sm text-gray-600 mb-4">
+				Send a personal invitation — the volunteer will get an email with a link to respond from their MyHub dashboard.
+			</p>
+			<form method="POST" action="?/inviteToMyhub" use:enhance={() => {
+				inviteSending = true;
+				inviteError = null;
+				return async ({ update }) => {
+					inviteSending = false;
+					await update();
+				};
+			}}>
+				<input type="hidden" name="_csrf" value={csrfToken} />
+				<input type="hidden" name="rotaId" value={inviteRotaId} />
+				<input type="hidden" name="occurrenceId" value={inviteOccurrenceId} />
+
+				<div class="mb-3">
+					<label for="invite-search" class="block text-sm font-medium text-gray-700 mb-1">Search volunteer</label>
+					<input
+						id="invite-search"
+						type="text"
+						placeholder="Name or email…"
+						bind:value={inviteSearchTerm}
+						class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+					/>
+				</div>
+
+				<div class="mb-4 max-h-48 overflow-y-auto border border-gray-200 rounded-md divide-y divide-gray-100">
+					{#each inviteFilteredContacts.slice(0, 50) as contact (contact.id)}
+						<label class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer {inviteContactId === contact.id ? 'bg-purple-50' : ''}">
+							<input type="radio" name="contactId" value={contact.id} bind:group={inviteContactId} class="h-4 w-4 text-purple-600" />
+							<span class="text-sm flex-1 min-w-0">
+								<span class="font-medium">{contact.firstName || ''} {contact.lastName || ''}</span>
+								{#if contact.email}
+									<span class="text-gray-400 ml-1 truncate">{contact.email}</span>
+								{/if}
+							</span>
+						</label>
+					{/each}
+					{#if inviteFilteredContacts.length === 0}
+						<p class="text-sm text-gray-500 px-3 py-3 italic">No contacts found</p>
+					{/if}
+					{#if inviteFilteredContacts.length > 50}
+						<p class="text-xs text-gray-400 px-3 py-2">Showing first 50 — type to narrow down</p>
+					{/if}
+				</div>
+
+				{#if inviteError}
+					<p class="text-red-600 text-sm mb-3">{inviteError}</p>
+				{/if}
+
+				<div class="flex justify-end gap-3">
+					<button
+						type="button"
+						on:click={() => { showInviteModal = false; inviteError = null; }}
+						class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={!inviteContactId || inviteSending}
+						class="px-4 py-2 text-sm text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{#if inviteSending}Sending…{:else}Send invitation{/if}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
 {/if}
 
 <style>

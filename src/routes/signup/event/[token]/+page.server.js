@@ -1,254 +1,204 @@
 import { error, fail } from '@sveltejs/kit';
 import { getEventTokenByToken } from '$lib/crm/server/tokens.js';
-import { findById, update, findMany, readCollection } from '$lib/crm/server/fileStore.js';
+import { findById, update, findMany, create } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId } from '$lib/crm/server/orgContext.js';
-import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
-import { validateRota } from '$lib/crm/server/validators.js';
+import { getCsrfToken, generateCsrfToken, setCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
 import { filterUpcomingOccurrences } from '$lib/crm/utils/occurrenceFilters.js';
+import { validateRota } from '$lib/crm/server/validators.js';
+import { env } from '$env/dynamic/private';
+import { getThemeForCurrentOrganisation } from '$lib/crm/server/settings.js';
 
 export async function load({ params, cookies }) {
 	const token = await getEventTokenByToken(params.token);
-	if (!token) {
-		throw error(404, 'Invalid token');
-	}
+	if (!token) throw error(404, 'Invalid or expired signup link.');
 
 	const event = await findById('events', token.eventId);
-	if (!event) {
-		throw error(404, 'Event not found');
-	}
+	if (!event) throw error(404, 'Event not found.');
+
 	const organisationId = await getCurrentOrganisationId();
 	if (organisationId != null && event.organisationId != null && event.organisationId !== organisationId) {
-		throw error(404, 'Event not found');
+		throw error(404, 'Event not found.');
 	}
 
-	// Get upcoming occurrences for this event
-	const eventOccurrences = await findMany('occurrences', o => o.eventId === event.id);
+	const eventOccurrences = await findMany('occurrences', (o) => o.eventId === event.id);
 	const occurrences = filterUpcomingOccurrences(eventOccurrences);
-	
-	// Get all rotas for this event - only show public rotas on public signup pages
-	const allRotas = await findMany('rotas', r => r.eventId === event.id);
-	const rotas = allRotas.filter(r => (r.visibility || 'public') === 'public');
-	
-	// Load contacts to enrich assignees
-	const contacts = await readCollection('contacts');
-	
-	// Process rotas with assignee counts per occurrence
-	const rotasWithDetails = rotas.map(rota => {
+
+	const allRotas = await findMany('rotas', (r) => r.eventId === event.id);
+	const rotas = allRotas.filter((r) => (r.visibility || 'public') === 'public');
+
+	const rotasForDisplay = rotas.map((rota) => {
 		const assignees = rota.assignees || [];
-		
-		// Group assignees by occurrence
-		const assigneesByOcc = {};
-		if (occurrences.length > 0) {
-			occurrences.forEach(occ => {
-			assigneesByOcc[occ.id] = assignees.filter(a => {
-				if (typeof a === 'string') {
-					// Old format - if rota has occurrenceId, only count for that occurrence
-					return rota.occurrenceId === occ.id;
-				}
-				if (a && typeof a === 'object') {
-					const aOccId = a.occurrenceId || rota.occurrenceId;
-					return aOccId === occ.id;
-				}
+		const countsByOcc = {};
+		occurrences.forEach((occ) => {
+			countsByOcc[occ.id] = assignees.filter((a) => {
+				if (typeof a === 'string') return rota.occurrenceId === occ.id;
+				if (a && typeof a === 'object') return (a.occurrenceId || rota.occurrenceId) === occ.id;
 				return false;
-			}).map(a => {
-				// Enrich with contact details
-				if (typeof a === 'string') {
-					const contact = contacts.find(c => c.id === a);
-					return {
-						id: contact?.id,
-						name: contact ? `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email : 'Unknown',
-						email: contact?.email || ''
-					};
-				}
-				if (a && typeof a === 'object' && a.contactId) {
-					const contact = contacts.find(c => c.id === a.contactId);
-					return {
-						id: contact?.id,
-						name: contact ? `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email : (a.name || 'Unknown'),
-						email: contact?.email || a.email || ''
-					};
-				}
-				// Public signup
-				return {
-					id: null,
-					name: a.name || 'Unknown',
-					email: a.email || ''
-				};
-			});
-			});
-		}
-		
-		return {
-			...rota,
-			assigneesByOcc,
-			// Get occurrence if rota is for a specific one
-			occurrence: rota.occurrenceId ? occurrences.find(o => o.id === rota.occurrenceId) : null
-		};
+			}).length;
+		});
+		return { id: rota.id, role: rota.role || 'Volunteer', capacity: rota.capacity ?? 1, countsByOcc };
 	});
 
-	const csrfToken = getCsrfToken(cookies) || '';
-	return { token, event, occurrences, rotas: rotasWithDetails, csrfToken };
+	let csrfToken = getCsrfToken(cookies);
+	if (!csrfToken) {
+		csrfToken = generateCsrfToken();
+		setCsrfToken(cookies, csrfToken, env.NODE_ENV === 'production');
+	}
+
+	let theme = null;
+	try {
+		theme = await getThemeForCurrentOrganisation();
+	} catch {
+		// non-fatal
+	}
+
+	return {
+		event: { id: event.id, title: event.title || 'Event' },
+		occurrences: occurrences.map((o) => ({ id: o.id, startsAt: o.startsAt, endsAt: o.endsAt })),
+		rotas: rotasForDisplay,
+		csrfToken,
+		theme
+	};
 }
 
 export const actions = {
 	signup: async ({ request, params, cookies }) => {
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
-
 		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
-			return fail(403, { error: 'CSRF token validation failed' });
+			return fail(403, { error: 'Invalid request. Please refresh the page and try again.' });
 		}
 
+		const firstName = (data.get('firstName') || '').trim();
+		const lastName = (data.get('lastName') || '').trim();
+		const email = (data.get('email') || '').trim().toLowerCase();
+		const phone = (data.get('phone') || '').trim();
+
+		if (!firstName || !email) {
+			return fail(400, { error: 'First name and email address are required.' });
+		}
+
+		let selectedRotas;
 		try {
-			const token = await getEventTokenByToken(params.token);
-			if (!token) {
-				return fail(404, { error: 'Invalid token' });
-			}
+			selectedRotas = JSON.parse(data.get('selectedRotas') || '[]');
+		} catch {
+			return fail(400, { error: 'Invalid slot selection. Please go back and try again.' });
+		}
+		if (!Array.isArray(selectedRotas) || selectedRotas.length === 0) {
+			return fail(400, { error: 'Please select at least one slot.' });
+		}
 
-			const event = await findById('events', token.eventId);
-			if (!event) {
-				return fail(404, { error: 'Event not found' });
-			}
-			const currentOrgId = await getCurrentOrganisationId();
-			if (currentOrgId != null && event.organisationId != null && event.organisationId !== currentOrgId) {
-				return fail(404, { error: 'Event not found' });
-			}
+		const token = await getEventTokenByToken(params.token);
+		if (!token) return fail(404, { error: 'Invalid signup link.' });
 
-			const name = data.get('name') || '';
-			const email = data.get('email') || '';
+		const event = await findById('events', token.eventId);
+		if (!event) return fail(404, { error: 'Event not found.' });
 
-			if (!name || !email) {
-				return fail(400, { error: 'Name and email are required' });
-			}
+		const organisationId = await getCurrentOrganisationId();
+		if (organisationId != null && event.organisationId != null && event.organisationId !== organisationId) {
+			return fail(404, { error: 'Event not found.' });
+		}
 
-			// Get selected rotas and occurrences
-			const selectedRotas = JSON.parse(data.get('selectedRotas') || '[]');
-			
-			if (selectedRotas.length === 0) {
-				return fail(400, { error: 'Please select at least one rota to sign up for' });
-			}
+		const existingContacts = await findMany('contacts', (c) => c.email && c.email.toLowerCase() === email);
+		const matchedContact = existingContacts[0] || null;
+		const isConfirmed = matchedContact && matchedContact.confirmed !== false;
 
-			// Get upcoming occurrences to check for clashes
-			const eventOccurrences = await findMany('occurrences', o => o.eventId === event.id);
+		if (isConfirmed) {
+			// Path A: direct assignment
+			const eventOccurrences = await findMany('occurrences', (o) => o.eventId === event.id);
 			const occurrences = filterUpcomingOccurrences(eventOccurrences);
-			const rotas = await findMany('rotas', r => r.eventId === event.id);
-
 			const errors = [];
 
-			// Check for clashes - same occurrence selected multiple times (check this FIRST)
-			const occurrenceCounts = {};
-			for (const { rotaId, occurrenceId } of selectedRotas) {
-				if (occurrenceId) {
-					occurrenceCounts[occurrenceId] = (occurrenceCounts[occurrenceId] || 0) + 1;
-				}
+			const occCounts = {};
+			for (const { occurrenceId } of selectedRotas) {
+				if (occurrenceId) occCounts[occurrenceId] = (occCounts[occurrenceId] || 0) + 1;
+			}
+			for (const count of Object.values(occCounts)) {
+				if (count > 1) return fail(400, { error: 'Your selections conflict — you have chosen the same date twice.' });
 			}
 
-			for (const [occId, count] of Object.entries(occurrenceCounts)) {
-				if (count > 1) {
-					return fail(400, { error: 'Your rota selections are clashing, please change one of your rota signups' });
-				}
-			}
-
-			// Check if already signed up to any rota for the selected occurrences
 			for (const { rotaId, occurrenceId } of selectedRotas) {
-				const targetOccurrenceId = occurrenceId || null;
+				const rota = await findById('rotas', rotaId);
+				if (!rota) { errors.push(`Opportunity not found.`); continue; }
 
-				// Block signup to past occurrences
-				if (targetOccurrenceId) {
-					const occ = occurrences.find(o => o.id === targetOccurrenceId);
-					if (!occ) {
-						errors.push('The selected occurrence is no longer available for signup');
-						continue;
-					}
-				}
-				
-				// Check ALL rotas for this occurrence to see if email is already signed up
-				if (targetOccurrenceId) {
-					const allRotasForOcc = rotas.filter(r => {
-						return !r.occurrenceId || r.occurrenceId === targetOccurrenceId;
-					});
-
-					for (const r of allRotasForOcc) {
-						const assignees = Array.isArray(r.assignees) ? r.assignees : [];
-						const assigneesForOcc = assignees.filter(a => {
-							if (typeof a === 'string') {
-								return r.occurrenceId === targetOccurrenceId;
-							}
-							if (a && typeof a === 'object') {
-								const aOccurrenceId = a.occurrenceId || r.occurrenceId;
-								return aOccurrenceId === targetOccurrenceId;
-							}
-							return false;
-						});
-
-						const emailExists = assigneesForOcc.some(a => {
-							if (typeof a === 'string') {
-								return false; // Can't check email for old format
-							}
-							if (a && typeof a === 'object') {
-								return a.email && a.email.toLowerCase() === email.toLowerCase();
-							}
-							return false;
-						});
-
-						if (emailExists) {
-							errors.push(`You are already signed up for a rota on this occurrence`);
-							break;
-						}
-					}
-				}
-			}
-
-			// Process each selected rota
-			for (const { rotaId, occurrenceId } of selectedRotas) {
-				const rota = rotas.find(r => r.id === rotaId);
-				if (!rota) {
-					errors.push(`Rota not found: ${rotaId}`);
+				const targetOccId = occurrenceId || rota.occurrenceId || null;
+				if (targetOccId && !occurrences.find((o) => o.id === targetOccId)) {
+					errors.push('One of the selected dates is no longer available.');
 					continue;
 				}
 
-				// Determine the actual occurrenceId to use
-				const targetOccurrenceId = occurrenceId || rota.occurrenceId || null;
-
-				// Check capacity per occurrence
-				const existingAssignees = Array.isArray(rota.assignees) ? [...rota.assignees] : [];
-				const assigneesForOccurrence = existingAssignees.filter(a => {
-					if (typeof a === 'string') {
-						return rota.occurrenceId === targetOccurrenceId;
-					}
-					if (a && typeof a === 'object') {
-						const aOccurrenceId = a.occurrenceId || rota.occurrenceId;
-						return aOccurrenceId === targetOccurrenceId;
-					}
+				const existing = Array.isArray(rota.assignees) ? [...rota.assignees] : [];
+				const forOcc = existing.filter((a) => {
+					if (typeof a === 'string') return rota.occurrenceId === targetOccId;
+					if (a && typeof a === 'object') return (a.occurrenceId || rota.occurrenceId) === targetOccId;
 					return false;
 				});
 
-				if (assigneesForOccurrence.length >= rota.capacity) {
-					errors.push(`Rota "${rota.role}" is full for this occurrence`);
+				const alreadySignedUp = forOcc.some((a) => {
+					if (typeof a === 'string') return a === matchedContact.id;
+					if (a && typeof a === 'object') {
+						if (typeof a.contactId === 'string') return a.contactId === matchedContact.id;
+						if (a.email && a.email.toLowerCase() === email) return true;
+					}
+					return false;
+				});
+				if (alreadySignedUp) {
+					errors.push(`You are already signed up for this slot.`);
 					continue;
 				}
 
-				// Add assignee as object (name, email, occurrenceId) for public signups
-				existingAssignees.push({ name, email, occurrenceId: targetOccurrenceId });
+				const cap = rota.capacity ?? 1;
+				if (forOcc.length >= cap) {
+					errors.push(`The "${rota.role}" slot is full for that date.`);
+					continue;
+				}
 
-				// Update rota
-				const updatedRota = {
-					...rota,
-					assignees: existingAssignees
-				};
-				const validated = validateRota(updatedRota);
-				await update('rotas', rota.id, validated);
+				existing.push({ contactId: matchedContact.id, occurrenceId: targetOccId });
+				await update('rotas', rota.id, validateRota({ ...rota, assignees: existing }));
 			}
 
-			if (errors.length > 0) {
-				return fail(400, { error: errors.join('; ') });
-			}
-
-			return { success: true, message: 'Successfully signed up for selected rotas!' };
-		} catch (error) {
-			console.error('Error in event signup:', error);
-			return fail(500, { error: error.message || 'Failed to sign up for rotas' });
+			if (errors.length > 0) return fail(400, { error: errors.join(' ') });
+			return { success: true, path: 'A', name: firstName };
 		}
+
+		// Paths B / C / D — pending volunteer
+		const eventOccurrences = await findMany('occurrences', (o) => o.eventId === event.id);
+		const occurrences = filterUpcomingOccurrences(eventOccurrences);
+		const allRotas = await findMany('rotas', (r) => r.eventId === event.id);
+
+		const rotaSlots = selectedRotas
+			.map(({ rotaId, occurrenceId }) => {
+				const rota = allRotas.find((r) => r.id === rotaId);
+				const occ = occurrences.find((o) => o.id === occurrenceId);
+				if (!rota) return null;
+				return {
+					rotaId,
+					rotaRole: rota.role || 'Volunteer',
+					occurrenceId: occurrenceId || null,
+					occurrenceDate: occ?.startsAt || null,
+					eventId: event.id,
+					eventTitle: event.title || ''
+				};
+			})
+			.filter(Boolean);
+
+		if (rotaSlots.length === 0) {
+			return fail(400, { error: 'No valid slots selected. Please go back and try again.' });
+		}
+
+		await create('pending_volunteers', {
+			firstName,
+			lastName,
+			email,
+			phone,
+			contactId: matchedContact?.id || null,
+			rotaSlots,
+			status: 'pending',
+			notes: '',
+			organisationId: organisationId || null,
+			createdAt: new Date().toISOString()
+		});
+
+		return { success: true, path: 'pending', name: firstName };
 	}
 };
-

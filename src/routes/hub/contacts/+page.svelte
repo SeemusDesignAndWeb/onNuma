@@ -167,8 +167,14 @@
 </script>
 
 <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-	<h2 class="text-xl sm:text-2xl font-bold">Contacts</h2>
+	<h2 class="text-xl sm:text-2xl font-bold">Volunteers</h2>
 	<div class="flex flex-wrap gap-2">
+		<a href="/hub/volunteers" class="bg-amber-500 text-white px-2.5 py-1.5 rounded-md hover:bg-amber-600 inline-flex items-center gap-1.5 text-xs">
+			<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+			</svg>
+			Pending Volunteers
+		</a>
 		{#if isSuperAdmin}
 			<button
 				on:click={() => showBulkUpdateDialog = true}
@@ -188,7 +194,7 @@
 			Import
 		</a>
 		<a href="/hub/contacts/new" class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
-			Add Contact
+			Add Volunteer
 		</a>
 	</div>
 </div>
@@ -198,7 +204,7 @@
 		<input
 			type="text"
 			bind:value={searchInput}
-			placeholder="Search contacts..."
+			placeholder="Search volunteers..."
 			class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 px-[18px] py-2.5"
 		/>
 		<button type="submit" class="bg-theme-button-3 text-white px-2.5 py-1.5 rounded-md hover:opacity-90 text-xs">
@@ -261,7 +267,7 @@
 
 {#if overPlanLimit}
 	<p class="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-		Your plan includes access to the first {planLimit} contacts (sorted by name). You have {totalInOrg} in total; the rest are not shown but are kept. Upgrade your plan to see and manage all contacts.
+		Your plan includes access to the first {planLimit} volunteers (sorted by name). You have {totalInOrg} in total; the rest are not shown but are kept. Upgrade your plan to see and manage all volunteers.
 	</p>
 {/if}
 
@@ -270,13 +276,13 @@
 		{#if bulkUpdateResult.error}
 			<p class="text-red-800">{bulkUpdateResult.error}</p>
 		{:else}
-			<p class="text-green-800">{bulkUpdateResult.message || `Successfully updated ${bulkUpdateResult.updatedCount || 0} contact(s).`}</p>
+			<p class="text-green-800">{bulkUpdateResult.message || `Successfully updated ${bulkUpdateResult.updatedCount || 0} volunteer(s).`}</p>
 		{/if}
 	</div>
 {/if}
 
-<div role="region" aria-label="Contacts table">
-	<Table {columns} {mobileColumns} rows={contacts} emptyMessage="No contacts yet. Add your first contact above." onRowClick={(row) => goto(`/hub/contacts/${row.id}`)} />
+<div role="region" aria-label="Volunteers table">
+	<Table {columns} {mobileColumns} rows={contacts} emptyMessage="No volunteers yet. Add your first volunteer above." onRowClick={(row) => goto(`/hub/contacts/${row.id}`)} />
 </div>
 
 <Pager {currentPage} {totalPages} onPageChange={handlePageChange} />
@@ -291,7 +297,7 @@
 		aria-label="Close modal"
 	>
 		<div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto" on:click|stopPropagation role="dialog" aria-labelledby="bulk-update-title" aria-modal="true">
-			<h3 id="bulk-update-title" class="text-xl font-bold text-gray-900 mb-4">Bulk Update Contacts</h3>
+			<h3 id="bulk-update-title" class="text-xl font-bold text-gray-900 mb-4">Bulk Update Volunteers</h3>
 			<p class="text-gray-700 mb-6 text-sm">
 				This will update contacts based on your selection. This action cannot be undone. Are you sure you want to continue?
 			</p>
@@ -360,7 +366,7 @@
 
 					<!-- Filter Condition -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">Update Which Contacts?</label>
+						<label class="block text-sm font-medium text-gray-700 mb-2">Update Which Volunteers?</label>
 						<select 
 							bind:value={filterCondition}
 							name="filterCondition"
@@ -395,7 +401,7 @@
 						class="px-[18px] py-2.5 bg-theme-button-1 text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
 						disabled={isSubmitting}
 					>
-						{isSubmitting ? 'Updating...' : 'Update Contacts'}
+						{isSubmitting ? 'Updating...' : 'Update Volunteers'}
 					</button>
 				</div>
 			</form>

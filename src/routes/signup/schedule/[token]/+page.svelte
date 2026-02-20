@@ -1,998 +1,394 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
-	import { browser } from '$app/environment';
-	import FormField from '$lib/crm/components/FormField.svelte';
-	import { formatDateTimeUK, formatDateUK } from '$lib/crm/utils/dateFormat.js';
-	import { notifications } from '$lib/crm/stores/notifications.js';
-	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
+	import { formatMyhubDate, formatMyhubTime } from '$lib/crm/utils/dateFormat.js';
 
-	$: data = $page.data || {};
-	$: token = data.token;
-	$: rotas = data.rotas || [];
-	$: event = data.event;
+	$: data = $page.data;
+	$: event = data.event || {};
 	$: occurrences = data.occurrences || [];
+	$: rotas = data.rotas || [];
 	$: csrfToken = data.csrfToken || '';
-	$: formResult = $page.form;
+	$: theme = data.theme || null;
+	$: logoPath = theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png';
 
-	function handleEnhance() {
-		return async ({ update, result }) => {
-			if (result.type === 'success') {
-				notifications.success(result.data?.message || 'Successfully signed up for rotas!');
-			} else if (result.type === 'failure') {
-				notifications.error(result.data?.error || 'Failed to sign up');
-			}
-			await update({ reset: false });
-		};
-	}
+	// step: 'browse' | 'identity' | 'confirmed'
+	let step = 'browse';
+	// Array of { rotaId, occurrenceId, rotaRole, occurrenceDate }
+	let selectedSlots = [];
+	$: selectedCount = selectedSlots.length;
 
-	const SIGNUP_REMEMBER_KEY = 'egcc_signup_remember';
-
-	let name = '';
+	// Identity fields
+	let firstName = '';
+	let lastName = '';
 	let email = '';
-	let rememberMe = false;
-	let selectedRotas = new Set(); // Store as "rotaId:occurrenceId" or "rotaId" if no occurrence
-	let spouse = null;
-	let signUpWithSpouse = false;
-	let checkingSpouse = false;
-	let spouseCheckTimeout = null;
-	let previousEmail = '';
-	let previousName = '';
-	let contactConfirmed = true; // Track if contact is confirmed
-	let matchedContact = null; // Store the matched contact record
+	let phone = '';
 
-	// Reactive value for the hidden input - explicitly depend on selectedRotas
-	// Convert Set to array and stringify whenever selectedRotas changes
-	$: selectedRotasJson = (() => {
-		// Force reactivity by accessing selectedRotas
-		const size = selectedRotas.size;
-		const keys = Array.from(selectedRotas);
-		return JSON.stringify(
-			keys.map(key => {
-				const parts = key.split(':');
-				return {
-					rotaId: parts[0],
-					occurrenceId: parts.length > 1 ? parts[1] : null
-				};
-			})
-		);
-	})();
+	$: formResult = $page.form;
+	$: if (formResult?.success) step = 'confirmed';
 
-	function toggleRotaSelection(rotaId, occurrenceId) {
-		const key = occurrenceId ? `${rotaId}:${occurrenceId}` : rotaId;
-		// Create a new Set with updated contents to ensure Svelte detects the change
-		const newSet = new Set(selectedRotas);
-		if (newSet.has(key)) {
-			newSet.delete(key);
-			console.log('[Rota Signup] Removed selection:', key, 'New size:', newSet.size);
+	function isSlotSelected(rotaId, occurrenceId) {
+		return selectedSlots.some((s) => s.rotaId === rotaId && s.occurrenceId === occurrenceId);
+	}
+
+	function toggleSlot(rotaId, occurrenceId, rotaRole, occurrenceDate) {
+		const idx = selectedSlots.findIndex((s) => s.rotaId === rotaId && s.occurrenceId === occurrenceId);
+		if (idx >= 0) {
+			selectedSlots = selectedSlots.filter((_, i) => i !== idx);
 		} else {
-			newSet.add(key);
-			console.log('[Rota Signup] Added selection:', key, 'New size:', newSet.size);
-		}
-		selectedRotas = newSet; // Assign new Set to trigger reactivity
-		console.log('[Rota Signup] Current selectedRotas:', Array.from(selectedRotas));
-	}
-
-	function isRotaSelected(rotaId, occurrenceId) {
-		const key = occurrenceId ? `${rotaId}:${occurrenceId}` : rotaId;
-		return selectedRotas.has(key);
-	}
-
-	function getSelectedRotasArray() {
-		// Convert Set to array of {rotaId, occurrenceId}
-		return Array.from(selectedRotas).map(key => {
-			const parts = key.split(':');
-			return {
-				rotaId: parts[0],
-				occurrenceId: parts.length > 1 ? parts[1] : null
-			};
-		});
-	}
-
-	function getAssigneesForRotaOccurrence(rota, occurrenceId) {
-		if (!rota.assigneesByOcc) return [];
-		return rota.assigneesByOcc[occurrenceId] || [];
-	}
-
-	function isRotaFull(rota, occurrenceId) {
-		const assignees = getAssigneesForRotaOccurrence(rota, occurrenceId);
-		return assignees.length >= rota.capacity;
-	}
-
-	function isEmailAlreadySignedUp(rota, occurrenceId, currentEmail, currentMatchedContact, currentSignUpWithSpouse, currentSpouse) {
-		if (!currentEmail && !currentMatchedContact) return false;
-		const assignees = getAssigneesForRotaOccurrence(rota, occurrenceId);
-		
-		const emailsToCheck = new Set();
-		if (currentEmail) emailsToCheck.add(currentEmail.toLowerCase().trim());
-		if (currentMatchedContact?.email) emailsToCheck.add(currentMatchedContact.email.toLowerCase().trim());
-		if (currentSignUpWithSpouse && currentSpouse?.email) emailsToCheck.add(currentSpouse.email.toLowerCase().trim());
-		
-		return assignees.some(a => a.email && emailsToCheck.has(a.email.toLowerCase().trim()));
-	}
-
-	// Action to ensure hidden input is updated on form submit
-	let hiddenInputNode = null;
-	
-	function syncHiddenInput(node) {
-		hiddenInputNode = node;
-		
-		function update() {
-			// Always get the latest value directly from selectedRotas to ensure it's current
-			const selectedArray = Array.from(selectedRotas).map(key => {
-				const parts = key.split(':');
-				return {
-					rotaId: parts[0],
-					occurrenceId: parts.length > 1 ? parts[1] : null
-				};
-			});
-			const jsonStr = JSON.stringify(selectedArray);
-			console.log('[Rota Signup] Updating hidden input. selectedRotas.size:', selectedRotas.size, 'selectedArray:', selectedArray, 'jsonStr:', jsonStr);
-			node.value = jsonStr;
-		}
-		
-		// Update immediately
-		update();
-		
-		// Update on form submit with capture:true to run BEFORE enhance processes the form
-		// This ensures we have the latest value even if there's a timing issue
-		const form = node.closest('form');
-		if (form) {
-			form.addEventListener('submit', update, { capture: true, once: false });
-		}
-		
-		return {
-			update,
-			destroy() {
-				if (form) {
-					form.removeEventListener('submit', update, { capture: true });
-				}
-				hiddenInputNode = null;
-			}
-		};
-	}
-	
-	// Reactive statement to update hidden input whenever selectedRotas changes
-	$: if (hiddenInputNode) {
-		// Force reactivity by accessing selectedRotas
-		const _ = selectedRotas.size;
-		// Update the input value directly from selectedRotas to ensure it's current
-		const selectedArray = Array.from(selectedRotas).map(key => {
-			const parts = key.split(':');
-			return {
-				rotaId: parts[0],
-				occurrenceId: parts.length > 1 ? parts[1] : null
-			};
-		});
-		const jsonStr = JSON.stringify(selectedArray);
-		console.log('[Rota Signup] Reactive update. selectedRotas.size:', selectedRotas.size, 'selectedArray:', selectedArray, 'jsonStr:', jsonStr);
-		hiddenInputNode.value = jsonStr;
-	}
-
-	// Check for spouse when email and name change
-	async function checkSpouse(emailToCheck, nameToCheck) {
-		if (!emailToCheck || !emailToCheck.includes('@') || !nameToCheck || !nameToCheck.trim()) {
-			spouse = null;
-			signUpWithSpouse = false;
-			return;
-		}
-
-		checkingSpouse = true;
-		try {
-			const params = new URLSearchParams({
-				email: emailToCheck,
-				name: nameToCheck
-			});
-			const response = await fetch(`/api/check-contact-spouse?${params.toString()}`);
-			const data = await response.json();
-			
-			// Only update if email and name haven't changed while we were checking
-			if (email === emailToCheck && name === nameToCheck) {
-				if (data.matched) {
-					matchedContact = data.contact;
-					contactConfirmed = data.contact?.confirmed !== false;
-					if (data.spouse) {
-						spouse = data.spouse;
-					} else {
-						spouse = null;
-						signUpWithSpouse = false;
-					}
-				} else {
-					matchedContact = null;
-					contactConfirmed = false;
-					spouse = null;
-					signUpWithSpouse = false;
-				}
-			}
-		} catch (error) {
-			console.error('Error checking spouse:', error);
-			// Only update if email and name haven't changed while we were checking
-			if (email === emailToCheck && name === nameToCheck) {
-				contactConfirmed = false;
-				spouse = null;
-				signUpWithSpouse = false;
-			}
-		} finally {
-			// Only update checking state if email and name haven't changed
-			if (email === emailToCheck && name === nameToCheck) {
-				checkingSpouse = false;
-			}
+			selectedSlots = [...selectedSlots, { rotaId, occurrenceId, rotaRole, occurrenceDate }];
 		}
 	}
 
-	// Reactive statement to check spouse when email or name changes
-	$: if (email !== previousEmail || name !== previousName) {
-		previousEmail = email;
-		previousName = name;
-		
-		// Clear any existing timeout
-		if (spouseCheckTimeout) {
-			clearTimeout(spouseCheckTimeout);
-			spouseCheckTimeout = null;
-		}
-		
-		if (!email || !email.includes('@') || !name || !name.trim()) {
-			matchedContact = null;
-			contactConfirmed = false;
-			spouse = null;
-			signUpWithSpouse = false;
-			checkingSpouse = false;
-		} else {
-			// Debounce the check
-			spouseCheckTimeout = setTimeout(() => {
-				checkSpouse(email, name);
-				spouseCheckTimeout = null;
-			}, 500);
-		}
+	function isFull(rota, occurrenceId) {
+		return (rota.countsByOcc?.[occurrenceId] ?? 0) >= rota.capacity;
 	}
 
-	let expandedDescriptions = new Set();
-	function toggleDescription(eventId) {
-		if (expandedDescriptions.has(eventId)) {
-			expandedDescriptions.delete(eventId);
-		} else {
-			expandedDescriptions.add(eventId);
-		}
-		expandedDescriptions = expandedDescriptions;
-	}
-
-	let expandedRotaDescriptions = new Set();
-	function toggleRotaDescription(rotaId) {
-		if (expandedRotaDescriptions.has(rotaId)) {
-			expandedRotaDescriptions.delete(rotaId);
-		} else {
-			expandedRotaDescriptions.add(rotaId);
-		}
-		expandedRotaDescriptions = expandedRotaDescriptions;
-	}
-
-	// Holiday / Away Day state
-	let holidayStart = '';
-	let holidayEnd = '';
-	let holidayAllDay = true;
-	let bookingHoliday = false;
-	let showHolidayPopup = false;
-	let showAwayOnboarding = false;
-	let dontShowAwayOnboardingAgain = false;
-	let onboardingTriggered = false;
-	let myHolidays = [];
-
-	let signupRememberInitialized = false;
-
-	onMount(() => {
-		if (browser) {
-			try {
-				const stored = localStorage.getItem(SIGNUP_REMEMBER_KEY);
-				if (stored) {
-					const parsed = JSON.parse(stored);
-					if (parsed?.name && parsed?.email) {
-						name = parsed.name;
-						email = parsed.email;
-						rememberMe = true;
-					}
-				}
-			} catch (_) {}
-			signupRememberInitialized = true;
-			if (!onboardingTriggered) {
-				const dismissed = localStorage.getItem('awayOnboardingDismissed');
-				if (!dismissed) {
-					onboardingTriggered = true;
-					// Small delay to let the page settle
-					setTimeout(() => {
-						if (!localStorage.getItem('awayOnboardingDismissed')) {
-							showAwayOnboarding = true;
-						}
-					}, 1000);
-				}
-			}
-		}
-	});
-
-	$: if (browser && rememberMe && name?.trim() && email?.trim()) {
-		try {
-			localStorage.setItem(SIGNUP_REMEMBER_KEY, JSON.stringify({ name: name.trim(), email: email.trim() }));
-		} catch (_) {}
-	}
-	$: if (browser && signupRememberInitialized && !rememberMe) {
-		try {
-			localStorage.removeItem(SIGNUP_REMEMBER_KEY);
-		} catch (_) {}
-	}
-
-	function dismissAwayOnboarding() {
-		showAwayOnboarding = false;
-		if (dontShowAwayOnboardingAgain && browser) {
-			localStorage.setItem('awayOnboardingDismissed', 'true');
-		}
-	}
-	let cancellingHolidayId = null;
-
-	// Set default holiday dates to today/tomorrow
-	$: if (!holidayStart) {
-		const now = new Date();
-		now.setMinutes(0);
-		now.setSeconds(0);
-		now.setMilliseconds(0);
-		
-		if (holidayAllDay) {
-			holidayStart = now.toISOString().split('T')[0];
-			const tomorrow = new Date(now);
-			tomorrow.setDate(tomorrow.getDate() + 1);
-			holidayEnd = tomorrow.toISOString().split('T')[0];
-		} else {
-			holidayStart = now.toISOString().slice(0, 16);
-			const tomorrow = new Date(now);
-			tomorrow.setDate(tomorrow.getDate() + 1);
-			holidayEnd = tomorrow.toISOString().slice(0, 16);
-		}
-	}
-
-	// Adjust format when switching allDay
-	let lastAllDay = holidayAllDay;
-	$: if (holidayAllDay !== lastAllDay) {
-		if (holidayAllDay) {
-			// Switching to date only
-			if (holidayStart && holidayStart.includes('T')) holidayStart = holidayStart.split('T')[0];
-			if (holidayEnd && holidayEnd.includes('T')) holidayEnd = holidayEnd.split('T')[0];
-		} else {
-			// Switching to datetime
-			if (holidayStart && !holidayStart.includes('T')) holidayStart = holidayStart + 'T09:00';
-			if (holidayEnd && !holidayEnd.includes('T')) holidayEnd = holidayEnd + 'T17:00';
-		}
-		lastAllDay = holidayAllDay;
-	}
-
-	async function bookAwayDay() {
-		if (!email || !name) {
-			notifications.error('Please enter your name and email first');
-			document.getElementById('name')?.focus();
-			return;
-		}
-
-		if (!holidayStart || !holidayEnd) {
-			notifications.error('Please select start and end dates');
-			return;
-		}
-
-		bookingHoliday = true;
-		try {
-			const response = await fetch('/api/holidays', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					email,
-					name,
-					startDate: holidayStart,
-					endDate: holidayEnd,
-					allDay: holidayAllDay
-				})
-			});
-
-			const result = await response.json();
-			if (response.ok) {
-				notifications.success('Away day booked successfully!');
-				await fetchMyHolidays();
-				// Reset holiday dates but keep email/name
-				const nextWeek = new Date(holidayStart);
-				nextWeek.setDate(nextWeek.getDate() + 7);
-				holidayStart = nextWeek.toISOString().slice(0, 16);
-				const nextWeekEnd = new Date(holidayEnd);
-				nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
-				holidayEnd = nextWeekEnd.toISOString().slice(0, 16);
-			} else {
-				notifications.error(result.error || 'Failed to book away day');
-			}
-		} catch (error) {
-			console.error('Error booking away day:', error);
-			notifications.error('An error occurred. Please try again.');
-		} finally {
-			bookingHoliday = false;
-		}
-	}
-
-	async function fetchMyHolidays() {
-		if (!email?.trim()) return;
-		try {
-			const res = await fetch(`/api/holidays?email=${encodeURIComponent(email.trim())}`);
-			const data = await res.json();
-			myHolidays = Array.isArray(data) ? data : [];
-		} catch (e) {
-			myHolidays = [];
-		}
-	}
-
-	async function cancelAwayDay(holidayId) {
-		if (!email?.trim()) return;
-		cancellingHolidayId = holidayId;
-		try {
-			const res = await fetch('/api/holidays', {
-				method: 'DELETE',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ id: holidayId, email: email.trim() })
-			});
-			const result = await res.json();
-			if (res.ok) {
-				notifications.success('Away day cancelled.');
-				await fetchMyHolidays();
-			} else {
-				notifications.error(result.error || 'Failed to cancel away day');
-			}
-		} catch (e) {
-			notifications.error('An error occurred. Please try again.');
-		} finally {
-			cancellingHolidayId = null;
-		}
-	}
-
-	$: if (showHolidayPopup && email?.trim()) {
-		fetchMyHolidays();
-	}
+	$: selectedRotasJson = JSON.stringify(
+		selectedSlots.map(({ rotaId, occurrenceId }) => ({ rotaId, occurrenceId }))
+	);
 </script>
 
-<div class="min-h-screen bg-gray-50 pt-[70px]">
-	<div class="max-w-7xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
+<svelte:head>
+	<title>Volunteer signup – {event.title || 'Sign up'}</title>
+</svelte:head>
 
-		{#if rotas.length === 0}
-			<div class="bg-white shadow rounded-lg p-6">
-				<p class="text-gray-500">No rotas available for this event.</p>
-				<p class="text-sm text-gray-400 mt-2">This may be because the rota is set to "Internal" visibility, which is not accessible via public signup links.</p>
+<div class="su-page">
+	<header class="su-header">
+		<img src={logoPath} alt="" class="su-logo" width="36" height="36" />
+		<span class="su-org-name">Volunteer signup</span>
+	</header>
+
+	<main class="su-main">
+		{#if step === 'confirmed'}
+			<div class="su-card su-confirm">
+				{#if formResult?.path === 'A'}
+					<div class="su-confirm-icon su-confirm-icon--green" aria-hidden="true">
+						<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+					</div>
+					<h1 class="su-confirm-heading">You're signed up!</h1>
+					<p class="su-confirm-body">Thanks, {formResult.name || ''}. You've been added to these slots for <strong>{event.title}</strong>:</p>
+					<ul class="su-confirm-slots">
+						{#each selectedSlots as s}
+							<li>{s.rotaRole} — {formatMyhubDate(s.occurrenceDate)}{s.occurrenceDate ? ', ' + formatMyhubTime(s.occurrenceDate) : ''}</li>
+						{/each}
+					</ul>
+					<p class="su-confirm-note">You'll receive a confirmation email shortly.</p>
+				{:else}
+					<div class="su-confirm-icon su-confirm-icon--amber" aria-hidden="true">
+						<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+					</div>
+					<h1 class="su-confirm-heading">Thank you{formResult?.name ? ', ' + formResult.name : ''}!</h1>
+					<p class="su-confirm-body">We've noted your interest in volunteering for <strong>{event.title}</strong>. A coordinator will be in touch to confirm your place.</p>
+					<p class="su-confirm-note">No action needed from you — we'll be in contact soon.</p>
+				{/if}
 			</div>
-		{:else if occurrences.length === 0 && rotas.length > 0}
-			<div class="bg-white shadow rounded-lg p-6">
-				<p class="text-gray-500">No upcoming occurrences available for this event.</p>
-				<p class="text-sm text-gray-400 mt-2">All occurrences for this event are in the past. Please contact the event organizer for more information.</p>
-				<div class="mt-4 space-y-4">
-					{#each rotas as rota}
-						<div class="border-l-4 border-l-brand-blue border border-gray-200 rounded-lg p-4">
-							<h3 class="text-lg font-semibold text-gray-900">{rota.role}</h3>
-							<p class="text-sm text-gray-500 mt-1">This rota has no upcoming occurrences available for signup.</p>
-						</div>
+
+		{:else if step === 'identity'}
+			<div class="su-step-head">
+				<button type="button" class="su-back-btn" on:click={() => { step = 'browse'; }}>
+					<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+					Back to slots
+				</button>
+				<h1 class="su-page-title">Tell us about you</h1>
+				<p class="su-page-lead">Just a few details so we can get in touch.</p>
+			</div>
+
+			<div class="su-card su-selected-summary">
+				<p class="su-selected-label">Your selected slots:</p>
+				<ul class="su-selected-list">
+					{#each selectedSlots as s}
+						<li>{s.rotaRole} — {formatMyhubDate(s.occurrenceDate)}{s.occurrenceDate ? ', ' + formatMyhubTime(s.occurrenceDate) : ''}</li>
 					{/each}
-				</div>
+				</ul>
 			</div>
-		{:else}
-			<form 
-				method="POST" 
-				action="?/signup" 
-				use:enhance={handleEnhance}
-			>
+
+			<form method="POST" action="?/signup" use:enhance class="su-form">
 				<input type="hidden" name="_csrf" value={csrfToken} />
-				<input 
-					type="hidden" 
-					name="selectedRotas" 
-					value={selectedRotasJson}
-					use:syncHiddenInput
-				/>
+				<input type="hidden" name="selectedRotas" value={selectedRotasJson} />
 
-				{#if rotas.length > 0}
-					<div class="bg-white shadow rounded-lg p-4 mb-6 lg:sticky top-[76px] z-20 overflow-x-auto lg:overflow-x-visible">
-						<div class="flex flex-col lg:flex-row lg:items-center gap-3">
-							<h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2 flex-shrink-0">
-								<svg class="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-								</svg>
-								Quick Links:
-							</h3>
-							<nav class="flex flex-wrap gap-2 flex-1">
-								{#each rotas as rota}
-									<a
-										href="#rota-{rota.id}"
-										class="inline-flex items-center text-xs text-brand-blue hover:text-brand-blue/80 hover:underline py-1 px-2 rounded hover:bg-brand-blue/5 border border-brand-blue/10 transition-colors whitespace-nowrap"
-									>
-										{rota.role}
-									</a>
-								{/each}
-							</nav>
-							<div class="flex-shrink-0 lg:ml-auto hidden lg:flex">
-								<button
-									type="button"
-									on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
-									class="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-medium shadow transition-colors flex items-center justify-center gap-2 text-xs whitespace-nowrap"
-								>
-									<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-									</svg>
-									Tell us your away
-								</button>
-							</div>
-						</div>
-					</div>
+				{#if formResult?.error}
+					<div class="su-alert" role="alert">{formResult.error}</div>
 				{/if}
 
-				{#if showAwayOnboarding && contactConfirmed}
-					<div 
-						class="fixed bottom-[44px] left-[36px] right-[36px] sm:left-[44px] sm:right-auto z-[110] max-w-sm"
-						transition:fade={{ duration: 200 }}
-					>
-						<div class="bg-brand-blue text-white p-6 rounded-xl shadow-2xl relative border border-white/20">
-							<!-- Arrow (optional, pointing generally towards content) -->
-							<div class="absolute -bottom-2 left-6 sm:left-12 w-4 h-4 bg-brand-blue rotate-45 border-r border-b border-white/20"></div>
-							
-							<button 
-								on:click={() => showAwayOnboarding = false}
-								class="absolute top-3 right-3 text-white hover:text-white/80 transition-colors"
-							>
-								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-								</svg>
-							</button>
-
-							<h3 class="font-bold text-lg mb-2 flex items-start gap-2 pr-8 text-white">
-								<svg class="w-6 h-6 mt-0.5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-								Tell us when you're away!
-							</h3>
-							<p class="text-base text-white mb-6 ml-8 leading-relaxed">
-								Click the "Tell us your away" button to set your away dates. We'll make sure you {spouse?.firstName ? `and ${spouse.firstName}` : ''} aren't assigned to any rotas while you're gone.
-							</p>
-							
-							<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 ml-8">
-								<label class="flex items-center gap-2 text-sm text-white cursor-pointer select-none">
-									<input type="checkbox" bind:checked={dontShowAwayOnboardingAgain} class="w-4 h-4 rounded border-white/50 text-brand-blue focus:ring-white bg-white/20" />
-									Don't show again
-								</label>
-								<button 
-									type="button"
-									on:click={dismissAwayOnboarding}
-									class="bg-transparent border-2 border-white text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-white/10 transition-colors shadow-sm"
-								>
-									Got it
-								</button>
-							</div>
-						</div>
+				<div class="su-field-row">
+					<div class="su-field">
+						<label class="su-label" for="su-firstName">First name <span class="su-required" aria-hidden="true">*</span></label>
+						<input id="su-firstName" class="su-input" type="text" name="firstName" bind:value={firstName} required autocomplete="given-name" placeholder="Jane" />
 					</div>
-				{/if}
-
-				{#if showHolidayPopup}
-					<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[110] p-4 pb-24 sm:pb-4" on:click={() => showHolidayPopup = false}>
-						<div class="bg-white rounded-xl shadow-2xl w-full max-w-md min-w-0 p-4 sm:p-6 overflow-hidden max-h-[85vh] sm:max-h-[90vh] overflow-y-auto [max-width:min(28rem,calc(100vw-2rem))]" on:click|stopPropagation>
-							<div class="flex items-center justify-between mb-6">
-								<h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-									<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-7l.94-2.06L15 11l-2.06.94L12 14l-.94-2.06L9 11l2.06-.94L12 9z" />
-									</svg>
-									Book Your Away Day
-								</h3>
-								<button type="button" on:click={() => showHolidayPopup = false} class="text-gray-400 hover:text-gray-600 transition-colors">
-									<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-									</svg>
-								</button>
-							</div>
-
-							<div class="space-y-4">
-								<div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4">
-									<p class="text-sm text-blue-800">
-										Enter your away dates below. We'll make sure you aren't assigned to any rotas during this period.
-									</p>
-								</div>
-
-								{#if !name || !email}
-									<div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-4">
-										<p class="text-xs text-yellow-800 font-medium">
-											Please enter your name and email in the main form first.
-										</p>
-									</div>
-								{/if}
-
-								{#if name && email}
-									<div class="mb-4">
-										<p class="text-sm font-medium text-gray-700 mb-2">Your booked away days</p>
-										{#if myHolidays.length > 0}
-											<ul class="space-y-2">
-												{#each myHolidays as h}
-													<li class="flex items-center justify-between gap-2 py-2 px-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
-														<span class="text-gray-700">
-															{h.allDay ? formatDateUK(h.startDate) : formatDateTimeUK(h.startDate)} – {h.allDay ? formatDateUK(h.endDate) : formatDateTimeUK(h.endDate)}
-														</span>
-														<button
-															type="button"
-															on:click={() => cancelAwayDay(h.id)}
-															disabled={cancellingHolidayId === h.id}
-															class="text-red-600 hover:text-red-700 hover:underline text-xs font-medium disabled:opacity-50 shrink-0"
-														>
-															{cancellingHolidayId === h.id ? 'Cancelling...' : 'Cancel'}
-														</button>
-													</li>
-												{/each}
-											</ul>
-										{:else}
-											<p class="text-sm text-gray-500 py-2">You have no away days booked. Add one below.</p>
-										{/if}
-									</div>
-								{/if}
-
-								<div class="grid grid-cols-1 gap-4 min-w-0">
-									<div class="min-w-0">
-										<label for="popup-holiday-start" class="block text-sm font-medium text-gray-700 mb-1">From</label>
-										{#if holidayAllDay}
-											<input
-												type="date"
-												id="popup-holiday-start"
-												bind:value={holidayStart}
-												class="w-full min-w-0 max-w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 text-sm box-border"
-											/>
-										{:else}
-											<input
-												type="datetime-local"
-												id="popup-holiday-start"
-												bind:value={holidayStart}
-												class="w-full min-w-0 max-w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 text-sm box-border"
-											/>
-										{/if}
-									</div>
-									<div class="min-w-0">
-										<label for="popup-holiday-end" class="block text-sm font-medium text-gray-700 mb-1">To</label>
-										{#if holidayAllDay}
-											<input
-												type="date"
-												id="popup-holiday-end"
-												bind:value={holidayEnd}
-												class="w-full min-w-0 max-w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 text-sm box-border"
-											/>
-										{:else}
-											<input
-												type="datetime-local"
-												id="popup-holiday-end"
-												bind:value={holidayEnd}
-												class="w-full min-w-0 max-w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 text-sm box-border"
-											/>
-										{/if}
-									</div>
-									<div class="flex items-center gap-4 py-2">
-										<label class="flex items-center gap-2 cursor-pointer group">
-											<input
-												type="checkbox"
-												bind:checked={holidayAllDay}
-												class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-											/>
-											<span class="text-sm font-medium text-gray-700 group-hover:text-gray-900">All Day</span>
-										</label>
-									</div>
-								</div>
-
-								<div class="pt-4 flex flex-col gap-3">
-									<button
-										type="button"
-										on:click={async () => {
-											await bookAwayDay();
-											if (!bookingHoliday) showHolidayPopup = false;
-										}}
-										disabled={bookingHoliday || !name || !email}
-										class="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg transition-all flex items-center justify-center gap-2"
-									>
-										{#if bookingHoliday}
-											<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-												<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-												<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-											</svg>
-											Booking...
-										{:else}
-											Confirm Away Day
-										{/if}
-									</button>
-									<button
-										type="button"
-										on:click={() => showHolidayPopup = false}
-										class="w-full bg-gray-100 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200 font-medium transition-colors text-sm"
-									>
-										Cancel
-									</button>
-								</div>
-							</div>
-						</div>
+					<div class="su-field">
+						<label class="su-label" for="su-lastName">Last name</label>
+						<input id="su-lastName" class="su-input" type="text" name="lastName" bind:value={lastName} autocomplete="family-name" placeholder="Smith" />
 					</div>
-				{/if}
+				</div>
 
-				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-					<!-- Your Details - Left column on large screens -->
-					<div class="lg:col-span-1">
-						<div class="bg-white shadow rounded-lg p-6 lg:sticky top-[76px] space-y-6">
-							<div>
-								<h1 class="text-2xl font-bold text-brand-blue mb-2">{event?.title || 'Volunteer Signup'}</h1>
-								<div class="flex items-center justify-between gap-4 mb-4">
-									{#if event?.location}
-										<div class="flex items-center gap-2 text-gray-600 text-sm">
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-											</svg>
-											<span>{event.location}</span>
-										</div>
-									{:else}
-										<div></div>
-									{/if}
+				<div class="su-field">
+					<label class="su-label" for="su-email">Email address <span class="su-required" aria-hidden="true">*</span></label>
+					<input id="su-email" class="su-input" type="email" name="email" bind:value={email} required autocomplete="email" placeholder="jane@example.com" />
+				</div>
 
-									{#if event?.description}
-										<button 
+				<div class="su-field">
+					<label class="su-label" for="su-phone">Phone <span class="su-optional">(optional)</span></label>
+					<input id="su-phone" class="su-input" type="tel" name="phone" bind:value={phone} autocomplete="tel" placeholder="07700 900 000" />
+				</div>
+
+				<div class="su-form-footer">
+					<button type="button" class="su-btn su-btn-secondary" on:click={() => { step = 'browse'; }}>Back</button>
+					<button type="submit" class="su-btn su-btn-primary">
+						<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" /></svg>
+						Put my hand up
+					</button>
+				</div>
+			</form>
+
+		{:else}
+			<div class="su-step-head">
+				<h1 class="su-page-title">{event.title || 'Volunteer signup'}</h1>
+				<p class="su-page-lead">Choose the dates you can help. Select as many as you like, then tap Continue.</p>
+			</div>
+
+			{#if rotas.length === 0}
+				<div class="su-card su-empty">
+					<p>No volunteer opportunities are available right now. Please check back soon.</p>
+				</div>
+			{:else}
+				<div class="su-rotas">
+					{#each rotas as rota}
+						<div class="su-card su-rota-card">
+							<h2 class="su-rota-title">{rota.role}</h2>
+							{#if occurrences.length === 0}
+								<p class="su-muted">No upcoming dates available.</p>
+							{:else}
+								<div class="su-occurrences">
+									{#each occurrences as occ}
+										{@const count = rota.countsByOcc?.[occ.id] ?? 0}
+										{@const full = count >= rota.capacity}
+										{@const selected = isSlotSelected(rota.id, occ.id)}
+										<button
 											type="button"
-											on:click={() => toggleDescription(event.id)}
-											class="text-xs text-brand-blue hover:underline focus:outline-none whitespace-nowrap flex items-center gap-1"
+											class="su-occ-row"
+											class:su-occ-row--selected={selected}
+											class:su-occ-row--full={full && !selected}
+											disabled={full && !selected}
+											on:click={() => !full && toggleSlot(rota.id, occ.id, rota.role, occ.startsAt)}
+											aria-pressed={selected}
 										>
-											<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
-											{expandedDescriptions.has(event.id) ? 'Hide Event Description' : 'View Event Description'}
+											<span class="su-occ-check" aria-hidden="true">
+												{#if selected}
+													<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+												{:else}
+													<span class="su-occ-circle"></span>
+												{/if}
+											</span>
+											<span class="su-occ-info">
+												<span class="su-occ-date">{formatMyhubDate(occ.startsAt)}</span>
+												<span class="su-occ-time">{formatMyhubTime(occ.startsAt)}</span>
+											</span>
+											<span class="su-occ-status">
+												{#if full}
+													<span class="su-badge su-badge--full">Full</span>
+												{:else}
+													<span class="su-occ-spots">{rota.capacity - count} {rota.capacity - count === 1 ? 'spot' : 'spots'} left</span>
+												{/if}
+											</span>
 										</button>
-									{/if}
-								</div>
-
-								{#if event?.description && expandedDescriptions.has(event.id)}
-									<div class="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded border border-gray-100">
-										{@html event.description}
-									</div>
-								{/if}
-								<h2 class="text-xl font-bold text-gray-900 mb-4">Your Details</h2>
-								<div class="space-y-4">
-									<div>
-										<label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name (i.e. Fred Bloggs)</label>
-										<input
-											type="text"
-											id="name"
-											name="name"
-											bind:value={name}
-											required
-											class="w-full rounded-md border border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue py-2 px-4 transition-colors"
-										/>
-									</div>
-									<div>
-										<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-										<input
-											type="email"
-											id="email"
-											name="email"
-											bind:value={email}
-											required
-											class="w-full rounded-md border border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue py-2 px-4 transition-colors"
-										/>
-										{#if checkingSpouse}
-											<p class="text-xs text-gray-500 mt-1">Checking...</p>
-										{/if}
-									</div>
-									{#if spouse}
-										<div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-											<label class="flex items-center gap-3 cursor-pointer">
-												<input
-													type="checkbox"
-													name="rememberMe"
-													bind:checked={rememberMe}
-													class="w-5 h-5 rounded border-gray-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
-												/>
-												<span class="text-sm font-medium text-gray-900">Remember my name and email</span>
-											</label>
-											<label class="flex items-start cursor-pointer group">
-												<input
-													type="checkbox"
-													name="signUpWithSpouse"
-													bind:checked={signUpWithSpouse}
-													class="mt-1 mr-3 w-5 h-5 rounded border-gray-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
-												/>
-												<span class="text-sm font-medium text-gray-900 block">
-													Sign up for you and {spouse.firstName || 'your partner'}?
-												</span>
-											</label>
-										</div>
-									{:else}
-										<div class="mt-4">
-											<label class="flex items-center gap-3 cursor-pointer">
-												<input
-													type="checkbox"
-													name="rememberMe"
-													bind:checked={rememberMe}
-													class="w-5 h-5 rounded border-gray-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
-												/>
-												<span class="text-sm font-medium text-gray-900">Remember my name and email</span>
-											</label>
-										</div>
-									{/if}
-									{#if matchedContact}
-										<div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
-											<i class="fa fa-heart text-red-500"></i>
-											<span>If you see this, you are already signed up on that date.</span>
-										</div>
-									{/if}
-								</div>
-								<!-- Book Away Day - visible on mobile only (after name/email) -->
-								<div class="pt-4 flex lg:hidden">
-									<button
-										type="button"
-										on:click={() => { showHolidayPopup = true; if (email?.trim()) fetchMyHolidays(); }}
-										class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-md hover:bg-blue-700 font-medium shadow transition-colors flex items-center justify-center gap-2 text-sm"
-									>
-										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-									</svg>
-									Tell us your away
-								</button>
-								</div>
-							</div>
-
-							<div class="border-t border-gray-200 pt-6">
-								<button
-									type="submit"
-									disabled={selectedRotas.size === 0 || !name || !email || !contactConfirmed}
-									class="w-full bg-brand-green text-white px-8 py-3 rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
-								>
-									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-									</svg>
-									Sign Up for Selected Rotas ({selectedRotas.size})
-								</button>
-							</div>
-
-							{#if !contactConfirmed && email && name}
-								<div class="border-t border-gray-200 pt-6">
-									<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-										<div class="flex items-start gap-3">
-											<svg class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-											</svg>
-											<div class="flex-1">
-												<p class="text-sm font-medium text-yellow-800">Contact Not Confirmed</p>
-												<p class="text-xs text-yellow-700 mt-1">Your contact details need to be confirmed before you can sign up for rotas. Please contact an administrator.</p>
-											</div>
-										</div>
-									</div>
+									{/each}
 								</div>
 							{/if}
 						</div>
-					</div>
-
-					<!-- Available Rotas - Right column on large screens -->
-					<div class="lg:col-span-2">
-						<div class="bg-white shadow rounded-lg p-6">
-							<div class="space-y-6">
-								{#each rotas as rota}
-									<div id="rota-{rota.id}" class="border-l-4 border-l-brand-blue border border-gray-200 rounded-lg p-4 scroll-mt-[160px] bg-white hover:shadow-md transition-shadow">
-										<div class="flex items-start justify-between mb-3">
-											<div class="flex-1">
-												<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-													<span class="w-2 h-2 rounded-full bg-brand-green"></span>
-													{rota.role}
-												</h3>
-												{#if rota.notes}
-													<button
-														type="button"
-														on:click={() => toggleRotaDescription(rota.id)}
-														class="text-xs text-brand-blue hover:underline focus:outline-none whitespace-nowrap flex items-center gap-1 mt-1 ml-4"
-													>
-														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-														</svg>
-														{expandedRotaDescriptions.has(rota.id) ? 'Hide Rota Description' : 'View Rota Description'}
-													</button>
-												{/if}
-												{#if rota.notes && expandedRotaDescriptions.has(rota.id)}
-													<div class="text-sm text-gray-600 mt-2 ml-4 bg-gray-50 p-3 rounded border border-gray-100">{@html rota.notes}</div>
-												{/if}
-												<p class="text-sm text-gray-500 mt-1 ml-4">
-													Capacity: <span class="font-medium text-brand-blue">{rota.capacity}</span> {rota.capacity === 1 ? 'person is' : 'people are'} ideal for this rota
-												</p>
-												{#if rota.helpFiles && rota.helpFiles.length > 0}
-													<div class="mt-2 ml-4">
-														<p class="text-xs font-medium text-gray-700 mb-1">Help Files:</p>
-														<div class="flex flex-wrap gap-2">
-															{#each rota.helpFiles as helpFile}
-																{#if helpFile.type === 'link'}
-																	<a
-																		href={helpFile.url}
-																		target="_blank"
-																		rel="noopener noreferrer"
-																		class="inline-flex items-center gap-1 text-xs text-brand-blue hover:text-brand-blue/80 hover:underline px-2 py-1 rounded bg-brand-blue/5 border border-brand-blue/20"
-																	>
-																		<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-																		</svg>
-																		<span>{helpFile.title}</span>
-																	</a>
-																{:else}
-																	<a
-																		href="/hub/schedules/help-files/{helpFile.filename}"
-																		target="_blank"
-																		rel="noopener noreferrer"
-																		class="inline-flex items-center gap-1 text-xs text-brand-green hover:text-brand-green/80 hover:underline px-2 py-1 rounded bg-brand-green/5 border border-brand-green/20"
-																	>
-																		<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-																		</svg>
-																		<span>{helpFile.title || helpFile.originalName}</span>
-																	</a>
-																{/if}
-															{/each}
-														</div>
-													</div>
-												{/if}
-											</div>
-										</div>
-
-										{#if occurrences.length > 0}
-											<!-- Show all occurrences for this rota in a compact grid -->
-											<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-												{#each occurrences as occ}
-													{@const assignees = getAssigneesForRotaOccurrence(rota, occ.id)}
-													{@const isFull = isRotaFull(rota, occ.id)}
-													{@const isSelected = isRotaSelected(rota.id, occ.id)}
-													{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id, email, matchedContact, signUpWithSpouse, spouse)}
-													{@const canSelect = !isFull && !alreadySignedUp}
-													{@const hasSomeFilled = assignees.length > 0 && !isFull}
-													{@const bgColor = isFull ? 'bg-red-100' : (hasSomeFilled ? 'bg-green-100' : 'bg-white')}
-													
-													<div class="border-2 rounded p-2 transition-all {bgColor} {isSelected ? 'border-brand-green shadow-sm ring-2 ring-brand-green/20' : 'border-gray-200 hover:border-brand-blue/50'} {!canSelect && !isSelected ? 'opacity-60' : ''}">
-														<label class="flex items-start cursor-pointer {!canSelect && !isSelected ? 'cursor-not-allowed' : ''}">
-															<input
-																type="checkbox"
-																checked={isSelected}
-																on:change={() => toggleRotaSelection(rota.id, occ.id)}
-																disabled={!canSelect && !isSelected}
-																class="mt-0.5 mr-2 flex-shrink-0 accent-brand-green"
-															/>
-															<div class="flex-1 min-w-0">
-																<div class="text-xs font-medium text-gray-900 leading-tight">
-																	{formatDateTimeUK(occ.startsAt)}
-																</div>
-																<div class="flex items-center gap-1.5 mt-1 flex-wrap">
-																	<span class="text-xs font-medium text-brand-blue">
-																		{assignees.length}/{rota.capacity}
-																	</span>
-																	{#if isFull}
-																		<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-red/10 text-brand-red border border-brand-red/20">
-																			Full
-																		</span>
-																	{/if}
-																	{#if alreadySignedUp}
-																		<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20" title="Already signed up">
-																			<i class="fa fa-heart text-red-500"></i>
-																		</span>
-																	{/if}
-																</div>
-															</div>
-														</label>
-													</div>
-												{/each}
-											</div>
-										{:else}
-											<p class="text-gray-500 text-sm">No occurrences available for this event.</p>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						</div>
-					</div>
+					{/each}
 				</div>
+			{/if}
 
-				{#if formResult?.type === 'failure' && formResult.data?.error}
-					<div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-						<p class="text-red-800">{formResult.data.error}</p>
-					</div>
-				{/if}
-			</form>
+			<div class="su-sticky-footer">
+				<span class="su-footer-label">
+					{#if selectedCount > 0}
+						<span class="su-footer-count">{selectedCount} {selectedCount === 1 ? 'slot' : 'slots'} selected</span>
+					{:else}
+						<span class="su-footer-hint">Select at least one slot above</span>
+					{/if}
+				</span>
+				<button
+					type="button"
+					class="su-btn su-btn-primary"
+					disabled={selectedCount === 0}
+					on:click={() => { step = 'identity'; }}
+				>
+					Continue
+					<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+				</button>
+			</div>
 		{/if}
-	</div>
-	
-	<!-- Notification Popups -->
-	<NotificationPopup />
+	</main>
 </div>
 
+<style>
+	.su-page { min-height: 100vh; background: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+	.su-header {
+		background: #fff;
+		border-bottom: 1px solid #e5e7eb;
+		padding: 0.875rem 1.25rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.su-logo { width: 2.25rem; height: 2.25rem; object-fit: contain; flex-shrink: 0; }
+	.su-org-name { font-size: 1rem; font-weight: 600; color: #111827; }
+
+	.su-main { max-width: 40rem; margin: 0 auto; padding: 1.5rem 1rem 8rem; }
+	@media (min-width: 640px) { .su-main { padding: 2rem 1.5rem 8rem; } }
+
+	.su-step-head { margin-bottom: 1.5rem; }
+	.su-page-title { font-size: 1.625rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem; line-height: 1.2; }
+	.su-page-lead { font-size: 1.0625rem; color: #4b5563; margin: 0; line-height: 1.5; }
+
+	.su-card {
+		background: #fff;
+		border-radius: 1rem;
+		border: 1px solid #e5e7eb;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+		padding: 1.25rem;
+		margin-bottom: 1rem;
+	}
+	@media (min-width: 640px) { .su-card { padding: 1.5rem; } }
+	.su-empty { color: #6b7280; font-size: 1.0625rem; }
+
+	.su-rotas { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
+	.su-rota-card { padding: 0; overflow: hidden; }
+	.su-rota-title { font-size: 1.125rem; font-weight: 700; color: #111827; padding: 1rem 1.25rem; border-bottom: 1px solid #f3f4f6; margin: 0; }
+
+	.su-occurrences { display: flex; flex-direction: column; }
+	.su-occ-row {
+		display: flex;
+		align-items: center;
+		gap: 0.875rem;
+		padding: 0.875rem 1.25rem;
+		min-height: 3.5rem;
+		border: none;
+		border-bottom: 1px solid #f3f4f6;
+		background: #fff;
+		cursor: pointer;
+		text-align: left;
+		width: 100%;
+		transition: background 0.12s;
+	}
+	.su-occ-row:last-child { border-bottom: none; }
+	.su-occ-row:hover:not(:disabled):not(.su-occ-row--selected) { background: #f9fafb; }
+	.su-occ-row--selected { background: #ecfdf5; }
+	.su-occ-row--full { opacity: 0.55; cursor: not-allowed; }
+
+	.su-occ-check { width: 1.5rem; height: 1.5rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #4BB170; }
+	.su-occ-check svg { width: 1.25rem; height: 1.25rem; }
+	.su-occ-circle { display: block; width: 1.25rem; height: 1.25rem; border: 2px solid #d1d5db; border-radius: 50%; }
+	.su-occ-row--selected .su-occ-circle { border-color: #4BB170; }
+
+	.su-occ-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.125rem; }
+	.su-occ-date { font-size: 1rem; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.su-occ-time { font-size: 0.875rem; color: #6b7280; }
+	.su-occ-status { flex-shrink: 0; }
+	.su-occ-spots { font-size: 0.875rem; color: #059669; font-weight: 500; }
+	.su-badge { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 0.25rem; }
+	.su-badge--full { background: #fee2e2; color: #dc2626; }
+
+	/* ── Identity form ── */
+	.su-form { display: flex; flex-direction: column; gap: 1rem; }
+	.su-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+	@media (max-width: 400px) { .su-field-row { grid-template-columns: 1fr; } }
+	.su-field { display: flex; flex-direction: column; gap: 0.375rem; }
+	.su-label { font-size: 0.9375rem; font-weight: 600; color: #374151; }
+	.su-required { color: #dc2626; }
+	.su-optional { font-weight: 400; color: #9ca3af; }
+	.su-input {
+		width: 100%;
+		border: 2px solid #d1d5db;
+		border-radius: 0.75rem;
+		padding: 0.75rem 1rem;
+		font-size: 1rem;
+		color: #111827;
+		background: #fff;
+		transition: border-color 0.15s;
+		box-sizing: border-box;
+	}
+	.su-input:focus { outline: none; border-color: #4BB170; }
+	.su-form-footer { display: flex; gap: 0.75rem; justify-content: flex-end; padding-top: 0.5rem; flex-wrap: wrap; }
+
+	.su-selected-summary { border-color: #a7f3d0; background: #ecfdf5; }
+	.su-selected-label { font-size: 0.9375rem; font-weight: 600; color: #065f46; margin: 0 0 0.5rem; }
+	.su-selected-list { margin: 0; padding: 0 0 0 1.25rem; list-style: disc; color: #065f46; font-size: 0.9375rem; line-height: 1.7; }
+
+	.su-alert { background: #fef2f2; border: 2px solid #fecaca; border-radius: 0.75rem; padding: 0.875rem 1rem; color: #991b1b; font-size: 0.9375rem; line-height: 1.5; }
+
+	.su-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		border-radius: 0.75rem;
+		font-size: 1.0625rem;
+		font-weight: 700;
+		padding: 0.875rem 1.5rem;
+		min-height: 3.25rem;
+		cursor: pointer;
+		border: none;
+		transition: background 0.15s, opacity 0.15s;
+	}
+	.su-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+	.su-btn svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
+	.su-btn-primary { background: #4BB170; color: #fff; }
+	.su-btn-primary:hover:not(:disabled) { background: #3ea363; }
+	.su-btn-secondary { background: #fff; color: #374151; border: 2px solid #d1d5db; }
+	.su-btn-secondary:hover { background: #f9fafb; }
+
+	.su-sticky-footer {
+		position: fixed;
+		bottom: 0; left: 0; right: 0;
+		z-index: 50;
+		background: #fff;
+		border-top: 2px solid #e5e7eb;
+		padding: 0.875rem 1.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+	}
+	.su-footer-count { font-size: 1rem; font-weight: 700; color: #4BB170; }
+	.su-footer-hint { font-size: 0.9375rem; color: #9ca3af; }
+
+	.su-back-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		background: none;
+		border: none;
+		color: #6b7280;
+		font-size: 0.9375rem;
+		font-weight: 500;
+		cursor: pointer;
+		padding: 0;
+		margin-bottom: 1rem;
+	}
+	.su-back-btn:hover { color: #374151; }
+	.su-back-btn svg { width: 1rem; height: 1rem; }
+
+	.su-muted { color: #9ca3af; font-size: 0.9375rem; padding: 0.75rem 1.25rem; }
+
+	.su-confirm { text-align: center; padding: 2rem 1.5rem; }
+	.su-confirm-icon {
+		width: 4rem; height: 4rem;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 1.25rem;
+	}
+	.su-confirm-icon svg { width: 2.5rem; height: 2.5rem; }
+	.su-confirm-icon--green { background: #d1fae5; color: #059669; }
+	.su-confirm-icon--amber { background: #fef3c7; color: #d97706; }
+	.su-confirm-heading { font-size: 1.625rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+	.su-confirm-body { font-size: 1.0625rem; color: #374151; line-height: 1.6; margin: 0 0 1rem; }
+	.su-confirm-slots { list-style: none; padding: 0; margin: 0 0 1.25rem; text-align: left; display: inline-block; }
+	.su-confirm-slots li { font-size: 1rem; color: #059669; font-weight: 600; padding: 0.25rem 0; }
+	.su-confirm-slots li::before { content: '✓  '; }
+	.su-confirm-note { font-size: 0.9375rem; color: #6b7280; margin: 0; }
+</style>

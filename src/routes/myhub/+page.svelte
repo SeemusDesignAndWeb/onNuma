@@ -12,6 +12,7 @@
 	$: nextRota = data?.nextRota ?? null;
 	$: pendingInvitations = data?.pendingInvitations ?? [];
 	$: getInvolvedShifts = data?.getInvolvedShifts ?? [];
+	$: pendingInterests = data?.pendingInterests ?? [];
 	$: csrfToken = data?.csrfToken ?? '';
 	$: formResult = $page.form;
 
@@ -251,6 +252,34 @@
 				<p class="my-involve-more">
 					<a href="/myhub/opportunities" class="my-footer-link">See all available rotas</a>
 				</p>
+			</section>
+		{/if}
+
+		<!-- Section 4: Expressions of Interest awaiting coordinator review -->
+		{#if pendingInterests.length > 0}
+			<section class="my-pending-section" aria-label="Your expressions of interest">
+				<h2 class="my-section-heading">
+					<svg class="w-5 h-5 inline-block mr-1 align-text-bottom" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+					Awaiting confirmation
+				</h2>
+				<p class="my-pending-lead">You've expressed interest in the following — a coordinator will be in touch to confirm your place.</p>
+				<div class="my-pending-list">
+					{#each pendingInterests as interest}
+						<div class="my-pending-card">
+							<ul class="my-pending-slots">
+								{#each interest.rotaSlots as slot}
+									<li>
+										<span class="my-pending-role">{slot.rotaRole}</span>
+										<span class="my-pending-event"> · {slot.eventTitle}</span>
+										{#if slot.occurrenceDate}
+											<span class="my-pending-date"> · {formatMyhubDate(slot.occurrenceDate)}</span>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/each}
+				</div>
 			</section>
 		{/if}
 
@@ -809,6 +838,27 @@
 		color: #d1d5db;
 		font-size: 0.9375rem;
 	}
+	/* ---- Section 4: Pending interests ---- */
+	.my-pending-section { margin-bottom: 1.5rem; }
+	.my-section-heading {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: #92400e;
+		margin: 0 0 0.375rem;
+	}
+	.my-pending-lead { font-size: 0.9375rem; color: #6b7280; margin: 0 0 1rem; line-height: 1.5; }
+	.my-pending-list { display: flex; flex-direction: column; gap: 0.75rem; }
+	.my-pending-card {
+		background: #fffbeb;
+		border: 2px solid #fde68a;
+		border-radius: 0.875rem;
+		padding: 0.875rem 1rem;
+	}
+	.my-pending-slots { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.375rem; }
+	.my-pending-slots li { font-size: 1rem; line-height: 1.4; }
+	.my-pending-role { font-weight: 700; color: #111827; }
+	.my-pending-event { color: #374151; }
+	.my-pending-date { color: #6b7280; }
 	/* Alert */
 	.my-alert {
 		padding: 1.25rem;

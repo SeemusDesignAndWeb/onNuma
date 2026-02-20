@@ -1375,7 +1375,7 @@
 			<div class="p-4 rounded-lg bg-gray-50 border border-gray-200 mb-4">
 				<h3 class="text-sm font-semibold text-gray-700 mb-2">Contact data (GDPR)</h3>
 				<p class="text-sm text-gray-600 mb-3">
-					Download all information stored for a contact (e.g. for a subject access request) or permanently delete that contact and all related data (right to erasure). Use the contact's email or their contact ID from <a href="/hub/contacts" class="text-theme-button-1 hover:underline">Contacts</a>.
+					Download all information stored for a contact (e.g. for a subject access request) or permanently delete that contact and all related data (right to erasure). Use the contact's email or their contact ID from <a href="/hub/contacts" class="text-theme-button-1 hover:underline">Volunteers</a>.
 				</p>
 				<div class="space-y-3">
 					<div class="flex flex-wrap items-end gap-2">

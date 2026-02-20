@@ -1,468 +1,290 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
-	import { notifications } from '$lib/crm/stores/notifications.js';
-	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
+	import { formatMyhubDate, formatMyhubTime } from '$lib/crm/utils/dateFormat.js';
 
-	$: event = $page.data?.event;
-	$: occurrences = $page.data?.occurrences || [];
-	$: rotas = $page.data?.rotas || [];
-	$: csrfToken = $page.data?.csrfToken || '';
-	$: formResult = $page.form;
+	$: data = $page.data;
+	$: event = data.event || {};
+	$: occurrences = data.occurrences || [];
+	$: rotas = data.rotas || [];
+	$: csrfToken = data.csrfToken || '';
+	$: theme = data.theme || null;
+	$: logoPath = theme?.logoPath?.trim() || '/assets/OnNuma-Icon.png';
 
-	function handleEnhance() {
-		return async ({ update, result }) => {
-			if (result.type === 'success') {
-				notifications.success(result.data?.message || 'Successfully signed up for rotas!');
-			} else if (result.type === 'failure') {
-				// Check for clash error specifically
-				const errorMsg = result.data?.error || 'Failed to sign up';
-				if (errorMsg.includes('clashing') || errorMsg.includes('clash')) {
-					notifications.error(errorMsg);
-				} else {
-					notifications.error(errorMsg);
-				}
-			}
-			await update();
-		};
-	}
+	// step: 'browse' | 'identity' | 'confirmed'
+	let step = 'browse';
+	let selectedSlots = [];
+	$: selectedCount = selectedSlots.length;
 
-	let name = '';
+	let firstName = '';
+	let lastName = '';
 	let email = '';
-	let selectedRotas = new Set(); // Store as "rotaId:occurrenceId"
-	let spouse = null;
-	let signUpWithSpouse = false;
-	let checkingSpouse = false;
-	let spouseCheckTimeout = null;
-	let previousEmail = '';
-	let previousName = '';
-	let contactConfirmed = true; // Track if contact is confirmed
-	let matchedContact = null; // Store the matched contact record
+	let phone = '';
 
-	// Reactive value for the hidden input
-	$: selectedRotasJson = JSON.stringify(getSelectedRotasArray());
+	$: formResult = $page.form;
+	$: if (formResult?.success) step = 'confirmed';
 
-	function toggleRotaSelection(rotaId, occurrenceId) {
-		const key = occurrenceId ? `${rotaId}:${occurrenceId}` : rotaId;
-		if (selectedRotas.has(key)) {
-			selectedRotas.delete(key);
+	function isSlotSelected(rotaId, occurrenceId) {
+		return selectedSlots.some((s) => s.rotaId === rotaId && s.occurrenceId === occurrenceId);
+	}
+
+	function toggleSlot(rotaId, occurrenceId, rotaRole, occurrenceDate) {
+		const idx = selectedSlots.findIndex((s) => s.rotaId === rotaId && s.occurrenceId === occurrenceId);
+		if (idx >= 0) {
+			selectedSlots = selectedSlots.filter((_, i) => i !== idx);
 		} else {
-			selectedRotas.add(key);
-		}
-		selectedRotas = selectedRotas; // Trigger reactivity
-	}
-
-	function isRotaSelected(rotaId, occurrenceId) {
-		const key = occurrenceId ? `${rotaId}:${occurrenceId}` : rotaId;
-		return selectedRotas.has(key);
-	}
-
-	function getSelectedRotasArray() {
-		// Convert Set to array of {rotaId, occurrenceId}
-		return Array.from(selectedRotas).map(key => {
-			const parts = key.split(':');
-			return {
-				rotaId: parts[0],
-				occurrenceId: parts.length > 1 ? parts[1] : null
-			};
-		});
-	}
-
-	function getAssigneesForRotaOccurrence(rota, occurrenceId) {
-		if (!rota.assigneesByOcc) return [];
-		return rota.assigneesByOcc[occurrenceId] || [];
-	}
-
-	function isRotaFull(rota, occurrenceId) {
-		const assignees = getAssigneesForRotaOccurrence(rota, occurrenceId);
-		return assignees.length >= rota.capacity;
-	}
-
-	function isEmailAlreadySignedUp(rota, occurrenceId, currentEmail, currentMatchedContact, currentSignUpWithSpouse, currentSpouse) {
-		if (!currentEmail && !currentMatchedContact) return false;
-		const assignees = getAssigneesForRotaOccurrence(rota, occurrenceId);
-		
-		const emailsToCheck = new Set();
-		if (currentEmail) emailsToCheck.add(currentEmail.toLowerCase().trim());
-		if (currentMatchedContact?.email) emailsToCheck.add(currentMatchedContact.email.toLowerCase().trim());
-		if (currentSignUpWithSpouse && currentSpouse?.email) emailsToCheck.add(currentSpouse.email.toLowerCase().trim());
-		
-		return assignees.some(a => a.email && emailsToCheck.has(a.email.toLowerCase().trim()));
-	}
-
-	// Check for spouse when email and name change
-	async function checkSpouse(emailToCheck, nameToCheck) {
-		if (!emailToCheck || !emailToCheck.includes('@') || !nameToCheck || !nameToCheck.trim()) {
-			matchedContact = null;
-			spouse = null;
-			signUpWithSpouse = false;
-			return;
-		}
-
-		checkingSpouse = true;
-		try {
-			const params = new URLSearchParams({
-				email: emailToCheck,
-				name: nameToCheck
-			});
-			const response = await fetch(`/api/check-contact-spouse?${params.toString()}`);
-			const data = await response.json();
-			
-			// Only update if email and name haven't changed while we were checking
-			if (email === emailToCheck && name === nameToCheck) {
-				if (data.matched) {
-					matchedContact = data.contact;
-					contactConfirmed = data.contact?.confirmed !== false;
-					if (data.spouse) {
-						spouse = data.spouse;
-					} else {
-						spouse = null;
-						signUpWithSpouse = false;
-					}
-				} else {
-					matchedContact = null;
-					contactConfirmed = false;
-					spouse = null;
-					signUpWithSpouse = false;
-				}
-			}
-		} catch (error) {
-			console.error('Error checking spouse:', error);
-			// Only update if email and name haven't changed while we were checking
-			if (email === emailToCheck && name === nameToCheck) {
-				matchedContact = null;
-				contactConfirmed = false;
-				spouse = null;
-				signUpWithSpouse = false;
-			}
-		} finally {
-			// Only update checking state if email and name haven't changed
-			if (email === emailToCheck && name === nameToCheck) {
-				checkingSpouse = false;
-			}
+			selectedSlots = [...selectedSlots, { rotaId, occurrenceId, rotaRole, occurrenceDate }];
 		}
 	}
 
-	// Reactive statement to check spouse when email or name changes
-	$: if (email !== previousEmail || name !== previousName) {
-		previousEmail = email;
-		previousName = name;
-		
-		// Clear any existing timeout
-		if (spouseCheckTimeout) {
-			clearTimeout(spouseCheckTimeout);
-			spouseCheckTimeout = null;
-		}
-		
-		if (!email || !email.includes('@') || !name || !name.trim()) {
-			matchedContact = null;
-			contactConfirmed = false;
-			spouse = null;
-			signUpWithSpouse = false;
-			checkingSpouse = false;
-		} else {
-			// Debounce the check
-			spouseCheckTimeout = setTimeout(() => {
-				checkSpouse(email, name);
-				spouseCheckTimeout = null;
-			}, 500);
-		}
-	}
-
-	// Action to keep hidden input in sync with selectedRotas
-	function syncHiddenInput(node) {
-		function update() {
-			const selectedArray = getSelectedRotasArray();
-			const jsonStr = JSON.stringify(selectedArray);
-			node.value = jsonStr;
-		}
-		
-		// Update immediately
-		update();
-		
-		// Update on form submit with capture:true to run BEFORE enhance processes the form
-		const form = node.closest('form');
-		if (form) {
-			form.addEventListener('submit', update, { capture: true, once: false });
-		}
-		
-		// Also update reactively when selectedRotas changes
-		let lastSelectedRotasSize = selectedRotas.size;
-		const checkInterval = setInterval(() => {
-			if (selectedRotas.size !== lastSelectedRotasSize) {
-				lastSelectedRotasSize = selectedRotas.size;
-				update();
-			}
-		}, 50);
-		
-		return {
-			update,
-			destroy() {
-				if (form) {
-					form.removeEventListener('submit', update, { capture: true });
-				}
-				clearInterval(checkInterval);
-			}
-		};
-	}
-	let expandedDescriptions = new Set();
-	function toggleDescription(eventId) {
-		if (expandedDescriptions.has(eventId)) {
-			expandedDescriptions.delete(eventId);
-		} else {
-			expandedDescriptions.add(eventId);
-		}
-		expandedDescriptions = expandedDescriptions;
-	}
+	$: selectedRotasJson = JSON.stringify(
+		selectedSlots.map(({ rotaId, occurrenceId }) => ({ rotaId, occurrenceId }))
+	);
 </script>
 
-<div class="min-h-screen bg-gray-50 pt-[70px]">
-	<div class="max-w-7xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
-		{#if rotas.length === 0}
-			<div class="bg-white shadow rounded-lg p-6">
-				<p class="text-gray-500">No rotas available for this event.</p>
-			</div>
-		{:else}
-			<form 
-				method="POST" 
-				action="?/signup" 
-				use:enhance={handleEnhance}
-			>
-				<input type="hidden" name="_csrf" value={csrfToken} />
-				<input 
-					type="hidden" 
-					name="selectedRotas" 
-					value={selectedRotasJson}
-					use:syncHiddenInput
-				/>
+<svelte:head>
+	<title>Volunteer signup – {event.title || 'Sign up'}</title>
+</svelte:head>
 
-				{#if rotas.length > 0}
-					<div class="bg-white shadow rounded-lg p-4 mb-6 sticky top-[76px] z-20 overflow-x-auto lg:overflow-x-visible">
-						<div class="flex flex-col lg:flex-row lg:items-center gap-3">
-							<h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2 flex-shrink-0">
-								<svg class="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-								</svg>
-								Quick Links:
-							</h3>
-							<nav class="flex flex-wrap gap-2">
-								{#each rotas as rota}
-									<a
-										href="#rota-{rota.id}"
-										class="inline-flex items-center text-xs text-brand-blue hover:text-brand-blue/80 hover:underline py-1 px-2 rounded hover:bg-brand-blue/5 border border-brand-blue/10 transition-colors whitespace-nowrap"
-									>
-										{rota.role}
-									</a>
-								{/each}
-							</nav>
-						</div>
+<div class="su-page">
+	<header class="su-header">
+		<img src={logoPath} alt="" class="su-logo" width="36" height="36" />
+		<span class="su-org-name">Volunteer signup</span>
+	</header>
+
+	<main class="su-main">
+		{#if step === 'confirmed'}
+			<div class="su-card su-confirm">
+				{#if formResult?.path === 'A'}
+					<div class="su-confirm-icon su-confirm-icon--green" aria-hidden="true">
+						<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
 					</div>
+					<h1 class="su-confirm-heading">You're signed up!</h1>
+					<p class="su-confirm-body">Thanks, {formResult.name || ''}. You've been added to these slots for <strong>{event.title}</strong>:</p>
+					<ul class="su-confirm-slots">
+						{#each selectedSlots as s}
+							<li>{s.rotaRole} — {formatMyhubDate(s.occurrenceDate)}{s.occurrenceDate ? ', ' + formatMyhubTime(s.occurrenceDate) : ''}</li>
+						{/each}
+					</ul>
+					<p class="su-confirm-note">You'll receive a confirmation email shortly.</p>
+				{:else}
+					<div class="su-confirm-icon su-confirm-icon--amber" aria-hidden="true">
+						<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+					</div>
+					<h1 class="su-confirm-heading">Thank you{formResult?.name ? ', ' + formResult.name : ''}!</h1>
+					<p class="su-confirm-body">We've noted your interest in volunteering for <strong>{event.title}</strong>. A coordinator will be in touch to confirm your place.</p>
+					<p class="su-confirm-note">No action needed from you — we'll be in contact soon.</p>
+				{/if}
+			</div>
+
+		{:else if step === 'identity'}
+			<div class="su-step-head">
+				<button type="button" class="su-back-btn" on:click={() => { step = 'browse'; }}>
+					<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+					Back to slots
+				</button>
+				<h1 class="su-page-title">Tell us about you</h1>
+				<p class="su-page-lead">Just a few details so we can get in touch.</p>
+			</div>
+
+			<div class="su-card su-selected-summary">
+				<p class="su-selected-label">Your selected slots:</p>
+				<ul class="su-selected-list">
+					{#each selectedSlots as s}
+						<li>{s.rotaRole} — {formatMyhubDate(s.occurrenceDate)}{s.occurrenceDate ? ', ' + formatMyhubTime(s.occurrenceDate) : ''}</li>
+					{/each}
+				</ul>
+			</div>
+
+			<form method="POST" action="?/signup" use:enhance class="su-form">
+				<input type="hidden" name="_csrf" value={csrfToken} />
+				<input type="hidden" name="selectedRotas" value={selectedRotasJson} />
+
+				{#if formResult?.error}
+					<div class="su-alert" role="alert">{formResult.error}</div>
 				{/if}
 
-				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-					<!-- Left Column: Event Name, User Details, Quick Links, Sign Up Button -->
-					<div class="lg:col-span-1">
-						<div class="bg-white shadow rounded-lg p-6 sticky top-[76px] space-y-6">
-							<div>
-								<h1 class="text-2xl font-bold text-brand-blue mb-2">{event?.title || 'Event Signup'}</h1>
-								<div class="flex items-center justify-between gap-4 mb-4">
-									{#if event?.location}
-										<div class="flex items-center gap-2 text-gray-600 text-sm">
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-											</svg>
-											<span>{event.location}</span>
-										</div>
-									{:else}
-										<div></div>
-									{/if}
+				<div class="su-field-row">
+					<div class="su-field">
+						<label class="su-label" for="su-firstName">First name <span class="su-required" aria-hidden="true">*</span></label>
+						<input id="su-firstName" class="su-input" type="text" name="firstName" bind:value={firstName} required autocomplete="given-name" placeholder="Jane" />
+					</div>
+					<div class="su-field">
+						<label class="su-label" for="su-lastName">Last name</label>
+						<input id="su-lastName" class="su-input" type="text" name="lastName" bind:value={lastName} autocomplete="family-name" placeholder="Smith" />
+					</div>
+				</div>
 
-									{#if event?.description}
-										<button 
+				<div class="su-field">
+					<label class="su-label" for="su-email">Email address <span class="su-required" aria-hidden="true">*</span></label>
+					<input id="su-email" class="su-input" type="email" name="email" bind:value={email} required autocomplete="email" placeholder="jane@example.com" />
+				</div>
+
+				<div class="su-field">
+					<label class="su-label" for="su-phone">Phone <span class="su-optional">(optional)</span></label>
+					<input id="su-phone" class="su-input" type="tel" name="phone" bind:value={phone} autocomplete="tel" placeholder="07700 900 000" />
+				</div>
+
+				<div class="su-form-footer">
+					<button type="button" class="su-btn su-btn-secondary" on:click={() => { step = 'browse'; }}>Back</button>
+					<button type="submit" class="su-btn su-btn-primary">
+						<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" /></svg>
+						Put my hand up
+					</button>
+				</div>
+			</form>
+
+		{:else}
+			<div class="su-step-head">
+				<h1 class="su-page-title">{event.title || 'Volunteer signup'}</h1>
+				<p class="su-page-lead">Choose the dates you can help. Select as many as you like, then tap Continue.</p>
+			</div>
+
+			{#if rotas.length === 0}
+				<div class="su-card su-empty">
+					<p>No volunteer opportunities are available right now. Please check back soon.</p>
+				</div>
+			{:else}
+				<div class="su-rotas">
+					{#each rotas as rota}
+						<div class="su-card su-rota-card">
+							<h2 class="su-rota-title">{rota.role}</h2>
+							{#if occurrences.length === 0}
+								<p class="su-muted">No upcoming dates available.</p>
+							{:else}
+								<div class="su-occurrences">
+									{#each occurrences as occ}
+										{@const count = rota.countsByOcc?.[occ.id] ?? 0}
+										{@const full = count >= rota.capacity}
+										{@const selected = isSlotSelected(rota.id, occ.id)}
+										<button
 											type="button"
-											on:click={() => toggleDescription(event.id)}
-											class="text-xs text-brand-blue hover:underline focus:outline-none whitespace-nowrap flex items-center gap-1"
+											class="su-occ-row"
+											class:su-occ-row--selected={selected}
+											class:su-occ-row--full={full && !selected}
+											disabled={full && !selected}
+											on:click={() => !full && toggleSlot(rota.id, occ.id, rota.role, occ.startsAt)}
+											aria-pressed={selected}
 										>
-											<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
-											{expandedDescriptions.has(event.id) ? 'Hide Event Description' : 'View Event Description'}
+											<span class="su-occ-check" aria-hidden="true">
+												{#if selected}
+													<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+												{:else}
+													<span class="su-occ-circle"></span>
+												{/if}
+											</span>
+											<span class="su-occ-info">
+												<span class="su-occ-date">{formatMyhubDate(occ.startsAt)}</span>
+												<span class="su-occ-time">{formatMyhubTime(occ.startsAt)}</span>
+											</span>
+											<span class="su-occ-status">
+												{#if full}
+													<span class="su-badge su-badge--full">Full</span>
+												{:else}
+													<span class="su-occ-spots">{rota.capacity - count} {rota.capacity - count === 1 ? 'spot' : 'spots'} left</span>
+												{/if}
+											</span>
 										</button>
-									{/if}
-								</div>
-
-								{#if event?.description && expandedDescriptions.has(event.id)}
-									<div class="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded border border-gray-100">
-										{@html event.description}
-									</div>
-								{/if}
-								<h2 class="text-xl font-bold text-gray-900 mb-4">Your Details</h2>
-								<div class="space-y-4">
-									<div>
-										<label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-										<input
-											type="text"
-											id="name"
-											name="name"
-											bind:value={name}
-											required
-											class="w-full rounded-md border border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue py-2 px-4 transition-colors"
-										/>
-									</div>
-									<div>
-										<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-										<input
-											type="email"
-											id="email"
-											name="email"
-											bind:value={email}
-											required
-											class="w-full rounded-md border border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue py-2 px-4 transition-colors"
-										/>
-										{#if checkingSpouse}
-											<p class="text-xs text-gray-500 mt-1">Checking...</p>
-										{/if}
-									</div>
-									{#if spouse}
-										<div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-											<label class="flex items-start cursor-pointer group">
-												<input
-													type="checkbox"
-													name="signUpWithSpouse"
-													bind:checked={signUpWithSpouse}
-													class="mt-1 mr-3 w-5 h-5 rounded border-gray-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
-												/>
-												<div class="flex-1">
-													<span class="text-sm font-medium text-gray-900 block">
-														Sign up for you and {spouse.firstName || 'your partner'}?
-													</span>
-													<span class="text-xs text-gray-600 mt-1 block">
-														Both of you will be signed up for the selected rotas
-													</span>
-												</div>
-											</label>
-										</div>
-									{/if}
-									{#if matchedContact}
-										<div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
-											<i class="fa fa-heart text-red-500"></i>
-											<span>If you see this, you are already signed up on that date.</span>
-										</div>
-									{/if}
-								</div>
-							</div>
-
-							<div class="border-t border-gray-200 pt-6">
-								<button
-									type="submit"
-									disabled={selectedRotas.size === 0 || !name || !email || !contactConfirmed}
-									class="w-full bg-brand-green text-white px-8 py-3 rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none flex items-center justify-center gap-2"
-								>
-									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-									</svg>
-									Sign Up for Selected Rotas ({selectedRotas.size})
-								</button>
-							</div>
-
-							{#if !contactConfirmed && email && name}
-								<div class="border-t border-gray-200 pt-6">
-									<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-										<div class="flex items-start gap-3">
-											<svg class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-											</svg>
-											<div class="flex-1">
-												<p class="text-sm font-medium text-yellow-800">Contact Not Confirmed</p>
-												<p class="text-xs text-yellow-700 mt-1">Your contact details need to be confirmed before you can sign up for rotas. Please contact an administrator.</p>
-											</div>
-										</div>
-									</div>
+									{/each}
 								</div>
 							{/if}
 						</div>
-					</div>
-
-					<!-- Right Column: Rotas with Occurrences as Small Boxes -->
-					<div class="lg:col-span-2">
-						<div class="bg-white shadow rounded-lg p-6">
-							<div class="space-y-6">
-								{#each rotas as rota}
-									<div id="rota-{rota.id}" class="border-l-4 border-l-brand-blue border border-gray-200 rounded-lg p-4 scroll-mt-[160px] bg-white hover:shadow-md transition-shadow">
-										<div class="flex items-start justify-between mb-3">
-											<div class="flex-1">
-												<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-													<span class="w-2 h-2 rounded-full bg-brand-green"></span>
-													{rota.role}
-												</h3>
-												{#if rota.notes}
-													<div class="text-sm text-gray-600 mt-1 ml-4">{@html rota.notes}</div>
-												{/if}
-												<p class="text-sm text-gray-500 mt-1 ml-4">
-													Capacity: <span class="font-medium text-brand-blue">{rota.capacity}</span> {rota.capacity === 1 ? 'person is' : 'people are'} ideal for this rota
-												</p>
-											</div>
-										</div>
-
-										{#if occurrences.length > 0}
-											<!-- Show all occurrences for this rota in a compact grid -->
-											<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-												{#each occurrences as occ}
-													{@const assignees = getAssigneesForRotaOccurrence(rota, occ.id)}
-													{@const isFull = isRotaFull(rota, occ.id)}
-													{@const isSelected = isRotaSelected(rota.id, occ.id)}
-													{@const alreadySignedUp = isEmailAlreadySignedUp(rota, occ.id, email, matchedContact, signUpWithSpouse, spouse)}
-													{@const canSelect = !isFull && !alreadySignedUp}
-													
-													<div class="border-2 rounded p-2 transition-all {isSelected ? 'bg-brand-green/10 border-brand-green shadow-sm' : 'border-gray-200 hover:border-brand-blue/50'} {!canSelect && !isSelected ? 'opacity-60' : ''}">
-														<label class="flex items-start cursor-pointer {!canSelect && !isSelected ? 'cursor-not-allowed' : ''}">
-															<input
-																type="checkbox"
-																checked={isSelected}
-																on:change={() => toggleRotaSelection(rota.id, occ.id)}
-																disabled={!canSelect && !isSelected}
-																class="mt-0.5 mr-2 flex-shrink-0 accent-brand-green"
-															/>
-															<div class="flex-1 min-w-0">
-																<div class="text-xs font-medium text-gray-900 leading-tight">
-																	{formatDateTimeUK(occ.startsAt)}
-																</div>
-																<div class="flex items-center gap-1.5 mt-1 flex-wrap">
-																	<span class="text-xs font-medium text-brand-blue">
-																		{assignees.length}/{rota.capacity}
-																	</span>
-																	{#if isFull}
-																		<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-red/10 text-brand-red border border-brand-red/20">
-																			Full
-																		</span>
-																	{/if}
-																		{#if alreadySignedUp}
-																			<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20" title="Already signed up">
-																				<i class="fa fa-heart text-red-500"></i>
-																			</span>
-																		{/if}
-																</div>
-															</div>
-														</label>
-													</div>
-												{/each}
-											</div>
-										{:else}
-											<p class="text-gray-500 text-sm">No occurrences available for this event.</p>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						</div>
-					</div>
+					{/each}
 				</div>
-			</form>
+			{/if}
+
+			<div class="su-sticky-footer">
+				<span class="su-footer-label">
+					{#if selectedCount > 0}
+						<span class="su-footer-count">{selectedCount} {selectedCount === 1 ? 'slot' : 'slots'} selected</span>
+					{:else}
+						<span class="su-footer-hint">Select at least one slot above</span>
+					{/if}
+				</span>
+				<button
+					type="button"
+					class="su-btn su-btn-primary"
+					disabled={selectedCount === 0}
+					on:click={() => { step = 'identity'; }}
+				>
+					Continue
+					<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+				</button>
+			</div>
 		{/if}
-	</div>
-	
-	<!-- Notification Popups -->
-	<NotificationPopup />
+	</main>
 </div>
 
+<style>
+	.su-page { min-height: 100vh; background: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+	.su-header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0.875rem 1.25rem; display: flex; align-items: center; gap: 0.75rem; }
+	.su-logo { width: 2.25rem; height: 2.25rem; object-fit: contain; flex-shrink: 0; }
+	.su-org-name { font-size: 1rem; font-weight: 600; color: #111827; }
+	.su-main { max-width: 40rem; margin: 0 auto; padding: 1.5rem 1rem 8rem; }
+	@media (min-width: 640px) { .su-main { padding: 2rem 1.5rem 8rem; } }
+	.su-step-head { margin-bottom: 1.5rem; }
+	.su-page-title { font-size: 1.625rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem; line-height: 1.2; }
+	.su-page-lead { font-size: 1.0625rem; color: #4b5563; margin: 0; line-height: 1.5; }
+	.su-card { background: #fff; border-radius: 1rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.06); padding: 1.25rem; margin-bottom: 1rem; }
+	@media (min-width: 640px) { .su-card { padding: 1.5rem; } }
+	.su-empty { color: #6b7280; font-size: 1.0625rem; }
+	.su-rotas { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
+	.su-rota-card { padding: 0; overflow: hidden; }
+	.su-rota-title { font-size: 1.125rem; font-weight: 700; color: #111827; padding: 1rem 1.25rem; border-bottom: 1px solid #f3f4f6; margin: 0; }
+	.su-occurrences { display: flex; flex-direction: column; }
+	.su-occ-row { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1.25rem; min-height: 3.5rem; border: none; border-bottom: 1px solid #f3f4f6; background: #fff; cursor: pointer; text-align: left; width: 100%; transition: background 0.12s; }
+	.su-occ-row:last-child { border-bottom: none; }
+	.su-occ-row:hover:not(:disabled):not(.su-occ-row--selected) { background: #f9fafb; }
+	.su-occ-row--selected { background: #ecfdf5; }
+	.su-occ-row--full { opacity: 0.55; cursor: not-allowed; }
+	.su-occ-check { width: 1.5rem; height: 1.5rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #4BB170; }
+	.su-occ-check svg { width: 1.25rem; height: 1.25rem; }
+	.su-occ-circle { display: block; width: 1.25rem; height: 1.25rem; border: 2px solid #d1d5db; border-radius: 50%; }
+	.su-occ-row--selected .su-occ-circle { border-color: #4BB170; }
+	.su-occ-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.125rem; }
+	.su-occ-date { font-size: 1rem; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.su-occ-time { font-size: 0.875rem; color: #6b7280; }
+	.su-occ-status { flex-shrink: 0; }
+	.su-occ-spots { font-size: 0.875rem; color: #059669; font-weight: 500; }
+	.su-badge { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 0.25rem; }
+	.su-badge--full { background: #fee2e2; color: #dc2626; }
+	.su-form { display: flex; flex-direction: column; gap: 1rem; }
+	.su-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+	@media (max-width: 400px) { .su-field-row { grid-template-columns: 1fr; } }
+	.su-field { display: flex; flex-direction: column; gap: 0.375rem; }
+	.su-label { font-size: 0.9375rem; font-weight: 600; color: #374151; }
+	.su-required { color: #dc2626; }
+	.su-optional { font-weight: 400; color: #9ca3af; }
+	.su-input { width: 100%; border: 2px solid #d1d5db; border-radius: 0.75rem; padding: 0.75rem 1rem; font-size: 1rem; color: #111827; background: #fff; transition: border-color 0.15s; box-sizing: border-box; }
+	.su-input:focus { outline: none; border-color: #4BB170; }
+	.su-form-footer { display: flex; gap: 0.75rem; justify-content: flex-end; padding-top: 0.5rem; flex-wrap: wrap; }
+	.su-selected-summary { border-color: #a7f3d0; background: #ecfdf5; }
+	.su-selected-label { font-size: 0.9375rem; font-weight: 600; color: #065f46; margin: 0 0 0.5rem; }
+	.su-selected-list { margin: 0; padding: 0 0 0 1.25rem; list-style: disc; color: #065f46; font-size: 0.9375rem; line-height: 1.7; }
+	.su-alert { background: #fef2f2; border: 2px solid #fecaca; border-radius: 0.75rem; padding: 0.875rem 1rem; color: #991b1b; font-size: 0.9375rem; line-height: 1.5; }
+	.su-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.75rem; font-size: 1.0625rem; font-weight: 700; padding: 0.875rem 1.5rem; min-height: 3.25rem; cursor: pointer; border: none; transition: background 0.15s, opacity 0.15s; }
+	.su-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+	.su-btn svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
+	.su-btn-primary { background: #4BB170; color: #fff; }
+	.su-btn-primary:hover:not(:disabled) { background: #3ea363; }
+	.su-btn-secondary { background: #fff; color: #374151; border: 2px solid #d1d5db; }
+	.su-btn-secondary:hover { background: #f9fafb; }
+	.su-sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: #fff; border-top: 2px solid #e5e7eb; padding: 0.875rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: 0 -4px 12px rgba(0,0,0,0.06); }
+	.su-footer-count { font-size: 1rem; font-weight: 700; color: #4BB170; }
+	.su-footer-hint { font-size: 0.9375rem; color: #9ca3af; }
+	.su-back-btn { display: inline-flex; align-items: center; gap: 0.375rem; background: none; border: none; color: #6b7280; font-size: 0.9375rem; font-weight: 500; cursor: pointer; padding: 0; margin-bottom: 1rem; }
+	.su-back-btn:hover { color: #374151; }
+	.su-back-btn svg { width: 1rem; height: 1rem; }
+	.su-muted { color: #9ca3af; font-size: 0.9375rem; padding: 0.75rem 1.25rem; }
+	.su-confirm { text-align: center; padding: 2rem 1.5rem; }
+	.su-confirm-icon { width: 4rem; height: 4rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; }
+	.su-confirm-icon svg { width: 2.5rem; height: 2.5rem; }
+	.su-confirm-icon--green { background: #d1fae5; color: #059669; }
+	.su-confirm-icon--amber { background: #fef3c7; color: #d97706; }
+	.su-confirm-heading { font-size: 1.625rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+	.su-confirm-body { font-size: 1.0625rem; color: #374151; line-height: 1.6; margin: 0 0 1rem; }
+	.su-confirm-slots { list-style: none; padding: 0; margin: 0 0 1.25rem; text-align: left; display: inline-block; }
+	.su-confirm-slots li { font-size: 1rem; color: #059669; font-weight: 600; padding: 0.25rem 0; }
+	.su-confirm-slots li::before { content: '✓  '; }
+	.su-confirm-note { font-size: 0.9375rem; color: #6b7280; margin: 0; }
+</style>

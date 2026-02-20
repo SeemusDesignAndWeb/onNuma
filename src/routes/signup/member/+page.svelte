@@ -55,21 +55,21 @@
 	<div class="max-w-4xl mx-auto py-8 px-4 sm:py-12 sm:px-6 lg:px-8 pt-20 sm:pt-24">
 		<div class="bg-white shadow rounded-lg p-6 sm:p-8">
 			<div class="mb-8">
-				<h1 class="text-3xl font-bold text-brand-blue mb-2">Get Connected</h1>
-				<p class="text-gray-600">Join our church community! Please fill out the form below to get connected.</p>
+				<h1 class="text-3xl font-bold text-brand-blue mb-2">Join Us as a Volunteer</h1>
+				<p class="text-gray-600">We'd love to have you on board. Fill in your details below and we'll be in touch to get you set up.</p>
 			</div>
 
 			<form method="POST" action="?/signup" use:enhance={handleEnhance}>
 				<input type="hidden" name="_csrf" value={csrfToken} />
 
 				<div class="space-y-6">
-					<!-- Personal Information Section -->
+					<!-- Your Details Section -->
 					<div>
 						<h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
 							<svg class="w-5 h-5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 							</svg>
-							Personal Information
+							Your Details
 						</h2>
 						<div class="bg-gray-50 rounded-lg p-4 space-y-4">
 							<div>
@@ -124,14 +124,14 @@
 						</div>
 					</div>
 
-					<!-- Address Section -->
+					<!-- Your Address (optional) Section -->
 					<div>
 						<h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
 							<svg class="w-5 h-5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
 							</svg>
-							Address
+							Your Address (optional)
 						</h2>
 						<div class="bg-gray-50 rounded-lg p-4 space-y-4">
 							<div>
@@ -213,19 +213,19 @@
 					<h3 class="text-lg font-semibold text-gray-900 mb-3">Privacy Notice</h3>
 					<div class="text-sm text-gray-700 space-y-3 mb-4">
 						<p>
-							By submitting your details, you agree to the use of your information for appropriate church purposes, including:
+							By submitting your details, you agree to your information being used for the following purposes:
 						</p>
 						<ul class="list-disc list-inside space-y-1 ml-2">
-							<li>Church administration and contact management</li>
-							<li>Communication about church activities and events</li>
-							<li>Coordination of rotas and volunteer opportunities</li>
-							<li>Other areas of church involvement you may participate in</li>
+							<li>Volunteer administration and contact management</li>
+							<li>Communication about activities, events, and opportunities</li>
+							<li>Coordination of rotas and volunteer schedules</li>
+							<li>Other areas of involvement you may participate in</li>
 						</ul>
-						<p class="font-medium">
-							You will receive emails relating to church involvement in rotas and other church areas you are involved.
+						<p>
+							You will receive emails relating to your volunteering activity and any rotas or teams you are part of.
 						</p>
 						<p>
-							Your personal details are not available to all the church contacts but only for those who are involved in ministries where contact with you is needed for the purpose of those ministries. Should you have any questions please speak to the leadership team.
+							Your personal details are only visible to the coordinators and team leaders who need them to organise the areas you are involved in. If you have any questions about how your data is used, please get in touch with the organisation directly.
 						</p>
 					</div>
 					<div class="border-t border-blue-200 pt-4">
@@ -237,9 +237,7 @@
 								class="mt-1 rounded border-gray-300 text-brand-green shadow-sm focus:border-brand-green focus:ring-brand-green"
 							/>
 							<span class="ml-3 text-sm text-gray-700">
-								<strong>Subscribe to weekly newsletter</strong>
-								<br>
-								<span class="text-gray-600">If checked, you will receive the weekly newsletter via email.</span>
+								<strong>Subscribe to newsletter</strong> — If checked, you will receive our regular newsletter by email.
 							</span>
 						</label>
 					</div>

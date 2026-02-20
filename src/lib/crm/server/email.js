@@ -3179,3 +3179,136 @@ ${displayOrg}`.trim();
 		throw error;
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Volunteer vetting emails
+// ---------------------------------------------------------------------------
+
+/**
+ * Notify coordinator(s) that a new pending volunteer has expressed interest.
+ * @param {{ email: string, firstName?: string }} coordinator
+ * @param {{ firstName: string, lastName: string, email: string, phone?: string, rotaSlots: Array }} pendingVolunteer
+ * @param {object} svelteKitEvent - SvelteKit event object (for base URL)
+ */
+export async function sendPendingVolunteerNotification(coordinator, pendingVolunteer, svelteKitEvent) {
+	if (!coordinator?.email) return;
+	const fromEmailDefaultVal = fromEmailDefault();
+	if (!fromEmailDefaultVal) return;
+
+	const baseUrl = getBaseUrl(svelteKitEvent);
+	const branding = await getEmailBranding(svelteKitEvent);
+	const { orgName } = await getOrgContactForEmail();
+	const displayOrg = orgName || 'your organisation';
+
+	const volunteersUrl = `${baseUrl}/hub/volunteers`;
+
+	const name = [pendingVolunteer.firstName, pendingVolunteer.lastName].filter(Boolean).join(' ') || pendingVolunteer.email;
+	const slotLines = (pendingVolunteer.rotaSlots || [])
+		.map((s) => `<li style="padding: 4px 0;">${s.rotaRole} — ${s.eventTitle}${s.occurrenceDate ? ' (' + new Date(s.occurrenceDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) + ')' : ''}</li>`)
+		.join('');
+
+	const subject = `New volunteer interest: ${name}`;
+	const html = `
+		<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
+			${branding}
+			<div style="padding: 0 24px 32px;">
+				<h2 style="color: #111827; font-size: 20px; font-weight: 700; margin: 0 0 16px;">New volunteer interest</h2>
+				<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+					<strong>${name}</strong> has expressed interest in volunteering for ${displayOrg}.
+				</p>
+				<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+					<tr><td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 100px;">Name</td><td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600;">${name}</td></tr>
+					<tr><td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Email</td><td style="padding: 8px 0; color: #111827; font-size: 14px;">${pendingVolunteer.email}</td></tr>
+					${pendingVolunteer.phone ? `<tr><td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Phone</td><td style="padding: 8px 0; color: #111827; font-size: 14px;">${pendingVolunteer.phone}</td></tr>` : ''}
+				</table>
+				<p style="color: #374151; font-size: 14px; font-weight: 600; margin: 0 0 8px;">Requested slots:</p>
+				<ul style="margin: 0 0 24px; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6;">${slotLines}</ul>
+				<a href="${volunteersUrl}" style="display: inline-block; background: #4A97D2; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: 700;">Review in Hub →</a>
+			</div>
+		</div>`;
+
+	try {
+		await rateLimitedSend(() => sendEmail({ from: fromEmailDefaultVal, to: [coordinator.email], subject, html, text: `New volunteer interest: ${name}\n\nEmail: ${pendingVolunteer.email}\n${pendingVolunteer.phone ? 'Phone: ' + pendingVolunteer.phone + '\n' : ''}\nReview at: ${volunteersUrl}` }));
+	} catch (err) {
+		console.error('[email] Failed to send pending volunteer notification:', err?.message || err);
+	}
+}
+
+/**
+ * Send welcome email to an approved volunteer with their MyHUB magic link.
+ * @param {{ firstName?: string, email: string }} contact
+ * @param {string} magicLinkUrl
+ * @param {object} svelteKitEvent
+ */
+export async function sendVolunteerApprovedEmail(contact, magicLinkUrl, svelteKitEvent) {
+	if (!contact?.email) return;
+	const fromEmailDefaultVal = fromEmailDefault();
+	if (!fromEmailDefaultVal) return;
+
+	const branding = await getEmailBranding(svelteKitEvent);
+	const { orgName } = await getOrgContactForEmail();
+	const displayOrg = orgName || 'the team';
+	const firstName = contact.firstName || 'there';
+
+	const subject = `Welcome to volunteering with ${displayOrg}`;
+	const html = `
+		<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
+			${branding}
+			<div style="padding: 0 24px 32px;">
+				<h2 style="color: #111827; font-size: 20px; font-weight: 700; margin: 0 0 16px;">Welcome, ${firstName}!</h2>
+				<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+					We're delighted to confirm your place as a volunteer with ${displayOrg}. Your rotas have been updated and you can view everything through your personal MyHUB page.
+				</p>
+				<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+					Click the button below to access your MyHUB — no password needed, just click the link.
+				</p>
+				<a href="${magicLinkUrl}" style="display: inline-block; background: #4BB170; color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: 700;">Go to my volunteering →</a>
+				<p style="color: #9ca3af; font-size: 13px; margin: 24px 0 0;">This link is personal to you and expires in 7 days. Do not share it with others.</p>
+			</div>
+		</div>`;
+
+	try {
+		await rateLimitedSend(() => sendEmail({ from: fromEmailDefaultVal, to: [contact.email], subject, html, text: `Welcome to volunteering with ${displayOrg}!\n\nAccess your MyHUB here: ${magicLinkUrl}\n\nThis link is personal to you and expires in 7 days.` }));
+	} catch (err) {
+		console.error('[email] Failed to send volunteer approved email:', err?.message || err);
+	}
+}
+
+/**
+ * Send a kind decline email to a pending volunteer.
+ * @param {{ firstName: string, email: string }} pendingVolunteer
+ * @param {object} svelteKitEvent
+ */
+export async function sendVolunteerDeclinedEmail(pendingVolunteer, svelteKitEvent) {
+	if (!pendingVolunteer?.email) return;
+	const fromEmailDefaultVal = fromEmailDefault();
+	if (!fromEmailDefaultVal) return;
+
+	const branding = await getEmailBranding(svelteKitEvent);
+	const { orgName, email: orgEmail } = await getOrgContactForEmail();
+	const displayOrg = orgName || 'the team';
+	const firstName = pendingVolunteer.firstName || 'there';
+
+	const subject = `Your volunteering enquiry with ${displayOrg}`;
+	const html = `
+		<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
+			${branding}
+			<div style="padding: 0 24px 32px;">
+				<h2 style="color: #111827; font-size: 20px; font-weight: 700; margin: 0 0 16px;">Thank you for your interest, ${firstName}</h2>
+				<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+					Thank you so much for expressing an interest in volunteering with ${displayOrg}. We really appreciate you getting in touch.
+				</p>
+				<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
+					Unfortunately, we're not able to offer you a place on this occasion. This may simply be because the slots you requested are now filled, or because we have all the volunteers we need for that time.
+				</p>
+				${orgEmail ? `<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">If you'd like to discuss this further, please don't hesitate to get in touch at <a href="mailto:${orgEmail}" style="color: #4A97D2;">${orgEmail}</a>.</p>` : ''}
+				<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0;">Thank you again for wanting to help — we hope to see you involved in the future.</p>
+			</div>
+		</div>`;
+
+	try {
+		await rateLimitedSend(() => sendEmail({ from: fromEmailDefaultVal, to: [pendingVolunteer.email], subject, html, text: `Thank you for your interest, ${firstName}.\n\nUnfortunately we're not able to offer you a volunteering place on this occasion.\n\n${orgEmail ? 'Please get in touch at ' + orgEmail + ' if you have any questions.' : ''}\n\nThank you again for wanting to help.` }));
+	} catch (err) {
+		console.error('[email] Failed to send volunteer declined email:', err?.message || err);
+	}
+}

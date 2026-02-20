@@ -115,6 +115,36 @@
 
 	$: pastRoleMap = data.pastRoleMap || {};
 
+	// --- Invite modal state (same as planner) ---
+	let showInviteModal = false;
+	let inviteRotaId = '';
+	let inviteOccurrenceId = '';
+	let inviteSearchTerm = '';
+	let inviteContactId = '';
+	let inviteSending = false;
+	let inviteError = null;
+
+	$: inviteFilteredContacts = inviteSearchTerm
+		? contacts.filter(c =>
+				`${c.firstName || ''} ${c.lastName || ''}`.toLowerCase().includes(inviteSearchTerm.toLowerCase()) ||
+				(c.email || '').toLowerCase().includes(inviteSearchTerm.toLowerCase())
+			)
+		: contacts;
+
+	$: formResult = $page.form;
+	$: if (formResult?.type === 'inviteToMyhub') {
+		if (formResult?.message) {
+			notifications.success(formResult.message);
+			showInviteModal = false;
+			inviteContactId = '';
+			inviteSearchTerm = '';
+			inviteError = null;
+			invalidateAll();
+		} else if (formResult?.error) {
+			inviteError = formResult.error;
+		}
+	}
+
 	// --- Assign modal state (same pattern as rota page) ---
 	let showAddAssignees = false;
 	let assignContext = null; // { rotaId, occurrenceId, roleName, dateName }
@@ -256,24 +286,6 @@
 		}
 	}
 
-	function statusClass(role) {
-		if (role.filledCount === 0) return 'bg-red-100 text-red-700';
-		if (role.isFull) return 'bg-green-100 text-green-700';
-		return 'bg-amber-100 text-amber-700';
-	}
-
-	function statusLabel(role) {
-		if (role.filledCount === 0) return 'Empty';
-		if (role.isFull) return 'Full';
-		return `${role.filledCount}/${role.capacity}`;
-	}
-
-	function getRoleForOccurrence(occurrenceId, roleId) {
-		const entry = schedule.find(s => s.occurrence.id === occurrenceId);
-		if (!entry) return null;
-		return entry.roles.find(r => r.roleId === roleId) || null;
-	}
-
 	function formatShortDate(dateStr) {
 		const d = new Date(dateStr);
 		return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -294,19 +306,16 @@
 	}
 </script>
 
-<div class="mb-5">
-	<a href="/hub/teams" class="text-sm text-theme-button-1 hover:underline">
-		← {$terminology.team}s
+<!-- Team name and Back on same row (standard hub heading size) -->
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+	<h1 class="text-xl sm:text-2xl font-bold">{team.name}</h1>
+	<a href="/hub/teams" class="hub-btn btn-theme-light-3 px-3 py-1.5 rounded-md text-sm whitespace-nowrap">
+		Back
 	</a>
 </div>
-
-<!-- Team name header -->
-<div class="mb-4">
-	<h1 class="text-xl font-bold">{team.name}</h1>
-	{#if team.description}
-		<p class="text-sm text-gray-500 mt-1">{team.description}</p>
-	{/if}
-</div>
+{#if team.description}
+	<p class="text-sm text-gray-500 mt-1 mb-4">{team.description}</p>
+{/if}
 
 <!-- Instructional text (dismissible, state remembered per team) -->
 {#if !scheduleHelpDismissed}
@@ -321,13 +330,13 @@
 		</button>
 		{#if schedule.length > 0}
 			<p class="text-sm text-blue-800 pr-24">
-				This is the schedule for <strong>{team.name}</strong>. Each column shows a role and who is assigned at each date.
+				This is the schedule for <strong>{team.name}</strong>. Each card is a role for one date — use <strong>+ Add</strong> to assign from contacts or <strong>✉ Invite</strong> to send a MyHub invitation.
 				{#if canManage}
-					Click <strong>+ Assign</strong> on any empty slot to add someone, or click the <strong>×</strong> to remove them.
+					Click <strong>×</strong> next to a name to remove them.
 				{/if}
 			</p>
 			<p class="text-xs text-blue-600 mt-1.5">
-				Green = fully staffed. Amber = partially filled. Red = no one assigned yet.
+				Full = all slots filled. Use Add or Invite when there are empty slots.
 			</p>
 		{:else if roles.some(r => r.rotaId)}
 			<p class="text-sm text-blue-800 pr-24">
@@ -345,107 +354,94 @@
 {/if}
 
 <!-- ============================================================ -->
-<!-- SECTION 1: SCHEDULE — Column per role, wrapping grid          -->
+<!-- SECTION 1: SCHEDULE — Card grid (same design as meeting planner) -->
 <!-- ============================================================ -->
 {#if schedule.length > 0 && roleColumns.length > 0}
-	<!-- Date pagination: show 3 dates at a time -->
-	{#if totalDatePages > 1}
-		<div class="mb-3 flex items-center justify-between gap-2">
-			<button
-				type="button"
-				on:click={prevDates}
-				disabled={datePage === 0}
-				class="hub-btn btn-theme-light-3 px-3 py-1.5 rounded-md text-sm disabled:opacity-50"
-			>
-				← Previous dates
-			</button>
-			<span class="text-sm text-gray-600">
-				Dates {datePage * DATES_PER_PAGE + 1}–{Math.min((datePage + 1) * DATES_PER_PAGE, schedule.length)} of {schedule.length}
-			</span>
-			<button
-				type="button"
-				on:click={nextDates}
-				disabled={datePage >= totalDatePages - 1}
-				class="hub-btn btn-theme-light-3 px-3 py-1.5 rounded-md text-sm disabled:opacity-50"
-			>
-				Next dates →
-			</button>
-		</div>
-	{/if}
-	<div class="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-		{#each roleColumns as col (col.roleId)}
-			<div class="hub-top-panel overflow-hidden flex flex-col">
-				<!-- Column header: role name (theme panel head) -->
-				<div class="px-4 py-3 bg-theme-panel-head-1 flex items-center gap-2">
-					<span class="font-semibold text-white text-sm truncate">{col.roleName}</span>
-					<span class="text-xs text-white/80 bg-white/20 px-1.5 py-0.5 rounded">×{col.capacity}</span>
-					{#if col.rotaId}
-						<a href="/hub/schedules/{col.rotaId}" class="ml-auto text-xs text-white/90 hover:text-white hover:underline flex-shrink-0">
-							{$terminology.rota} →
-						</a>
-					{/if}
+	<div class="bg-white shadow rounded-lg p-6 mb-8">
+		{#if totalDatePages > 1}
+			<div class="flex justify-end items-center mb-4">
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						on:click={prevDates}
+						disabled={datePage === 0}
+						class="hub-btn btn-theme-light-3 px-3 py-1.5 rounded-md text-sm disabled:opacity-50"
+					>
+						← Previous
+					</button>
+					<span class="text-sm text-gray-600">
+						{datePage * DATES_PER_PAGE + 1}–{Math.min((datePage + 1) * DATES_PER_PAGE, schedule.length)} of {schedule.length}
+					</span>
+					<button
+						type="button"
+						on:click={nextDates}
+						disabled={datePage >= totalDatePages - 1}
+						class="hub-btn btn-theme-light-3 px-3 py-1.5 rounded-md text-sm disabled:opacity-50"
+					>
+						Next →
+					</button>
 				</div>
-
-				{#if !col.rotaId}
-					<div class="px-4 py-6 text-xs text-gray-400 italic text-center">
-						No {$terminology.rota.toLowerCase()} linked — <a href="#config" class="underline text-theme-button-1">configure below</a>
-					</div>
-				{:else}
-					<!-- One section per occurrence date (visible page only) -->
-					<div class="flex-1 divide-y divide-gray-100">
-						{#each visibleSchedule as entry (entry.occurrence.id)}
-							{@const role = getRoleForOccurrence(entry.occurrence.id, col.roleId)}
-							<div class="px-4 py-3">
-								<div class="flex items-center justify-between mb-1.5">
-									<span class="text-xs font-medium text-gray-500">{formatShortDate(entry.occurrence.startsAt)}</span>
-									{#if role}
-										<span class="text-[10px] px-1.5 py-0.5 rounded font-medium {statusClass(role)}">
-											{statusLabel(role)}
-										</span>
+			</div>
+		{/if}
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+			{#each visibleSchedule as entry (entry.occurrence.id)}
+				{#each entry.roles as role (role.roleId)}
+					{#if role.rotaId}
+						<div class="border border-gray-200 rounded-lg p-3 min-w-0">
+							<p class="text-xs text-gray-500 mb-1.5">{role.roleName} ×{role.capacity}</p>
+							<div class="flex justify-between items-center mb-2">
+								<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(entry.occurrence.startsAt)}</h4>
+								<div class="flex items-center gap-2">
+									<span class="text-xs font-medium {role.isFull ? 'text-hub-red-600' : 'text-gray-700'} w-16">{role.filledCount}/{role.capacity}</span>
+									{#if role.isFull}
+										<span class="text-xs text-hub-red-600 font-medium">Full</span>
+									{:else if canManage}
+										<div class="flex items-center gap-1">
+											<button
+												type="button"
+												class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
+												title="Add assignees"
+												on:click={() => openAssignModal(role.rotaId, entry.occurrence.id, role.roleName, formatShortDate(entry.occurrence.startsAt))}
+											>
+												+ Add
+											</button>
+											<button
+												type="button"
+												class="bg-purple-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
+												title="Send invitation"
+												on:click={() => { inviteRotaId = role.rotaId; inviteOccurrenceId = entry.occurrence.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
+											>
+												✉ Invite
+											</button>
+										</div>
 									{/if}
 								</div>
-
-								{#if role}
-									<div class="space-y-0.5">
-										{#each role.assignees as assignee}
-											<div class="flex items-center gap-1.5 group">
-												<span class="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></span>
-												<span class="text-sm text-gray-700 flex-1 truncate">{assignee.name}</span>
-												{#if canManage}
-													<button
-														type="button"
-														class="text-xs text-gray-300 hover:text-red-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-														title="Remove"
-														on:click={() => confirmRemoveAssignee(assignee, col.roleName, col.rotaId, entry.occurrence.id)}
-													>×</button>
-												{/if}
-											</div>
-										{/each}
-
-										{#each Array(Math.max(0, role.capacity - role.filledCount)) as _, i}
-											<div class="flex items-center gap-1.5">
-												<span class="w-1.5 h-1.5 rounded-full bg-gray-200 flex-shrink-0"></span>
-												<span class="text-xs text-gray-300 italic flex-1">Unassigned</span>
-											</div>
-										{/each}
-									</div>
-
-									{#if canManage && !role.isFull}
-										<button
-											type="button"
-											class="mt-1.5 text-xs font-medium text-theme-button-1 hover:underline"
-											on:click={() => openAssignModal(col.rotaId, entry.occurrence.id, col.roleName, formatShortDate(entry.occurrence.startsAt))}
-										>+ Assign</button>
-									{/if}
-								{:else}
-									<p class="text-xs text-gray-300 italic">—</p>
-								{/if}
 							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		{/each}
+							{#if role.assignees && role.assignees.length > 0}
+								<div class="space-y-1.5 max-h-64 overflow-y-auto">
+									{#each role.assignees as assignee}
+										<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded text-sm">
+											<span class="font-medium truncate block text-gray-900">{assignee.name}</span>
+											{#if canManage && assignee.contactId}
+												<button
+													type="button"
+													on:click={() => confirmRemoveAssignee(assignee, role.roleName, role.rotaId, entry.occurrence.id)}
+													class="text-hub-red-600 hover:text-hub-red-800 px-1.5 py-0.5 rounded text-xs ml-2 flex-shrink-0"
+													title="Remove"
+												>×</button>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<p class="text-xs text-gray-400 italic py-2">No assignees</p>
+							{/if}
+							<a href="/hub/schedules/{role.rotaId}" class="mt-2 inline-block text-xs text-theme-button-1 hover:underline">{$terminology.rota} →</a>
+						</div>
+					{/if}
+				{/each}
+			{/each}
+		</div>
 	</div>
 {:else if roles.some(r => r.rotaId)}
 	<div class="hub-top-panel p-6 mb-8 text-center">
@@ -593,6 +589,87 @@
 					{/if}
 				</button>
 			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Invite to MyHub modal (same as planner) -->
+{#if showInviteModal}
+	<div
+		class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 no-print"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="invite-modal-title"
+	>
+		<div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+			<h3 id="invite-modal-title" class="text-lg font-bold text-gray-900 mb-2">Invite to MyHub</h3>
+			<p class="text-sm text-gray-600 mb-4">
+				Send a personal invitation — the volunteer will get an email with a link to respond from their MyHub dashboard.
+			</p>
+			<form method="POST" action="?/inviteToMyhub" use:enhance={() => {
+				inviteSending = true;
+				inviteError = null;
+				return async ({ update }) => {
+					inviteSending = false;
+					await update();
+				};
+			}}>
+				<input type="hidden" name="_csrf" value={csrfToken} />
+				<input type="hidden" name="rotaId" value={inviteRotaId} />
+				<input type="hidden" name="occurrenceId" value={inviteOccurrenceId} />
+
+				<div class="mb-3">
+					<label for="invite-search" class="block text-sm font-medium text-gray-700 mb-1">Search volunteer</label>
+					<input
+						id="invite-search"
+						type="text"
+						placeholder="Name or email…"
+						bind:value={inviteSearchTerm}
+						class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+					/>
+				</div>
+
+				<div class="mb-4 max-h-48 overflow-y-auto border border-gray-200 rounded-md divide-y divide-gray-100">
+					{#each inviteFilteredContacts.slice(0, 50) as contact (contact.id)}
+						<label class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer {inviteContactId === contact.id ? 'bg-purple-50' : ''}">
+							<input type="radio" name="contactId" value={contact.id} bind:group={inviteContactId} class="h-4 w-4 text-purple-600" />
+							<span class="text-sm flex-1 min-w-0">
+								<span class="font-medium">{contact.firstName || ''} {contact.lastName || ''}</span>
+								{#if contact.email}
+									<span class="text-gray-400 ml-1 truncate">{contact.email}</span>
+								{/if}
+							</span>
+						</label>
+					{/each}
+					{#if inviteFilteredContacts.length === 0}
+						<p class="text-sm text-gray-500 px-3 py-3 italic">No contacts found</p>
+					{/if}
+					{#if inviteFilteredContacts.length > 50}
+						<p class="text-xs text-gray-400 px-3 py-2">Showing first 50 — type to narrow down</p>
+					{/if}
+				</div>
+
+				{#if inviteError}
+					<p class="text-red-600 text-sm mb-3">{inviteError}</p>
+				{/if}
+
+				<div class="flex justify-end gap-3">
+					<button
+						type="button"
+						on:click={() => { showInviteModal = false; inviteError = null; }}
+						class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={!inviteContactId || inviteSending}
+						class="px-4 py-2 text-sm text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{#if inviteSending}Sending…{:else}Send invitation{/if}
+					</button>
+				</div>
+			</form>
 		</div>
 	</div>
 {/if}

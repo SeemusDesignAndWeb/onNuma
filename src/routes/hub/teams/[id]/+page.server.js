@@ -3,7 +3,10 @@ import { ulid } from 'ulid';
 import { getCsrfToken, verifyCsrfToken, getAdminFromCookies } from '$lib/crm/server/auth.js';
 import { isSuperAdmin } from '$lib/crm/server/permissions.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
-import { readCollection, findById, update } from '$lib/crm/server/fileStore.js';
+import { readCollection, findById, update, create, findMany } from '$lib/crm/server/fileStore.js';
+import { getHubBaseUrlFromOrg } from '$lib/crm/server/hubDomain.js';
+import { getSettings } from '$lib/crm/server/settings.js';
+import { env } from '$env/dynamic/private';
 import { filterUpcomingOccurrences } from '$lib/crm/utils/occurrenceFilters.js';
 import {
 	getTeamById,
@@ -158,7 +161,8 @@ export async function load({ params, cookies, locals }) {
 		id: c.id,
 		firstName: c.firstName || '',
 		lastName: c.lastName || '',
-		name: contactDisplayName(c)
+		name: contactDisplayName(c),
+		email: c.email || ''
 	})).sort((a, b) => a.name.localeCompare(b.name));
 
 	const allLists = filterByOrganisation(await readCollection('lists'), organisationId);
@@ -384,5 +388,94 @@ export const actions = {
 
 		await update('rotas', rotaId, { ...rota, assignees: filtered });
 		return { success: true, type: 'removeAssignee' };
+	},
+
+	inviteToMyhub: async ({ request, cookies, url, locals, params }) => {
+		const admin = locals.admin || await getAdminFromCookies(cookies);
+		if (!admin || !canAccessTeam(admin, params.id)) return fail(403, { error: 'Forbidden' });
+		const data = await request.formData();
+		const csrfToken = data.get('_csrf');
+		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
+			return fail(403, { error: 'CSRF token validation failed', type: 'inviteToMyhub' });
+		}
+
+		const rotaId = (data.get('rotaId') || '').toString().trim();
+		const contactId = (data.get('contactId') || '').toString().trim();
+		const occurrenceId = (data.get('occurrenceId') || '').toString().trim() || null;
+		if (!rotaId || !contactId) {
+			return fail(400, { error: 'Please select a contact to invite.', type: 'inviteToMyhub' });
+		}
+
+		try {
+			const organisationId = await getCurrentOrganisationId();
+			const rota = await findById('rotas', rotaId);
+			if (!rota || (rota.organisationId != null && rota.organisationId !== organisationId)) {
+				return fail(404, { error: 'Schedule not found.', type: 'inviteToMyhub' });
+			}
+
+			const contact = await findById('contacts', contactId);
+			if (!contact) return fail(404, { error: 'Contact not found.', type: 'inviteToMyhub' });
+			if (!contact.email) {
+				return fail(400, { error: 'This contact does not have an email address.', type: 'inviteToMyhub' });
+			}
+
+			const existingInvitations = await findMany('myhub_invitations', (inv) =>
+				inv.contactId === contactId && inv.rotaId === rotaId && inv.status === 'pending'
+			);
+			if (existingInvitations.length > 0) {
+				return fail(400, { error: 'This person already has a pending invitation for this rota.', type: 'inviteToMyhub' });
+			}
+
+			await create('myhub_invitations', {
+				organisationId,
+				contactId,
+				rotaId,
+				occurrenceId,
+				eventId: rota.eventId,
+				status: 'pending',
+				invitedAt: new Date().toISOString(),
+				respondedAt: null
+			});
+
+			const { createMagicLinkToken } = await import('$lib/crm/server/memberAuth.js');
+			const token = await createMagicLinkToken(contactId);
+			const org = organisationId ? await findById('organisations', organisationId) : null;
+			const hubBase = getHubBaseUrlFromOrg(org, env.APP_BASE_URL || url.origin);
+			const magicLink = `${hubBase}/myhub/auth/${token}?redirectTo=/myhub`;
+
+			const eventRecord = await findById('events', rota.eventId);
+			const occurrence = occurrenceId ? await findById('occurrences', occurrenceId) : null;
+
+			const dateDisplay = occurrence
+				? new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
+						weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+					})
+				: 'Date to be confirmed';
+			const timeDisplay = occurrence
+				? new Date(occurrence.startsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+				: '';
+
+			const settings = await getSettings();
+			const orgName = settings?.organisationName || settings?.name || '';
+
+			const volunteerName = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim() || contact.email;
+
+			const { sendMyhubInvitationEmail } = await import('$lib/crm/server/email.js');
+			await sendMyhubInvitationEmail({
+				to: contact.email,
+				name: volunteerName,
+				magicLink,
+				orgName,
+				eventTitle: eventRecord?.title || 'an event',
+				role: rota.role || '',
+				dateDisplay,
+				timeDisplay
+			}, { url });
+
+			return { success: true, type: 'inviteToMyhub', message: `Invitation sent to ${volunteerName}.` };
+		} catch (err) {
+			console.error('[inviteToMyhub] Error:', err?.message || err);
+			return fail(500, { error: err?.message || 'Failed to send invitation. Please try again.', type: 'inviteToMyhub' });
+		}
 	}
 };

@@ -105,6 +105,11 @@
 		expandedEventId = expandedEventId === id ? null : id;
 	}
 
+	const INITIAL_LIMIT = 5;
+	let showAll = false;
+	$: visibleEvents = showAll ? eventsWithRotas : eventsWithRotas.slice(0, INITIAL_LIMIT);
+	$: hasMore = eventsWithRotas.length > INITIAL_LIMIT;
+
 </script>
 
 <svelte:head>
@@ -135,7 +140,7 @@
 
 			<!-- Available rotas -->
 			<div class="my-opp-rotas">
-				{#each eventsWithRotas as { event, rotas, occurrences }}
+				{#each visibleEvents as { event, rotas, occurrences }}
 					{#if rotas.length > 0}
 						<div class="my-card my-event-card">
 							<button type="button" class="my-event-head" on:click={() => toggleEvent(event.id)} aria-expanded={expandedEventId === event.id}>
@@ -182,6 +187,13 @@
 					{/if}
 				{/each}
 			</div>
+
+			{#if hasMore && !showAll}
+				<button type="button" class="my-see-more-btn" on:click={() => { showAll = true; }}>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+					See all {eventsWithRotas.length} opportunities
+				</button>
+			{/if}
 
 			{#if formResult?.type === 'failure' && formResult.data?.error}
 				<div class="my-alert my-alert-error" role="alert">
@@ -320,4 +332,22 @@
 	.my-alert { padding: 1rem 1.25rem; border-radius: 0.75rem; border: 2px solid; font-size: 1rem; line-height: 1.5; }
 	.my-alert-error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
 	.my-muted { color: #6b7280; }
+	.my-see-more-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		width: 100%;
+		padding: 1rem;
+		background: #fff;
+		border: 2px dashed #d1d5db;
+		border-radius: 0.75rem;
+		color: #4b5563;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		margin-bottom: 1rem;
+		transition: border-color 0.15s, color 0.15s;
+	}
+	.my-see-more-btn:hover { border-color: #2563eb; color: #2563eb; }
 </style>

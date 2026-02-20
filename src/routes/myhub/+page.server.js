@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { readCollection, findById, update } from '$lib/crm/server/fileStore.js';
+import { readCollection, findById, update, findMany } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation } from '$lib/crm/server/orgContext.js';
 import { getMemberContactIdFromCookie } from '$lib/crm/server/memberAuth.js';
 import { verifyCsrfToken } from '$lib/crm/server/auth.js';
@@ -14,11 +14,11 @@ import { validateRota } from '$lib/crm/server/validators.js';
  */
 export async function load({ parent }) {
 	const { member } = await parent();
-	if (!member) return { nextRota: null, pendingInvitations: [], getInvolvedShifts: [] };
+	if (!member) return { nextRota: null, pendingInvitations: [], getInvolvedShifts: [], pendingInterests: [] };
 
 	const email = (member.email || '').toLowerCase();
 	const contactId = member.id;
-	if (!email && !contactId) return { nextRota: null, pendingInvitations: [], getInvolvedShifts: [] };
+	if (!email && !contactId) return { nextRota: null, pendingInvitations: [], getInvolvedShifts: [], pendingInterests: [] };
 
 	try {
 		const organisationId = await getCurrentOrganisationId();
@@ -225,10 +225,33 @@ export async function load({ parent }) {
 			return new Date(a.date) - new Date(b.date);
 		});
 
-		return { nextRota, pendingInvitations, getInvolvedShifts };
+		// ---- Section 4: Pending volunteer interests (awaiting coordinator review) ----
+		let pendingInterests = [];
+		try {
+			const allPending = await findMany('pending_volunteers', (p) =>
+				p.status === 'pending' &&
+				((p.contactId && p.contactId === contactId) ||
+					(p.email && p.email.toLowerCase() === email))
+			);
+			pendingInterests = allPending
+				.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+				.map((p) => ({
+					id: p.id,
+					rotaSlots: (p.rotaSlots || []).map((s) => ({
+						rotaRole: s.rotaRole || '',
+						eventTitle: s.eventTitle || '',
+						occurrenceDate: s.occurrenceDate || null
+					})),
+					createdAt: p.createdAt || null
+				}));
+		} catch (e) {
+			// non-fatal — collection may not exist yet
+		}
+
+		return { nextRota, pendingInvitations, getInvolvedShifts, pendingInterests };
 	} catch (err) {
 		console.error('[myhub dashboard] load error:', err?.message || err);
-		return { nextRota: null, pendingInvitations: [], getInvolvedShifts: [] };
+		return { nextRota: null, pendingInvitations: [], getInvolvedShifts: [], pendingInterests: [] };
 	}
 }
 

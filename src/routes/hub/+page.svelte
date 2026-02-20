@@ -291,7 +291,7 @@
 							<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 						</div>
 						<div class="min-w-0 flex-1">
-							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">Contacts</p>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">Volunteers</p>
 							<p class="text-lg sm:text-xl font-semibold text-gray-900 truncate">{stats.contacts ?? 0}</p>
 						</div>
 					</div>
@@ -575,7 +575,7 @@
 							{/if}
 						</div>
 						<div class="dashboard-panel-footer">
-							<a href="/hub/contacts" class="dashboard-panel-link block">View contacts</a>
+							<a href="/hub/contacts" class="dashboard-panel-link block">View volunteers</a>
 						</div>
 					</div>
 				</div>
@@ -729,10 +729,10 @@
 							</button>
 						</div>
 					</header>
-					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>Contacts by rota participation</p>
+					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>Volunteers by rota participation</p>
 					<div class="dashboard-panel-body dashboard-panel-body--engagement flex flex-1 flex-col items-center gap-3 min-h-0" class:hidden={collapsedPanelIds.has(panelId)}>
 						{#if engagementState.total === 0}
-							<p class="text-sm text-gray-500">No contacts yet. Add contacts to see engagement.</p>
+							<p class="text-sm text-gray-500">No volunteers yet. Add volunteers to see engagement.</p>
 						{:else}
 							<div class="engagement-pie-wrap flex-shrink-0 w-full max-w-[14rem] flex items-center justify-center p-1">
 								<div
@@ -813,7 +813,7 @@
 					<div class="dashboard-panel-body" class:hidden={collapsedPanelIds.has(panelId)}>
 						<div class="dashboard-panel-body-content">
 							{#if suggestedPeople.length === 0}
-								<p class="text-sm text-gray-500">Everyone in your contacts has participated recently, or you have no contacts yet.</p>
+								<p class="text-sm text-gray-500">Everyone in your volunteers has participated recently, or you have no volunteers yet.</p>
 							{:else}
 								<ul class="space-y-3">
 									{#each suggestedPeople as person}
