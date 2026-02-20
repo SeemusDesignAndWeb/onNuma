@@ -1,8 +1,10 @@
 <script>
 	import { page } from '$app/stores';
+	import { terminology } from '$lib/crm/stores/terminology.js';
 
 	$: suggestedPeople = $page.data?.suggestedPeople || [];
 	$: organisationName = $page.data?.organisationName || 'Organisation';
+	$: rotaLabel = $terminology.rota.toLowerCase();
 </script>
 
 <svelte:head>
@@ -17,12 +19,12 @@
 	<div class="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
 		<div class="px-5 py-4 border-b border-gray-100">
 			<h1 class="text-xl font-semibold text-gray-900">Suggested to invite</h1>
-			<p class="text-sm text-gray-500 mt-0.5">Contacts who are registered but not yet participating in any rota</p>
+			<p class="text-sm text-gray-500 mt-0.5">Volunteers who are registered but not yet participating in any {rotaLabel}</p>
 		</div>
 		<div class="p-5">
 			{#if suggestedPeople.length === 0}
-				<p class="text-sm text-gray-500">Everyone in your contacts has participated recently, or you have no contacts yet.</p>
-				<a href="/hub/contacts" class="inline-block mt-3 text-sm font-medium text-theme-button-1 hover:underline">View contacts</a>
+				<p class="text-sm text-gray-500">Everyone in your volunteers has participated recently, or you have no volunteers yet.</p>
+				<a href="/hub/contacts" class="inline-block mt-3 text-sm font-medium text-theme-button-1 hover:underline">View volunteers</a>
 			{:else}
 				<ul class="space-y-3">
 					{#each suggestedPeople as person}

@@ -1,9 +1,14 @@
 <script>
 	import { page } from '$app/stores';
+	import { terminology } from '$lib/crm/stores/terminology.js';
 	import { dialog } from '$lib/crm/stores/notifications.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 
 	$: data = $page.data || {};
+	$: rotaLabel = $terminology.rota;
+	$: rotaLabelPlural = $terminology.rota + 's';
+	$: eventLabel = $terminology.event;
+	$: eventLabelPlural = $terminology.event + 's';
 	$: contact = data.contact || {};
 	$: organisationName = data.organisationName || 'Organisation';
 	$: rotas = data.rotas || [];
@@ -32,7 +37,7 @@
 
 	async function sendInvite() {
 		if (selectedRotaIds.length === 0) {
-			await dialog.alert('Please select at least one rota', 'Validation');
+			await dialog.alert(`Please select at least one ${rotaLabel}`, 'Validation');
 			return;
 		}
 
@@ -79,8 +84,8 @@
 
 	<div class="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
 		<div class="px-5 py-4 border-b border-gray-100">
-			<h1 class="text-xl font-semibold text-gray-900">Send rota invitation</h1>
-			<p class="text-sm text-gray-500 mt-0.5">Choose rotas and add a message. The email will include signup links and a link to MyHUB for other rotas.</p>
+			<h1 class="text-xl font-semibold text-gray-900">Send {rotaLabel.toLowerCase()} invitation</h1>
+			<p class="text-sm text-gray-500 mt-0.5">Choose {rotaLabelPlural.toLowerCase()} and add a message. The email will include signup links and a link to MyHUB for other {rotaLabelPlural.toLowerCase()}.</p>
 		</div>
 		<div class="p-5 space-y-5">
 			<!-- Contact -->
@@ -97,7 +102,7 @@
 				<textarea
 					id="message"
 					bind:value={customMessage}
-					placeholder="e.g. We'd love to have you join one of these rotas when you're free..."
+					placeholder="e.g. We'd love to have you join one of these {rotaLabelPlural.toLowerCase()} when you're free..."
 					rows="4"
 					class="w-full rounded-md border border-gray-300 shadow-sm focus:border-theme-button-2 focus:ring-theme-button-2 py-2 px-3 text-sm"
 				></textarea>
@@ -106,7 +111,7 @@
 			<!-- Rotas -->
 			<div>
 				<div class="flex justify-between items-center mb-3">
-					<span class="block text-sm font-medium text-gray-700">Select rotas <span class="text-red-500">*</span></span>
+					<span class="block text-sm font-medium text-gray-700">Select {rotaLabelPlural.toLowerCase()} <span class="text-red-500">*</span></span>
 					{#if rotas.length > 0}
 						<div class="flex gap-2">
 							<button
@@ -127,7 +132,7 @@
 					{/if}
 				</div>
 				{#if rotas.length === 0}
-					<p class="text-sm text-gray-500 italic">No rotas available. Create events and rotas first.</p>
+					<p class="text-sm text-gray-500 italic">No {rotaLabelPlural.toLowerCase()} available. Create {eventLabelPlural.toLowerCase()} and {rotaLabelPlural.toLowerCase()} first.</p>
 				{:else}
 					<div class="space-y-4 max-h-[320px] overflow-y-auto pr-1">
 						{#each Object.entries(rotasByEvent) as [eventId, group]}
