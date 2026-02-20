@@ -31,6 +31,7 @@ export async function load({ cookies, parent }) {
 	
 	const parentData = await parent();
 	const plan = parentData.plan || 'free';
+	const dbsBoltOn = !!parentData.dbsBoltOn;
 	const maxAdmins = await getConfiguredPlanMaxAdmins(plan);
 	const organisationId = await getCurrentOrganisationId();
 	const admins = await getAdminsForOrganisation(organisationId);
@@ -40,7 +41,7 @@ export async function load({ cookies, parent }) {
 	}
 	
 	const csrfToken = getCsrfToken(cookies) || '';
-	const availableAreas = getAvailableHubAreas(admin, superAdminEmail);
+	const availableAreas = getAvailableHubAreas(admin, superAdminEmail, { dbsBoltOn });
 	return { csrfToken, availableAreas, superAdminEmail, adminCount, maxAdmins };
 }
 
@@ -93,8 +94,9 @@ export const actions = {
 		const normalizedEmail = email.toString().toLowerCase().trim();
 		const isSuperAdminEmailMatch = isSuperAdminEmail(normalizedEmail, effectiveSuperAdminEmail);
 
-		// Validate permissions array
-		const validAreas = getAvailableHubAreas(currentAdmin, effectiveSuperAdminEmail).map(a => a.value);
+		// Validate permissions array (include bolt-on areas when org has them)
+		const dbsBoltOn = !!(org?.dbsBoltOn ?? org?.churchBoltOn);
+		const validAreas = getAvailableHubAreas(currentAdmin, effectiveSuperAdminEmail, { dbsBoltOn }).map(a => a.value);
 		let validPermissions = permissions.filter(p => validAreas.includes(p.toString()));
 		
 		// Check if SUPER_ADMIN permission is being set

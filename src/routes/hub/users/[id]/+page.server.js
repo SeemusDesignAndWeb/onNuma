@@ -1,12 +1,12 @@
 import { redirect } from '@sveltejs/kit';
-import { findById, update, remove } from '$lib/crm/server/fileStore.js';
+import { findById, update, remove, readCollection } from '$lib/crm/server/fileStore.js';
 import { getAdminById, getAdminByEmail, updateAdminPassword, verifyAdminEmail, getCsrfToken, verifyCsrfToken, getAdminFromCookies, isAdminInOrganisation } from '$lib/crm/server/auth.js';
 import { isSuperAdmin, getAdminPermissions, getAvailableHubAreas, HUB_AREAS, isSuperAdminEmail } from '$lib/crm/server/permissions.js';
 import { getEffectiveSuperAdminEmail, getCurrentOrganisationId } from '$lib/crm/server/settings.js';
 import { logDataChange, logSensitiveOperation } from '$lib/crm/server/audit.js';
 import { syncSubscriptionQuantity } from '$lib/crm/server/paddle.js';
 
-export async function load({ params, cookies, request }) {
+export async function load({ params, cookies, request, parent }) {
 	const admin = await getAdminById(params.id);
 	const organisationId = await getCurrentOrganisationId();
 	if (!admin) {
@@ -60,8 +60,10 @@ export async function load({ params, cookies, request }) {
 		adminLevel: currentAdmin.adminLevel // For backward compatibility
 	} : null;
 
+	const parentData = await parent();
+	const dbsBoltOn = !!parentData.dbsBoltOn;
 	const csrfToken = getCsrfToken(cookies) || '';
-	const availableAreas = getAvailableHubAreas(currentAdmin, superAdminEmail);
+	const availableAreas = getAvailableHubAreas(currentAdmin, superAdminEmail, { dbsBoltOn });
 	
 	// Check for creation success message
 	const url = new URL(request.url);
@@ -75,6 +77,7 @@ export async function load({ params, cookies, request }) {
 		csrfToken, 
 		availableAreas,
 		superAdminEmail,
+		dbsBoltOn,
 		created,
 		createdEmail,
 		emailFailed
@@ -128,8 +131,11 @@ export const actions = {
 				name: name.toString()
 			};
 
-			// Validate permissions array
-			const validAreas = getAvailableHubAreas(currentAdmin).map(a => a.value);
+			// Validate permissions array (include bolt-on areas when org has them)
+			const orgs = await readCollection('organisations').catch(() => []);
+			const org = organisationId ? orgs.find((o) => o.id === organisationId) : null;
+			const dbsBoltOn = !!(org?.dbsBoltOn ?? org?.churchBoltOn);
+			const validAreas = getAvailableHubAreas(currentAdmin, effectiveSuperAdminEmail, { dbsBoltOn }).map(a => a.value);
 			let validPermissions = permissions.filter(p => validAreas.includes(p.toString()));
 			
 			// Check if SUPER_ADMIN permission is being set

@@ -49,7 +49,7 @@
 <div class="crm-shell min-h-screen bg-theme-panel flex flex-col">
 	{#if !isAuthPage}
 		<!-- Mobile: column (header on top, main full width). Desktop: row (sidebar | main). Sidebar fixed full height on desktop. -->
-		<div class="crm-shell-desktop flex flex-col lg:flex-row flex-1 min-h-0 overflow-x-hidden {$hubSidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-[16rem]'}">
+		<div class="crm-shell-desktop flex flex-col lg:flex-row flex-1 min-h-0 overflow-x-hidden {$hubSidebarCollapsed ? 'lg:pl-[4rem]' : 'lg:pl-[13rem]'}">
 			<div class="hidden lg:block crm-shell-sidebar-wrap crm-shell-sidebar-fixed" class:crm-shell-sidebar-fixed--collapsed={$hubSidebarCollapsed}>
 				<HubSidebar
 					{admin}
@@ -102,7 +102,7 @@
 					aria-label="Close menu"
 					on:click={closeMobileSidebar}
 				></button>
-				<div class="lg:hidden fixed inset-y-0 left-0 z-40 w-[16rem] max-w-[85vw] shadow-xl crm-shell-mobile-drawer safe-area-left">
+				<div class="lg:hidden fixed inset-y-0 left-0 z-40 w-[13rem] max-w-[85vw] shadow-xl crm-shell-mobile-drawer safe-area-left">
 					<HubSidebar
 						{admin}
 						{theme}
@@ -127,7 +127,7 @@
 			</main>
 		</div>
 
-		<footer class="crm-shell-footer flex-shrink-0 w-full bg-white border-t border-gray-200 {$hubSidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-[16rem]'}">
+		<footer class="crm-shell-footer flex-shrink-0 w-full bg-white border-t border-gray-200 {$hubSidebarCollapsed ? 'lg:pl-[4rem]' : 'lg:pl-[13rem]'}">
 			<div class="max-w-7xl mx-auto px-4 py-6">
 				<div class="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4">
 					<a href="/" class="flex items-center flex-shrink-0" aria-label="OnNuma home">
@@ -161,7 +161,7 @@
 			top: 0;
 			left: 0;
 			bottom: 0;
-			width: 16rem;
+			width: 13rem;
 			height: 100vh;
 			height: 100dvh;
 			z-index: 20;
@@ -171,7 +171,7 @@
 			transition: width 0.25s ease;
 		}
 		.crm-shell-sidebar-fixed.crm-shell-sidebar-fixed--collapsed {
-			width: 4.5rem;
+			width: 4rem;
 		}
 	}
 	.crm-shell-main {

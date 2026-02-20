@@ -49,7 +49,11 @@ export async function load({ cookies, locals }) {
 	// Use getEffectiveOrgPermissions to account for trial expiry (reverts to Free if trial expired)
 	const effectivePermissions = org ? getEffectiveOrgPermissions(org) : null;
 	const plan = effectivePermissions ? await getConfiguredPlanFromAreaPermissions(effectivePermissions) : null;
-	const organisationAreaPermissions = effectivePermissions || null;
+	// Include bolt-on areas so admins can be granted e.g. DBS when org has the bolt-on
+	const dbsBoltOn = !!(org?.dbsBoltOn ?? org?.churchBoltOn);
+	const organisationAreaPermissions = effectivePermissions
+		? [...effectivePermissions, ...(dbsBoltOn ? ['dbs'] : [])]
+		: null;
 	
 	// Get trial status for UI banner
 	const trialStatus = org ? getTrialStatus(org) : { inTrial: false, expired: false, daysRemaining: 0, trialPlan: null };
@@ -67,7 +71,6 @@ export async function load({ cookies, locals }) {
 		!!(env.PADDLE_API_KEY && (env.PADDLE_PRICE_ID_PROFESSIONAL || env.PADDLE_PRICE_ID_ENTERPRISE));
 	const showBillingPortal = !!(env.BOATHOUSE_PORTAL_ID && env.BOATHOUSE_SECRET);
 	const privacyContactSet = !!(org?.privacyContactName || org?.privacyContactEmail || org?.privacyContactPhone);
-	const dbsBoltOn = !!(org?.dbsBoltOn ?? org?.churchBoltOn);
 	const churchBoltOn = !!org?.churchBoltOn;
 	const dbsRenewalYears = org?.dbsRenewalYears ?? 3;
 

@@ -17,6 +17,7 @@ export const HUB_AREAS = {
 	MEMBERS: 'members',
 	USERS: 'users', // Admin management - only super admin
 	TEAMS: 'teams', // Team management — not a plan area; granted via addTeamLeaderToTeam or by super admin
+	DBS: 'dbs', // DBS & Pastoral (bolt-on) - only available when org has dbsBoltOn
 	SUPER_ADMIN: 'super_admin' // Super admin permission - grants all permissions
 };
 
@@ -176,6 +177,15 @@ export function hasRouteAccess(admin, pathname, superAdminEmail = null, organisa
 	if (pathname === '/hub' || pathname === '/hub/profile' || pathname === '/hub/billing' || pathname === '/hub/help' || pathname === '/hub/video-tutorials') {
 		return true;
 	}
+	// DBS & Pastoral (bolt-on): accessible with 'dbs' permission OR contacts/schedules/team-leader (backward compat)
+	if (pathname.startsWith('/hub/dbs') || pathname.startsWith('/hub/pastoral')) {
+		return (
+			effectivePerms.includes(HUB_AREAS.DBS) ||
+			effectivePerms.includes(HUB_AREAS.CONTACTS) ||
+			effectivePerms.includes(HUB_AREAS.ROTAS) ||
+			(Array.isArray(admin.teamLeaderForTeamIds) && admin.teamLeaderForTeamIds.length > 0)
+		);
+	}
 	// Teams: accessible to coordinators with 'teams' permission OR any team leader
 	if (pathname.startsWith('/hub/teams')) {
 		const rawPerms = getAdminPermissions(admin, superAdminEmail);
@@ -225,7 +235,12 @@ export function canAccessNewsletters(admin) {
 	return getAdminPermissions(admin).includes(HUB_AREAS.NEWSLETTERS);
 }
 
-export function getAvailableHubAreas(currentAdmin = null) {
+/**
+ * @param {object|null} [currentAdmin] - Admin performing the action (for Super Admin option)
+ * @param {string|null} [superAdminEmail] - For isSuperAdmin check
+ * @param {{ dbsBoltOn?: boolean }} [options] - Bolt-ons: when dbsBoltOn is true, DBS & Pastoral is included as an assignable privilege
+ */
+export function getAvailableHubAreas(currentAdmin = null, superAdminEmail = null, options = {}) {
 	const areas = [
 		{ value: HUB_AREAS.CONTACTS, label: 'Contacts', description: 'Manage contact database' },
 		{ value: HUB_AREAS.LISTS, label: 'Lists', description: 'Manage contact lists' },
@@ -237,7 +252,14 @@ export function getAvailableHubAreas(currentAdmin = null) {
 		{ value: HUB_AREAS.SAFEGUARDING_FORMS, label: 'Safeguarding Forms', description: 'Access safeguarding forms and submissions' },
 		{ value: HUB_AREAS.MEMBERS, label: 'Members', description: 'Manage church members and membership information' }
 	];
-	if (currentAdmin && isSuperAdmin(currentAdmin)) {
+	if (options.dbsBoltOn) {
+		areas.push({
+			value: HUB_AREAS.DBS,
+			label: 'DBS & Pastoral',
+			description: 'Access DBS compliance and pastoral care (requires DBS bolt-on for your organisation)'
+		});
+	}
+	if (currentAdmin && isSuperAdmin(currentAdmin, superAdminEmail)) {
 		areas.push({
 			value: HUB_AREAS.SUPER_ADMIN,
 			label: 'Super Admin',
