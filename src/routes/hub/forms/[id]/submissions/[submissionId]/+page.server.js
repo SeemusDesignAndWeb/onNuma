@@ -5,6 +5,7 @@ import { getAdminFromCookies, getCsrfToken, verifyCsrfToken } from '$lib/crm/ser
 import { logSensitiveOperation, logDataChange } from '$lib/crm/server/audit.js';
 import { isSuperAdmin, canAccessSafeguarding } from '$lib/crm/server/permissions.js';
 import { getCurrentOrganisationId } from '$lib/crm/server/orgContext.js';
+import { deleteSeenRecord } from '$lib/crm/server/seenNotifications.js';
 
 export async function load({ params, cookies, request }) {
 	const admin = await getAdminFromCookies(cookies);
@@ -105,6 +106,9 @@ export const actions = {
 			formName: form.name,
 			submissionId: params.submissionId
 		}, event);
+
+		// Cleanup seen notification for this submission (non-fatal)
+		deleteSeenRecord(organisationId, 'form_submission', params.submissionId).catch(() => {});
 
 		return { success: true, archived: true };
 	},

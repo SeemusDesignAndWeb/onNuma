@@ -54,7 +54,9 @@ export const ALL_COLLECTIONS = [
 	'myhub_invitations',
 	'volunteer_absence_events',
 	'volunteer_pastoral_flags',
-	'volunteer_milestones'
+	'volunteer_milestones',
+	'pending_volunteers',
+	'seen_notifications'
 ];
 
 /** Collections to migrate when moving from file store to database (all of them). */
@@ -84,5 +86,6 @@ export const ORG_SCOPED_COLLECTIONS = [
 	'loom_videos',
 	'week_notes',
 	'email_stats',
-	'holidays'
+	'holidays',
+	'seen_notifications'
 ];

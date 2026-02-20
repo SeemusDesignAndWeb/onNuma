@@ -500,7 +500,7 @@
 		min-height: 3rem;
 		cursor: pointer;
 		transition: background 0.15s;
-		margin-bottom: 0.75rem;
+		white-space: nowrap;
 	}
 	.my-text-size-btn:hover {
 		background: rgba(255, 255, 255, 0.2);
@@ -526,8 +526,10 @@
 		padding: 1.25rem 1.25rem 1.25rem;
 		box-sizing: border-box;
 		display: flex;
-		flex-direction: column;
-		gap: 0;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1rem 1.5rem;
 	}
 	@media (min-width: 640px) {
 		.my-footer-inner {

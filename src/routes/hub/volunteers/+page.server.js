@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { readCollection, findById, update, create, findMany } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId, filterByOrganisation, withOrganisationId } from '$lib/crm/server/orgContext.js';
 import { getCsrfToken, verifyCsrfToken } from '$lib/crm/server/auth.js';
+import { deleteSeenRecord } from '$lib/crm/server/seenNotifications.js';
 import { validateContact, validateRota } from '$lib/crm/server/validators.js';
 import { createMagicLinkToken } from '$lib/crm/server/memberAuth.js';
 import { sendVolunteerApprovedEmail, sendVolunteerDeclinedEmail } from '$lib/crm/server/email.js';
@@ -125,6 +126,9 @@ export const actions = {
 				resolvedAt: new Date().toISOString()
 			});
 
+			// Cleanup seen notification for this record (non-fatal)
+			deleteSeenRecord(organisationId, 'pending_volunteer', pendingId).catch(() => {});
+
 			// Create MyHUB magic link and send welcome email
 			try {
 				const baseUrl =
@@ -164,6 +168,10 @@ export const actions = {
 			status: 'declined',
 			resolvedAt: new Date().toISOString()
 		});
+
+		// Cleanup seen notification for this record (non-fatal)
+		const declineOrgId = await getCurrentOrganisationId().catch(() => null);
+		if (declineOrgId) deleteSeenRecord(declineOrgId, 'pending_volunteer', pendingId).catch(() => {});
 
 		try {
 			await sendVolunteerDeclinedEmail(pending, { url });

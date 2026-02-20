@@ -8,6 +8,7 @@ import {
 	getTrialStatus,
 	getEffectiveOrgPermissions
 } from '$lib/crm/server/permissions.js';
+import { getBadgeCounts } from '$lib/crm/server/badgeCounts.js';
 import { env } from '$env/dynamic/private';
 
 /** Strip legacy Cloudinary logo URLs (we use volume/disk image storage now) so Hub shows default until settings are updated. */
@@ -68,6 +69,17 @@ export async function load({ cookies, locals }) {
 	const privacyContactSet = !!(org?.privacyContactName || org?.privacyContactEmail || org?.privacyContactPhone);
 	const dbsBoltOn = !!(org?.dbsBoltOn ?? org?.churchBoltOn);
 	const churchBoltOn = !!org?.churchBoltOn;
+	const dbsRenewalYears = org?.dbsRenewalYears ?? 3;
+
+	let badgeCounts = { pendingVolunteers: 0, pastoralConcerns: 0, formSubmissions: 0, dbsNotifications: 0 };
+	if (locals.admin && organisationId) {
+		try {
+			badgeCounts = await getBadgeCounts(organisationId, dbsBoltOn, dbsRenewalYears);
+		} catch (err) {
+			console.error('[hub layout] badge counts failed:', err?.message || err);
+		}
+	}
+
 	return {
 		csrfToken,
 		admin: locals.admin || null,
@@ -88,7 +100,8 @@ export async function load({ cookies, locals }) {
 		showBilling: !!showBilling,
 		showBillingPortal: !!showBillingPortal,
 		isSuperAdmin: locals.admin ? isSuperAdmin(locals.admin) : false,
-		privacyContactSet
+		privacyContactSet,
+		badgeCounts
 	};
 }
 

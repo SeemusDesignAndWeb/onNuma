@@ -3,15 +3,23 @@
 	import { page } from '$app/stores';
 	import { invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
 	import { terminology } from '$lib/crm/stores/terminology.js';
+	import { markNotificationSeen } from '$lib/crm/utils/markNotificationSeen.js';
 
 	$: volunteersLabel = $terminology.volunteer + 's';
 
 	$: pending = $page.data?.pending || [];
 	$: csrfToken = $page.data?.csrfToken || '';
 	$: formResult = $page.form;
+
+	onMount(() => {
+		if (pending.length > 0) {
+			markNotificationSeen('pending_volunteer', pending.map((p) => p.id));
+		}
+	});
 
 	let lastFormResult = null;
 	$: if (formResult && browser && formResult !== lastFormResult) {

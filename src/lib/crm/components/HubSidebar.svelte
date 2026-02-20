@@ -4,6 +4,8 @@
 	import { hasRouteAccess, isSuperAdmin } from '$lib/crm/permissions.js';
 	import { hubSidebarCollapsed, HUB_SIDEBAR_COLLAPSED_KEY } from '$lib/crm/stores/sidebar.js';
 	import { terminology } from '$lib/crm/stores/terminology.js';
+	import { badgeCounts } from '$lib/crm/stores/badgeCounts.js';
+	import NotificationBadge from './NotificationBadge.svelte';
 
 	export let admin = null;
 	/** @type {{ logoPath?: string } | null} */
@@ -74,7 +76,7 @@
 	}
 
 	$: isDashboard = $page.url.pathname === '/hub' || $page.url.pathname === '/hub/';
-	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/members') || $page.url.pathname.startsWith('/hub/volunteers');
+	$: isContactsActive = $page.url.pathname.startsWith('/hub/contacts') || $page.url.pathname.startsWith('/hub/members');
 	$: isListsActive = $page.url.pathname.startsWith('/hub/lists');
 	$: isEventsActive = $page.url.pathname.startsWith('/hub/events');
 	$: isSettingsActive = $page.url.pathname.startsWith('/hub/users') || $page.url.pathname.startsWith('/hub/profile') || $page.url.pathname.startsWith('/hub/billing') || $page.url.pathname.startsWith('/hub/audit-logs') || $page.url.pathname.startsWith('/hub/settings') || $page.url.pathname.startsWith('/hub/images') || $page.url.pathname.startsWith('/hub/videos');
@@ -189,6 +191,16 @@
 			</a>
 		{/if}
 
+		{#if canAccessRotas || canAccessContacts}
+			<a href="/hub/volunteers" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/volunteers')} title="Pending volunteers" on:click={handleNavClick}>
+				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+				</svg>
+				{#if !collapsed || onClose}<span class="hub-sidebar-label">Pending volunteers</span>{/if}
+				<NotificationBadge count={$badgeCounts.pendingVolunteers} />
+			</a>
+		{/if}
+
 	{#if canAccessTeams}
 			<a href="/hub/teams" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/teams')} title="{$terminology.team}s" on:click={handleNavClick}>
 				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -221,7 +233,8 @@
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 					</svg>
-				{#if !collapsed || onClose}<span class="hub-sidebar-label">Forms</span>{/if}
+					{#if !collapsed || onClose}<span class="hub-sidebar-label">Forms</span>{/if}
+					<NotificationBadge count={$badgeCounts.formSubmissions} />
 				</a>
 			{/if}
 
@@ -230,13 +243,15 @@
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
 					</svg>
-				{#if !collapsed || onClose}<span class="hub-sidebar-label">DBS Compliance</span>{/if}
+					{#if !collapsed || onClose}<span class="hub-sidebar-label">DBS Compliance</span>{/if}
+					<NotificationBadge count={$badgeCounts.dbsNotifications} />
 				</a>
 				<a href="/hub/pastoral" class="hub-sidebar-item" class:active={$page.url.pathname.startsWith('/hub/pastoral')} title="Pastoral Care" on:click={handleNavClick}>
 					<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
 					</svg>
-				{#if !collapsed || onClose}<span class="hub-sidebar-label">Pastoral Care</span>{/if}
+					{#if !collapsed || onClose}<span class="hub-sidebar-label">Pastoral Care</span>{/if}
+					<NotificationBadge count={$badgeCounts.pastoralConcerns} />
 				</a>
 			{/if}
 
@@ -412,6 +427,21 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		transition: opacity 0.2s, visibility 0.2s;
+	}
+	/* Badge: push to right in expanded state */
+	:global(.hub-sidebar-item .hub-notif-badge) {
+		margin-left: auto;
+	}
+	/* Badge: small corner overlay in collapsed state */
+	.hub-sidebar.collapsed :global(.hub-sidebar-item .hub-notif-badge) {
+		position: absolute;
+		top: 0.2rem;
+		right: 0.2rem;
+		margin-left: 0;
+		min-width: 1rem;
+		height: 1rem;
+		font-size: 0.5625rem;
+		padding: 0 0.2rem;
 	}
 	.hub-sidebar-bottom {
 		padding: 0.5rem;

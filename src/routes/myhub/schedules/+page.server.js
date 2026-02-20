@@ -161,7 +161,8 @@ export async function load({ parent }) {
 }
 
 export const actions = {
-	cannotVolunteer: async ({ request, cookies }) => {
+	cannotVolunteer: async (event) => {
+		const { request, cookies } = event;
 		const data = await request.formData();
 		const csrfToken = data.get('_csrf');
 		if (!csrfToken || !verifyCsrfToken(cookies, csrfToken)) {
@@ -228,7 +229,7 @@ export const actions = {
 		}
 
 		const occurrence = occurrenceId ? occurrencesMap.get(occurrenceId) : null;
-		const event = eventsMap.get(rota.eventId);
+		const eventData = eventsMap.get(rota.eventId);
 		const dateDisplay = occurrence
 			? new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
 					weekday: 'long',
@@ -267,10 +268,10 @@ export const actions = {
 					volunteerName,
 					volunteerEmail: contact.email || '',
 					role: rota.role,
-					eventTitle: event?.title || 'Event',
+					eventTitle: eventData?.title || 'Event',
 					dateDisplay
 				},
-				{ url: { origin: process.env.APP_BASE_URL || 'https://onnuma.com' } }
+				event
 			);
 		} catch (err) {
 			console.error('[my rotas] cannotVolunteer email failed:', err);

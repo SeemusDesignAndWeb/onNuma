@@ -2,9 +2,11 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import { formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import { dialog } from '$lib/crm/stores/notifications.js';
+	import { markNotificationSeen } from '$lib/crm/utils/markNotificationSeen.js';
 
 	$: form = $page.data?.form;
 	$: register = $page.data?.register;
@@ -13,6 +15,12 @@
 	$: formResult = $page.form;
 	$: isArchived = register?.archived || false;
 	$: canDelete = $page.data?.canDelete || false;
+
+	onMount(() => {
+		if (register?.id && !register.archived) {
+			markNotificationSeen('form_submission', [register.id]);
+		}
+	});
 
 	// Track last processed form result to avoid duplicate notifications
 	let lastProcessedFormResult = null;

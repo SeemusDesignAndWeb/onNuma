@@ -15,6 +15,7 @@
 import { json } from '@sveltejs/kit';
 import { findById } from '$lib/crm/server/fileStore.js';
 import { getCurrentOrganisationId } from '$lib/crm/server/settings.js';
+import { deleteSeenRecord } from '$lib/crm/server/seenNotifications.js';
 import { isSuperAdmin, hasRouteAccess } from '$lib/crm/server/permissions.js';
 import {
 	recordAbsenceEvent,
@@ -75,6 +76,7 @@ export async function POST({ request, params, locals }) {
 				const { flagId } = body;
 				if (!flagId) return json({ error: 'flagId required' }, { status: 400 });
 				await dismissPastoralFlag(flagId, admin.id || null);
+				deleteSeenRecord(organisationId, 'pastoral_concern', flagId).catch(() => {});
 				return json({ success: true });
 			}
 
@@ -83,6 +85,7 @@ export async function POST({ request, params, locals }) {
 				if (!flagId) return json({ error: 'flagId required' }, { status: 400 });
 				const trimmedNote = note ? note.toString().trim().slice(0, 2000) : null;
 				await markPastoralFlagFollowedUp(flagId, admin.id || null, trimmedNote);
+				deleteSeenRecord(organisationId, 'pastoral_concern', flagId).catch(() => {});
 				return json({ success: true });
 			}
 

@@ -14,6 +14,7 @@
 		refreshHubData
 	} from '$lib/crm/stores/hubData.js';
 	import { setTerminology } from '$lib/crm/stores/terminology.js';
+	import { badgeCounts, loadBadgeCounts } from '$lib/crm/stores/badgeCounts.js';
 
 	export let data = {};
 	export let params = {};
@@ -32,8 +33,14 @@
 	$: dbsBoltOn = data?.dbsBoltOn ?? false;
 	$: churchBoltOn = data?.churchBoltOn ?? false;
 
+	// Seed badge counts from SSR data whenever layout data refreshes (page nav, org switch)
+	$: if (browser && data?.badgeCounts) {
+		badgeCounts.seed(data.badgeCounts);
+	}
+
 	// Track organisation changes to refresh store data
 	let previousOrgId = null;
+	let badgePollInterval = null;
 
 	// Lazy-load Onboarding only when needed to reduce initial Hub chunk parse time
 	let OnboardingComponent = null;
@@ -53,6 +60,11 @@
 		}
 		previousOrgId = currentOrgId;
 
+		// Poll badge counts every 2 minutes while logged in
+		if (admin) {
+			badgePollInterval = setInterval(loadBadgeCounts, 2 * 60 * 1000);
+		}
+
 		// When user switches back to this tab (e.g. after changing org in MultiOrg), refetch
 		const visibilityHandler = () => {
 			if (document.visibilityState === 'visible') {
@@ -66,6 +78,10 @@
 		document.addEventListener('visibilitychange', visibilityHandler);
 		return () => {
 			document.removeEventListener('visibilitychange', visibilityHandler);
+			if (badgePollInterval) {
+				clearInterval(badgePollInterval);
+				badgePollInterval = null;
+			}
 		};
 	});
 

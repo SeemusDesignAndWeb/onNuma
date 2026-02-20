@@ -1,8 +1,16 @@
 <script>
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { markNotificationSeen } from '$lib/crm/utils/markNotificationSeen.js';
 
 	$: data = $page.data || {};
 	$: flags = data.flags || [];
+
+	onMount(() => {
+		if (flags.length > 0) {
+			markNotificationSeen('pastoral_concern', flags.map((f) => f.flag.id));
+		}
+	});
 </script>
 
 <svelte:head>

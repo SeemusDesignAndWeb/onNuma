@@ -260,7 +260,8 @@ export async function load({ parent }) {
  * Mirrors the cannotVolunteer action on the rotas page.
  */
 export const actions = {
-	cannotVolunteer: async ({ request, cookies }) => {
+	cannotVolunteer: async (event) => {
+		const { request, cookies } = event;
 		const data = await request.formData();
 		if (!verifyCsrfToken(cookies, data.get('_csrf'))) {
 			return fail(403, { error: 'Invalid request. Please refresh and try again.' });
@@ -323,7 +324,7 @@ export const actions = {
 		const occurrencesMap = new Map(occurrences.map((o) => [o.id, o]));
 		const eventsMap = new Map(events.map((e) => [e.id, e]));
 		const occurrence = occurrenceId ? occurrencesMap.get(occurrenceId) : null;
-		const event = eventsMap.get(rota.eventId);
+		const eventData = eventsMap.get(rota.eventId);
 
 		const dateDisplay = occurrence
 			? new Date(occurrence.startsAt).toLocaleDateString('en-GB', {
@@ -369,11 +370,11 @@ export const actions = {
 					volunteerName,
 					volunteerEmail: contact.email || '',
 					role: rota.role,
-					eventTitle: event?.title || 'Event',
+					eventTitle: eventData?.title || 'Event',
 					dateDisplay,
 					note
 				},
-				{ url: { origin: process.env.APP_BASE_URL || 'https://onnuma.com' } }
+				event
 			);
 		} catch (err) {
 			console.error('[myhub dashboard] cannotVolunteer email failed:', err);

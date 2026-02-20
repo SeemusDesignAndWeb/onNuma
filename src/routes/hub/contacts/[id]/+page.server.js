@@ -9,6 +9,7 @@ import { getCurrentOrganisationId, filterByOrganisation, contactsWithinPlanLimit
 import { generateId } from '$lib/crm/server/ids.js';
 import { getDbsStatus } from '$lib/crm/server/dbs.js';
 import { getSafeguardingStatus } from '$lib/crm/server/safeguarding.js';
+import { deleteSeenRecord } from '$lib/crm/server/seenNotifications.js';
 import {
 	getAllPastoralFlagsForContact,
 	getAbsenceEventsForContact,
@@ -184,6 +185,11 @@ export const actions = {
 				email: validated.email,
 				name: `${validated.firstName || ''} ${validated.lastName || ''}`.trim()
 			}, event);
+
+			// If DBS data was updated, clean up the seen notification so the badge resets correctly
+			if (org?.dbsBoltOn ?? org?.churchBoltOn) {
+				deleteSeenRecord(orgId, 'dbs_notification', params.id).catch(() => {});
+			}
 
 			return { success: true };
 		} catch (error) {

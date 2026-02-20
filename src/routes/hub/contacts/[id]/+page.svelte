@@ -2,11 +2,13 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import FormField from '$lib/crm/components/FormField.svelte';
 	import { formatDateUK, formatDateTimeUK } from '$lib/crm/utils/dateFormat.js';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import { dialog } from '$lib/crm/stores/notifications.js';
 	import { getPanelHeadColor } from '$lib/crm/utils/themeStyles.js';
+	import { markNotificationSeen } from '$lib/crm/utils/markNotificationSeen.js';
 
 	$: contact = $page.data?.contact;
 	$: spouse = $page.data?.spouse;
@@ -91,6 +93,17 @@
 
 	$: activePastoralFlags = pastoralFlags.filter((f) => f.status === 'active');
 	$: recentAbsences = absenceEvents.slice(0, 10);
+
+	onMount(() => {
+		// Mark DBS notification seen when coordinator views a contact with amber/red DBS status
+		if (contact?.id && dbsBoltOn && (dbsStatus?.status === 'amber' || dbsStatus?.status === 'red')) {
+			markNotificationSeen('dbs_notification', [contact.id]);
+		}
+		// Mark pastoral concern seen for each active flag visible on this contact's profile
+		if (contact?.id && dbsBoltOn && activePastoralFlags.length > 0) {
+			markNotificationSeen('pastoral_concern', activePastoralFlags.map((f) => f.id));
+		}
+	});
 
 	let showAbsenceForm = false;
 	let absenceNote = '';
