@@ -87,10 +87,10 @@
 	}
 </script>
 
-<div class="fixed top-4 right-4 z-50 space-y-2 max-w-md w-full">
+<div class="fixed z-50 space-y-2 max-w-md w-full left-4 right-4 top-1/2 -translate-y-1/2 md:left-auto md:right-4 md:top-4 md:translate-x-0 md:translate-y-0">
 	{#each notificationList as notification (notification.id)}
 		<div
-			class="bg-white shadow-lg rounded-lg border-2 {getBorderColor(notification.type)} p-4 flex items-start gap-3 animate-slide-in-right"
+			class="notification-item bg-white shadow-lg rounded-lg border-2 {getBorderColor(notification.type)} p-4 flex items-start gap-3"
 			role="alert"
 		>
 			<div class="flex-shrink-0 w-8 h-8 rounded-full {getBgColor(notification.type)} flex items-center justify-center font-bold text-sm {getIconTextColor(notification.type)}">
@@ -125,9 +125,30 @@
 			opacity: 1;
 		}
 	}
-	
-	.animate-slide-in-right {
-		animation: slide-in-right 0.3s ease-out;
+
+	@keyframes pop-in-center {
+		from {
+			transform: scale(0.92);
+			opacity: 0;
+		}
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+
+	/* Desktop: slide in from right */
+	@media (min-width: 768px) {
+		.notification-item {
+			animation: slide-in-right 0.3s ease-out;
+		}
+	}
+
+	/* Mobile: appear centrally with pop-in */
+	@media (max-width: 767px) {
+		.notification-item {
+			animation: pop-in-center 0.25s ease-out;
+		}
 	}
 </style>
 

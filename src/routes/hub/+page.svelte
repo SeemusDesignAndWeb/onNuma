@@ -5,6 +5,10 @@
 	import { formatDateUK } from '$lib/crm/utils/dateFormat.js';
 	import { onMount } from 'svelte';
 	import { hasRouteAccess } from '$lib/crm/permissions.js';
+	import { terminology } from '$lib/crm/stores/terminology.js';
+
+	$: volunteersLabel = $terminology.volunteer + 's';
+	$: volunteerLabel = $terminology.volunteer;
 
 	function goToEvent(eventId) {
 		if (eventId) goto(`/hub/events/${eventId}`);
@@ -291,7 +295,7 @@
 							<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 						</div>
 						<div class="min-w-0 flex-1">
-							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">Volunteers</p>
+							<p class="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">{volunteersLabel}</p>
 							<p class="text-lg sm:text-xl font-semibold text-gray-900 truncate">{stats.contacts ?? 0}</p>
 						</div>
 					</div>
@@ -514,7 +518,7 @@
 									<path d="M8 6a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zm0 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8zM5 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
 								</svg>
 							</div>
-							<h2 class="dashboard-panel-title">Volunteer Leaderboard</h2>
+							<h2 class="dashboard-panel-title">{volunteerLabel} Leaderboard</h2>
 							<span class="dashboard-panel-link-spacer"></span>
 							<button
 								type="button"
@@ -550,7 +554,7 @@
 					<div class="dashboard-panel-body" class:hidden={collapsedPanelIds.has(panelId)}>
 						<div class="dashboard-panel-body-content">
 							{#if volunteerLeaderboard.length === 0}
-								<p class="text-sm text-gray-500">Participation data will appear here as volunteers sign up.</p>
+								<p class="text-sm text-gray-500">Participation data will appear here as {volunteersLabel.toLowerCase()} sign up.</p>
 							{:else}
 								<div class="overflow-x-auto">
 									<table class="min-w-full text-sm">
@@ -575,7 +579,7 @@
 							{/if}
 						</div>
 						<div class="dashboard-panel-footer">
-							<a href="/hub/contacts" class="dashboard-panel-link block">View volunteers</a>
+							<a href="/hub/contacts" class="dashboard-panel-link block">View {volunteersLabel.toLowerCase()}</a>
 						</div>
 					</div>
 				</div>
@@ -729,10 +733,10 @@
 							</button>
 						</div>
 					</header>
-					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>Volunteers by rota participation</p>
+					<p class="dashboard-panel-subtitle" class:hidden={collapsedPanelIds.has(panelId)}>{volunteersLabel} by rota participation</p>
 					<div class="dashboard-panel-body dashboard-panel-body--engagement flex flex-1 flex-col items-center gap-3 min-h-0" class:hidden={collapsedPanelIds.has(panelId)}>
 						{#if engagementState.total === 0}
-							<p class="text-sm text-gray-500">No volunteers yet. Add volunteers to see engagement.</p>
+							<p class="text-sm text-gray-500">No {volunteersLabel.toLowerCase()} yet. Add {volunteersLabel.toLowerCase()} to see engagement.</p>
 						{:else}
 							<div class="engagement-pie-wrap flex-shrink-0 w-full max-w-[14rem] flex items-center justify-center p-1">
 								<div
@@ -813,7 +817,7 @@
 					<div class="dashboard-panel-body" class:hidden={collapsedPanelIds.has(panelId)}>
 						<div class="dashboard-panel-body-content">
 							{#if suggestedPeople.length === 0}
-								<p class="text-sm text-gray-500">Everyone in your volunteers has participated recently, or you have no volunteers yet.</p>
+								<p class="text-sm text-gray-500">Everyone in your {volunteersLabel.toLowerCase()} has participated recently, or you have no {volunteersLabel.toLowerCase()} yet.</p>
 							{:else}
 								<ul class="space-y-3">
 									{#each suggestedPeople as person}

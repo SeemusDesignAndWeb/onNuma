@@ -5,6 +5,9 @@
 	import { browser } from '$app/environment';
 	import { notifications } from '$lib/crm/stores/notifications.js';
 	import NotificationPopup from '$lib/crm/components/NotificationPopup.svelte';
+	import { terminology } from '$lib/crm/stores/terminology.js';
+
+	$: volunteersLabel = $terminology.volunteer + 's';
 
 	$: pending = $page.data?.pending || [];
 	$: csrfToken = $page.data?.csrfToken || '';
@@ -30,13 +33,13 @@
 </script>
 
 <svelte:head>
-	<title>Pending volunteers – Hub</title>
+	<title>Pending {volunteersLabel.toLowerCase()} – Hub</title>
 </svelte:head>
 
 <div class="hub-top-panel p-6 mb-6">
 	<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
 		<div class="flex-1">
-			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Pending volunteers</h2>
+			<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Pending {volunteersLabel}</h2>
 			<p class="mt-1 text-sm text-gray-500">People who have expressed interest via a public signup link and are awaiting your review.</p>
 		</div>
 	</div>
@@ -46,7 +49,7 @@
 			<svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
 			</svg>
-			<p class="text-gray-500 text-sm font-medium">No pending volunteers right now.</p>
+			<p class="text-gray-500 text-sm font-medium">No pending {volunteersLabel.toLowerCase()} right now.</p>
 			<p class="text-gray-400 text-sm mt-1">New signups will appear here for review.</p>
 		</div>
 	{:else}

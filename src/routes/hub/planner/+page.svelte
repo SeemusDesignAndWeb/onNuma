@@ -214,6 +214,17 @@
 		if (parts.length === 1) return parts[0];
 		return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 	}
+
+	/** Returns a consistent class for date differentiation (same calendar day = same colour). */
+	function slotDateClass(startsAt) {
+		if (!startsAt) return 'planner-slot-date-0';
+		const d = new Date(startsAt);
+		const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+		let h = 0;
+		for (let i = 0; i < key.length; i++) h = ((h << 5) - h) + key.charCodeAt(i) | 0;
+		const idx = Math.abs(h) % 4;
+		return `planner-slot-date-${idx}`;
+	}
 </script>
 
 <!-- Print-only header -->
@@ -268,7 +279,7 @@
 				<p class="text-xs text-gray-400">Go to <a href="/hub/teams" class="text-theme-button-1 hover:underline">{$terminology.team}s</a> and link {$terminology.role.toLowerCase()}s to their {$terminology.rota.toLowerCase()}s.</p>
 			</div>
 		{:else}
-			<!-- Card layout: exact match to Schedules (rotas) Assignees by Occurrence -->
+			<!-- Card layout: one card per role, multiple date slots inside with date differentiation -->
 			<div class="space-y-6 no-print">
 				{#each teamRows as team (team.teamId)}
 					<div class="bg-white shadow rounded-lg p-6">
@@ -277,53 +288,60 @@
 						</div>
 						<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
 							{#each team.roles as role (role.rotaId)}
-								{#each occurrences as occ (occ.id)}
-									{@const assignees = role.occurrences[occ.id] || []}
-									{@const count = assignees.length}
-									{@const isFull = role.capacity > 0 && count >= role.capacity}
-									<div class="border border-gray-200 rounded-lg p-3 min-w-0">
-										<p class="text-xs text-gray-500 mb-1.5">{role.roleName} ×{role.capacity}</p>
-										<div class="flex justify-between items-center mb-2">
-											<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
-											<div class="flex items-center gap-2">
-												<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'} w-16">{count}/{role.capacity}</span>
-												{#if isFull}
-													<span class="text-xs text-hub-red-600 font-medium">Full</span>
-												{:else if canEdit}
-													<div class="flex items-center gap-1">
-														<button
-															type="button"
-															class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
-															title="Add assignees"
-															on:click={() => { addRotaId = role.rotaId; addOccurrenceId = occ.id; searchTerm = ''; selectedContactIds = new Set(); selectedListId = ''; guestName = ''; showAddAssignees = true; }}
-														>
-															+ Add
-														</button>
-														<button
-															type="button"
-															class="bg-purple-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
-															title="Send invitation"
-															on:click={() => { inviteRotaId = role.rotaId; inviteOccurrenceId = occ.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
-														>
-															✉ Invite
-														</button>
+								<div class="border border-gray-200 rounded-lg p-3 min-w-0 flex flex-col">
+									<div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
+										<p class="text-xs text-gray-500 font-medium">{role.roleName} ×{role.capacity}</p>
+										<a href="/hub/schedules/{role.rotaId}" class="text-xs text-theme-button-1 hover:underline">{$terminology.rota} →</a>
+									</div>
+									<div class="space-y-3 flex-1">
+										{#each occurrences as occ (occ.id)}
+											{@const assignees = role.occurrences[occ.id] || []}
+											{@const count = assignees.length}
+											{@const isFull = role.capacity > 0 && count >= role.capacity}
+											<div class="planner-role-slot rounded-md border-l-4 p-2.5 {slotDateClass(occ.startsAt)}">
+												<div class="flex justify-between items-center mb-1.5">
+													<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
+													<div class="flex items-center gap-2">
+														<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'} w-12">{count}/{role.capacity}</span>
+														{#if isFull}
+															<span class="text-xs text-hub-red-600 font-medium">Full</span>
+														{:else if canEdit}
+															<div class="flex items-center gap-1">
+																<button
+																	type="button"
+																	class="bg-theme-button-2 text-white px-2 py-1 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
+																	title="Add assignees"
+																	on:click={() => { addRotaId = role.rotaId; addOccurrenceId = occ.id; searchTerm = ''; selectedContactIds = new Set(); selectedListId = ''; guestName = ''; showAddAssignees = true; }}
+																>
+																	+ Add
+																</button>
+																<button
+																	type="button"
+																	class="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
+																	title="Send invitation"
+																	on:click={() => { inviteRotaId = role.rotaId; inviteOccurrenceId = occ.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
+																>
+																	✉ Invite
+																</button>
+															</div>
+														{/if}
 													</div>
+												</div>
+												{#if assignees.length > 0}
+													<div class="space-y-1 max-h-32 overflow-y-auto">
+														{#each assignees as name}
+															<div class="flex items-center justify-between p-1.5 bg-white/60 rounded text-sm">
+																<span class="font-medium truncate block text-gray-900" title={name}>{shortName(name)}</span>
+															</div>
+														{/each}
+													</div>
+												{:else}
+													<p class="text-xs text-gray-400 italic py-1">No assignees</p>
 												{/if}
 											</div>
-										</div>
-										{#if assignees.length > 0}
-											<div class="space-y-1.5 max-h-64 overflow-y-auto">
-												{#each assignees as name}
-													<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded text-sm">
-														<span class="font-medium truncate block text-gray-900" title={name}>{shortName(name)}</span>
-													</div>
-												{/each}
-											</div>
-										{:else}
-											<p class="text-xs text-gray-400 italic py-2">No assignees</p>
-										{/if}
+										{/each}
 									</div>
-								{/each}
+								</div>
 							{/each}
 						</div>
 					</div>
@@ -335,53 +353,60 @@
 						</div>
 						<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
 							{#each unlinkedRows as row (row.rotaId)}
-								{#each occurrences as occ (occ.id)}
-									{@const assignees = row.occurrences[occ.id] || []}
-									{@const count = assignees.length}
-									{@const isFull = row.capacity > 0 && count >= row.capacity}
-									<div class="border border-gray-200 rounded-lg p-3 min-w-0">
-										<p class="text-xs text-gray-500 mb-1.5">{row.roleName} ×{row.capacity}</p>
-										<div class="flex justify-between items-center mb-2">
-											<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
-											<div class="flex items-center gap-2">
-												<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'} w-16">{count}/{row.capacity}</span>
-												{#if isFull}
-													<span class="text-xs text-hub-red-600 font-medium">Full</span>
-												{:else if canEdit}
-													<div class="flex items-center gap-1">
-														<button
-															type="button"
-															class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
-															title="Add assignees"
-															on:click={() => { addRotaId = row.rotaId; addOccurrenceId = occ.id; searchTerm = ''; selectedContactIds = new Set(); selectedListId = ''; guestName = ''; showAddAssignees = true; }}
-														>
-															+ Add
-														</button>
-														<button
-															type="button"
-															class="bg-purple-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
-															title="Send invitation"
-															on:click={() => { inviteRotaId = row.rotaId; inviteOccurrenceId = occ.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
-														>
-															✉ Invite
-														</button>
+								<div class="border border-gray-200 rounded-lg p-3 min-w-0 flex flex-col">
+									<div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
+										<p class="text-xs text-gray-500 font-medium">{row.roleName} ×{row.capacity}</p>
+										<a href="/hub/schedules/{row.rotaId}" class="text-xs text-theme-button-1 hover:underline">{$terminology.rota} →</a>
+									</div>
+									<div class="space-y-3 flex-1">
+										{#each occurrences as occ (occ.id)}
+											{@const assignees = row.occurrences[occ.id] || []}
+											{@const count = assignees.length}
+											{@const isFull = row.capacity > 0 && count >= row.capacity}
+											<div class="planner-role-slot rounded-md border-l-4 p-2.5 {slotDateClass(occ.startsAt)}">
+												<div class="flex justify-between items-center mb-1.5">
+													<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(occ.startsAt)}</h4>
+													<div class="flex items-center gap-2">
+														<span class="text-xs font-medium {isFull ? 'text-hub-red-600' : 'text-gray-700'} w-12">{count}/{row.capacity}</span>
+														{#if isFull}
+															<span class="text-xs text-hub-red-600 font-medium">Full</span>
+														{:else if canEdit}
+															<div class="flex items-center gap-1">
+																<button
+																	type="button"
+																	class="bg-theme-button-2 text-white px-2 py-1 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
+																	title="Add assignees"
+																	on:click={() => { addRotaId = row.rotaId; addOccurrenceId = occ.id; searchTerm = ''; selectedContactIds = new Set(); selectedListId = ''; guestName = ''; showAddAssignees = true; }}
+																>
+																	+ Add
+																</button>
+																<button
+																	type="button"
+																	class="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
+																	title="Send invitation"
+																	on:click={() => { inviteRotaId = row.rotaId; inviteOccurrenceId = occ.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
+																>
+																	✉ Invite
+																</button>
+															</div>
+														{/if}
 													</div>
+												</div>
+												{#if assignees.length > 0}
+													<div class="space-y-1 max-h-32 overflow-y-auto">
+														{#each assignees as name}
+															<div class="flex items-center justify-between p-1.5 bg-white/60 rounded text-sm">
+																<span class="font-medium truncate block text-gray-900" title={name}>{shortName(name)}</span>
+															</div>
+														{/each}
+													</div>
+												{:else}
+													<p class="text-xs text-gray-400 italic py-1">No assignees</p>
 												{/if}
 											</div>
-										</div>
-										{#if assignees.length > 0}
-											<div class="space-y-1.5 max-h-64 overflow-y-auto">
-												{#each assignees as name}
-													<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded text-sm">
-														<span class="font-medium truncate block text-gray-900" title={name}>{shortName(name)}</span>
-													</div>
-												{/each}
-											</div>
-										{:else}
-											<p class="text-xs text-gray-400 italic py-2">No assignees</p>
-										{/if}
+										{/each}
 									</div>
-								{/each}
+								</div>
 							{/each}
 						</div>
 					</div>
@@ -670,6 +695,13 @@
 {/if}
 
 <style>
+	/* Role card slots: date differentiation (same calendar day = same colour) */
+	.planner-role-slot { background: #fafafa; }
+	.planner-slot-date-0 { border-left-color: #93c5fd; background: #eff6ff; }
+	.planner-slot-date-1 { border-left-color: #86efac; background: #f0fdf4; }
+	.planner-slot-date-2 { border-left-color: #fcd34d; background: #fffbeb; }
+	.planner-slot-date-3 { border-left-color: #f9a8d4; background: #fdf2f8; }
+
 	/* Minimal table: all text same size, content on one line per cell */
 	.planner-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; background: white; }
 	.planner-th { padding: 0.5rem 0.75rem; text-align: left; font-weight: 500; color: #6b7280; background: #f9fafb; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }

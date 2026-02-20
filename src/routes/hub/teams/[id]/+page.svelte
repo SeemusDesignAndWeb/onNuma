@@ -291,6 +291,17 @@
 		return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 	}
 
+	/** Same calendar day = same colour for slot differentiation. */
+	function slotDateClass(startsAt) {
+		if (!startsAt) return 'team-slot-date-0';
+		const d = new Date(startsAt);
+		const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+		let h = 0;
+		for (let i = 0; i < key.length; i++) h = ((h << 5) - h) + key.charCodeAt(i) | 0;
+		const idx = Math.abs(h) % 4;
+		return `team-slot-date-${idx}`;
+	}
+
 	// Date pagination: show 3 dates at a time
 	const DATES_PER_PAGE = 3;
 	let datePage = 0;
@@ -304,6 +315,33 @@
 	function nextDates() {
 		if (datePage < totalDatePages - 1) datePage += 1;
 	}
+
+	// Group visible schedule by role (one card per role, slots = occurrences)
+	$: scheduleByRole = (() => {
+		if (!visibleSchedule.length) return [];
+		const roleMap = new Map();
+		for (const entry of visibleSchedule) {
+			for (const role of entry.roles) {
+				if (!role.rotaId) continue;
+				if (!roleMap.has(role.rotaId)) {
+					roleMap.set(role.rotaId, {
+						roleId: role.roleId,
+						rotaId: role.rotaId,
+						roleName: role.roleName,
+						capacity: role.capacity,
+						slots: []
+					});
+				}
+				roleMap.get(role.rotaId).slots.push({
+					occurrence: entry.occurrence,
+					assignees: role.assignees || [],
+					filledCount: role.filledCount ?? 0,
+					isFull: role.isFull
+				});
+			}
+		}
+		return Array.from(roleMap.values());
+	})();
 </script>
 
 <!-- Team name and Back on same row (standard hub heading size) -->
@@ -330,13 +368,13 @@
 		</button>
 		{#if schedule.length > 0}
 			<p class="text-sm text-blue-800 pr-24">
-				This is the schedule for <strong>{team.name}</strong>. Each card is a role for one date — use <strong>+ Add</strong> to assign from contacts or <strong>✉ Invite</strong> to send a MyHub invitation.
+				This is the schedule for <strong>{team.name}</strong>. Each card is a role; inside it you see all dates. Use <strong>+ Add</strong> or <strong>✉ Invite</strong> per date to assign from contacts or send a MyHub invitation.
 				{#if canManage}
 					Click <strong>×</strong> next to a name to remove them.
 				{/if}
 			</p>
 			<p class="text-xs text-blue-600 mt-1.5">
-				Full = all slots filled. Use Add or Invite when there are empty slots.
+				Colours group by date. Full = all slots filled for that date.
 			</p>
 		{:else if roles.some(r => r.rotaId)}
 			<p class="text-sm text-blue-800 pr-24">
@@ -356,7 +394,7 @@
 <!-- ============================================================ -->
 <!-- SECTION 1: SCHEDULE — Card grid (same design as meeting planner) -->
 <!-- ============================================================ -->
-{#if schedule.length > 0 && roleColumns.length > 0}
+{#if schedule.length > 0 && scheduleByRole.length > 0}
 	<div class="bg-white shadow rounded-lg p-6 mb-8">
 		{#if totalDatePages > 1}
 			<div class="flex justify-end items-center mb-4">
@@ -384,62 +422,66 @@
 			</div>
 		{/if}
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-			{#each visibleSchedule as entry (entry.occurrence.id)}
-				{#each entry.roles as role (role.roleId)}
-					{#if role.rotaId}
-						<div class="border border-gray-200 rounded-lg p-3 min-w-0">
-							<p class="text-xs text-gray-500 mb-1.5">{role.roleName} ×{role.capacity}</p>
-							<div class="flex justify-between items-center mb-2">
-								<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(entry.occurrence.startsAt)}</h4>
-								<div class="flex items-center gap-2">
-									<span class="text-xs font-medium {role.isFull ? 'text-hub-red-600' : 'text-gray-700'} w-16">{role.filledCount}/{role.capacity}</span>
-									{#if role.isFull}
-										<span class="text-xs text-hub-red-600 font-medium">Full</span>
-									{:else if canManage}
-										<div class="flex items-center gap-1">
-											<button
-												type="button"
-												class="bg-theme-button-2 text-white px-2.5 py-1.5 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
-												title="Add assignees"
-												on:click={() => openAssignModal(role.rotaId, entry.occurrence.id, role.roleName, formatShortDate(entry.occurrence.startsAt))}
-											>
-												+ Add
-											</button>
-											<button
-												type="button"
-												class="bg-purple-600 text-white px-2.5 py-1.5 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
-												title="Send invitation"
-												on:click={() => { inviteRotaId = role.rotaId; inviteOccurrenceId = entry.occurrence.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
-											>
-												✉ Invite
-											</button>
-										</div>
-									{/if}
-								</div>
-							</div>
-							{#if role.assignees && role.assignees.length > 0}
-								<div class="space-y-1.5 max-h-64 overflow-y-auto">
-									{#each role.assignees as assignee}
-										<div class="flex items-center justify-between p-1.5 bg-gray-50 rounded text-sm">
-											<span class="font-medium truncate block text-gray-900">{assignee.name}</span>
-											{#if canManage && assignee.contactId}
+			{#each scheduleByRole as role (role.rotaId)}
+				<div class="border border-gray-200 rounded-lg p-3 min-w-0 flex flex-col">
+					<div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
+						<p class="text-xs text-gray-500 font-medium">{role.roleName} ×{role.capacity}</p>
+						<a href="/hub/schedules/{role.rotaId}" class="text-xs text-theme-button-1 hover:underline">{$terminology.rota} →</a>
+					</div>
+					<div class="space-y-3 flex-1">
+						{#each role.slots as slot (slot.occurrence.id)}
+							<div class="team-role-slot rounded-md border-l-4 p-2.5 {slotDateClass(slot.occurrence.startsAt)}">
+								<div class="flex justify-between items-center mb-1.5">
+									<h4 class="text-sm font-semibold text-gray-900">{formatDateTimeUK(slot.occurrence.startsAt)}</h4>
+									<div class="flex items-center gap-2">
+										<span class="text-xs font-medium {slot.isFull ? 'text-hub-red-600' : 'text-gray-700'} w-12">{slot.filledCount}/{role.capacity}</span>
+										{#if slot.isFull}
+											<span class="text-xs text-hub-red-600 font-medium">Full</span>
+										{:else if canManage}
+											<div class="flex items-center gap-1">
 												<button
 													type="button"
-													on:click={() => confirmRemoveAssignee(assignee, role.roleName, role.rotaId, entry.occurrence.id)}
-													class="text-hub-red-600 hover:text-hub-red-800 px-1.5 py-0.5 rounded text-xs ml-2 flex-shrink-0"
-													title="Remove"
-												>×</button>
-											{/if}
-										</div>
-									{/each}
+													class="bg-theme-button-2 text-white px-2 py-1 rounded text-xs hover:opacity-90 border-0 cursor-pointer"
+													title="Add assignees"
+													on:click={() => openAssignModal(role.rotaId, slot.occurrence.id, role.roleName, formatShortDate(slot.occurrence.startsAt))}
+												>
+													+ Add
+												</button>
+												<button
+													type="button"
+													class="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 border-0 cursor-pointer"
+													title="Send invitation"
+													on:click={() => { inviteRotaId = role.rotaId; inviteOccurrenceId = slot.occurrence.id; inviteSearchTerm = ''; inviteContactId = ''; inviteError = null; showInviteModal = true; }}
+												>
+													✉ Invite
+												</button>
+											</div>
+										{/if}
+									</div>
 								</div>
-							{:else}
-								<p class="text-xs text-gray-400 italic py-2">No assignees</p>
-							{/if}
-							<a href="/hub/schedules/{role.rotaId}" class="mt-2 inline-block text-xs text-theme-button-1 hover:underline">{$terminology.rota} →</a>
-						</div>
-					{/if}
-				{/each}
+								{#if slot.assignees && slot.assignees.length > 0}
+									<div class="space-y-1 max-h-32 overflow-y-auto">
+										{#each slot.assignees as assignee}
+											<div class="flex items-center justify-between p-1.5 bg-white/60 rounded text-sm">
+												<span class="font-medium truncate block text-gray-900">{assignee.name}</span>
+												{#if canManage && assignee.contactId}
+													<button
+														type="button"
+														on:click={() => confirmRemoveAssignee(assignee, role.roleName, role.rotaId, slot.occurrence.id)}
+														class="text-hub-red-600 hover:text-hub-red-800 px-1.5 py-0.5 rounded text-xs ml-2 flex-shrink-0"
+														title="Remove"
+													>×</button>
+												{/if}
+											</div>
+										{/each}
+									</div>
+								{:else}
+									<p class="text-xs text-gray-400 italic py-1">No assignees</p>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
 			{/each}
 		</div>
 	</div>
@@ -937,6 +979,13 @@
 </details>
 
 <style>
+	/* Role card slots: date differentiation (same calendar day = same colour) */
+	.team-role-slot { background: #fafafa; }
+	.team-slot-date-0 { border-left-color: #93c5fd; background: #eff6ff; }
+	.team-slot-date-1 { border-left-color: #86efac; background: #f0fdf4; }
+	.team-slot-date-2 { border-left-color: #fcd34d; background: #fffbeb; }
+	.team-slot-date-3 { border-left-color: #f9a8d4; background: #fdf2f8; }
+
 	/* Override hub.css .crm-shell-main h2 so panel header titles stay white on blue background */
 	.config-panel-heading {
 		color: white !important;

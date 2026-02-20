@@ -74,9 +74,9 @@
 		return !!(contact?.unavailability?.[day]?.[time]);
 	}
 
-	// Collapsible panels (all expanded by default except MyHub; address is in personal)
+	// Collapsible panels: only contact name/details (Personal Information) expanded by default
 	const PANEL_IDS = ['personal', 'notes', 'dbs', 'safeguarding', 'coordinatorNotes', 'thankyou', 'outstanding', 'myhub'];
-	let expandedPanels = new Set(PANEL_IDS.filter((id) => id !== 'myhub'));
+	let expandedPanels = new Set(['personal']);
 	function togglePanel(id) {
 		const next = new Set(expandedPanels);
 		if (next.has(id)) next.delete(id);
@@ -521,9 +521,9 @@
 				</div>
 			</form>
 		{:else}
-			<!-- Main Content -->
+			<!-- Main Content: Personal full width, then 2-column grid for other panels -->
 			<div class="space-y-6">
-					<!-- Personal Information Card -->
+					<!-- Personal Information (contact name/details) - only panel expanded by default -->
 					<div class="hub-top-panel overflow-hidden">
 						<button
 							type="button"
@@ -640,7 +640,8 @@
 						{/if}
 					</div>
 
-					<!-- Notes (full width) -->
+					<!-- Other panels in 2-column grid to reduce rows -->
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{#if contact.notes}
 						<div class="hub-top-panel overflow-hidden">
 							<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('notes')} aria-expanded={expandedPanels.has('notes')}>
@@ -747,6 +748,7 @@
 						{/if}
 					</div>
 					{/if}
+					</div>
 			</div>
 		{/if}
 
@@ -1056,7 +1058,7 @@
 			</div>
 		</div>
 
-		<!-- MyHub preferences (compact: availability, about me, reminders) -->
+		<!-- MyHub preferences (availability, about me, reminders) -->
 		<div class="hub-top-panel overflow-hidden">
 			<button type="button" class="hub-top-panel-header flex items-center gap-3 bg-theme-panel-bg/50 w-full text-left cursor-pointer hover:opacity-90 transition-opacity" on:click={() => togglePanel('myhub')} aria-expanded={expandedPanels.has('myhub')}>
 				<div class="w-10 h-10 bg-theme-panel-bg rounded-lg flex items-center justify-center">
@@ -1069,57 +1071,59 @@
 				<svg class="w-5 h-5 text-gray-500 transition-transform shrink-0" class:rotate-180={expandedPanels.has('myhub')} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
 			</button>
 			{#if expandedPanels.has('myhub')}
-			<div class="p-4 flex flex-col sm:flex-row sm:items-start gap-4">
-				<div class="shrink-0">
-					<h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Times that don't work</h3>
-					<div class="overflow-x-auto">
-						<table class="w-full max-w-md border border-gray-200 rounded text-xs" role="grid" aria-label="Availability grid">
-							<thead>
-								<tr class="bg-gray-50">
-									<th scope="col" class="text-left py-1.5 px-2 font-semibold text-gray-600 w-10"></th>
-									{#each PREF_TIMES as time}
-										<th scope="col" class="text-center py-1.5 px-1 font-semibold text-gray-600">{PREF_TIME_LABELS[time]}</th>
-									{/each}
-								</tr>
-							</thead>
-							<tbody>
-								{#each PREF_DAYS as day}
-									<tr class="border-t border-gray-100">
-										<td class="py-1 px-2 font-medium text-gray-700">{PREF_DAY_LABELS[day]}</td>
+			<div class="p-6">
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+					<div>
+						<h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Times that don't work</h3>
+						<div class="overflow-x-auto">
+							<table class="w-full border border-gray-200 rounded-lg text-sm" role="grid" aria-label="Availability grid">
+								<thead>
+									<tr class="bg-gray-50">
+										<th scope="col" class="text-left py-3 px-4 font-semibold text-gray-600"></th>
 										{#each PREF_TIMES as time}
-											<td class="py-1 px-1 text-center">
-												{#if isUnavailable(contact, day, time)}
-													<span class="inline-block w-5 h-5 rounded bg-amber-100 text-amber-800 flex items-center justify-center mx-auto text-xs" title="Unavailable">✕</span>
-												{:else}
-													<span class="text-gray-300">—</span>
-												{/if}
-											</td>
+											<th scope="col" class="text-center py-3 px-3 font-semibold text-gray-600">{PREF_TIME_LABELS[time]}</th>
 										{/each}
 									</tr>
-								{/each}
-							</tbody>
-						</table>
+								</thead>
+								<tbody>
+									{#each PREF_DAYS as day}
+										<tr class="border-t border-gray-100">
+											<td class="py-2.5 px-4 font-medium text-gray-700">{PREF_DAY_LABELS[day]}</td>
+											{#each PREF_TIMES as time}
+												<td class="py-2.5 px-3 text-center">
+													{#if isUnavailable(contact, day, time)}
+														<span class="inline-block w-6 h-6 rounded bg-amber-100 text-amber-800 flex items-center justify-center mx-auto text-sm" title="Unavailable">✕</span>
+													{:else}
+														<span class="text-gray-300">—</span>
+													{/if}
+												</td>
+											{/each}
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+						<p class="text-sm text-gray-500 mt-2">Set in MyHub. Blank = no preference.</p>
 					</div>
-					<p class="text-xs text-gray-400 mt-1">Set in MyHub. Blank = no preference.</p>
-				</div>
-				<div class="sm:ml-4 flex-1 min-w-0 space-y-3">
-					<div>
-						<h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">About me</h3>
-						{#if contact?.aboutMe?.trim()}
-							<p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded p-3">{contact.aboutMe.trim()}</p>
-						{:else}
-							<p class="text-xs text-gray-500">— Not set</p>
-						{/if}
-					</div>
-					<div>
-						<h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Shift reminders</h3>
-						<div class="flex flex-wrap items-center gap-3 text-sm">
-							<span class="font-medium {contact?.reminderEmail !== false ? 'text-green-700' : 'text-gray-500'}">
-								Email: {contact?.reminderEmail !== false ? 'On' : 'Off'}
-							</span>
-							{#if contact?.reminderEmail !== false}
-								<span class="text-gray-600">· {REMINDER_TIMING_LABELS[contact?.reminderTiming || '1week'] ?? (contact?.reminderTiming || '1 week before')}</span>
+					<div class="space-y-6">
+						<div>
+							<h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">About me</h3>
+							{#if contact?.aboutMe?.trim()}
+								<p class="text-base text-gray-800 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-lg p-4">{contact.aboutMe.trim()}</p>
+							{:else}
+								<p class="text-sm text-gray-500">— Not set</p>
 							{/if}
+						</div>
+						<div>
+							<h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Shift reminders</h3>
+							<div class="flex flex-wrap items-center gap-3 text-base">
+								<span class="font-medium {contact?.reminderEmail !== false ? 'text-green-700' : 'text-gray-500'}">
+									Email: {contact?.reminderEmail !== false ? 'On' : 'Off'}
+								</span>
+								{#if contact?.reminderEmail !== false}
+									<span class="text-gray-600">· {REMINDER_TIMING_LABELS[contact?.reminderTiming || '1week'] ?? (contact?.reminderTiming || '1 week before')}</span>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>
